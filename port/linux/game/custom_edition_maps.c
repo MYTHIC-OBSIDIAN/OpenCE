@@ -6,7 +6,7 @@ Lists Custom Edition maps for the menus (custom_edition_maps.h).
 Whenever a map list opens, the custom_maps folder and then the Halo Custom
 Edition install's maps folder are scanned for CE caches (.map; OpenSauce
 caches are refused by the loader, so not listed). Multiplayer maps join the
-level list after the Xbox levels, and the map lists' CUSTOM MULTIPLAYER;
+level list after the Xbox levels, and the map lists' CUSTOM EDITION;
 campaign maps (solo scenarios) are the map lists' CUSTOM SINGLEPLAYER,
 played alone or as network co-op. The stock campaign levels get display
 indices here too, so the menus can show them the same way.
@@ -34,8 +34,11 @@ Each map can have, beside it in its folder:
 This LAN build lists Halo PC's own six multiplayer maps (Gearbox's: Danger
 Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity, Timberland) with
 the Xbox's in the map lists' MULTIPLAYER, and a fixed list of the Digsite
-maps (digsite_maps) in their DIGSITE, both found in the same folders as any
-other CE map; the CUSTOM lists leave them out. A Halo PC map's description,
+maps (digsite_maps) in their DIGSITE; CUSTOM EDITION leaves them out. Halo
+PC's six are looked for first in the game's own maps folder (Halo PC's
+version 7 caches, with Halo PC's bitmaps.map and sounds.map beside them),
+the Digsite maps first in the digsite_maps folder, then both in the folders
+of every other CE map. A Halo PC map's description,
 without a <name>.txt, is the PC menus' own (their map_data strings), and
 its picture, without a <name>.bmp, the unknown level's: tools/pc_map_pictures.py
 writes the .bmp pictures from a Halo PC or Custom Edition install's ui.map.
@@ -168,7 +171,7 @@ struct custom_edition_maps_globals
 	/* the latest level list: the Xbox levels, then the CE maps */
 	short xbox_level_count;
 	char *levels[MAXIMUM_XBOX_LEVELS + CUSTOM_EDITION_MAPS_MAXIMUM];
-	/* the multiplayer maps the CUSTOM MULTIPLAYER list shows (neither Halo
+	/* the multiplayer maps the CUSTOM EDITION list shows (neither Halo
 	PC's own nor Digsite's), and Halo PC's own found (in stock_maps'
 	order), by their index in maps */
 	short listed_count;
@@ -270,6 +273,17 @@ static short stock_map_index(
 			return index;
 	}
 	return NONE;
+}
+
+/* the map's index in digsite_maps, or NONE (by its name without its hash) */
+static short digsite_map_index(
+	char const *name);
+
+short custom_edition_maps_home(
+	char const *name)
+{
+	return stock_map_index(name) != NONE ? _custom_edition_maps_home_stock :
+		digsite_map_index(name) != NONE ? _custom_edition_maps_home_digsite : _custom_edition_maps_home_none;
 }
 
 /* the map's index in digsite_maps, or NONE (by its name without its hash) */
@@ -544,7 +558,7 @@ static void custom_edition_maps_tell_versions_apart(
 }
 
 /* The map lists' parts: Halo PC's own maps (one each, the first of its
-name: a version of another hash stays in CUSTOM MULTIPLAYER), the Digsite
+name: a version of another hash stays in CUSTOM EDITION), the Digsite
 maps (the first of each name, multiplayer or campaign), and the rest. */
 static void custom_edition_maps_sort_into_lists(
 	void)
@@ -607,7 +621,12 @@ static void custom_edition_maps_look_for(
 	void)
 {
 	struct custom_edition_maps_globals *globals = &custom_edition_maps_globals;
-	char const *folders[] = { CUSTOM_EDITION_MAP_DIRECTORY, CUSTOM_EDITION_INSTALL_MAP_DIRECTORY };
+	/* (each map's own folder first, so its copy there wins: the maps
+	folder's Halo PC maps (those alone), digsite_maps' Digsite maps) */
+	char const *folders[] = { CUSTOM_EDITION_GEARBOX_MAP_DIRECTORY, CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY,
+		CUSTOM_EDITION_MAP_DIRECTORY, CUSTOM_EDITION_INSTALL_MAP_DIRECTORY };
+	short const folder_homes[] = { _custom_edition_maps_home_stock, _custom_edition_maps_home_digsite,
+		NONE, NONE };
 	short folder_index;
 
 	custom_edition_maps_forget();
@@ -625,7 +644,7 @@ static void custom_edition_maps_look_for(
 		HANDLE find;
 
 		/* (the install's only when there is one) */
-		if (folder_index && !custom_edition_install_present())
+		if (folders[folder_index] == CUSTOM_EDITION_INSTALL_MAP_DIRECTORY && !custom_edition_install_present())
 			continue;
 		/* A folder is listed through a handle of its own, never with
 		find_files_start and find_files_next: those keep their place in one
@@ -651,6 +670,9 @@ static void custom_edition_maps_look_for(
 			if (extension)
 			{
 				*extension++ = 0;
+				/* (the maps folder's Halo PC maps alone, not its Xbox maps) */
+				if (folder_homes[folder_index] != NONE && custom_edition_maps_home(name) != folder_homes[folder_index])
+					continue;
 				custom_edition_map_add(folders[folder_index], name, extension);
 			}
 		} while (FindNextFileA(find, &data));

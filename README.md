@@ -8,7 +8,10 @@
 > and Edit Gametypes alone. The map lists show Halo PC's six Gearbox maps in
 > MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
-> STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD).
+> STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD). Its
+> GitHub Actions build Windows only: each push uploads
+> `halo-windows-release`, and a push to `main` or `lan-digsite` publishes
+> it as a release.
 
 <p align="center">
   <img src="port/assets/icon/opence-icon.png" alt="OpenCE" width="128">
@@ -106,17 +109,17 @@ The Arch-based distribution release is available on the [AUR](https://aur.archli
 
 Halo Custom Edition maps are placed in `custom_maps` folder, not in the `maps` folder itself. It requires `bitmaps.map`, `sounds.map`, and `loc.map` in the `custom_maps` folder, which you must copy over from your existing installed copy of Halo Custom Edition. The maps folder is only for Xbox maps that's extracted from your disc image, not Halo Custom Edition. 
 
-Halo PC Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia) **are not included by default**. They would need to be copied over from your existing Halo Custom Edition install's `maps` folder into `custom_maps` folder too. Once there, they are listed in **MULTIPLAYER** after the 13 Xbox maps, with their names and the PC menus' descriptions. Their pictures come from your own install:
+Halo PC Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia) **are not included by default**. Copy them, with Halo PC's own `bitmaps.map` and `sounds.map`, from your Halo PC install's `maps` folder into the game's own **`maps`** folder, beside the Xbox maps (Halo PC's `ui.map` stays out: the game's `ui.map` must be the Xbox's). Both Halo PC's own maps (version 7) and Custom Edition's copies of them work. They are listed in **MULTIPLAYER** after the 13 Xbox maps, with their names and the PC menus' descriptions. Their pictures, and the menus' pictures that have no redraw, come from your own install:
 
 ```sh
-python3 tools/pc_map_pictures.py "<Halo CE or Halo PC install>/maps" <game>/custom_maps
+python3 tools/pc_map_pictures.py "<Halo PC or Halo CE install>/maps" <game>/maps --menus <game>
 ```
 
-writes `icefields.bmp`, `deathisland.bmp` and so on beside them (any `<name>.bmp` or `<name>.txt` you put there yourself wins).
+writes `icefields.bmp`, `deathisland.bmp` and so on beside the maps, and the menus' pictures into the game's `menus` folder (any `<name>.bmp` or `<name>.txt` you put beside a map yourself wins).
 
-The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration Moonbase, Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in `custom_maps`. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
+The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration Moonbase, Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in a **`digsite_maps`** folder beside `maps`. They are Custom Edition maps, so they need Custom Edition's `bitmaps.map`, `sounds.map` and `loc.map` in `custom_maps` (or in `digsite_maps`): Halo PC's are not the same files. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
 
-All other Custom Edition multiplayer maps are in **CUSTOM MULTIPLAYER**, in the map list in Campaign's New Game and on the Map screen of Create Game.
+All other Custom Edition multiplayer maps are in **CUSTOM EDITION**, in the map list in Campaign's New Game and on the Map screen of Create Game.
 
 Maps that require OpenSauce are not compatible.
 

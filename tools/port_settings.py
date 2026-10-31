@@ -2238,7 +2238,7 @@ def _map_kind() -> list:
                                        ("bitmap", "bitmaps/option_bkds_sm"), ("font", "ui\\large_ui"),
                                        ("color", "#FF2896FF"), ("align", "center"), ("text_y", 3)],
                     [f'<child widget="{MAP_KIND_CHOOSER}_spinner" x="9" y="2"/>'])
-    # (wider than the gametype chooser's, for CUSTOM MULTIPLAYER, its
+    # (wider than the gametype chooser's, for CUSTOM EDITION, its
     # arrows at the row's ends)
     lines += _widget(f"{MAP_KIND_CHOOSER}_spinner",
                      [("type", "spinner"), ("width", 238), ("height", 22), ("flags", "left_right_tabs_items"),
@@ -2248,7 +2248,7 @@ def _map_kind() -> list:
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 238 19 244")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM MULTIPLAYER"])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION"])
     return lines
 
 

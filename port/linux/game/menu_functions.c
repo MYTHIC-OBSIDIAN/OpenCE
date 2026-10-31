@@ -982,7 +982,7 @@ static boolean campaign_continue(short controller)
 chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the
 Xbox's 13, then Halo PC's own six that are installed), DIGSITE (the Digsite
 maps, a fixed list, each played as its file's scenario type says) or
-CUSTOM MULTIPLAYER maps (the other Custom Edition multiplayer maps of the
+CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
 custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
 then the kind's rows, scrolling as list_scroll scrolls. A campaign map is
 played as the campaign is (alone, or hosted as network co-op), a
@@ -3353,7 +3353,7 @@ static boolean multiplayer_host(struct widget_instance *widget, struct event_rec
 }
 
 /* ---- the map list (the Map screen's): its chooser's SINGLEPLAYER levels,
-MULTIPLAYER maps, DIGSITE or CUSTOM MULTIPLAYER maps (the map lists',
+MULTIPLAYER maps, DIGSITE or CUSTOM EDITION maps (the map lists',
 above). A level or Custom Edition campaign map chosen lists the
 difficulties (B goes back to the map) and is hosted as a network co-op game,
 which goes to Server Setup; a multiplayer map goes on to the gametypes.

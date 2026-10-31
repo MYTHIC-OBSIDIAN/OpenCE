@@ -1131,8 +1131,10 @@ def test_compressed_xbox_caches_are_recognized(report_tool, tmp_path):
 
 
 def test_other_cache_versions_are_named_not_loaded(report_tool, tmp_path):
-    path = tmp_path / "pc.map"
-    path.write_bytes(xbox_header(build=b"01.00.00.0564", version=7))
+    # (version 7, Halo PC's own, is read as Custom Edition's in this LAN
+    # build: CACHE_FILE_VERSION_HALO_PC; 13 is the Anniversary's)
+    path = tmp_path / "mcc.map"
+    path.write_bytes(xbox_header(build=b"01.00.00.0564", version=13))
     returncode, report = report_one(report_tool, path)
     assert returncode == 1
     assert report["format"] == "cache of an unknown version"

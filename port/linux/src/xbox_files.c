@@ -377,8 +377,31 @@ static BOOL name_ends_with(const char *name, const char *ending)
 	return TRUE;
 }
 
-/* the Halo PC maps in the maps folder, which play only from custom_maps:
-how many, and the first PLATFORM_MAPS_FOLDER_NAMED's names */
+/* Halo PC's own six multiplayer maps (Gearbox's), which this LAN build
+plays from the maps folder (port/linux/game/custom_edition_maps.c) */
+static BOOL map_is_gearbox(const char *name)
+{
+	static const char *const gearbox[] =
+	{
+		"dangercanyon.map", "deathisland.map", "gephyrophobia.map", "icefields.map", "infinity.map",
+		"timberland.map",
+	};
+	size_t index, character;
+
+	for (index = 0; index < sizeof(gearbox) / sizeof(gearbox[0]); index++)
+	{
+		for (character = 0; name[character] &&
+			tolower((unsigned char)name[character]) == gearbox[index][character]; character++)
+		{
+		}
+		if (!name[character] && !gearbox[index][character])
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/* the other Halo PC maps in the maps folder, which play only from
+custom_maps: how many, and the first PLATFORM_MAPS_FOLDER_NAMED's names */
 static long pc_maps_in_maps(char *names, unsigned long names_size)
 {
 	char folder[1024];
@@ -394,7 +417,7 @@ static long pc_maps_in_maps(char *names, unsigned long names_size)
 	{
 		char path[1300];
 
-		if (!name_ends_with(name, ".map"))
+		if (!name_ends_with(name, ".map") || map_is_gearbox(name))
 			continue;
 		snprintf(path, sizeof(path), "%s/%s", folder, name);
 		if (!map_version_is_pc(map_file_version(path)))

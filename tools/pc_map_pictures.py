@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
-"""Writes the pictures of Halo PC's own multiplayer maps (Gearbox's six:
-Danger Canyon, Death Island, Gephyrophobia, Ice Fields, Infinity and
-Timberland) as the <name>.bmp files the map lists show beside each map
-(port/linux/game/custom_edition_maps.c), from the player's own Halo PC or
-Halo Custom Edition install:
+"""Writes pictures from the player's own Halo PC or Halo Custom Edition
+install for this LAN build, which ships none of them:
 
-    python tools/pc_map_pictures.py <install>/maps <game>/custom_maps
+    python tools/pc_map_pictures.py <install>/maps <game>/maps
 
 reads <install>/maps/ui.map (and its bitmaps.map, where the pictures' pixels
-or tags are kept there) and writes icefields.bmp, deathisland.bmp and so on
-into the second folder, where the maps themselves go. Nothing is shipped
-with the game: the pictures are the player's own, as the Xbox maps' are.
+or tags are kept there) and writes the pictures of Halo PC's own multiplayer
+maps (Gearbox's six: Danger Canyon, Death Island, Gephyrophobia, Ice Fields,
+Infinity and Timberland) as the <name>.bmp files the map lists show beside
+each map (port/linux/game/custom_edition_maps.c): icefields.bmp,
+deathisland.bmp and so on, into the folder the maps are in (the game's maps
+folder).
+
+    python tools/pc_map_pictures.py <install>/maps --menus <game>
+
+writes the menus' pictures that have no redraw and are not the Xbox map's
+(port/assets/menus/NON_HANDDRAWN.md's placeholders: the multiplayer menu's,
+the gametype editor's and the profile settings' pictures) from Halo PC's,
+as PNG files in the game's menus folder (beside halo.exe), which the menus
+draw in place of the built-in placeholders (port/linux/src/menu_files.c).
 
 The menus' level pictures are ui\\shell\\bitmaps\\mp_map_grafix, one frame
 for each map in the order of the menus' map names (mp_map_list): the Xbox's
@@ -35,6 +43,15 @@ FRAMES = {
     "infinity": 16, "timberland": 17, "gephyrophobia": 18,
 }
 PICTURES_TAG = "ui\\shell\\bitmaps\\mp_map_grafix"
+
+# the menus' placeholders (NON_HANDDRAWN.md): Halo PC's bitmap tag below
+# ui\shell, and the frames of it that are placeholders; each is written as
+# menus/ce/shell/<tag>__<frame>.png
+MENU_PLACEHOLDERS = {
+    "main_menu\\multiplayer_type_select\\mp_options": [0, 1],
+    "main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options": [0, 3, 4, 6, 7],
+    "main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options": [1, 3, 4, 5, 6, 8],
+}
 
 HEAD, FOOT = 0x68656164, 0x666F6F74
 # the address the PC and CE versions load tag data at
@@ -132,12 +149,12 @@ class Resources:
             self.offsets.append((self.file.u32(entry + 8), self.file.u32(entry + 4)))
 
 
-def bitmap_tag(cache: Cache, resources):
+def bitmap_tag(cache: Cache, resources, tag: str = PICTURES_TAG):
     """(the tag's bytes, the address its pointers are relative to, the file
-    its pixels are in) of the level pictures"""
-    found = cache.find(b"bitm", PICTURES_TAG)
+    its pixels are in) of a bitmap tag, the level pictures by default"""
+    found = cache.find(b"bitm", tag)
     if not found:
-        raise MapError(f"{cache.file.name} has no {PICTURES_TAG}")
+        raise MapError(f"{cache.file.name} has no {tag}")
     pointer, indexed = found
     if not indexed:
         return cache.file, cache.offset(pointer), None
@@ -151,9 +168,10 @@ def bitmap_tag(cache: Cache, resources):
     return resources.file, start, start
 
 
-def frames(cache: Cache, resources):
-    """each frame's bitmap data entry's fields, in frame order"""
-    data, start, relative = bitmap_tag(cache, resources)
+def frames(cache: Cache, resources, tag: str = PICTURES_TAG, sequenced: bool = True):
+    """each frame's bitmap data entry's fields, in frame order (sequence 0's,
+    or, not sequenced, the tag's bitmaps in their order)"""
+    data, start, relative = bitmap_tag(cache, resources, tag)
 
     def to_offset(address: int) -> int:
         return relative + address if relative is not None else cache.offset(address)
@@ -171,7 +189,7 @@ def frames(cache: Cache, resources):
             "offset": data.u32(entry + 0x18), "size": data.u32(entry + 0x1C),
         })
     # (a frame is one of sequence 0's bitmaps, as bitmap_group_get_bitmap_from_sequence has it)
-    if sequence_count:
+    if sequence_count and sequenced:
         sequence = to_offset(sequence_address)
         first, count = data.u16(sequence + 0x20), data.u16(sequence + 0x22)
         entries = entries[first:first + count]
@@ -213,10 +231,24 @@ def dxt_colors(block: bytes, alpha_one_bit: bool):
     return [palette[bits >> (2 * i) & 3] for i in range(16)]
 
 
+def dxt_alphas(block: bytes, fmt: int) -> list:
+    """a DXT3 or DXT5 block's 16 alphas (its first 8 bytes)"""
+    if fmt == DXT3:
+        bits = int.from_bytes(block[:8], "little")
+        return [(bits >> (4 * i) & 15) * 17 for i in range(16)]
+    a0, a1 = block[0], block[1]
+    bits = int.from_bytes(block[2:8], "little")
+    if a0 > a1:
+        palette = [a0, a1] + [((7 - i) * a0 + i * a1) // 7 for i in range(1, 7)]
+    else:
+        palette = [a0, a1] + [((5 - i) * a0 + i * a1) // 5 for i in range(1, 5)] + [0, 255]
+    return [palette[bits >> (3 * i) & 7] for i in range(16)]
+
+
 def decode(raw: bytes, width: int, height: int, fmt: int, swizzled: bool) -> Image.Image:
     if fmt in (DXT1, DXT3, DXT5):
         block_size = 8 if fmt == DXT1 else 16
-        image = Image.new("RGB", (width, height))
+        image = Image.new("RGBA", (width, height))
         put = image.load()
         blocks_wide = max(1, (width + 3) // 4)
         for block_index in range(blocks_wide * max(1, (height + 3) // 4)):
@@ -224,11 +256,12 @@ def decode(raw: bytes, width: int, height: int, fmt: int, swizzled: bool) -> Ima
             if len(block) < block_size:
                 break
             colors = dxt_colors(block[block_size - 8:], fmt == DXT1)
+            alphas = dxt_alphas(block, fmt) if fmt != DXT1 else [255] * 16
             bx, by = block_index % blocks_wide * 4, block_index // blocks_wide * 4
             for i, color in enumerate(colors):
                 x, y = bx + i % 4, by + i // 4
                 if x < width and y < height:
-                    put[x, y] = color
+                    put[x, y] = color + (alphas[i],)
         return image
     sizes = {A8: 1, Y8: 1, AY8: 1, A8Y8: 2, R5G6B5: 2, A1R5G5B5: 2, A4R4G4B4: 2, X8R8G8B8: 4, A8R8G8B8: 4}
     if fmt not in sizes:
@@ -269,16 +302,50 @@ def pixel_bytes(entry: dict, tag_file: Data, cache: Cache, resources) -> bytes:
     return cache.file.take(entry["offset"], entry["size"])
 
 
+def write_menu_pictures(cache: Cache, resources, game: Path) -> None:
+    """the menus' placeholders, from Halo PC's pictures of the same name and
+    frame, as menus/ce/shell/<tag>__<frame>.png in the game's folder"""
+    written = 0
+    for tag, wanted in MENU_PLACEHOLDERS.items():
+        entries, tag_file = frames(cache, resources, "ui\\shell\\" + tag, sequenced=False)
+        folder = game / "menus" / "ce" / "shell" / Path(*tag.split("\\")[:-1])
+        folder.mkdir(parents=True, exist_ok=True)
+        for frame in wanted:
+            if frame >= len(entries):
+                print(f"  {tag}: no frame {frame}", file=sys.stderr)
+                continue
+            entry = entries[frame]
+            image = decode(pixel_bytes(entry, tag_file, cache, resources), entry["width"], entry["height"],
+                           entry["format"], bool(entry["flags"] & FLAG_SWIZZLED))
+            # (the size the menus give the frame: bitmaps.xml's, 512x256)
+            if image.size != (512, 256):
+                image = image.resize((512, 256), Image.LANCZOS)
+            path = folder / f"{tag.split(chr(92))[-1]}__{frame}.png"
+            image.save(path, "PNG")
+            written += 1
+            print(f"  {path}")
+    print(f"{written} menu pictures written; the game draws them from its menus folder from its next start")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("maps", type=Path, help="the Halo PC or Custom Edition install's maps folder")
-    parser.add_argument("out", type=Path, help="the folder to write the pictures to (the game's custom_maps)")
+    parser.add_argument("out", type=Path, nargs="?",
+                        help="the folder to write the map pictures to (the game's maps folder)")
     parser.add_argument("--all", action="store_true", help="write every frame, numbered, to check them")
+    parser.add_argument("--menus", type=Path, metavar="GAME",
+                        help="write the menus' pictures into GAME's menus folder (GAME: the folder of halo.exe)")
     args = parser.parse_args()
+    if not args.out and not args.menus:
+        parser.error("name the folder to write the map pictures to, or --menus")
 
     try:
         cache = Cache(args.maps / "ui.map")
         resources = Resources(args.maps / "bitmaps.map") if (args.maps / "bitmaps.map").exists() else None
+        if args.menus:
+            write_menu_pictures(cache, resources, args.menus)
+        if not args.out:
+            return 0
         entries, tag_file = frames(cache, resources)
         print(f"{VERSIONS[cache.version]} ui.map: {len(entries)} level pictures")
         wanted = {f"mp_map_grafix_{n}": n for n in range(len(entries))} if args.all else FRAMES
@@ -290,7 +357,7 @@ def main() -> int:
             entry = entries[frame]
             image = decode(pixel_bytes(entry, tag_file, cache, resources), entry["width"], entry["height"],
                            entry["format"], bool(entry["flags"] & FLAG_SWIZZLED))
-            image.save(args.out / f"{name}.bmp", "BMP")
+            image.convert("RGB").save(args.out / f"{name}.bmp", "BMP")
             print(f"  {name}.bmp ({entry['width']}x{entry['height']})")
     except (MapError, OSError, struct.error) as problem:
         print(f"pc_map_pictures: {problem}", file=sys.stderr)

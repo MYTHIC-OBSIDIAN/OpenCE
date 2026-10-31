@@ -11,6 +11,6 @@
 		<string text="SINGLEPLAYER"/>
 		<string text="MULTIPLAYER"/>
 		<string text="DIGSITE"/>
-		<string text="CUSTOM MULTIPLAYER"/>
+		<string text="CUSTOM EDITION"/>
 	</strings>
 </menus>

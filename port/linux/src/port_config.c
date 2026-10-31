@@ -504,7 +504,7 @@ static const struct config_setting config_settings[] =
 		"put them and Custom Edition's bitmaps.map, sounds.map and loc.map in\n"
 		"the custom_maps folder beside the maps folder; the map lists show Halo\n"
 		"PC's own six in MULTIPLAYER, the Digsite maps in DIGSITE and the rest\n"
-		"in CUSTOM MULTIPLAYER. Their tags are checked\n"
+		"in CUSTOM EDITION. Their tags are checked\n"
 		"as the game's own maps' are before they run; false refuses them\n"
 		"(docs/custom_edition_caches.md)." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,

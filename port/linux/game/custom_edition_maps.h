@@ -4,7 +4,7 @@ CUSTOM_EDITION_MAPS.H
 Custom Edition maps in the menus. With game.custom_edition on, the CE maps
 of the custom_maps folder are listed: the multiplayer maps after the Xbox
 levels in the multiplayer level list (ui_widget_event_handler_functions.c),
-and both kinds in the map lists' CUSTOM SINGLEPLAYER and CUSTOM MULTIPLAYER
+and both kinds in the map lists' CUSTOM SINGLEPLAYER and CUSTOM EDITION
 (port/linux/game/menu_functions.c). A CE map's level name is
 custom_maps\<name> (custom_edition_cache.h).
 
@@ -21,7 +21,7 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 
 The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 and
 Halo PC's own six (those found) as MULTIPLAYER, the Digsite maps as
-DIGSITE, and the other CE multiplayer maps as CUSTOM MULTIPLAYER.
+DIGSITE, and the other CE multiplayer maps as CUSTOM EDITION.
 */
 
 #ifndef __CUSTOM_EDITION_MAPS_H
@@ -40,6 +40,17 @@ enum
 	_custom_edition_maps_kind_stock,
 	_custom_edition_maps_kind_digsite,
 	_custom_edition_maps_kind_listed,
+};
+
+/* the folder a map is looked for in first, by its name
+(custom_edition_maps_home) */
+enum
+{
+	_custom_edition_maps_home_none,
+	/* one of Halo PC's six: the game's own maps folder */
+	_custom_edition_maps_home_stock,
+	/* a Digsite map: digsite_maps */
+	_custom_edition_maps_home_digsite,
 };
 
 /* ---------- structures */
@@ -86,7 +97,7 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). The multiplayer maps are CUSTOM MULTIPLAYER's: neither Halo PC's own
+them). The multiplayer maps are CUSTOM EDITION's: neither Halo PC's own
 nor the Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
@@ -124,6 +135,11 @@ _custom_edition_maps_kind_*, or NONE) and its entry there, or NONE */
 short custom_edition_maps_entry(
 	short display_index,
 	short *kind);
+
+/* the folder the map of a file name (without .map, a hash it ends in
+aside) is looked for in first: an _custom_edition_maps_home_* */
+short custom_edition_maps_home(
+	char const *name);
 
 /* the level name to load for a display index, or NULL */
 char const *custom_edition_maps_level_name(

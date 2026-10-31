@@ -31,6 +31,7 @@ where its offset falls in their combined offset space.
 #include "custom_edition_cache.h"
 #include "tag_schema.h"
 #include "map_share.h"
+#include "custom_edition_maps.h"
 
 #include <stdlib.h>
 #include <xtl.h>
@@ -182,13 +183,15 @@ boolean custom_edition_install_present(
 }
 
 /* the maps folders looked in, in order: the game's custom_maps, then the
-Custom Edition install's */
+Custom Edition install's, then the Digsite maps' (whose own maps are looked
+for there first: custom_edition_map_home_has) */
 static char const *maps_folder(
 	short index)
 {
-	return index == 0 ? CUSTOM_EDITION_MAP_DIRECTORY : CUSTOM_EDITION_INSTALL_MAP_DIRECTORY;
+	return index == 0 ? CUSTOM_EDITION_MAP_DIRECTORY : index == 1 ? CUSTOM_EDITION_INSTALL_MAP_DIRECTORY :
+		CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY;
 }
-#define NUMBER_OF_MAPS_FOLDERS 2
+#define NUMBER_OF_MAPS_FOLDERS 3
 
 /* whether <folder><name><extension>, made in path, exists */
 static boolean maps_folder_has(
@@ -258,6 +261,24 @@ static boolean maps_folder_hashed_name(
 	return count == 1;
 }
 
+/* A map's own folder, looked in before the others: the game's maps folder
+for Halo PC's six (Gearbox's: the only maps of that folder this looks at),
+digsite_maps for the Digsite maps (custom_edition_maps_home). */
+static boolean custom_edition_map_home_has(
+	char const *name,
+	char *path)
+{
+	switch (custom_edition_maps_home(name))
+	{
+	case _custom_edition_maps_home_stock:
+		return maps_folder_has(CUSTOM_EDITION_GEARBOX_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path);
+	case _custom_edition_maps_home_digsite:
+		return maps_folder_has(CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path);
+	default:
+		return FALSE;
+	}
+}
+
 /* the file the map `map_name` names (a level name or a file name),
 whatever version a network game is on (custom_edition_map_file_named) */
 static boolean custom_edition_map_named(
@@ -268,6 +289,10 @@ static boolean custom_edition_map_named(
 	char hashed[MAP_PATH_SIZE];
 	short folder;
 
+	if (custom_edition_map_home_has(name, path))
+	{
+		return TRUE;
+	}
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{
 		if (maps_folder_has(maps_folder(folder), name, MAP_FILE_EXTENSION, path))
@@ -354,15 +379,38 @@ static boolean custom_edition_map_path(
 	return custom_edition_map_named(map_name, path);
 }
 
-/* A cache's resource map of `type`, bitmaps.map and so on, in the first maps
-folder that has it; the game's when none does, for the message. */
+/* A cache's resource map of `type`, bitmaps.map and so on: the one beside
+the cache first (map_path's folder), then the first maps folder's that has
+it; the game's when none does, for the message. A Halo PC cache (version 7,
+one of Gearbox's six in the maps folder) has only Halo PC's own, beside it:
+Custom Edition's hold other data at other offsets. A Custom Edition cache
+never has the maps folder's, which are Halo PC's (the Custom Edition copy of
+one of the six put there instead). */
 static boolean custom_edition_resource_map_path(
 	enum resource_map_type type,
+	char const *map_path,
+	boolean halo_pc,
 	char *path)
 {
 	char const *name = resource_map_type_describe(type);
+	char folder_path[MAP_PATH_SIZE];
+	char const *end = strrchr(map_path, '\\');
 	short folder;
 
+	if (end && (size_t)(end + 1 - map_path) < sizeof(folder_path))
+	{
+		memcpy(folder_path, map_path, (size_t)(end + 1 - map_path));
+		folder_path[end + 1 - map_path] = 0;
+		if ((halo_pc || _stricmp(folder_path, CUSTOM_EDITION_GEARBOX_MAP_DIRECTORY)) &&
+			maps_folder_has(folder_path, name, MAP_FILE_EXTENSION, path))
+		{
+			return TRUE;
+		}
+		if (halo_pc)
+		{
+			return FALSE;
+		}
+	}
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{
 		if (maps_folder_has(maps_folder(folder), name, MAP_FILE_EXTENSION, path))
@@ -898,6 +946,11 @@ boolean custom_edition_map_find_version(
 	boolean found = FALSE;
 	short folder;
 
+	if (custom_edition_map_home_has(name, path) && map_share_map_version(path, &found_version) &&
+		found_version == version)
+	{
+		return TRUE;
+	}
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{
 		if (maps_folder_has(maps_folder(folder), name, MAP_FILE_EXTENSION, path) &&
@@ -1162,7 +1215,8 @@ struct cache_file_tag_header *custom_edition_cache_tags_load(
 	{
 		char resource_path[MAP_PATH_SIZE];
 
-		if (!custom_edition_resource_map_path((enum resource_map_type)type, resource_path) ||
+		if (!custom_edition_resource_map_path((enum resource_map_type)type, path,
+				identity.version == CACHE_FILE_VERSION_HALO_PC, resource_path) ||
 			!custom_edition_file_open(&globals->resource_files[type], resource_path))
 		{
 			error(_error_silent, "custom edition: no resource map '%s'", resource_path);
