@@ -502,8 +502,9 @@ static const struct config_setting config_settings[] =
 	{ "game.custom_edition", _config_boolean, "true", "HALO_CUSTOM_EDITION", _environment_value, _platform_all,
 		"Load and run Halo Custom Edition maps (not those that need OpenSauce):\n"
 		"put them and Custom Edition's bitmaps.map, sounds.map and loc.map in\n"
-		"the custom_maps folder beside the maps folder; the map lists show them\n"
-		"as CUSTOM SINGLEPLAYER and CUSTOM MULTIPLAYER. Their tags are checked\n"
+		"the custom_maps folder beside the maps folder; the map lists show Halo\n"
+		"PC's own six in MULTIPLAYER, the Digsite maps in DIGSITE and the rest\n"
+		"in CUSTOM MULTIPLAYER. Their tags are checked\n"
 		"as the game's own maps' are before they run; false refuses them\n"
 		"(docs/custom_edition_caches.md)." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,
@@ -2800,8 +2801,58 @@ int config_default(const char *name, char *text, size_t size)
 	return 1;
 }
 
+/* ---------- LAN only
+
+This build plays on the local network alone: the settings that reach the
+internet (invite links, the master servers' listings, the server browser's
+internet games, UPnP, Discord, STUN, the self-updater) read as off whatever
+config.toml or the environment say, so no code path that asks them goes
+online. System link, the LAN browser and map sharing between LAN players are
+untouched. */
+
+static const char *const lan_only_off_booleans[] =
+{
+	"network.online", "network.join_from_clipboard", "network.allow_upnp", "network.public_lobby",
+	"network.host_public", "network.coop_public", "update.auto", "server.public", "server.master_publish",
+	"server.master_publish_address",
+};
+
+/* the string settings held to a value: name, value */
+static const char *const lan_only_strings[][2] =
+{
+	{ "discord.application_id", "" },
+	{ "network.stun_servers", "" },
+	{ "server.auto_update", "off" },
+};
+
+static int lan_only_boolean_off(const char *name)
+{
+	size_t index;
+
+	for (index = 0; index < sizeof(lan_only_off_booleans) / sizeof(lan_only_off_booleans[0]); index++)
+	{
+		if (!strcmp(name, lan_only_off_booleans[index]))
+			return 1;
+	}
+	return 0;
+}
+
+static const char *lan_only_string(const char *name)
+{
+	size_t index;
+
+	for (index = 0; index < sizeof(lan_only_strings) / sizeof(lan_only_strings[0]); index++)
+	{
+		if (!strcmp(name, lan_only_strings[index][0]))
+			return lan_only_strings[index][1];
+	}
+	return NULL;
+}
+
 int config_boolean(const char *name)
 {
+	if (lan_only_boolean_off(name))
+		return 0;
 	return config_value(name, _config_boolean)->boolean;
 }
 
@@ -2837,7 +2888,12 @@ double config_real(const char *name)
 
 const char *config_string(const char *name)
 {
-	const char *string = config_value(name, _config_string)->string;
+	const char *locked = lan_only_string(name);
+	const char *string;
+
+	if (locked)
+		return locked;
+	string = config_value(name, _config_string)->string;
 
 	return string ? string : "";
 }

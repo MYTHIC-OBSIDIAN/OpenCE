@@ -1,5 +1,15 @@
 # OpenCE - Halo: Combat Evolved for Linux, Windows, Android and the web
 
+> **This is a LAN-only fork.** Internet play is removed: no invite links,
+> server browser, master servers, Discord, UPnP, STUN or self-updater. The
+> settings that would reach the internet are held off in
+> `port/linux/src/port_config.c` (`lan_only_off_booleans`) whatever
+> `config.toml` says, and the menus offer LAN's Join and Create Game, co-op
+> and Edit Gametypes alone. The map lists show Halo PC's six Gearbox maps in
+> MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
+> [Custom Edition Maps](#custom-edition-maps)); the gametype list has
+> STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD).
+
 <p align="center">
   <img src="port/assets/icon/opence-icon.png" alt="OpenCE" width="128">
 </p>
@@ -96,15 +106,21 @@ The Arch-based distribution release is available on the [AUR](https://aur.archli
 
 Halo Custom Edition maps are placed in `custom_maps` folder, not in the `maps` folder itself. It requires `bitmaps.map`, `sounds.map`, and `loc.map` in the `custom_maps` folder, which you must copy over from your existing installed copy of Halo Custom Edition. The maps folder is only for Xbox maps that's extracted from your disc image, not Halo Custom Edition. 
 
-Halo PC Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia) **are not included by default**. They would need to be copied over from your existing Halo Custom Edition install's `maps` folder into `custom_maps` folder too.
+Halo PC Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia) **are not included by default**. They would need to be copied over from your existing Halo Custom Edition install's `maps` folder into `custom_maps` folder too. Once there, they are listed in **MULTIPLAYER** after the 13 Xbox maps, with their names and the PC menus' descriptions. Their pictures come from your own install:
 
-Once that's setup, the maps will appear on CUSTOM SINGLEPLAYER and CUSTOM MULTIPLAYER in the map list in Campaign's New Game, and on the Map screen of Create Game (Internet or LAN). A CUSTOM SINGLEPLAYER map plays as a campaign level, alone or as
-online co-op.
+```sh
+python3 tools/pc_map_pictures.py "<Halo CE or Halo PC install>/maps" <game>/custom_maps
+```
+
+writes `icefields.bmp`, `deathisland.bmp` and so on beside them (any `<name>.bmp` or `<name>.txt` you put there yourself wins).
+
+The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration Moonbase, Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in `custom_maps`. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
+
+All other Custom Edition multiplayer maps are in **CUSTOM MULTIPLAYER**, in the map list in Campaign's New Game and on the Map screen of Create Game.
 
 Maps that require OpenSauce are not compatible.
 
-Both the server browser and the LAN browser support automatic map downloads - when you join a game it will download the custom maps from other players, with any of `bitmaps.map`, `sounds.map` and `loc.map` you are missing. This works on a LAN and on the
-Internet, when the host has map sharing enabled (on by default).
+The LAN browser supports automatic map downloads - when you join a game it will download the custom maps from other players, with any of `bitmaps.map`, `sounds.map` and `loc.map` you are missing, when the host has map sharing enabled (on by default).
 Refer to [docs/custom_edition_caches.md](docs/custom_edition_caches.md).
 
 ## Mods

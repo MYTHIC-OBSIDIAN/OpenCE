@@ -221,7 +221,6 @@
 	</strings>
 	<strings name="main_menu/gametype_select/var_gametype_banks" map="ui\shell\main_menu\gametype_select\var_gametype_banks">
 		<string text="STANDARD" map="0"/>
-		<string text="OPENCE"/>
 		<string text="CUSTOM" map="2"/>
 	</strings>
 	<strings name="main_menu/main_menu_options" map="ui\shell\main_menu\main_menu_options">
@@ -358,10 +357,7 @@
 		<string text="UNKNOWN LEVEL\n\n\n" map="19"/>
 	</strings>
 	<strings name="main_menu/multiplayer_type_select/multiplayer_option_descriptions" map="ui\shell\main_menu\multiplayer_type_select\multiplayer_option_descriptions">
-		<string text="Browse the games on the\nInternet." map="0"/>
 		<string text="Join a multiplayer game on\nyour LAN." map="1"/>
-		<string text="Join a game by its invite link,\nor one a Discord invite\nreached."/>
-		<string text="Host a game on the Internet:\nplayers join by its invite\nlink or Discord."/>
 		<string text="Host a game on your LAN\nonly." map="4"/>
 		<string text="Play the campaign with a\nfriend in split screen:\nplayer 2 on a gamepad."/>
 		<string text="Set all the attributes for your \nmultiplayer gametypes and\nkeep them for future use." map="5"/>

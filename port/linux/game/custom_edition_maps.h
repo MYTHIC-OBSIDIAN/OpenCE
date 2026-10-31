@@ -17,6 +17,11 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 	0x3000 + n     stock campaign level n (co-op)
 	0x4000 + n     CE multiplayer map
 	0x6000 + n     CE campaign map (played alone or as co-op)
+	0x6800 + n     Digsite map n (the DIGSITE list's), installed or not
+
+The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 and
+Halo PC's own six (those found) as MULTIPLAYER, the Digsite maps as
+DIGSITE, and the other CE multiplayer maps as CUSTOM MULTIPLAYER.
 */
 
 #ifndef __CUSTOM_EDITION_MAPS_H
@@ -28,6 +33,14 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 (the menus', the Map screen's) has room for: as many as their display
 indices fit before the campaigns' (custom_edition_maps.c) */
 #define CUSTOM_EDITION_MAPS_MAXIMUM 8192
+
+/* the map lists' parts a CE map can be in (custom_edition_maps_entry) */
+enum
+{
+	_custom_edition_maps_kind_stock,
+	_custom_edition_maps_kind_digsite,
+	_custom_edition_maps_kind_listed,
+};
 
 /* ---------- structures */
 
@@ -73,12 +86,44 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). Scans for maps the first time. */
+them). The multiplayer maps are CUSTOM MULTIPLAYER's: neither Halo PC's own
+nor the Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
 short custom_edition_maps_display_index_of(
 	boolean campaign,
 	short index);
+
+/* Halo PC's own multiplayer maps found (Gearbox's six, in Halo PC's menu
+order), which MULTIPLAYER lists after the Xbox's: how many, and each one's
+display index (NONE past them) */
+short custom_edition_maps_stock_count(
+	void);
+short custom_edition_maps_stock_display_index(
+	short index);
+
+/* the Digsite maps (DIGSITE's, all of them, found or not): how many, and
+each one's display index (NONE past them) */
+short custom_edition_maps_digsite_count(
+	void);
+short custom_edition_maps_digsite_display_index(
+	short index);
+
+/* whether the display index's map is here to be played (a Digsite map may
+be listed without) */
+boolean custom_edition_maps_installed(
+	short display_index);
+
+/* the index in the latest level list (ui_widget_port_multiplayer_maps) of
+a CE multiplayer map's display index, or NONE (a campaign, or none) */
+short custom_edition_maps_level_index(
+	short display_index);
+
+/* the list part a CE map's display index is in (*kind, an
+_custom_edition_maps_kind_*, or NONE) and its entry there, or NONE */
+short custom_edition_maps_entry(
+	short display_index,
+	short *kind);
 
 /* the level name to load for a display index, or NULL */
 char const *custom_edition_maps_level_name(

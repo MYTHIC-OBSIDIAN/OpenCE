@@ -579,7 +579,10 @@ def widget_xml(tag: str, widget: dict, tags: Tags, functions: list, inputs: list
         child_tag = child["widget tag"]
         if child_tag in LEFT_OUT:
             continue
+        if our_name(child_tag) in patch.get("remove", ()):
+            continue
         x, y = CHILD_OFFSETS.get((tag, child_tag), (child["horizontal offset"], child["vertical offset"]))
+        x, y = patch.get("move", {}).get(our_name(child_tag), (x, y))
         name = patch.get("swap", {}).get(our_name(child_tag), our_name(child_tag))
         lines += [f"{inner}{line}" for line in patch.get("insert_before", {}).get(our_name(child_tag), [])]
         pairs = [("widget", name), ("x", x or None), ("y", y or None),

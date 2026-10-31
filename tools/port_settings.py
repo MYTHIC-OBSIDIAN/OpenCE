@@ -201,20 +201,8 @@ SCREENS = {
         "screen": "network_settings_screen",
         "header": ("header_profile_network_settings", f"{PE}/network_setup/header_profile_network_settings"),
         "spacing": 30,
-        # (the router, the clipboard and the updates, which the web build
-        # has not: the other rows from the top there)
-        "platform_places": True,
         "rows": [
-            ("INTERNET PLAY:", "network.online", ON_OFF,
-             "Host and join games over the internet by invite\nlinks; off keeps to the local network.",
-             "desktop android web"),
-            ("UPNP PORT FORWARDING:", "network.allow_upnp", ON_OFF,
-             "Let internet play ask the router to forward its\nport, for networks that stop connections.",
-             "desktop android"),
-            ("JOIN FROM CLIPBOARD:", "network.join_from_clipboard", ON_OFF,
-             "Join the game of an invite link copied before\nswitching to the game.", "desktop android"),
-            ("CHECK FOR UPDATES:", "update.auto", ON_OFF,
-             "Look for a new version when the game starts.", "desktop android"),
+            # (LAN only: no internet play, UPnP, invite links or updates to set)
             ("PLAYER NAMES:", "display.player_names",
              [("ALL", "all"), ("ALLIES", "allies"), ("ENEMIES", "enemies"), ("NONE", "none")],
              "In multiplayer, whose names are drawn above their\nheads.", None),
@@ -390,10 +378,8 @@ _network["categories"] = [
      "Players' names above their heads, the\nscoreboard, the text chat and the match clock."),
     ("STREAMER MODE:", "network_setup/streamer_mode",
      "Hide offensive words in names and text from\nother players, maps and mods, as stars."),
-    ("SERVER BROWSER:", "network_setup/server_browser",
-     "What the Server Browser lists and its order: the\nsame settings as its Filters screen."),
-    ("DISCORD ACCOUNT:", "network_setup/discord_account",
-     "Link a Discord account, which lets you join\nservers that block VPNs while you use one."),
+    # (LAN only: no SERVER BROWSER or DISCORD ACCOUNT pages, which are the
+    # internet's; their screens are still written, and nothing opens them)
 ]
 SCREENS["network_setup/map_sharing"] = {
     "screen": "map_sharing_settings_screen", "header": _network["header"], "spacing": 30,
@@ -1005,17 +991,16 @@ def LOADOUT_HELPS(slot: str) -> list:
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
                                   "SERVER BROWSER", "CO-OP CAMPAIGN"],
+    # (LAN only: the list's items are LAN's Join and Create, Co-op and Edit
+    # Gametypes, ui_widget_port_list_index counting them in that order)
     f"{MT}/multiplayer_option_descriptions": [
-        "Browse the games on the\\nInternet.",
         "Join a multiplayer game on\\nyour LAN.",
-        "Join a game by its invite link,\\nor one a Discord invite\\nreached.",
-        "Host a game on the Internet:\\nplayers join by its invite\\nlink or Discord.",
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
     # (and the port's OPENCE: OpenCE's gametypes, port/linux/game/game_modes.c)
-    "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "OPENCE", "CUSTOM"],
+    "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],
     # (the PC's weapon sets, then the Xbox's NO GRENADES: menu_functions.c's
     # gametype_options maps them to the engine's)
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": ["INFINITE GRENADES:", "WEAPON SET:", "VEHICLE SET:", "STARTING EQUIPMENT:",
@@ -1062,8 +1047,8 @@ STRING_OVERRIDES.update({
 OVERRIDE_ORIGINALS = {
     f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
-    f"{MT}/multiplayer_option_descriptions": [0, 1, None, None, 4, None, 5],
-    "main_menu/gametype_select/var_gametype_banks": [0, None, 2],
+    f"{MT}/multiplayer_option_descriptions": [1, 4, None, 5],
+    "main_menu/gametype_select/var_gametype_banks": [0, 2],
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
     # (the first's note that infinite grenades work only with 4 players or
     # fewer is left out: not so here)
@@ -1072,8 +1057,8 @@ OVERRIDE_ORIGINALS = {
     "main_menu/settings_select/multiplayer_setup/item_options_edit/var_weapon_set": list(range(13)) + [None],
 }
 
-# the map lists' first row: SINGLEPLAYER, MULTIPLAYER, CUSTOM SINGLEPLAYER or
-# CUSTOM MULTIPLAYER maps (_map_kind)
+# the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
+# MULTIPLAYER maps (_map_kind)
 MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
 
 # changes to the PC version's widgets (by our names): attributes set, all
@@ -1119,10 +1104,18 @@ WIDGET_PATCHES = {
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
     ]},
-    # (Co-op, after Create Game's: _coop)
-    f"{MT}/multiplayer_type_select_list": {"insert_before": {
-        f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
-    }},
+    # (Co-op, after Create Game's: _coop. LAN only: Join and Create have
+    # their LAN items alone, no Internet, Direct Link or Server Browser)
+    f"{MT}/multiplayer_type_select_list": {
+        "insert_before": {
+            f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="276"/>'],
+        },
+        "remove": [f"{MT}/multiplayer_type_join_internet_item", f"{MT}/multiplayer_type_join_direct_item",
+                   f"{MT}/multiplayer_type_create_internet_item"],
+        "move": {f"{MT}/multiplayer_type_join_lan_item": (None, 111),
+                 f"{MT}/multiplayer_type_create_item": (-32, 177),
+                 f"{MT}/multiplayer_type_create_lan_item": (None, 210)},
+    },
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
     # from a co-op level's difficulties back to the level, else out of the
@@ -2236,15 +2229,16 @@ def _teamplay_options_extras() -> list:
 
 def _map_kind() -> list:
     """the map lists' first row (New Game's and the Map screen's), as the
-    gametype list's chooser: a spinner of SINGLEPLAYER or MULTIPLAYER maps,
-    or the Custom Edition maps of the custom_maps folder of either kind
-    (menu_functions.c's map lists), for either controller (split screen
-    co-op's New Game takes both)"""
+    gametype list's chooser: a spinner of SINGLEPLAYER or MULTIPLAYER maps
+    (the Xbox's and Halo PC's own), the Digsite maps, or the other Custom
+    Edition multiplayer maps of the custom_maps folder (menu_functions.c's
+    map lists), for either controller (split screen co-op's New Game takes
+    both)"""
     lines = _widget(MAP_KIND_CHOOSER, [("width", 256), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                                        ("bitmap", "bitmaps/option_bkds_sm"), ("font", "ui\\large_ui"),
                                        ("color", "#FF2896FF"), ("align", "center"), ("text_y", 3)],
                     [f'<child widget="{MAP_KIND_CHOOSER}_spinner" x="9" y="2"/>'])
-    # (wider than the gametype chooser's, for CUSTOM SINGLEPLAYER, its
+    # (wider than the gametype chooser's, for CUSTOM MULTIPLAYER, its
     # arrows at the row's ends)
     lines += _widget(f"{MAP_KIND_CHOOSER}_spinner",
                      [("type", "spinner"), ("width", 238), ("height", 22), ("flags", "left_right_tabs_items"),
@@ -2254,7 +2248,7 @@ def _map_kind() -> list:
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 238 19 244")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "CUSTOM SINGLEPLAYER", "CUSTOM MULTIPLAYER"])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM MULTIPLAYER"])
     return lines
 
 
