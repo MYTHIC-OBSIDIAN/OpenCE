@@ -1238,12 +1238,6 @@ MALFORMED_CACHES = {
                                 "a structure BSP header is not valid"),
     "bsp pointer": (lambda cache, path: patched(path, cache.where["bsp"], "<I", BASE), "load",
                     "a structure BSP header is not valid"),
-    "bitmap resource index": (instance_case(3, 0x14, "<I", 7), "load",
-                              "a tag's entry is missing from its resource map"),
-    "bitmap resource name": (instance_case(3, 0x14, "<I", 0), "load",
-                             "a tag's entry is missing from its resource map"),
-    "string resource index": (instance_case(5, 0x14, "<I", 0xFFFFFFFF), "load",
-                              "a tag's entry is missing from its resource map"),
     "in-map pixels beyond file": (tag_data_case("in_map_bitmap", 0x1C, "<I", 0x7FFFFFFF), "load",
                                   "bitmap pixels or sound samples lie outside their file"),
     "in-map bitmaps block outside": (tag_data_case("in_map_bitmap", -0x6C + 0x64, "<I", 0x10), "load",
@@ -1266,6 +1260,26 @@ def test_malformed_caches_are_rejected_with_the_specific_reason(report_tool, tmp
         assert report["identify"] == "ok"
         assert report["load"] == message
         assert report["milestone.load"] == "no"
+
+
+# (a resource tag whose index is past the resource map's entries, or names
+# an entry of another name: the entry of its name is found instead, as for a
+# map built against another resource map than the player's)
+RESOURCE_INDICES_ELSEWHERE = {
+    "bitmap resource index": instance_case(3, 0x14, "<I", 7),
+    "bitmap resource name": instance_case(3, 0x14, "<I", 0),
+    "string resource index": instance_case(5, 0x14, "<I", 0xFFFFFFFF),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RESOURCE_INDICES_ELSEWHERE))
+def test_resource_tags_are_found_by_name_at_another_index(report_tool, tmp_path, case):
+    cache = Map()
+    path = cache.write(tmp_path)
+    RESOURCE_INDICES_ELSEWHERE[case](cache, path)
+    _, report = report_one(report_tool, path)
+    assert report["identify"] == "ok"
+    assert report["load"] == "ok"
 
 
 def test_a_file_length_of_zero_is_the_whole_file(report_tool, tmp_path):

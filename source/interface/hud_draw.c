@@ -221,6 +221,8 @@ enum bitmap_group_type
 enum
 {
 	_bitmap_group_half_hud_scale_bit = 4,
+	/* port: and its force HUD high resolution scale flag */
+	_bitmap_group_force_hud_high_resolution_scale_bit = 7,
 };
 
 enum
@@ -2096,6 +2098,13 @@ void hud_draw_numbers(
 			digit_scale = TEST_FLAG(numbers->placement.multiplayer_scaling_flags, _hud_use_high_resolution_scale_bit) ||
 				TEST_FLAG(bitmap_group->flags, _bitmap_group_half_hud_scale_bit) ?
 				scale*0.5f : scale;
+			/* port: and at a quarter for digits whose bitmap has both of
+			Halo PC's flags, four times the Xbox's (Halo PC's own maps') */
+			if (TEST_FLAG(bitmap_group->flags, _bitmap_group_half_hud_scale_bit) &&
+				TEST_FLAG(bitmap_group->flags, _bitmap_group_force_hud_high_resolution_scale_bit))
+			{
+				digit_scale = scale*0.25f;
+			}
 
 			if (TEST_FLAG(numbers->number_flags, _hud_number_show_trailing_m_bit))
 			{

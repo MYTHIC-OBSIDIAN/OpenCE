@@ -1531,11 +1531,17 @@ static enum cache_file_status resource_tag_load(
 	{
 		return load_fail(state, _cache_file_status_missing_resource_map, item_index);
 	}
-	if (item_index >= (uint32_t)map->item_count || strcmp(map->items[item_index].name, name))
+	/* (a map built against another resource map than the player's, as an
+	editing tool may build one (Invader), names an entry the player's keeps
+	at another index: it is found by its name) */
+	if (item_index < (uint32_t)map->item_count && !strcmp(map->items[item_index].name, name))
+	{
+		item = &map->items[item_index];
+	}
+	else if ((item = resource_map_find(map, name)) == NULL)
 	{
 		return load_fail(state, _cache_file_status_missing_resource_item, item_index);
 	}
-	item = &map->items[item_index];
 	status = tag_cache_allocate(state, item->size, &offset);
 	if (status != _cache_file_status_ok)
 	{
@@ -3218,8 +3224,14 @@ static void hud_placement_convert(
 
 	if (flag_is_set(flags, HUD_SCALING_USE_HIGH_RESOLUTION_SCALE_BIT) || bitmap_halves_scale)
 	{
-		write_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET) * 0.5f);
-		write_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET) * 0.5f);
+		/* (a bitmap with both of Halo PC's flags is four times the Xbox's:
+		Halo PC's own maps' HUD sheets, 512x128 for 128x32, 512x512 reticles
+		for 128x128; hud_bitmap_halves_scale says 2, and it is halved
+		again) */
+		float scale = bitmap_halves_scale == 2 ? 0.25f : 0.5f;
+
+		write_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET) * scale);
+		write_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET) * scale);
 		write_u16(
 			placement + HUD_PLACEMENT_SCALING_FLAGS_OFFSET,
 			(uint16_t)(flags & ~(1U << HUD_SCALING_USE_HIGH_RESOLUTION_SCALE_BIT)));
@@ -3230,7 +3242,9 @@ static void hud_placement_convert(
 }
 
 /* whether the bitmap a HUD element draws (its tag reference) has Halo PC's
-half HUD scale or force HUD high resolution scale flag */
+half HUD scale or force HUD high resolution scale flag: 1 for either, 2 for
+both (each halves it: Halo PC's own maps' HUD bitmaps have both, and are
+four times the Xbox's), 0 for neither */
 static int hud_bitmap_halves_scale(
 	struct load_state const *state,
 	uint8_t const *reference)
@@ -3254,7 +3268,7 @@ static int hud_bitmap_halves_scale(
 	}
 	flags = read_u16(state->tag_cache + offset + BITMAP_GROUP_FLAGS_OFFSET);
 
-	return flag_is_set(flags, BITMAP_HALF_HUD_SCALE_BIT) || flag_is_set(flags, BITMAP_FORCE_HUD_HIGH_RESOLUTION_SCALE_BIT);
+	return flag_is_set(flags, BITMAP_HALF_HUD_SCALE_BIT) + flag_is_set(flags, BITMAP_FORCE_HUD_HIGH_RESOLUTION_SCALE_BIT);
 }
 
 /* the placement at `placement_offset` in each element of the block at
@@ -3429,12 +3443,12 @@ static void hud_conversion_placement(
 	int items)
 {
 	struct hud_conversion const *conversion = context;
-	int bitmap_halves_scale = bitmap && hud_bitmap_halves_scale(conversion->state, bitmap);
+	int bitmap_halves_scale = bitmap ? hud_bitmap_halves_scale(conversion->state, bitmap) : 0;
 
 	if (items)
 	{
 		if (bitmap_halves_scale)
-			hud_placement_convert(placement, 1, conversion->report);
+			hud_placement_convert(placement, bitmap_halves_scale, conversion->report);
 	}
 	else
 	{
