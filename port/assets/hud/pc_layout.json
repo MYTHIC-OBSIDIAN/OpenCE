@@ -1,0 +1,9 @@
+{
+ "note": "Halo PC's retail sheets (its own maps', which this build plays as its Gearbox maps) laid out from the Xbox redraws by tools/pc_hud_assets.py; drawn on Halo PC's maps only.",
+ "assets": [
+  {"name": "pc_hud_unit_meters", "from": "hud_unit_meters__0", "tag": "ui\\hud\\bitmaps\\combined\\hud_unit_meters", "bitmap": 0, "width": 1024, "height": 512, "scale": 2, "crc": 0, "halo_pc_only": true, "coverage": true, "point_threshold": true},
+  {"name": "pc_hud_ammo_meters", "from": "hud_ammo_meters__0", "tag": "ui\\hud\\bitmaps\\combined\\hud_ammo_meters", "bitmap": 0, "width": 1024, "height": 512, "scale": 2, "crc": 0, "halo_pc_only": true, "coverage": true, "point_threshold": true},
+  {"name": "pc_hud_counter_numbers", "from": "hud_counter_numbers__0", "tag": "ui\\hud\\bitmaps\\combined\\hud_counter_numbers", "bitmap": 0, "width": 512, "height": 256, "scale": 2, "crc": 0, "halo_pc_only": true},
+  {"name": "pc_hud_damage_arrows", "from": "hud_damage_arrows__0", "tag": "ui\\hud\\bitmaps\\combined\\hud_damage_arrows", "bitmap": 0, "width": 1024, "height": 512, "scale": 2, "crc": 0, "halo_pc_only": true}
+ ]
+}

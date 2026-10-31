@@ -124,6 +124,8 @@ python3 tools/pc_map_pictures.py "<Halo PC or Halo CE install>/maps" <game>/maps
 
 writes `icefields.bmp`, `deathisland.bmp` and so on beside the maps, and the menus' pictures into the game's `menus` folder (any `<name>.bmp` or `<name>.txt` you put beside a map yourself wins).
 
+With HIGH-RES HUD on (the default), Halo PC's own maps draw the Xbox's HUD throughout: the shield and health meters, the ammo meters, counter digits and damage arrows too, from the Xbox redraws laid out as Halo PC's sheets (`port/assets/hud/pc_layout.json`, made by `tools/pc_hud_assets.py`).
+
 The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration Moonbase, Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in a **`digsite_maps`** folder beside `maps`. They are Custom Edition maps, so they need Custom Edition's `bitmaps.map`, `sounds.map` and `loc.map` in `custom_maps` (or in `digsite_maps`): Halo PC's are not the same files. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
 
 All other Custom Edition multiplayer maps are in **CUSTOM EDITION**, in the map list in Campaign's New Game and on the Map screen of Create Game.

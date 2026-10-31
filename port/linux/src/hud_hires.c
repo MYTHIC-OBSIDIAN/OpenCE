@@ -92,7 +92,14 @@ int hud_hires_asset_custom_edition(long asset)
 
 int hud_hires_asset_ce_only(long asset)
 {
-	return asset >= 0 && asset < hud_hires_asset_count() && hud_hires_embedded[asset].ce_only;
+	return asset >= 0 && asset < hud_hires_asset_count() && hud_hires_embedded[asset].ce_only == 1;
+}
+
+/* whether the texture is laid out as Halo PC's own sheet of its name, for
+Halo PC's maps only (port/assets/hud/pc_layout.json) */
+int hud_hires_asset_halo_pc_only(long asset)
+{
+	return asset >= 0 && asset < hud_hires_asset_count() && hud_hires_embedded[asset].ce_only == 2;
 }
 
 long hud_hires_ce_stock_find(char const *tag, long bitmap)

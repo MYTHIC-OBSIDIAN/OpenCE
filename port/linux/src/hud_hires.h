@@ -47,6 +47,8 @@ struct hud_hires_embedded
 	/* drawn for a Custom Edition map's stock bitmap of its name too, whose
 	layout is its own (port/assets/hud/custom_edition.json) */
 	int custom_edition;
+	/* 1: for Custom Edition maps only; 2: for Halo PC's own maps only, laid
+	out as their sheets (port/assets/hud/pc_layout.json) */
 	int ce_only;
 	/* Stock CE first mip after hardware conversion; resource maps may be modified. */
 	unsigned int ce_width, ce_height, ce_size, ce_crc;

@@ -35,6 +35,8 @@ ROOT = Path(__file__).resolve().parent.parent
 HUD_ASSETS = Path("port/assets/hud")
 LAYOUT = HUD_ASSETS / "layout.json"
 CE_LAYOUT = HUD_ASSETS / "ce_layout.json"
+# (Halo PC's own sheets, laid out from the Xbox redraws: tools/pc_hud_assets.py)
+PC_LAYOUT = HUD_ASSETS / "pc_layout.json"
 CE_STOCK = HUD_ASSETS / "ce_stock.json"
 # the HUD textures whose bitmaps Halo Custom Edition lays out alike
 CUSTOM_EDITION_HUD = HUD_ASSETS / "custom_edition.json"
@@ -74,7 +76,7 @@ def textures() -> List[tuple]:
     result = []
     for folder, listing, title in ((HUD_ASSETS, LAYOUT, False), (TITLE_ASSETS, TITLE_LIST, True),
                                    (BUTTON_ASSETS, BUTTON_LIST, True), (HUD_ASSETS, CE_LAYOUT, False),
-                                   (CONTROLLER_ASSETS, CONTROLLER_LIST, True)):
+                                   (HUD_ASSETS, PC_LAYOUT, False), (CONTROLLER_ASSETS, CONTROLLER_LIST, True)):
         if (ROOT / listing).is_file():
             result += [(folder, asset, title) for asset in json.loads((ROOT / listing).read_text())["assets"]]
     return result
@@ -94,7 +96,7 @@ def smaa_files() -> List[tuple]:
 
 def hud_asset_inputs() -> List[Path]:
     """The files the generated source is made from."""
-    inputs = [listing for listing in (LAYOUT, CE_LAYOUT, CE_STOCK, CUSTOM_EDITION_HUD, TITLE_LIST, BUTTON_LIST, CONTROLLER_LIST, FONT_LIST, MENU_LIST)
+    inputs = [listing for listing in (LAYOUT, CE_LAYOUT, PC_LAYOUT, CE_STOCK, CUSTOM_EDITION_HUD, TITLE_LIST, BUTTON_LIST, CONTROLLER_LIST, FONT_LIST, MENU_LIST)
               if (ROOT / listing).is_file()]
     return [*inputs, *(folder / f"{asset['name']}.png" for folder, asset, _ in textures()),
             *(FONT_ASSETS / name for name in font_files()), *(MENU_ASSETS / name for name in menu_files()),
@@ -201,11 +203,11 @@ def main() -> None:
             sys.exit(f"{name}: sprite sequences must be 0 to 31 (hud_hires.h: sprites)")
         sprites = sum(1 << sequence for sequence in sequences)
         ce = custom_edition.get((asset["tag"], asset["bitmap"]), {})
-        if ce.get("replacement", asset["name"]) != asset["name"]:
+        if ce.get("replacement", asset["name"]) != asset["name"] or asset.get("halo_pc_only"):
             ce = {}
         table.append(f'\t{{ "{tag}", {asset["bitmap"]}, {width}, {height}, 0x{asset["crc"]:08x}u, {coverage}, '
                      f'{point_threshold}, {int(title)}, 0x{sprites:x}u, '
-                     f'{int(bool(ce))}, {int(asset.get("ce_only", False))}, {ce.get("width", 0)}, {ce.get("height", 0)}, '
+                     f'{int(bool(ce))}, {2 if asset.get("halo_pc_only") else int(asset.get("ce_only", False))}, {ce.get("width", 0)}, {ce.get("height", 0)}, '
                      f'{ce.get("size", 0)}, 0x{ce.get("crc", 0):08x}u, asset{index}, {len(data)} }},')
     lines.append("const struct hud_hires_embedded hud_hires_embedded[] =")
     lines.append("{")
