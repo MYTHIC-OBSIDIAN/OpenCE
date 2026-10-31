@@ -1966,28 +1966,23 @@ void platform_open_url(const char *url)
 #endif
 }
 
-/* The main menu's CREDITS (port/linux/game/menu_functions.c): the video
-named credits (credits.mp4, .mkv, .webm, .avi, .wmv, .mov or .bik) in the
+/* The main menu's CREDITS (port/linux/game/menu_functions.c), when the
+player has put a video of their own beside the game: the video named
+credits (credits.mp4, .mkv, .webm, .avi, .wmv or .mov) in the
 game's own folder (halo.exe's, else the data root), opened in the system's
 video player, the game's window minimized under it. Returns 0 when there is
 none, or it cannot be opened. */
 int platform_play_credits_video(void)
 {
-	static const char *const extensions[] = { "mp4", "mkv", "webm", "avi", "wmv", "mov", "m4v", "bik" };
-	const char *folders[4];
-	char base_bink[1100], root_bink[1100];
+	static const char *const extensions[] = { "mp4", "mkv", "webm", "avi", "wmv", "mov", "m4v" };
+	const char *folders[2];
 	char path[1200];
 	char url[3700];
 	size_t folder_index, index;
 
 	folders[0] = SDL_GetBasePath();
 	folders[1] = platform_data_root();
-	/* (else the disc's, extracted beside the maps: bink/credits.bik) */
-	snprintf(base_bink, sizeof(base_bink), "%s/bink", folders[0] ? folders[0] : ".");
-	snprintf(root_bink, sizeof(root_bink), "%s/bink", folders[1]);
-	folders[2] = folders[0] ? base_bink : NULL;
-	folders[3] = root_bink;
-	for (folder_index = 0; folder_index < 4; folder_index++)
+	for (folder_index = 0; folder_index < 2; folder_index++)
 	{
 		const char *folder = folders[folder_index];
 		size_t length;

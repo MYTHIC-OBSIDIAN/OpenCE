@@ -71,6 +71,7 @@ their handlers open opens.
 
 #include "cseries.h"
 #include "input/input.h"
+#include "interface/attract_mode.h"
 #include "interface/event_manager.h"
 #include "interface/player_ui.h"
 #include "interface/ui_widget.h"
@@ -90,6 +91,7 @@ their handlers open opens.
 #include "network_voice.h"
 #include "network_map_vote.h"
 #include "text/draw_string.h"
+#include "bink/bink_playback.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
 /* (the server browser's master servers, and Server Setup's publisher key) */
@@ -2829,16 +2831,26 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 }
 
 /* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
-build): the video named credits beside the game, in the system's video
-player (sdl_platform.c's platform_play_credits_video); with none, the
-menu's error sound */
+build): a video named credits that the player put beside the game, in the
+system's video player (sdl_platform.c's platform_play_credits_video), else
+the Xbox's credits movie (bink\credits.bik, extracted with the maps), in the
+game as after The Maw (attract_mode.c's game_end_credits_start, which
+stops the menu's music: started again when the movie cannot be played) */
 int platform_play_credits_video(void);
 
 static boolean credits_play(void)
 {
-	if (!platform_play_credits_video())
+	if (platform_play_credits_video())
+	{
+		ui_play_audio_feedback_sound(SOUND_FORWARD);
+		return TRUE;
+	}
+	game_end_credits_start();
+	if (!bink_playback_active())
+	{
+		ui_start_main_menu_music();
 		return campaign_fail();
-	ui_play_audio_feedback_sound(SOUND_FORWARD);
+	}
 	return TRUE;
 }
 
