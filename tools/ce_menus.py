@@ -422,6 +422,11 @@ class Art:
             self.draw(relative, index, len(data), width, height, MENUS / png, self.shown.get(tag, []))
             self.pngs.append(png)
             lines.append(f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>")
+        # (frames shown in another order: one for each item of a list whose
+        # description shows its item's frame, port_settings.FRAME_ORDER)
+        if our_name(tag) in port_settings.FRAME_ORDER:
+            frames = lines[1:]
+            lines = lines[:1] + [frames[index] for index in port_settings.FRAME_ORDER[our_name(tag)]]
         # (the port's frames after them: the Xbox map's, scaled)
         for source, index, width, height, x, y in port_settings.BITMAP_FRAMES.get(our_name(tag), []):
             self.added_frames.append((our_name(tag), source, index))

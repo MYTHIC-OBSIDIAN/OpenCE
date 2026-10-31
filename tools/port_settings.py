@@ -991,13 +991,13 @@ def LOADOUT_HELPS(slot: str) -> list:
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
                                   "SERVER BROWSER", "CO-OP CAMPAIGN"],
-    # (LAN only: SERVER BROWSER and DIRECT LINK browse the LAN as LAN does,
-    # INTERNET hosts on it)
+    # (one for each item: JOIN GAME's INTERNET and LAN, CREATE GAME's
+    # INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES; the INTERNET items
+    # play on the LAN in this build: multiplayer_mode_set)
     f"{MT}/multiplayer_option_descriptions": [
-        "Browse the games on your\\nLAN.",
+        "Browse the games on the\\nInternet.",
         "Join a multiplayer game on\\nyour LAN.",
-        "Join a game on your LAN.",
-        "Host a game on your LAN.",
+        "Host a game on the\\nInternet.",
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
@@ -1050,7 +1050,7 @@ STRING_OVERRIDES.update({
 OVERRIDE_ORIGINALS = {
     f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
-    f"{MT}/multiplayer_option_descriptions": [None, 1, None, None, 4, None, 5],
+    f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
     # (the first's note that infinite grenades work only with 4 players or
@@ -1058,6 +1058,15 @@ OVERRIDE_ORIGINALS = {
     "main_menu/settings_select/multiplayer_setup/item_options_edit/cap_item_options":
         [None] + list(range(1, 15)) + [None, 15, 16] + [None] * 24,
     "main_menu/settings_select/multiplayer_setup/item_options_edit/var_weapon_set": list(range(13)) + [None],
+}
+
+# the Multiplayer menu's pictures, one for each of its items in order (its
+# description shows the item's frame: JOIN GAME's INTERNET and LAN, CREATE
+# GAME's INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES): the PC
+# version's frame 0 (two Spartans) for INTERNET, 1 (two Spartans on a
+# screen) for LAN, 2 (one Spartan) for the others
+FRAME_ORDER = {
+    f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
 }
 
 # the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
@@ -1072,6 +1081,8 @@ WIDGET_PATCHES = {
     f"{MT}/connected/connected_map_select_wrapper": {"set": {
         "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
     }},
+    # (no build number on the main menu in this LAN build)
+    "main_menu/main_menu": {"remove": ["main_menu/build_number"]},
     # (the main menu's CREDITS, before Quit, in MODS' place in this LAN
     # build: _credits_item; the mods are all played, with no screen to
     # turn them off)
@@ -1094,7 +1105,9 @@ WIDGET_PATCHES = {
     f"{PE}/profile_edit_extended_desc_pic": {"inputs": ["port gamepad layout preview"]},
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)
-    f"{MT}/multiplayer_type_join_internet_item": {"set": {"string_index": 6}, "handlers": [
+    # (JOIN GAME's INTERNET: the server browser's item, named INTERNET as
+    # the PC version has it)
+    f"{MT}/multiplayer_type_join_internet_item": {"set": {"string_index": 2}, "handlers": [
         f'<on event="a" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
@@ -1109,12 +1122,17 @@ WIDGET_PATCHES = {
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
     ]},
-    # (Co-op, after Create Game's: _coop. LAN only: every item is kept, and
-    # INTERNET, DIRECT LINK and SERVER BROWSER do as LAN does: menu_functions.c's
-    # multiplayer_mode_set)
-    f"{MT}/multiplayer_type_select_list": {"insert_before": {
-        f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
-    }},
+    # (Co-op, after Create Game's: _coop. LAN only: no DIRECT LINK, and each
+    # INTERNET does as LAN does: menu_functions.c's multiplayer_mode_set)
+    f"{MT}/multiplayer_type_select_list": {
+        "insert_before": {
+            f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="276"/>'],
+        },
+        "remove": [f"{MT}/multiplayer_type_join_direct_item"],
+        "move": {f"{MT}/multiplayer_type_create_item": (-32, 177),
+                 f"{MT}/multiplayer_type_create_internet_item": (None, 210),
+                 f"{MT}/multiplayer_type_create_lan_item": (None, 243)},
+    },
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
     # from a co-op level's difficulties back to the level, else out of the

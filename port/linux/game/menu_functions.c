@@ -71,7 +71,6 @@ their handlers open opens.
 
 #include "cseries.h"
 #include "input/input.h"
-#include "interface/attract_mode.h"
 #include "interface/event_manager.h"
 #include "interface/player_ui.h"
 #include "interface/ui_widget.h"
@@ -91,7 +90,6 @@ their handlers open opens.
 #include "network_voice.h"
 #include "network_map_vote.h"
 #include "text/draw_string.h"
-#include "bink/bink_playback.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
 /* (the server browser's master servers, and Server Setup's publisher key) */
@@ -2831,28 +2829,16 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 }
 
 /* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
-build): the Xbox version's credits movie, as the game plays it after The
-Maw (attract_mode.c's game_end_credits_start), when the movie is there to
-play (bink\credits.bik beside the maps; a movie that cannot be played leaves
-the menu as it was, its music playing) */
+build): the video named credits beside the game, in the system's video
+player (sdl_platform.c's platform_play_credits_video); with none, the
+menu's error sound */
+int platform_play_credits_video(void);
+
 static boolean credits_play(void)
 {
-	HANDLE movie = CreateFileA(attract_mode_get_localized_movie_path(_bink_outro_movie), GENERIC_READ, 0, NULL,
-		OPEN_EXISTING, 0, NULL);
-
-	if (movie == INVALID_HANDLE_VALUE)
-	{
-		platform_log("menus: no credits movie (%s)", attract_mode_get_localized_movie_path(_bink_outro_movie));
+	if (!platform_play_credits_video())
 		return campaign_fail();
-	}
-	CloseHandle(movie);
-	game_end_credits_start();
-	if (!bink_playback_active())
-	{
-		platform_log("menus: the credits movie could not be played");
-		ui_start_main_menu_music();
-		return campaign_fail();
-	}
+	ui_play_audio_feedback_sound(SOUND_FORWARD);
 	return TRUE;
 }
 

@@ -33,7 +33,7 @@
 		<on event="start" run="mp type set mode" open="main_menu/multiplayer_type_select/join_game/join_game_screen"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
-	<widget name="main_menu/multiplayer_type_select/multiplayer_type_join_internet_item" type="text" left="51" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/multiplayer_type_select/multiplayer_options" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" string_index="6">
+	<widget name="main_menu/multiplayer_type_select/multiplayer_type_join_internet_item" type="text" left="51" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/multiplayer_type_select/multiplayer_options" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5" string_index="2">
 		<on event="a" run="mp type set mode" open="main_menu/multiplayer_type_select/join_game/join_game_screen"/>
 		<on event="start" run="mp type set mode" open="main_menu/multiplayer_type_select/join_game/join_game_screen"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
@@ -55,11 +55,10 @@
 		<child widget="main_menu/multiplayer_type_select/multiplayer_type_join_item" x="-32" y="78"/>
 		<child widget="main_menu/multiplayer_type_select/multiplayer_type_join_internet_item" y="111"/>
 		<child widget="main_menu/multiplayer_type_select/multiplayer_type_join_lan_item" y="144"/>
-		<child widget="main_menu/multiplayer_type_select/multiplayer_type_join_direct_item" y="177"/>
-		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_item" x="-32" y="210"/>
-		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_internet_item" y="243"/>
-		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_lan_item" y="276"/>
-		<child widget="main_menu/multiplayer_type_select/multiplayer_type_coop_item" y="309"/>
+		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_item" x="-32" y="177"/>
+		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_internet_item" y="210"/>
+		<child widget="main_menu/multiplayer_type_select/multiplayer_type_create_lan_item" y="243"/>
+		<child widget="main_menu/multiplayer_type_select/multiplayer_type_coop_item" y="276"/>
 		<child widget="main_menu/multiplayer_type_select/multiplayer_type_gametypes_item" y="358"/>
 		<child widget="main_menu/multiplayer_type_select/multiplayer_type_button_bar" y="414"/>
 	</widget>

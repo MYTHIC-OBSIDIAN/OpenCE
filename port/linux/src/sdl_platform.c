@@ -1915,6 +1915,73 @@ void platform_open_url(const char *url)
 #endif
 }
 
+/* The main menu's CREDITS (port/linux/game/menu_functions.c): the video
+named credits (credits.mp4, .mkv, .webm, .avi, .wmv, .mov or .bik) in the
+game's own folder (halo.exe's, else the data root), opened in the system's
+video player, the game's window minimized under it. Returns 0 when there is
+none, or it cannot be opened. */
+int platform_play_credits_video(void)
+{
+	static const char *const extensions[] = { "mp4", "mkv", "webm", "avi", "wmv", "mov", "m4v", "bik" };
+	const char *folders[2];
+	char path[1200];
+	char url[3700];
+	size_t folder_index, index;
+
+	folders[0] = SDL_GetBasePath();
+	folders[1] = platform_data_root();
+	for (folder_index = 0; folder_index < 2; folder_index++)
+	{
+		const char *folder = folders[folder_index];
+		size_t length;
+
+		if (!folder || !folder[0])
+			continue;
+		length = strlen(folder);
+		for (index = 0; index < sizeof(extensions) / sizeof(extensions[0]); index++)
+		{
+			const char *character;
+			size_t used;
+			FILE *file;
+
+			snprintf(path, sizeof(path), "%s%scredits.%s", folder,
+				folder[length - 1] == '/' || folder[length - 1] == '\\' ? "" : "/", extensions[index]);
+			file = fopen(path, "rb");
+			if (!file)
+				continue;
+			fclose(file);
+			/* (a file URL: the path's characters other than letters, digits
+			and -._~/: percent-encoded, a Windows drive's path after a third
+			slash, its backslashes as slashes) */
+			used = (size_t)snprintf(url, sizeof(url), "file://%s", path[0] == '/' ? "" : "/");
+			for (character = path; *character && used + 4 < sizeof(url); character++)
+			{
+				unsigned char value = (unsigned char)*character;
+
+				if (value == '\\')
+					url[used++] = '/';
+				else if ((value >= 'a' && value <= 'z') || (value >= 'A' && value <= 'Z') ||
+					(value >= '0' && value <= '9') || strchr("-._~/:", value))
+					url[used++] = (char)value;
+				else
+					used += (size_t)snprintf(url + used, sizeof(url) - used, "%%%02X", value);
+			}
+			url[used] = 0;
+			platform_log("credits: opening %s", path);
+			if (!SDL_OpenURL(url))
+			{
+				platform_log("credits: could not open %s (%s)", path, SDL_GetError());
+				return 0;
+			}
+			if (platform_window)
+				SDL_MinimizeWindow(platform_window);
+			return 1;
+		}
+	}
+	platform_log("credits: no credits video (credits.mp4 and so on) beside the game");
+	return 0;
+}
+
 /* puts a new invite on the clipboard, and joins one found there when the
 game comes to the front */
 static void platform_invite_clipboard(BOOL look)
