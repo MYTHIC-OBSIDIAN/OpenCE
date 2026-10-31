@@ -18,4 +18,10 @@ thread */
 int xiso_extract_maps(const char *image_path, const char *destination, xiso_progress_proc progress, void *context,
 	char *error, int error_size);
 
+/* copies the image's videos (its bink folder's .bik files: the opening
+titles, intro.bik, the credits, credits.bik, the attract movies) to
+<destination>/bink, keeping those already copied whole; returns nonzero on
+success, or 0 with the reason in error */
+int xiso_extract_videos(const char *image_path, const char *destination, char *error, int error_size);
+
 #endif

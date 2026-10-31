@@ -138,6 +138,8 @@ When it holds Halo PC's instead, or no ui.map, the player is told where each
 kind goes and the game quits, rather than failing to load Halo PC's ui.map
 as the Xbox's (game_load). Halo PC maps in maps/ itself, which play only from
 custom_maps, are warned of */
+static void data_check_videos(void);
+
 static void data_check_maps(void)
 {
 	struct platform_maps_folder maps;
@@ -295,7 +297,10 @@ BOOL platform_sdl_initialize(void)
 	platform_data_root();
 #ifndef HALO_WEB
 	if (!halo_server_mode())
+	{
 		data_check_maps();
+		data_check_videos();
+	}
 #endif
 	/* (a new version looked for meanwhile, updater_poll asking about it; a
 	dedicated server's is server.auto_update's) */
@@ -351,6 +356,16 @@ static void *data_extraction_thread(void *context)
 	struct data_extraction *extraction = context;
 	BOOL succeeded = xiso_extract_maps(extraction->image, extraction->destination, data_extraction_progress,
 		extraction, extraction->error, sizeof(extraction->error)) != 0;
+
+	/* (and its videos, the opening titles and the credits: a disc without
+	them still has its maps played) */
+	if (succeeded)
+	{
+		char error[512];
+
+		if (!xiso_extract_videos(extraction->image, extraction->destination, error, sizeof(error)))
+			platform_log("videos: not extracted: %s", error);
+	}
 
 	pthread_mutex_lock(&extraction->lock);
 	extraction->succeeded = succeeded;
@@ -488,6 +503,42 @@ static BOOL data_find_image(const char *directory, char *path, int size)
 		SDL_free(files);
 	}
 	return FALSE;
+}
+
+/* The videos (the opening titles and the credits, the disc's bink folder)
+of a game whose maps were extracted before this build extracted videos:
+from a disc image beside the game, at start-up, once (a bink folder with
+intro.bik and credits.bik is left as it is). */
+static void data_check_videos(void)
+{
+	const char *root = platform_data_root();
+	const char *base = SDL_GetBasePath();
+	char path[1100];
+	char image[1024];
+	char error[512];
+	FILE *file;
+	int present = 1;
+	int index;
+	static const char *const videos[] = { "intro.bik", "credits.bik" };
+
+	if (config_boolean("debug.hidden_window") || config_real("debug.exit_after") > 0.0)
+		return;
+	for (index = 0; index < 2; index++)
+	{
+		snprintf(path, sizeof(path), "%s/bink/%s", root, videos[index]);
+		file = fopen(path, "rb");
+		if (file)
+			fclose(file);
+		else
+			present = 0;
+	}
+	if (present)
+		return;
+	if (!data_find_image(root, image, sizeof(image)) && !(base && data_find_image(base, image, sizeof(image))))
+		return;
+	platform_log("videos: extracting the bink folder from %s to %s/bink", image, root);
+	if (!xiso_extract_videos(image, root, error, sizeof(error)))
+		platform_log("videos: not extracted: %s", error);
 }
 
 /* the disc image the player picks; FALSE if they pick none, with *failed
@@ -1923,14 +1974,20 @@ none, or it cannot be opened. */
 int platform_play_credits_video(void)
 {
 	static const char *const extensions[] = { "mp4", "mkv", "webm", "avi", "wmv", "mov", "m4v", "bik" };
-	const char *folders[2];
+	const char *folders[4];
+	char base_bink[1100], root_bink[1100];
 	char path[1200];
 	char url[3700];
 	size_t folder_index, index;
 
 	folders[0] = SDL_GetBasePath();
 	folders[1] = platform_data_root();
-	for (folder_index = 0; folder_index < 2; folder_index++)
+	/* (else the disc's, extracted beside the maps: bink/credits.bik) */
+	snprintf(base_bink, sizeof(base_bink), "%s/bink", folders[0] ? folders[0] : ".");
+	snprintf(root_bink, sizeof(root_bink), "%s/bink", folders[1]);
+	folders[2] = folders[0] ? base_bink : NULL;
+	folders[3] = root_bink;
+	for (folder_index = 0; folder_index < 4; folder_index++)
 	{
 		const char *folder = folders[folder_index];
 		size_t length;

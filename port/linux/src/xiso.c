@@ -758,4 +758,147 @@ done:
 	return succeeded;
 }
 
+static int xiso_name_ends_with(const char *name, const char *ending)
+{
+	size_t length = strlen(name), ending_length = strlen(ending);
+
+	return length > ending_length && xiso_name_is(name + length - ending_length, (int)ending_length, ending);
+}
+
+int xiso_extract_videos(const char *image_path, const char *destination, char *error, int error_size)
+{
+	struct xiso_image image;
+	struct xiso_entry *entries = NULL;
+	unsigned char *table = NULL;
+	unsigned char *buffer = NULL;
+	char *folder_path = NULL, *file_path = NULL;
+	unsigned long root_sector, root_size, bink_sector = 0, bink_size = 0;
+	unsigned long long done = 0, total = 0;
+	posix_ulong size_low, size_high;
+	int count, index, out_of_memory, copied = 0, succeeded = 0;
+
+	memset(&image, 0, sizeof(image));
+	image.descriptor = open(image_path, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
+	if (image.descriptor < 0)
+	{
+		xiso_error(error, error_size, "Could not open %s.", image_path);
+		return 0;
+	}
+	image.size = ~0ULL;
+	if (posix_seek(image.descriptor, 0, 0, SEEK_END, &size_low, &size_high) == 0)
+		image.size = (unsigned long long)size_high << 32 | size_low;
+	entries = malloc(sizeof(*entries) * XISO_MAXIMUM_ENTRIES);
+	buffer = malloc(XISO_COPY_CHUNK);
+	folder_path = malloc(XISO_MAXIMUM_PATH);
+	file_path = malloc(XISO_MAXIMUM_PATH);
+	if (!entries || !buffer || !folder_path || !file_path)
+	{
+		xiso_error(error, error_size, "Out of memory.");
+		goto done;
+	}
+	if (!xiso_find_volume(&image, &root_sector, &root_size))
+	{
+		xiso_error(error, error_size, "This is not an Xbox disc image.");
+		goto done;
+	}
+	/* the root's bink folder */
+	table = xiso_read_table(&image, root_sector, root_size, &out_of_memory);
+	if (!table)
+	{
+		xiso_error(error, error_size, out_of_memory ? "Out of memory." : "The disc image's file system is damaged.");
+		goto done;
+	}
+	count = xiso_walk_table(table, root_size, 1, entries);
+	free(table);
+	table = NULL;
+	for (index = 0; index < count; index++)
+	{
+		if (xiso_name_is(entries[index].name, (int)strlen(entries[index].name), "bink"))
+		{
+			bink_sector = entries[index].sector;
+			bink_size = entries[index].size;
+			break;
+		}
+	}
+	if (count < 0 || index == count)
+	{
+		xiso_error(error, error_size, "The disc image has no bink folder (no videos).");
+		goto done;
+	}
+	/* its videos */
+	table = xiso_read_table(&image, bink_sector, bink_size, &out_of_memory);
+	if (!table)
+	{
+		xiso_error(error, error_size, out_of_memory ? "Out of memory." : "The disc image's bink folder is damaged.");
+		goto done;
+	}
+	count = xiso_walk_table(table, bink_size, 0, entries);
+	free(table);
+	table = NULL;
+	if (count < 0)
+	{
+		xiso_error(error, error_size, "Out of memory.");
+		goto done;
+	}
+	for (index = 0; index < count; index++)
+	{
+		if (xiso_name_ends_with(entries[index].name, ".bik") && entries[index].size &&
+			xiso_sector_offset(&image, entries[index].sector) + entries[index].size <= image.size)
+		{
+			total += entries[index].size;
+		}
+	}
+	if (snprintf(folder_path, XISO_MAXIMUM_PATH, "%s/bink", destination) >= XISO_MAXIMUM_PATH)
+	{
+		xiso_error(error, error_size, "Could not create %s/bink.", destination);
+		goto done;
+	}
+	posix_make_directory(folder_path);
+	for (index = 0; index < count; index++)
+	{
+		int existing;
+
+		if (!xiso_name_ends_with(entries[index].name, ".bik") || !entries[index].size ||
+			xiso_sector_offset(&image, entries[index].sector) + entries[index].size > image.size)
+		{
+			continue;
+		}
+		if (snprintf(file_path, XISO_MAXIMUM_PATH, "%s/%s", folder_path, entries[index].name) >= XISO_MAXIMUM_PATH)
+			continue;
+		/* (one copied whole before is kept) */
+		existing = open(file_path, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
+		if (existing >= 0)
+		{
+			int whole = posix_seek(existing, 0, 0, SEEK_END, &size_low, &size_high) == 0 && !size_high &&
+				size_low == entries[index].size;
+
+			close(existing);
+			if (whole)
+			{
+				done += entries[index].size;
+				continue;
+			}
+		}
+		platform_log("extracting bink/%s (%lu bytes)", entries[index].name, entries[index].size);
+		if (!xiso_copy_file(&image, &entries[index], file_path, buffer, &done, total, NULL, NULL, error,
+			error_size))
+		{
+			remove(file_path);
+			goto done;
+		}
+		copied++;
+	}
+	platform_log("videos: %d copied to %s", copied, folder_path);
+	succeeded = 1;
+
+done:
+	free(table);
+	free(file_path);
+	free(folder_path);
+	free(buffer);
+	free(entries);
+	close(image.descriptor);
+	return succeeded;
+}
+
 #endif

@@ -1095,10 +1095,9 @@ WIDGET_PATCHES = {
     # (its rows 27 apart, not 30, so that ten fit above the help, which keeps
     # the three lines some have: ce_menus.py's CHILD_OFFSETS)
     f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
-    # (the gametype editor's OPENCE OPTIONS, after its own rows: _opence_options)
-    f"{PLAYLIST_EDIT}/edit_playlist_select_list": {
-        "insert_before": {f"{PLAYLIST_EDIT}/playlist_edit_button_bar": [f'<child widget="{OPENCE_ITEM}"/>']},
-        "inputs": ["port playlist edit desc"]},
+    # (no OPENCE OPTIONS in the gametype editor in this LAN build: its rows
+    # are the PC version's; _opence_options' screen is still written, and
+    # nothing opens it)
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
