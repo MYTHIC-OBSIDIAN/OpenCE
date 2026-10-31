@@ -991,10 +991,13 @@ def LOADOUT_HELPS(slot: str) -> list:
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
                                   "SERVER BROWSER", "CO-OP CAMPAIGN"],
-    # (LAN only: the list's items are LAN's Join and Create, Co-op and Edit
-    # Gametypes, ui_widget_port_list_index counting them in that order)
+    # (LAN only: SERVER BROWSER and DIRECT LINK browse the LAN as LAN does,
+    # INTERNET hosts on it)
     f"{MT}/multiplayer_option_descriptions": [
+        "Browse the games on your\\nLAN.",
         "Join a multiplayer game on\\nyour LAN.",
+        "Join a game on your LAN.",
+        "Host a game on your LAN.",
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
@@ -1047,7 +1050,7 @@ STRING_OVERRIDES.update({
 OVERRIDE_ORIGINALS = {
     f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
-    f"{MT}/multiplayer_option_descriptions": [1, 4, None, 5],
+    f"{MT}/multiplayer_option_descriptions": [None, 1, None, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
     # (the first's note that infinite grenades work only with 4 players or
@@ -1069,9 +1072,11 @@ WIDGET_PATCHES = {
     f"{MT}/connected/connected_map_select_wrapper": {"set": {
         "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
     }},
-    # (the main menu's MODS, before Quit: _mods)
+    # (the main menu's CREDITS, before Quit, in MODS' place in this LAN
+    # build: _credits_item; the mods are all played, with no screen to
+    # turn them off)
     "main_menu/main_menu_select_list": {"insert_before": {"main_menu/main_menu_item_quit_game": [
-        f'<child widget="main_menu/main_menu_item_mods" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>']}},
+        f'<child widget="main_menu/main_menu_item_credits" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>']}},
     f"{PLAYER_EDIT}/player_options_menu": {"insert_before": {
         f"{PLAYER_EDIT}/player_button_bar": [
             f'<child widget="{PLAYER_EDIT}/op_aim_assist" x="54" y="289"/>',
@@ -1104,18 +1109,12 @@ WIDGET_PATCHES = {
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
     ]},
-    # (Co-op, after Create Game's: _coop. LAN only: Join and Create have
-    # their LAN items alone, no Internet, Direct Link or Server Browser)
-    f"{MT}/multiplayer_type_select_list": {
-        "insert_before": {
-            f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="276"/>'],
-        },
-        "remove": [f"{MT}/multiplayer_type_join_internet_item", f"{MT}/multiplayer_type_join_direct_item",
-                   f"{MT}/multiplayer_type_create_internet_item"],
-        "move": {f"{MT}/multiplayer_type_join_lan_item": (None, 111),
-                 f"{MT}/multiplayer_type_create_item": (-32, 177),
-                 f"{MT}/multiplayer_type_create_lan_item": (None, 210)},
-    },
+    # (Co-op, after Create Game's: _coop. LAN only: every item is kept, and
+    # INTERNET, DIRECT LINK and SERVER BROWSER do as LAN does: menu_functions.c's
+    # multiplayer_mode_set)
+    f"{MT}/multiplayer_type_select_list": {"insert_before": {
+        f"{MT}/multiplayer_type_gametypes_item": [f'<child widget="{MT}/multiplayer_type_coop_item" y="309"/>'],
+    }},
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
     # from a co-op level's difficulties back to the level, else out of the
@@ -2268,7 +2267,7 @@ def multiplayer_files() -> dict:
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
         OPENCE_EDIT.replace("/", ".") + ".port.xml": head + _opence_options() + ["</menus>", ""],
         MODS.replace("/", ".") + ".xml": [head[0], "<!-- The port's Mods screen, in the PC version's style "
-                                          "(tools/port_settings.py) -->", head[2]] + _mods() + ["</menus>", ""],
+                                          "(tools/port_settings.py) -->", head[2]] + _mods() + _credits_item() + ["</menus>", ""],
     }
 
 
@@ -2288,7 +2287,9 @@ MENU_ITEM_TOP, MENU_ITEM_SCALE, MENU_ITEM_MIDDLE = 6.57, 0.9037, 130.0
 # these pairs, so each is the sum of a space after the first letter and one
 # before the second, fitted (least squares) to the 53 pairs the redraws' items
 # and headers have (D-I, of the main menu's Credits, gives D's right side)
-MENU_ITEM_SPACES = {"MO": 3.17, "OD": 2.8, "DS": 2.3}
+MENU_ITEM_SPACES = {"MO": 3.17, "OD": 2.8, "DS": 2.3,
+                    # (CREDITS: about the redraws' spacing of these letters)
+                    "CR": 2.8, "RE": 2.8, "ED": 2.8, "DI": 2.8, "IT": 2.6, "TS": 2.5}
 # the mods' status icons (port/assets/icons/lucide): a mod out of the order it
 # asks for, and one that cannot be played (another mod says it cannot be
 # played with it, or this build cannot play it): menu_functions.c's
@@ -2357,6 +2358,15 @@ def _text_button(name: str, text: str, handlers: list) -> list:
     pairs = [("type", "text"), ("width", 128), ("height", 24), ("bitmap", "bitmaps/text_button_background"),
              ("text", text), ("font", "ui\\small_ui"), ("color", "#FFFFFFFF"), ("align", "center"), ("text_y", 2)]
     return _widget(name, pairs, handlers + ['<on event="left_mouse" run="mouse emit accept event"/>'])
+
+
+def _credits_item() -> list:
+    """the main menu's CREDITS (in MODS' place): the Xbox version's credits
+    movie (menu_functions.c's credits_play)"""
+    return _widget("main_menu/main_menu_item_credits",
+                   [("type", "text"), ("width", 256), ("height", 33), ("bitmap", "main_menu/menu_credits")],
+                   ['<on event="a" run="port credits"/>', '<on event="start" run="port credits"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
 
 
 def _mods() -> list:

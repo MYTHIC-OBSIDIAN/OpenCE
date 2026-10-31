@@ -357,6 +357,11 @@ def main() -> int:
             entry = entries[frame]
             image = decode(pixel_bytes(entry, tag_file, cache, resources), entry["width"], entry["height"],
                            entry["format"], bool(entry["flags"] & FLAG_SWIZZLED))
+            # (Halo PC's frames are 256x128 with the picture in their top
+            # left 140x114, the menus' picture shape, which they draw at 1:1;
+            # the rest is black)
+            if not args.all:
+                image = image.crop((0, 0, min(140, image.width), min(114, image.height)))
             image.convert("RGB").save(args.out / f"{name}.bmp", "BMP")
             print(f"  {name}.bmp ({entry['width']}x{entry['height']})")
     except (MapError, OSError, struct.error) as problem:

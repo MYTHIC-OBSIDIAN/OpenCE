@@ -71,6 +71,7 @@ their handlers open opens.
 
 #include "cseries.h"
 #include "input/input.h"
+#include "interface/attract_mode.h"
 #include "interface/event_manager.h"
 #include "interface/player_ui.h"
 #include "interface/ui_widget.h"
@@ -90,6 +91,7 @@ their handlers open opens.
 #include "network_voice.h"
 #include "network_map_vote.h"
 #include "text/draw_string.h"
+#include "bink/bink_playback.h"
 /* (internet play's server browser: the platform layer's) */
 #include "../src/p2p.h"
 /* (the server browser's master servers, and Server Setup's publisher key) */
@@ -1001,6 +1003,29 @@ enum
 (ui_widget_port_multiplayer_maps) */
 #define XBOX_MULTIPLAYER_MAPS 13
 
+/* Whether a map chosen can be loaded here: the game's own maps always; a
+Custom Edition or Halo PC map when its file and the resource maps it needs
+are there (custom_edition_cache_present), else what is missing is said and
+the map is not started (loading it would leave a blank screen). */
+static boolean map_ready(char const *map_name)
+{
+	char message[512];
+	wchar_t text[512];
+	short index;
+
+	if (!map_name || !custom_edition_level_name(map_name) ||
+		custom_edition_cache_present(map_name, 0, message, sizeof(message)))
+	{
+		return TRUE;
+	}
+	for (index = 0; message[index] && index < NUMBEROF(text) - 1; index++)
+		text[index] = (wchar_t)(unsigned char)message[index];
+	text[index] = 0;
+	platform_log("menus: %s", message);
+	display_error_text_deferred(text, NONE);
+	return FALSE;
+}
+
 /* the rows after the chooser */
 #define MAP_KIND_ROWS 10
 
@@ -1352,6 +1377,8 @@ static boolean level_choose(struct widget_instance *list, short controller)
 
 		if (!map_name || !campaign_profile(controller, &profile))
 			return campaign_fail();
+		if (!map_ready(map_name))
+			return FALSE;
 		campaign_start(map_name, main_get_difficulty(), controller);
 		return FALSE;
 	}
@@ -1361,6 +1388,8 @@ static boolean level_choose(struct widget_instance *list, short controller)
 
 		if (!map_name)
 			return campaign_fail();
+		if (!map_ready(map_name))
+			return FALSE;
 		main_set_map_name(map_name);
 		main_defer_map_map_change();
 		return TRUE;
@@ -2801,6 +2830,32 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 	return line;
 }
 
+/* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
+build): the Xbox version's credits movie, as the game plays it after The
+Maw (attract_mode.c's game_end_credits_start), when the movie is there to
+play (bink\credits.bik beside the maps; a movie that cannot be played leaves
+the menu as it was, its music playing) */
+static boolean credits_play(void)
+{
+	HANDLE movie = CreateFileA(attract_mode_get_localized_movie_path(_bink_outro_movie), GENERIC_READ, 0, NULL,
+		OPEN_EXISTING, 0, NULL);
+
+	if (movie == INVALID_HANDLE_VALUE)
+	{
+		platform_log("menus: no credits movie (%s)", attract_mode_get_localized_movie_path(_bink_outro_movie));
+		return campaign_fail();
+	}
+	CloseHandle(movie);
+	game_end_credits_start();
+	if (!bink_playback_active())
+	{
+		platform_log("menus: the credits movie could not be played");
+		ui_start_main_menu_music();
+		return campaign_fail();
+	}
+	return TRUE;
+}
+
 /* "port mods init" (the list's created), and "port mods close" (its
 deleted: what OK has not kept is forgotten) */
 static boolean mods_screen_reset(void)
@@ -3318,11 +3373,9 @@ static void multiplayer_mode_set(struct widget_instance *widget)
 
 	/* (an instance's name is cut to 31 characters:
 	"multiplayer_type_create_interne") */
-	multiplayer.mode =
-		strstr(name, "create_inter") ? _multiplayer_mode_host_internet :
-		strstr(name, "create_lan") ? _multiplayer_mode_host_lan :
-		strstr(name, "join_lan") ? _multiplayer_mode_lan :
-		strstr(name, "join_direct") ? _multiplayer_mode_direct_link : _multiplayer_mode_server_browser;
+	/* (LAN only: Create Game's INTERNET hosts on the LAN, and Join Game's
+	SERVER BROWSER and DIRECT LINK browse the LAN, as their LAN does) */
+	multiplayer.mode = strstr(name, "create_") ? _multiplayer_mode_host_lan : _multiplayer_mode_lan;
 }
 
 /* player 1's profile for the controller's player in a network game */
@@ -3483,6 +3536,8 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		char const *map_name = map_list.kind == MAP_KIND_SINGLEPLAYER ? main_get_solo_level_name(map_list.level) :
 			custom_map_level_name(map_list.kind, map_list.level);
 
+		if (!map_ready(map_name))
+			return FALSE;
 		/* the co-op game set up, then Server Setup in the gametypes' place */
 		if (!ui_widget_port_cooperative_level_choose(map_name, chosen))
 			return campaign_fail();
@@ -3497,7 +3552,14 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 	/* (a multiplayer map: the Xbox's, then the Custom Edition ones, in the
 	multiplayer maps) */
 	if (map_kind_level_index(map_list.kind, chosen) != NONE)
-		return ui_widget_port_multiplayer_map_choose(map_kind_level_index(map_list.kind, chosen));
+	{
+		char const *const *names;
+		short level_index = map_kind_level_index(map_list.kind, chosen);
+
+		if (level_index < ui_widget_port_multiplayer_maps(&names, NULL) && !map_ready(names[level_index]))
+			return FALSE;
+		return ui_widget_port_multiplayer_map_choose(level_index);
+	}
 	/* (a campaign map: hosted as network co-op, which split screen is not) */
 	if (!map_list.hosting)
 		return campaign_fail();
@@ -7994,6 +8056,10 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port settings defaults"))
 		{
 			settings_each(screen_of(widget), setting_default_show);
+		}
+		else if (!strcmp(name, "port credits"))
+		{
+			return credits_play();
 		}
 		else if (!strcmp(name, "port mods init") || !strcmp(name, "port mods close"))
 		{

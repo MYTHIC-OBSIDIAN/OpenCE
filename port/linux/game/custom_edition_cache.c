@@ -1116,6 +1116,28 @@ boolean custom_edition_cache_present(
 		snprintf(message, message_size, "Your %.64s.map can't be played (debug.txt says why).", name);
 		return FALSE;
 	}
+	/* (a Halo PC cache keeps its bitmaps' and sounds' data in Halo PC's own
+	bitmaps.map and sounds.map, beside it: custom_edition_resource_map_path) */
+	if (identity.version == CACHE_FILE_VERSION_HALO_PC)
+	{
+		for (type = _resource_map_bitmaps; type <= _resource_map_sounds; type++)
+		{
+			char const *resource_name = resource_map_type_describe((enum resource_map_type)type);
+			char resource_path[MAP_PATH_SIZE];
+
+			if (!custom_edition_resource_map_path((enum resource_map_type)type, path, TRUE, resource_path) ||
+				!file_path_exists(resource_path))
+			{
+				error(_error_silent, "custom edition: the Halo PC map '%s' needs Halo PC's %s.map beside it",
+					path, resource_name);
+				snprintf(message, message_size,
+					"The map %.64s needs Halo PC's %s.map in the same folder (copy it from your Halo PC maps folder).",
+					name, resource_name);
+				return FALSE;
+			}
+		}
+		return TRUE;
+	}
 	for (type = _resource_map_bitmaps; type < NUMBER_OF_RESOURCE_MAP_TYPES; type++)
 	{
 		char const *resource_name = resource_map_type_describe((enum resource_map_type)type);

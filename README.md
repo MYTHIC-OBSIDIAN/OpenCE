@@ -4,8 +4,10 @@
 > server browser, master servers, Discord, UPnP, STUN or self-updater. The
 > settings that would reach the internet are held off in
 > `port/linux/src/port_config.c` (`lan_only_off_booleans`) whatever
-> `config.toml` says, and the menus offer LAN's Join and Create Game, co-op
-> and Edit Gametypes alone. The map lists show Halo PC's six Gearbox maps in
+> `config.toml` says; the Multiplayer menu keeps every item, but INTERNET,
+> DIRECT LINK and SERVER BROWSER do as LAN does. The main menu has CREDITS
+> (the Xbox version's credits movie) in MODS' place, and every mod in the
+> `mods` folder is played. The map lists show Halo PC's six Gearbox maps in
 > MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
 > STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD). Its

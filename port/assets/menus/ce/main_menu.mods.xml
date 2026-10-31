@@ -180,4 +180,9 @@
 		<on event="start" run="port mods save" back="true"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
+	<widget name="main_menu/main_menu_item_credits" type="text" width="256" height="33" bitmap="main_menu/menu_credits">
+		<on event="a" run="port credits"/>
+		<on event="start" run="port credits"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
 </menus>

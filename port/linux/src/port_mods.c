@@ -711,11 +711,10 @@ static void mods_order(const char *root)
 
 		mod->position = index;
 		mod->disabled = 0;
-		for (other = 0; other < disabled.count; other++)
-		{
-			if (names_equal(mod->folder, disabled.names[other]))
-				mod->disabled = 1;
-		}
+		/* (this LAN build has no Mods screen to turn a mod back on: every mod
+		of the folder is played, whatever load_order.toml's disabled says;
+		its order is kept) */
+		(void)other;
 	}
 	names_dispose(&kept);
 	names_dispose(&disabled);
