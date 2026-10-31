@@ -74,6 +74,7 @@ int hud_hires_ce_stock_matches(long index, unsigned long address, long width, lo
 boolean custom_edition_cache_stock_tag(long tag_index);
 boolean custom_edition_cache_tags_loaded(void);
 boolean custom_edition_cache_halo_pc(void);
+static boolean hud_hires_halo_pc_own(long asset);
 
 void hud_hires_map_loaded(const long *assets, long count);
 void hud_hires_map_unloaded(void);
@@ -245,7 +246,7 @@ void hud_hires_tags_loaded(
 		if (custom_edition_cache_tags_loaded() && !custom_edition_cache_halo_pc() &&
 			(!hud_hires_asset_custom_edition(asset) || !custom_edition_cache_stock_tag(group_index)))
 			continue;
-		if (custom_edition_cache_halo_pc() && hud_hires_asset_ce_only(asset))
+		if (custom_edition_cache_halo_pc() && (hud_hires_asset_ce_only(asset) || hud_hires_halo_pc_own(asset)))
 			continue;
 		if (!custom_edition_cache_tags_loaded() && hud_hires_asset_ce_only(asset))
 			continue;
@@ -417,6 +418,31 @@ long hud_hires_asset_stock_custom_edition(
 		}
 	}
 
+	return FALSE;
+}
+
+/* On Halo PC's own maps, the sheets drawn with the meters and digits that
+are laid out otherwise than the Xbox's (hud_unit_meters, hud_ammo_meters,
+hud_counter_numbers keep Halo PC's art): the health and shield and the
+ammo counter's backgrounds, outlines and icons keep Halo PC's art too, so
+that each of those elements is drawn in one art. */
+static boolean hud_hires_halo_pc_own(long asset)
+{
+	static char const *const own[] =
+	{
+		"ui\\hud\\bitmaps\\combined\\hud_unit_backgrounds",
+		"ui\\hud\\bitmaps\\combined\\hud_weapon_backgrounds",
+		"ui\\hud\\bitmaps\\combined\\hud_ammo_alphas",
+		"ui\\hud\\bitmaps\\combined\\hud_ammo_outlines",
+		"ui\\hud\\bitmaps\\combined\\hud_ammo_type_icons",
+	};
+	short index;
+
+	for (index = 0; index < NUMBEROF(own); index++)
+	{
+		if (!csstrcasecmp(hud_hires_asset_tag(asset), own[index]))
+			return TRUE;
+	}
 	return FALSE;
 }
 

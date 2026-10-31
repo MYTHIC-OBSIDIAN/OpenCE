@@ -409,6 +409,8 @@ boolean debug_bink = FALSE;
 struct bink_playback_globals bink_globals = { 0 };
 /* January .bss +0x160: entries used in bink_pointer_blocks */
 static long bink_pointer_block_count = 0;
+/* port: when the movie started (bink_playback_update__internal) */
+static unsigned long bink_start_milliseconds = 0;
 
 /* ---------- public code */
 
@@ -628,6 +630,7 @@ void bink_playback_start(
 			}
 
 			bink_decompress_video_frame();
+			bink_start_milliseconds= system_milliseconds(); /* port: (above) */
 
 			bink_saved_frame_rate_throttle= global_frame_rate_throttle;
 			bink_globals.total_skipped_frames= 0;
@@ -990,7 +993,11 @@ static void bink_playback_update__internal(
 			bink_globals.needs_decode= TRUE;
 		}
 
-		if (TEST_FLAG(bink_globals.flags, _bink_playback_button_click_stops_movie_bit))
+		/* port: not for the press that started the movie (a menu's A, its
+		first frame's), which stopped the credits and attract movies at once:
+		a press counts from half a second in */
+		if (TEST_FLAG(bink_globals.flags, _bink_playback_button_click_stops_movie_bit) &&
+			system_milliseconds() - bink_start_milliseconds >= 500)
 		{
 			boolean allow_skipping= TEST_FLAG(bink_globals.flags, _bink_playback_dont_allow_skipping_if_filesystem_check_thread_is_active_bit) ?
 				!filesystem_check_thread_is_active() : TRUE;

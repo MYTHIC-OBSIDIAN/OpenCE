@@ -2140,9 +2140,12 @@ boolean ui_widgets_active(
 boolean main_menu_screen_is_active(
 	void)
 {
+	/* port: or the PC version's main menu (port/assets/menus), whose root
+	is named main_menu: the attract movies start from it too */
 	if (we_are_at_the_main_menu == TRUE &&
 		widget_globals.active_widgets[0] &&
-		strcmp(widget_globals.active_widgets[0]->name, "the_main_menu") == 0)
+		(strcmp(widget_globals.active_widgets[0]->name, "the_main_menu") == 0 ||
+			strcmp(widget_globals.active_widgets[0]->name, "main_menu") == 0))
 	{
 		return TRUE;
 	}
