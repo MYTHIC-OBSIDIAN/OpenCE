@@ -40,6 +40,7 @@ zlib (port/third_party/zlib).
 /* the game's (port/linux/game/hud_hires_tags.c) */
 long hud_hires_asset_at(unsigned long address, long width, long height);
 long hud_hires_asset_stock_custom_edition(unsigned long address, long width, long height, long asset);
+int hud_hires_map_halo_pc(void);
 
 /* Include every embedded HUD and button style, including stick frames. */
 #define MAXIMUM_TEXTURES 256
@@ -183,6 +184,10 @@ long hud_hires_override_find(unsigned long address, unsigned long width, unsigne
 		return -1;
 	if (!(hud_hires_embedded[asset].title ? titles_enabled : hud_enabled))
 		return -1;
+	/* (Halo PC's own maps' sheets: the Xbox's at four times the size, with
+	pixels of their own; hud_hires_tags.c kept those of the Xbox's layout) */
+	if (hud_hires_map_halo_pc())
+		return asset;
 	/* (a Custom Edition map's stock HUD bitmap, laid out as this texture's,
 	has its own pixels) */
 	if (hud_hires_asset_stock_custom_edition(address, (long)width, (long)height, asset))
@@ -279,7 +284,7 @@ int hud_hires_sprites_drawable(long asset, unsigned long address, unsigned long 
 	{
 		return 0;
 	}
-	if (crc32(0L, (const Bytef *)address, (uInt)level0_size) != hud_hires_embedded[asset].crc)
+	if (!hud_hires_map_halo_pc() && crc32(0L, (const Bytef *)address, (uInt)level0_size) != hud_hires_embedded[asset].crc)
 	{
 		if (!textures[asset].other_pixels_logged)
 		{

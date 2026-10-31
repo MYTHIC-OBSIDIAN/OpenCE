@@ -74,6 +74,8 @@ struct custom_edition_file
 struct custom_edition_cache_globals
 {
 	boolean tags_loaded;
+	/* (the map loaded is one of Halo PC's own, version 7) */
+	boolean halo_pc;
 	/* the loaded map's file (custom_edition_cache_loaded_path), while it
 	is open */
 	char map_path[MAP_PATH_SIZE];
@@ -1301,8 +1303,15 @@ struct cache_file_tag_header *custom_edition_cache_tags_load(
 	globals->tag_cache_bytes = report.tag_cache_bytes;
 	globals->file_length = report.identity.file_length;
 	globals->tags_loaded = TRUE;
+	globals->halo_pc = identity.version == CACHE_FILE_VERSION_HALO_PC;
 
 	return (struct cache_file_tag_header *)tag_cache;
+}
+
+boolean custom_edition_cache_halo_pc(
+	void)
+{
+	return custom_edition_cache_globals.tags_loaded && custom_edition_cache_globals.halo_pc;
 }
 
 boolean custom_edition_cache_stock_tag(

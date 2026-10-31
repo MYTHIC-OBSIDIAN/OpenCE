@@ -8,7 +8,10 @@
 > The main menu has CREDITS in MODS' place, which opens a video named
 > `credits` (`credits.mp4`, `.mkv`, `.webm`, `.avi`, `.wmv`, `.mov`) beside
 > `halo.exe` in the system's video player, and every mod in the `mods`
-> folder is played. The map lists show Halo PC's six Gearbox maps in
+> folder is played. The Xbox's videos (the disc's `bink` folder, extracted
+> with the maps) play in the game as on the Xbox: the opening titles before
+> the main menu, the credits after The Maw (`port/linux/src/bink_play.c`,
+> on a Bink decoder adapted from FFmpeg's, LGPL 2.1 or later). The map lists show Halo PC's six Gearbox maps in
 > MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
 > STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD). Its

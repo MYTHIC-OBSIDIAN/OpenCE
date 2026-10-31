@@ -73,6 +73,7 @@ int hud_hires_ce_stock_matches(long index, unsigned long address, long width, lo
 /* (custom_edition_cache.c) */
 boolean custom_edition_cache_stock_tag(long tag_index);
 boolean custom_edition_cache_tags_loaded(void);
+boolean custom_edition_cache_halo_pc(void);
 
 void hud_hires_map_loaded(const long *assets, long count);
 void hud_hires_map_unloaded(void);
@@ -236,9 +237,15 @@ void hud_hires_tags_loaded(
 			bitmap_group_try_and_get_bitmap(group_index, (short)hud_hires_asset_bitmap(asset));
 
 		/* Only the verified compatible resource sheets have CE redraws.
-		Embedded custom art keeps its own pixels, even under a stock name. */
-		if (custom_edition_cache_tags_loaded() &&
+		Embedded custom art keeps its own pixels, even under a stock name.
+		(Halo PC's own maps, but for this LAN build: their sheets are the
+		Xbox's laid out at four times the size, so the Xbox's art is drawn
+		over those whose size is a whole multiple of theirs, the others
+		keeping their own: hud_hires_asset_fits, below) */
+		if (custom_edition_cache_tags_loaded() && !custom_edition_cache_halo_pc() &&
 			(!hud_hires_asset_custom_edition(asset) || !custom_edition_cache_stock_tag(group_index)))
+			continue;
+		if (custom_edition_cache_halo_pc() && hud_hires_asset_ce_only(asset))
 			continue;
 		if (!custom_edition_cache_tags_loaded() && hud_hires_asset_ce_only(asset))
 			continue;
@@ -267,7 +274,7 @@ void hud_hires_tags_loaded(
 		{
 			hires_bitmaps[hires_bitmap_count].bitmap = bitmap;
 			hires_bitmaps[hires_bitmap_count].asset = asset;
-			hires_bitmaps[hires_bitmap_count].stock_custom_edition =
+			hires_bitmaps[hires_bitmap_count].stock_custom_edition = !custom_edition_cache_halo_pc() &&
 				hud_hires_asset_custom_edition(asset) && custom_edition_cache_stock_tag(group_index);
 			hires_bitmap_count++;
 		}
@@ -411,6 +418,13 @@ long hud_hires_asset_stock_custom_edition(
 	}
 
 	return FALSE;
+}
+
+/* whether the map is one of Halo PC's own, whose HUD sheets are drawn with
+the Xbox's art whatever their pixels (hud_hires.c) */
+int hud_hires_map_halo_pc(void)
+{
+	return custom_edition_cache_halo_pc();
 }
 
 long hud_hires_asset_at(

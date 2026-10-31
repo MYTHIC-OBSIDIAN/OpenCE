@@ -75,6 +75,12 @@ boolean custom_edition_cache_refuse(
 	char const *build,
 	char const *path);
 
+/* whether the map loaded is one of Halo PC's own (version 7: Gearbox's six),
+whose HUD sheets are the Xbox's laid out at four times their size, so that
+the high-res HUD draws the Xbox's art over them (hud_hires_tags.c) */
+boolean custom_edition_cache_halo_pc(
+	void);
+
 /* Whether a level name is a Custom Edition map's
 (CUSTOM_EDITION_LEVEL_NAME_PREFIX): the cache file loader then reads it from
 the Custom Edition maps folders alone, never from the game's own. */
