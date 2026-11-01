@@ -8009,9 +8009,17 @@ long game_engine_remap_weapon(
 	}
 
 	/* (port: and the gravity rifle, a cut weapon, as the flamethrower,
-	which the Xbox's maps have unfinished: neither is a multiplayer weapon) */
-	if (weapon_list_index == _weapon_list_flamethrower || weapon_list_index == _weapon_list_gravity_rifle)
+	which the Xbox's maps have unfinished: neither is a multiplayer weapon.
+	Halo PC's and Custom Edition's maps place the flamethrower as one of
+	their multiplayer weapons, finished: it stays, but in the classic set,
+	the Xbox game's weapons) */
+	if (weapon_list_index == _weapon_list_gravity_rifle ||
+		(weapon_list_index == _weapon_list_flamethrower &&
+			(!custom_edition_cache_tags_loaded() ||
+				global_variant.universal_variant.weapon_set == _game_engine_weapons_classic)))
+	{
 		weapon_list_index = _weapon_list_rocket_launcher;
+	}
 
 	/* port: a custom loadout (game_variant_options) has no weapon set */
 	if (game_variant_options_get()->loadout == _loadout_custom)
