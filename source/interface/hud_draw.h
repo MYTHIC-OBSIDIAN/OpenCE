@@ -126,6 +126,11 @@ void hud_draw_static_element(
 	struct static_hud_element_definition const *static_element,
 	short draw_flags,
 	long flash_reference_time);
+/* port: the scale Halo PC draws a HUD bitmap of this group at, where an
+element's placement does not say (a damage arrow, a waypoint arrow, a message
+icon): half for each of its HUD scale flags on a Custom Edition or Halo PC
+map, whose own sheets are four times the Xbox's; 1 otherwise */
+real hud_bitmap_group_halo_pc_scale(long bitmap_group_index);
 void hud_draw_bitmap_direct(
 	struct bitmap_data const *bitmap,
 	short placement,

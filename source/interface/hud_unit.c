@@ -745,12 +745,14 @@ void hud_render_damage_indicators(
 
 					corner.x = (short)(long)screen_position.x;
 					corner.y = (short)(long)screen_position.y;
+					/* port: Halo PC's own maps' arrows are four times the
+					Xbox's (hud_bitmap_group_halo_pc_scale) */
 					hud_draw_bitmap_direct(
 						bitmap,
 						_hud_anchor_center,
 						&corner,
 						clip,
-						scale,
+						scale * hud_bitmap_group_halo_pc_scale(bitmap_group_index),
 						theta,
 						definition->color,
 						FALSE);

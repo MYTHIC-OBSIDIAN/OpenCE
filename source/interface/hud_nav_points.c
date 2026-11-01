@@ -754,6 +754,9 @@ void custom_render_nav_point(
 		real_rectangle2d const *clip = NULL;
 
 		hud_retrieve_bitmap_and_bounding_rect(bitmap_index, arrow->sequence_indices[waypoint_type], 0, &bitmap, &clip);
+		/* port: Halo PC's own maps' waypoint arrows are four times the
+		Xbox's (hud_bitmap_group_halo_pc_scale) */
+		scale *= hud_bitmap_group_halo_pc_scale(bitmap_index);
 		if (bitmap && _texture_cache_bitmap_get_hardware_format((struct bitmap_data *)bitmap, FALSE, TRUE))
 		{
 			point2d corner;

@@ -565,16 +565,7 @@ static void render_state_bitmap(
 		of its HUD scale flags their bitmap has: its own maps' (both, four
 		times the Xbox's: a weapon's pickup icon). Their offsets are the
 		screen's, as the Xbox's are */
-		bitmap_scale = scale;
-		if (custom_edition_cache_tags_loaded())
-		{
-			word group_flags = bitmap_group_get(bitmap_group_index)->flags;
-
-			if (TEST_FLAG(group_flags, 4))
-				bitmap_scale *= 0.5f;
-			if (TEST_FLAG(group_flags, 7))
-				bitmap_scale *= 0.5f;
-		}
+		bitmap_scale = scale * hud_bitmap_group_halo_pc_scale(bitmap_group_index);
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);
 		hud_draw_bitmap_direct(

@@ -448,6 +448,23 @@ real hud_globals_get_scale(
 	return 1.0f;
 }
 
+real hud_bitmap_group_halo_pc_scale(
+	long bitmap_group_index)
+{
+	real scale = 1.0f;
+
+	if (bitmap_group_index != NONE && custom_edition_cache_tags_loaded())
+	{
+		word flags = bitmap_group_get(bitmap_group_index)->flags;
+
+		if (TEST_FLAG(flags, _bitmap_group_half_hud_scale_bit))
+			scale *= 0.5f;
+		if (TEST_FLAG(flags, _bitmap_group_force_hud_high_resolution_scale_bit))
+			scale *= 0.5f;
+	}
+	return scale;
+}
+
 void hud_retrieve_bitmap_and_bounding_rect(
 	long bitmap_group_index,
 	short sequence_index,

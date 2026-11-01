@@ -199,7 +199,10 @@ struct reordered_bitmap
 	/* also drawn in another order, or as a texture whose channels are this
 	build's: the renderer has one order for each texture, so this one keeps
 	its channels as they are */
-	boolean drawn_otherwise;
+	boolean drawn_otherwise;	/* a multipurpose map the map's own shaders take in the Xbox's order
+	(multipurpose_map_in_xbox_order): its pixels in the map are drawn as they
+	are, a mod's (Halo PC's tag files, in Halo PC's order) reordered */
+	boolean map_in_xbox_order;
 };
 
 struct custom_edition_bitmaps_globals
@@ -433,6 +436,7 @@ static boolean reordered_bitmap_mark(
 	bitmap->bitmap_index = (short)bitmap_index;
 	bitmap->channel_order = (byte)channel_order;
 	bitmap->drawn_otherwise = FALSE;
+	bitmap->map_in_xbox_order = FALSE;
 
 	return TRUE;
 }
@@ -634,7 +638,7 @@ static void weapon_hud_statics_note(
 	return;
 }
 
-/* Whether a model shader's multipurpose map is in the Xbox's channel order:
+/* Whether a model shader takes its multipurpose map in the Xbox's channel order:
 Custom Edition's "use xbox multipurpose channel order" flag (bit 6 of its
 flags; Invader's shader_model.json). Halo PC's own maps have it on most of
 their model shaders, whose maps Gearbox left as the Xbox's: the Spartans',
@@ -667,31 +671,49 @@ static boolean reordered_bitmaps_find(
 	long bitmap_index;
 
 	/* the bitmaps drawn in Halo PC's orders: model shaders' multipurpose
-	maps (but those left in the Xbox's, multipurpose_map_in_xbox_order,
-	whichever of their shaders found them) and HUD meters */
+	maps (but the map's own pixels of those its shaders take in the Xbox's,
+	multipurpose_map_in_xbox_order: a mod's tag files are Halo PC's) and HUD
+	meters */
 	tag_index = NONE;
 	while ((shader = view_tag_next(view, SHADER_MODEL_GROUP_TAG, sizeof(*shader), &tag_index)) != NULL)
 	{
 		long other_index = NONE;
 		struct shader_model_maps *other;
-		boolean xbox_order = FALSE;
+		long xbox_votes = 0;
+		long halo_pc_votes = 0;
+		boolean xbox_order;
 
 		if (shader->multipurpose_map.index == NONE)
 			continue;
-		while (!xbox_order &&
-			(other = view_tag_next(view, SHADER_MODEL_GROUP_TAG, sizeof(*other), &other_index)) != NULL)
+		/* (a map its shaders disagree on, which Halo PC draws each shader's
+		way and this build one way: as most of them take it, the Xbox's on
+		a tie) */
+		while ((other = view_tag_next(view, SHADER_MODEL_GROUP_TAG, sizeof(*other), &other_index)) != NULL)
 		{
-			xbox_order = other->multipurpose_map.index == shader->multipurpose_map.index &&
-				multipurpose_map_in_xbox_order(view, other);
+			if (other->multipurpose_map.index != shader->multipurpose_map.index)
+				continue;
+			if (multipurpose_map_in_xbox_order(view, other))
+				xbox_votes++;
+			else
+				halo_pc_votes++;
 		}
-		if (xbox_order)
-		{
-			xbox_order_count++;
-			continue;
-		}
+		xbox_order = xbox_votes > 0 && xbox_votes >= halo_pc_votes;
 		if (!reordered_bitmaps_mark(view, shader->multipurpose_map.index, NONE, _custom_edition_channels_multipurpose))
 		{
 			return FALSE;
+		}
+		if (xbox_order)
+		{
+			for (bitmap_index = 0; bitmap_index < globals->reordered_bitmap_count; bitmap_index++)
+			{
+				struct reordered_bitmap *bitmap = &globals->reordered_bitmaps[bitmap_index];
+
+				if (bitmap->handle == shader->multipurpose_map.index && !bitmap->map_in_xbox_order)
+				{
+					bitmap->map_in_xbox_order = TRUE;
+					xbox_order_count++;
+				}
+			}
 		}
 	}
 	tag_index = NONE;
@@ -766,7 +788,7 @@ static boolean reordered_bitmaps_find(
 	{
 		error(
 			_error_silent,
-			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not; %ld model shaders' multipurpose maps are in the Xbox's order already)",
+			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not; %ld multipurpose bitmaps of the map are in the Xbox's order already, a mod's are not)",
 			multipurpose_count,
 			meter_count,
 			kept_count,
@@ -949,7 +971,8 @@ void custom_edition_bitmap_pixels_arrived(
 		if (xbox_pointer(bitmap->base_address) == pixels && bitmap->pixels_offset == offset)
 		{
 			long reordered_index = reordered_bitmap_index(tag_index, bitmap_index);
-			short channel_order = reordered_index != NONE ?
+			short channel_order = reordered_index != NONE &&
+				!custom_edition_bitmaps_globals.reordered_bitmaps[reordered_index].map_in_xbox_order ?
 				custom_edition_bitmaps_globals.reordered_bitmaps[reordered_index].channel_order :
 				_custom_edition_channels_xbox;
 
