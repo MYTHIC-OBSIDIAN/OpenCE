@@ -105,7 +105,6 @@ The Arch-based distribution release is available on the [AUR](https://aur.archli
 - **Every platform plays together:** Windows, Linux, Android and the browser all support cross-play! On a local network, the native builds can play LAN. Browser players can play each other in rooms over WebRTC ([port/web/README.md](port/web/README.md)).
 - **Peer-to-peer internet hosting:** join through the server browser or an invite link. A host lists a game as public in the server browser, or keeps it private for players with the invite link. With the Discord integration, the host can also send the invite through Discord.
 - **Online co-op campaign:** with settings for friendly fire, player collisions and the number of enemies as a multiplier based on per player or static. 
-- **New gametypes:** SWAT, Infection, Gun Game and Hardcore (Slayer, CTF, Oddball and King), in Select Gametype's OPENCE bank; Edit Gametypes' OPENCE OPTIONS gives any gametype their rules ([port/linux/README.md](port/linux/README.md), "OpenCE gametypes").
 - **Voice Chat:** push to talk (V) or an open microphone (can be changed in the menu's audio settings)
 - **Map sharing:** a player who does not have the game's Custom Edition map downloads it from the other players.
 - **Moderation:** the host can kick and ban players from the scoreboard menu or the `kick` and `ban` console commands. Players can vote to kick. 
@@ -128,7 +127,7 @@ With HIGH-RES HUD on (the default), Halo PC's own maps draw the Xbox's HUD throu
 
 The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration Moonbase, Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in a **`digsite_maps`** folder beside `maps`. They are Custom Edition maps, so they need Custom Edition's `bitmaps.map`, `sounds.map` and `loc.map` in `custom_maps` (or in `digsite_maps`): Halo PC's are not the same files. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
 
-All other Custom Edition multiplayer maps are in **CUSTOM EDITION**, in the map list in Campaign's New Game and on the Map screen of Create Game.
+All other Custom Edition multiplayer maps are in **CUSTOM EDITION**, in the map list in Campaign's New Game and on the Map screen of Create Game. On these maps every vehicle and weapon the map places always spawns, whatever the gametype: its vehicle sets and MAP WEAPONS setting, and the map's own per-gametype spawn flags, are not applied (a weapon set still swaps weapons, but never removes one).
 
 Maps that require OpenSauce are not compatible.
 

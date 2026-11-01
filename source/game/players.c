@@ -228,7 +228,6 @@ symbols in this file:
 /* ---------- headers */
 
 #include "cseries.h"
-#include "infection.h" /* port: port/linux/game/infection.c */
 #include "cseries/errors.h"
 #include "cseries/profile.h"
 #include "ai/ai.h"
@@ -238,7 +237,6 @@ symbols in this file:
 #include "data.h"
 #include "devices/devices.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
-#include "bots.h" /* port: port/linux/game/bots.c */
 #include "cutscene/cinematics.h" /* port: network co-op's first spawns */
 #include "editor/editor_stubs.h"
 #include "effects/effects.h"
@@ -609,8 +607,6 @@ void players_initialize_for_new_map(
 		machine_to_player_table,
 		NONE,
 		sizeof(machine_to_player_table));
-	/* port: the bots of local games (port/linux/game/bots.c) */
-	bots_initialize_for_new_map();
 
 	return;
 }
@@ -618,8 +614,6 @@ void players_initialize_for_new_map(
 void players_dispose_from_old_map(
 	void)
 {
-	/* port: the bots of local games (port/linux/game/bots.c) */
-	bots_dispose_from_old_map();
 	data_make_invalid(player_data);
 	data_make_invalid(team_data);
 
@@ -1553,8 +1547,6 @@ void network_player_attach_unit(
 	unit->object.owner_team_index = (short)player->team_index;
 	unit->unit.player_index = player_index;
 	player->unit_index = unit_index;
-	/* port: Infection's role, which may have come before the unit */
-	infection_reconcile_player(player_index);
 	unit_set_actively_controlled(unit_index, TRUE);
 	if (player->local_player_index != NONE)
 		player_control_new_unit(player->local_player_index, unit_index);
@@ -4874,9 +4866,6 @@ void players_update_before_game(
 	/* port: or the main menu's scene's idle players (players_idle_actions) */
 	if (update_client_dequeue(actions) || players_idle_actions(actions))
 	{
-		/* port: the controls of a local game's bots this tick
-		(port/linux/game/bots.c), in place of what their queues held */
-		bots_update_actions(actions);
 		data_iterator_new(&iterator, player_data);
 		while (player = data_iterator_next(&iterator))
 		{
@@ -5017,10 +5006,8 @@ void players_update_before_game(
 						unit_get(player->unit_index)->unit.current_weapon_index);
 					if (weapon_index != NONE && weapon_must_be_readied(weapon_index))
 					{
-						/* port: (an Infection zombie keeps its skull: infection.c) */
-						if ((TEST_FLAG(action->control_flags, _unit_control_weapon_primary_trigger_bit) ||
-							TEST_FLAG(action->control_flags, _unit_control_weapon_secondary_trigger_bit)) &&
-							infection_allow_weapon_drop(player->unit_index, weapon_index))
+						if (TEST_FLAG(action->control_flags, _unit_control_weapon_primary_trigger_bit) ||
+							TEST_FLAG(action->control_flags, _unit_control_weapon_secondary_trigger_bit))
 						{
 							unit_drop_current_weapon(player->unit_index, TRUE);
 						}

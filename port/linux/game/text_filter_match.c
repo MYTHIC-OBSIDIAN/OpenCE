@@ -1,8 +1,9 @@
 /*
 TEXT_FILTER_MATCH.C
 
-Streamer mode's matcher: which code units of a string spell a hidden word,
-however it is dressed (README.md, "Streamer mode"). A string is read as the
+The chat filter's matcher (a dedicated server's server.chat_filter:
+network_chat.c): which code units of a string spell a listed word, however
+it is dressed. A string is read as the
 game draws it (draw_string.c's parsers: a wide string's "|n" breaks a line
 and any other "|" hides the character after it; a narrow string's style
 codes are not drawn), and each character it shows becomes an element:
@@ -18,7 +19,7 @@ codes are not drawn), and each character it shows becomes an element:
 
 Two elements together may read as one letter (ph f, vv w, \/ v, |< k).
 Then each term (text_filter_terms.inc, made by tools/text_filter_terms.py
-from Surge AI's list; and the player's own) is looked for from each element:
+from Surge AI's list) is looked for from each element:
 a run of one letter reads as one ("fuuuck"); punctuation may come between
 letters ("f.u.c.k"); spaces too where the pieces are a letter or two
 ("f u c k", "fu ck") or the match is whole words ("f uck"). A term's rule

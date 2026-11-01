@@ -20,7 +20,6 @@ and the debug keyboard that the game's console reads.
 #include "player_link.h"
 #include "xiso.h"
 #include "touch_input.h"
-#include "../game/text_filter.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -2098,9 +2097,6 @@ void platform_show_message(const char *title, const char *message)
 	pthread_mutex_lock(&platform_message_lock);
 	snprintf(platform_message_title, sizeof(platform_message_title), "%s", title);
 	snprintf(platform_message_text, sizeof(platform_message_text), "%s", message);
-	/* (streamer mode's words hidden here too: a map's or a mod's name) */
-	text_filter_utf8(platform_message_title);
-	text_filter_utf8(platform_message_text);
 	platform_message_pending = TRUE;
 	pthread_mutex_unlock(&platform_message_lock);
 }
@@ -2113,7 +2109,6 @@ void web_js_ask(const char *title, const char *text, const char *labels);
 
 int platform_ask(const char *title, const char *text, const char *const *labels, int count, int default_index)
 {
-	/* (streamer mode's words hidden here too: mods' names) */
 	static char shown_title[128];
 	static char shown_text[4096];
 	static char shown_labels[3][128];
@@ -2131,12 +2126,9 @@ int platform_ask(const char *title, const char *text, const char *const *labels,
 		count = 3;
 	snprintf(shown_title, sizeof(shown_title), "%s", title);
 	snprintf(shown_text, sizeof(shown_text), "%s", text);
-	text_filter_utf8(shown_title);
-	text_filter_utf8(shown_text);
 	for (index = 0; index < count; index++)
 	{
 		snprintf(shown_labels[index], sizeof(shown_labels[index]), "%s", labels[index]);
-		text_filter_utf8(shown_labels[index]);
 		shown[index] = shown_labels[index];
 	}
 	title = shown_title;
@@ -2367,6 +2359,23 @@ static void platform_pump_events_headless(void)
 	}
 }
 
+/* a gamepad's A's last press [1] and release [0]: when it happened, and
+when platform_pump_events saw it (SDL_GetTicksNS) */
+static Uint64 gamepad_a_event_ns[2];
+static Uint64 gamepad_a_seen_ns[2];
+
+/* (player_control.c's jump log) milliseconds since a gamepad's A last went
+down and up, and how late this saw each; -1 for one not seen */
+void halo_gamepad_a_times(long *down_ago, long *down_late, long *up_ago, long *up_late)
+{
+	Uint64 now = SDL_GetTicksNS();
+
+	*down_ago = gamepad_a_event_ns[1] ? (long)((now - gamepad_a_event_ns[1]) / 1000000) : -1;
+	*down_late = gamepad_a_event_ns[1] ? (long)((gamepad_a_seen_ns[1] - gamepad_a_event_ns[1]) / 1000000) : -1;
+	*up_ago = gamepad_a_event_ns[0] ? (long)((now - gamepad_a_event_ns[0]) / 1000000) : -1;
+	*up_late = gamepad_a_event_ns[0] ? (long)((gamepad_a_seen_ns[0] - gamepad_a_event_ns[0]) / 1000000) : -1;
+}
+
 void platform_pump_events(void)
 {
 	SDL_Event event;
@@ -2409,6 +2418,16 @@ void platform_pump_events(void)
 #endif
 	while (SDL_PollEvent(&event))
 	{
+		/* (a gamepad's A: when it went down or up, and when this saw it, for
+		player_control.c's log of a jump as a game starts) */
+		if ((event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN || event.type == SDL_EVENT_GAMEPAD_BUTTON_UP) &&
+			event.gbutton.button == SDL_GAMEPAD_BUTTON_SOUTH)
+		{
+			int down = event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
+
+			gamepad_a_event_ns[down] = event.gbutton.timestamp;
+			gamepad_a_seen_ns[down] = SDL_GetTicksNS();
+		}
 		switch (event.type)
 		{
 		case SDL_EVENT_QUIT:

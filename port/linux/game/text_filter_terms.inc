@@ -1,4 +1,4 @@
-/* port/linux/game/text_filter_terms.inc: streamer mode's words, written by
+/* port/linux/game/text_filter_terms.inc: the chat filter's words, written by
 tools/text_filter_terms.py from Surge AI's profanity_en.csv
 (sha256 ca4ff7d713a8e6f6ec2616f489cd09f6fb96b8b3af404a207783be58a91f3ede) and port/assets/text_filter/review.txt and allow.txt.
 Each term's letters are xor'd with TEXT_FILTER_TERM_KEY. Do not edit. */

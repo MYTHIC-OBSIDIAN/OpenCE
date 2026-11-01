@@ -18,9 +18,7 @@ false details:
 	p2p_seal_token; a tombstone's zero), players, most players, the
 	gametype's engine (1 each), the game's name,
 	map and gametype (a length byte, then up to 32, 32 and 24 characters of
-	printable ASCII), a stamp (8: the game's kind, an OpenCE gametype's mode
-	and Hardcore, port/linux/game/game_modes.h's game_modes_kind; the rest
-	reserved, zero), and the signature (64) of "hceu-lobby-1" and all before
+	printable ASCII), a stamp (8, reserved: zero), and the signature (64) of "hceu-lobby-1" and all before
 	it.
 
 Each host has a slot, hceu/3/lobby/s/<its key's hash in hex>: its listing,
@@ -133,7 +131,7 @@ struct listing
 	unsigned char token[P2P_TOKEN_SIZE];
 	/* (_listing_password: its token, sealed) */
 	unsigned char sealed_token[P2P_SEALED_TOKEN_SIZE];
-	int player_count, maximum_player_count, engine_type, kind;
+	int player_count, maximum_player_count, engine_type;
 	char name[P2P_LISTING_NAME_SIZE + 1];
 	char map[P2P_LISTING_MAP_SIZE + 1];
 	char gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
@@ -193,7 +191,6 @@ static struct
 	char map[P2P_LISTING_MAP_SIZE + 1];
 	char gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
 	int engine_type;
-	int kind;
 	int flags;
 	int player_count, maximum_player_count;
 	/* the counts the last publish was made with (a change publishes again) */
@@ -348,7 +345,6 @@ static int listing_make_token(unsigned char *bytes, int flags, const unsigned ch
 	size += put_text(bytes + size, lobby.map, P2P_LISTING_MAP_SIZE);
 	size += put_text(bytes + size, lobby.gametype, P2P_LISTING_GAMETYPE_SIZE);
 	memset(bytes + size, 0, STAMP_SIZE);
-	bytes[size] = (unsigned char)lobby.kind;
 	size += STAMP_SIZE;
 	memcpy(data, signature_label, sizeof(signature_label) - 1);
 	memcpy(data + sizeof(signature_label) - 1, signed_part, (size_t)size);
@@ -418,9 +414,7 @@ static int listing_read(const unsigned char *bytes, int size, struct listing *li
 	{
 		return 0;
 	}
-	/* (the stamp: the game's kind first; a listing too short for it fails
-	the size check below) */
-	listing->kind = offset < size ? bytes[offset] : 0;
+	/* (the stamp; a listing too short for it fails the size check below) */
 	offset += STAMP_SIZE;
 	if (offset + P2P_SIGNATURE_SIZE != size)
 		return 0;
@@ -734,7 +728,6 @@ static void listing_take(const struct queued *queued, const struct listing *list
 	shown->player_count = (unsigned char)listing->player_count;
 	shown->maximum_player_count = (unsigned char)listing->maximum_player_count;
 	shown->engine_type = (unsigned char)listing->engine_type;
-	shown->kind = (unsigned char)listing->kind;
 	shown->open = (listing->flags & _listing_open) != 0;
 	shown->in_progress = (listing->flags & _listing_in_progress) != 0;
 	shown->has_teams = (listing->flags & _listing_has_teams) != 0;
@@ -1066,7 +1059,7 @@ void p2p_set_hosting_password(const char *password)
 	memset(key, 0, sizeof(key));
 }
 
-void p2p_set_game_listing(const char *name, const char *map, const char *gametype, int engine_type, int kind,
+void p2p_set_game_listing(const char *name, const char *map, const char *gametype, int engine_type,
 	int open, int in_progress, int has_teams)
 {
 	char new_name[P2P_LISTING_NAME_SIZE + 1];
@@ -1082,7 +1075,7 @@ void p2p_set_game_listing(const char *name, const char *map, const char *gametyp
 	/* (only the game's server writes these: unchanged, it need not wait for
 	the lock) */
 	if (!strcmp(new_name, lobby.name) && !strcmp(new_map, lobby.map) && !strcmp(new_gametype, lobby.gametype) &&
-		engine_type == lobby.engine_type && (kind & 0xFF) == lobby.kind && flags == lobby.flags)
+		engine_type == lobby.engine_type && flags == lobby.flags)
 	{
 		return;
 	}
@@ -1091,7 +1084,6 @@ void p2p_set_game_listing(const char *name, const char *map, const char *gametyp
 	memcpy(lobby.map, new_map, sizeof(lobby.map));
 	memcpy(lobby.gametype, new_gametype, sizeof(lobby.gametype));
 	lobby.engine_type = engine_type;
-	lobby.kind = kind & 0xFF;
 	lobby.flags = flags;
 	if (lobby.listed)
 		republish_soon(0);
@@ -1299,7 +1291,7 @@ static int sort_order(const struct p2p_listing *first, const struct p2p_listing 
 		break;
 	case P2P_LOBBY_SORT_TYPE:
 		difference = first->engine_type != second->engine_type ? first->engine_type - second->engine_type :
-			first->kind != second->kind ? first->kind - second->kind : text_order(first->gametype, second->gametype);
+			text_order(first->gametype, second->gametype);
 		break;
 	case P2P_LOBBY_SORT_LOCKED:
 		difference = second->locked - first->locked;

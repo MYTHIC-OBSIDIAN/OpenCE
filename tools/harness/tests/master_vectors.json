@@ -79,7 +79,7 @@
       "valid": true
     },
     {
-      "description": "a password game in progress: its token sealed (56 bytes); kind 0x81 is SWAT with Hardcore",
+      "description": "a password game in progress: its token sealed (56 bytes); the stamp's first byte 0x81, reserved (read past)",
       "host_seed": "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
       "host_public_key": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025",
       "network_version": 38,

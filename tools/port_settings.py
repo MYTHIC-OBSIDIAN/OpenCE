@@ -364,7 +364,7 @@ _audio["categories"] = [
 # part in another's game, a screen of its own (a category, as Video Setup's)
 SEED_UPLOADS = (64, 128, 256, 512, 1024, 2048, 4096, 8192, 10240)
 _network = SCREENS["network_setup"]
-# (and the multiplayer HUD's rows, and streamer mode, screens of their own:
+# (and the multiplayer HUD's rows, a screen of its own:
 # Network Setup has room for nine places)
 _hud_settings = ("display.player_names", "display.player_name_scale", "display.scoreboard_team_layout",
                  "display.scoreboard_background")
@@ -376,8 +376,6 @@ _network["categories"] = [
      "desktop android"),
     ("MULTIPLAYER HUD:", "network_setup/multiplayer_hud",
      "Players' names above their heads, the\nscoreboard, the text chat and the match clock."),
-    ("STREAMER MODE:", "network_setup/streamer_mode",
-     "Hide offensive words in names and text from\nother players, maps and mods, as stars."),
     # (LAN only: no SERVER BROWSER or DISCORD ACCOUNT pages, which are the
     # internet's; their screens are still written, and nothing opens them)
 ]
@@ -470,24 +468,6 @@ SCREENS["network_setup/multiplayer_hud"] = {
     ],
 }
 
-# Network Setup's streamer mode (port/linux/game/text_filter.c): words hidden
-# in what other players, maps and mods show, each group from a severity of
-# Surge AI's on (port/assets/text_filter)
-STREAMER_LEVELS = [("OFF", "off"), ("SEVERE", "severe"), ("STRONG AND WORSE", "strong"), ("MILD AND WORSE", "mild")]
-SCREENS["network_setup/streamer_mode"] = {
-    "screen": "streamer_mode_settings_screen", "header": _network["header"], "spacing": 30,
-    "rows": [
-        ("STREAMER MODE:", "streamer.enabled", ON_OFF,
-         "Hide offensive words in names and text from\nother players, maps and mods, as stars.", None),
-        ("CENSOR SLURS:", "streamer.slurs", STREAMER_LEVELS,
-         "Slurs about race, sexuality, gender and\ndisability.", None),
-        ("CENSOR SWEARING:", "streamer.swearing", STREAMER_LEVELS,
-         "Swearing and sexual words (STRONG AND WORSE\nleaves the mildest showing).", None),
-        ("CENSOR INSULTS:", "streamer.insults", STREAMER_LEVELS,
-         "Name-calling and insults that are not slurs.", None),
-    ],
-}
-
 # Network Setup in a game (the pause menu's SETTINGS: port/linux/game/
 # menu_tags.c's pause_network_patch): its pages alone, without the rows that
 # would drop the game (internet play) or are for the main menu (the router,
@@ -504,8 +484,8 @@ CONTROL_GROUPS = ["MOVEMENT", "WEAPONS", "ACTIONS", "COMMUNICATION"]
 CONTROL_ROWS = 7
 
 # the settings whose rows have the wider spinner (a device's name)
-WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "streamer.slurs", "streamer.swearing",
-                 "streamer.insults", "network.listings", "network.browser_maps", "network.browser_sort"}
+WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "network.listings", "network.browser_maps",
+                 "network.browser_sort"}
 
 # Teamplay Options' rows of the port's (_teamplay_options_extras): the
 # gametype's FORCE TEAM SPAWNS, then the host's voice chat and vote kicks;
@@ -906,44 +886,6 @@ SHIELD_EFFECTS_HELP = [
     "Not synced: each player sees the shield effects\\nof their own Video Setup settings.",
 ]
 
-# OpenCE's gametypes' options (port/linux/game/game_modes.c), a screen of the
-# gametype editor's (menu_functions.c's "mp profile init opence options"): the
-# mode and Hardcore, then the mode's own rows, which menu_functions.c's
-# gametype_option_help shows (op_inf_ for Infection, op_gg_ for Gun Game)
-# below them; a row's values are menu_functions.c's gametype_options'
-PLAYLIST_EDIT = "main_menu/settings_select/multiplayer_setup/playlist_edit"
-OPENCE_EDIT = "main_menu/settings_select/multiplayer_setup/opence_options_edit"
-OPENCE_ROWS = [
-    ("oce_mode", "MODE:", ["NONE", "SWAT", "INFECTION", "GUN GAME"], [
-        "The game type's own rules.",
-        "No shields, and a shot to the head kills. Slayer only.",
-        "Humans killed join the zombies, who win when\\nno human is left. Team Slayer only.",
-        "Each kill gives the next weapon; a kill with the\\nlast wins. Free for all Slayer only."]),
-    ("oce_hardcore", "HARDCORE:", ["OFF", "ON"], [
-        "The motion sensor and aim assist as the game\\ntype has them.",
-        "No motion sensor, no aim assist, and a kill\\nrestores the killer's health and shields."]),
-    ("inf_zombies", "FIRST ZOMBIES:", ["1", "2", "3", "4", "8", "16"],
-     ["The zombies chosen when the round starts\\n(a human is always left)."] * 6),
-    ("inf_speed", "ZOMBIE SPEED:", ["100%", "110%", "125%", "150%", "175%", "200%"],
-     ["How fast zombies move, of a human's speed."] * 6),
-    ("inf_damage", "SKULL DAMAGE:", ["100%", "150%", "200%", "250%"],
-     ["The damage of a zombie's skull's melee."] * 4),
-    ("inf_respawn", "ZOMBIE RESPAWN:", ["1 SECOND", "3 SECONDS", "5 SECONDS", "10 SECONDS", "15 SECONDS",
-                                        "30 SECONDS"],
-     ["How long a dead zombie waits to respawn."] * 6),
-    ("inf_countdown", "COUNTDOWN:", ["NONE", "5 SECONDS", "10 SECONDS", "15 SECONDS", "30 SECONDS"],
-     ["How long the round waits, once two players are\\nalive, before the first zombies are chosen."] * 5),
-    ("inf_shields", "ZOMBIE SHIELDS:", ["OFF", "ON"],
-     ["Zombies have no shields.", "Zombies have shields, as humans do."]),
-    ("gg_order", "WEAPON ORDER:", ["STRONGEST FIRST", "WEAKEST FIRST", "RANDOM"], [
-        "From the rocket launcher to the pistol.", "From the pistol to the rocket launcher.",
-        "In an order the host draws for each game."]),
-    ("gg_melee", "MELEE DEMOTES:", ["OFF", "ON"], [
-        "A melee kill takes nothing from the victim.",
-        "A melee kill takes the victim back a weapon."]),
-]
-OPENCE_ITEM = f"{PLAYLIST_EDIT}/playlist_edit_opence_item"
-
 STRING_INSERTS = {
     # (Filters' SHOW MISSING MAPS' third value's help, after the PC version's:
     # menu_functions.c's filters_help)
@@ -998,7 +940,6 @@ STRING_OVERRIDES.update({
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
-    # (and the port's OPENCE: OpenCE's gametypes, port/linux/game/game_modes.c)
     "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],
     # (the PC's weapon sets, then the Xbox's NO GRENADES: menu_functions.c's
     # gametype_options maps them to the engine's)
@@ -1091,8 +1032,6 @@ WIDGET_PATCHES = {
     # (its rows 27 apart, not 30, so that ten fit above the help, which keeps
     # the three lines some have: ce_menus.py's CHILD_OFFSETS)
     f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
-    # (no OPENCE OPTIONS in this LAN build: its gametype editor's rows are
-    # the PC version's, and _opence_options' screen is not written)
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
@@ -1727,8 +1666,7 @@ def _setup_option_screen(base: str, key: str, rows: list, fit: bool = False) -> 
     children = ['<data input="game settings lists text update"/>',
                 '<on event="created" run="port setup options init"/>']
     # (30 apart; with fit, closer for more rows than eight, the last 28 tall
-    # clear of the help at 341: Server Setup's, whose rows are all shown, as
-    # OpenCE Options' are not)
+    # clear of the help at 341: Server Setup's, whose rows are all shown)
     places = len([row_key for row_key, *_ in rows if row_key not in SETUP_OPTION_SAME_PLACE])
     spacing = min(30, (341 - 1 - 73 - 28) // max(1, places - 1)) if fit else 30
     place = -1
@@ -2185,26 +2123,6 @@ def _player_options_extras() -> list:
             ("footer_bounds", "7 208 19 214")], ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     return lines + _strings(f"{base}/var_aim_assist", ["ALLOWED", "BLOCK M+KB"]) + \
         _strings(f"{base}/var_shield_effects", SHIELD_EFFECTS)
-
-
-def _opence_options() -> list:
-    """the gametype editor's OPENCE OPTIONS: its row, after the editor's own
-    (as they are laid out), and its screen, as the gametype's options' are
-    (_setup_option_screen), its spinners the gametype's (menu_functions.c's
-    gametype_options), its header its words (no picture of its own)"""
-    lines = _setup_option_screen(OPENCE_EDIT, "opence", OPENCE_ROWS)
-    lines = [line.replace("port setup options init", "mp profile init opence options")
-             .replace("port setup options save", "mp profile set opence options")
-             .replace(f'bitmap="{OPENCE_EDIT}/header_opence"',
-                      'type="text" text="OPENCE OPTIONS" font="ui\\large_ui" color="#FFFFFFFF" text_x="13" text_y="16"')
-             for line in lines]
-    lines += _widget(OPENCE_ITEM, [("type", "text"), ("left", 51), ("top", 309), ("width", 232), ("height", 32),
-                                   ("bitmap", "bitmaps/list_item_bkd"), ("text", "OPENCE OPTIONS"),
-                                   ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 5)],
-                     [f'<on event="a" open="{OPENCE_EDIT}/opence_screen"/>',
-                      f'<on event="start" open="{OPENCE_EDIT}/opence_screen"/>',
-                      '<on event="left_mouse" run="mouse emit accept event"/>'])
-    return lines
 
 
 def _teamplay_options_extras() -> list:

@@ -1,5 +1,5 @@
 /* port/linux/game/text_filter_fold.inc: the characters above ASCII that
-streamer mode reads as letters (a-z bits), written by tools/text_filter_terms.py
+the chat filter reads as letters (a-z bits), written by tools/text_filter_terms.py
 --fold from Unicode 16.0.0's names and its look-alikes. Do not edit. */
 
 static struct text_filter_fold const text_filter_folds[] =

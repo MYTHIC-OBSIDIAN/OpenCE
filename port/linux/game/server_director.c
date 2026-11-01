@@ -34,7 +34,6 @@ Called from the main loop every frame (main.c).
 #include "game/game_engine.h"
 #include "game/players.h"
 #include "text/unicode.h"
-#include "game_modes.h"
 #include "network_distributed.h"
 #include "network_map_vote.h"
 #include "server_director.h"

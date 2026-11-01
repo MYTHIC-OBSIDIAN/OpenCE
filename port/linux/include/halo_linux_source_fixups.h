@@ -63,6 +63,9 @@ struct scenario_object_datum;
 unsigned char custom_edition_vehicles_by_placement(void);
 unsigned char custom_edition_vehicle_placement_allowed(struct scenario_object_datum const *placement, unsigned char by_set);
 short custom_edition_vehicle_placement_team(struct scenario_object_datum const *placement);
+/* whether the loaded map is one of the CUSTOM EDITION list's: every vehicle
+and weapon it places spawns (port/linux/game/custom_edition_cache.c) */
+unsigned char custom_edition_cache_listed_map(void);
 
 /* the width of the screen the game draws, 480 lines tall: the device's or
 the display's shape, or 640 (port/linux/src/d3d8_gl.c) */

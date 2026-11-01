@@ -174,8 +174,8 @@ MAPS = [
 # (a Custom Edition map whose name the game shows is unknown: its title is its name)
 CUSTOM_MAPS = [("hugeass", "Hugeass"), ("bigassv2", None)]
 
-# the built-in gametypes (port/linux/game/server_gametypes.c's, then OpenCE's
-# of game_modes.c): name -> (engine, teams, variant); /api/gametypes sends
+# the built-in gametypes (port/linux/game/server_gametypes.c's): name ->
+# (engine, teams, variant); /api/gametypes sends
 # their names alone
 BUILTINS = {
     "slayer": ("slayer", False, "Slayer"), "team_slayer": ("slayer", True, "Team Slayer"),
@@ -192,9 +192,6 @@ BUILTINS = {
     "crazy_king": ("king", False, "Crazy King"),
     "race": ("race", False, "Race"), "team_race": ("race", True, "Team Race"), "rally": ("race", False, "Rally"),
     "team_rally": ("race", True, "Team Rally"),
-    "swat": ("slayer", True, "SWAT"), "infection": ("slayer", True, "Infection"), "gun_game": ("slayer", False, "Gun Game"),
-    "hardcore": ("slayer", True, "Hardcore"), "hardcore_ctf": ("ctf", True, "HC CTF"),
-    "hardcore_oddball": ("oddball", True, "HC Oddball"), "hardcore_king": ("king", True, "HC King"),
 }
 GAMETYPE_ALIASES = {"ffa": "slayer", "ffa_slayer": "slayer", "teamslayer": "team_slayer", "tslayer": "team_slayer",
                     "koth": "king", "team_koth": "team_king", "iron_ctf": "ironctf", "teamrace": "team_race",
@@ -259,8 +256,6 @@ SCHEMA = [
            high=4),
     _field("options", "banshees", "integer", "Banshees of each team, with team_vehicles custom", low=0, high=4),
     _field("options", "gun_turrets", "integer", "Gun turrets of each team, with team_vehicles custom", low=0, high=4),
-    _field("options", "hardcore", "boolean", "Hardcore: no motion sensor, no aim assist, a kill restores the "
-           "killer's health and shields"),
     _field("ctf", "assault", "boolean", "One team defends the flag, the other attacks", engine="ctf"),
     _field("ctf", "reset_on_capture", "boolean", "Both flags go home at a capture", engine="ctf"),
     _field("ctf", "flag_must_reset", "boolean", "A dropped flag goes home only by its timer", engine="ctf"),

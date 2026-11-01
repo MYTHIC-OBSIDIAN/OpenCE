@@ -96,8 +96,6 @@ const struct server_rule_definition server_rule_definitions[] =
 		"Rocket Warthogs of each team, with team_vehicles custom"),
 	RULE_INTEGER("banshees", NULL, "options", ALL, 0, 4, "Banshees of each team, with team_vehicles custom"),
 	RULE_INTEGER("gun_turrets", NULL, "options", ALL, 0, 4, "Gun turrets of each team, with team_vehicles custom"),
-	RULE_BOOLEAN("hardcore", NULL, "options", ALL,
-		"Hardcore: no motion sensor, no aim assist, a kill restores the killer's health and shields"),
 
 	RULE_BOOLEAN("assault", NULL, "ctf", _server_engine_ctf, "One team defends the flag, the other attacks"),
 	RULE_BOOLEAN("reset_on_capture", NULL, "ctf", _server_engine_ctf, "Both flags go home at a capture"),

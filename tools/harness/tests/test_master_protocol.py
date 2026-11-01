@@ -119,8 +119,6 @@ NEGATIVE_CONTROLS = {
                            "get_text", "listing-bounds"),
     "listing-trailing-taken": (("if (offset + P2P_SIGNATURE_SIZE != size)", "if (offset + P2P_SIGNATURE_SIZE > size)"),
                                "listing_read", "listing-bounds"),
-    "listing-kind-lost": (("listing->kind = offset < size ? bytes[offset] : 0;", "listing->kind = 0;"), "listing_read",
-                          "listing-read"),
     "publish-signs-bare-path": (('snprintf(signed_path, sizeof(signed_path), "%s%s", base_path ? base_path : "", path);',
                                  'snprintf(signed_path, sizeof(signed_path), "%s", path);'), "publish_to",
                                 "publish-body"),

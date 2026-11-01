@@ -520,17 +520,6 @@ static const struct config_setting config_settings[] =
 		"EDITION. Their tags are checked\n"
 		"as the game's own maps' are before they run; false refuses them\n"
 		"(docs/custom_edition_caches.md)." },
-	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,
-		"Computer players (bots) in a local (split screen) Slayer game: 0 to 15\n"
-		"join its lobby with the players, as far as the game has room. Not in\n"
-		"system link or internet games. 0: none, as in the stock game." },
-	{ "bots.skill", _config_string, "\"normal\"", "HALO_BOT_SKILL", _environment_value, _platform_all,
-		"How well the bots play: \"recruit\", \"easy\", \"normal\", \"heroic\",\n"
-		"\"veteran\" or \"legendary\" (how soon they react, how well they aim,\n"
-		"how far they see, and how they fight: blows, grenades, strafes, retreats)." },
-	{ "bots.teams", _config_string, "\"even\"", "HALO_BOT_TEAMS", _environment_value, _platform_all,
-		"In team games: \"even\" puts the bots on both teams, evening them with\n"
-		"the players; \"against\" puts them all on the team the players are not on." },
 	{ "display.viewmodel_shield", _config_boolean, "false", "HALO_VIEWMODEL_SHIELD", _environment_value, _platform_all,
 		"The energy shield's flare on the first-person arms too, as on the body\n"
 		"(the stock game draws it on the body only)." },
@@ -863,8 +852,8 @@ static const struct config_setting config_settings[] =
 		"The games played one after another: map[:gametype[+rule=value...]],\n"
 		"separated by commas, 64 at most. A map is a multiplayer map's name\n"
 		"(bloodgulch), custom_maps\\<name> or a level's path; a gametype a\n"
-		"built-in's name (slayer, team_slayer, ctf...), an OpenCE gametype's\n"
-		"(swat...), a gametypes/<name>.toml or file=<saved gametype>." },
+		"built-in's name (slayer, team_slayer, ctf...), a gametypes/<name>.toml\n"
+		"or file=<saved gametype>." },
 	{ "server.rotation_fallback", _config_boolean, "false", "HALO_SERVER_ROTATION_FALLBACK", _environment_value,
 		_platform_server,
 		"With no playable rotation entry, play bloodgulch:slayer rather than\n"
@@ -999,7 +988,7 @@ static const struct config_setting config_settings[] =
 		"empty for none." },
 	{ "server.chat_filter", _config_string, "\"off\"", "HALO_SERVER_CHAT_FILTER", _environment_value, _platform_server,
 		"The words the server keeps out of its chat and its players' names\n"
-		"(streamer mode's list, by chat_filter_slurs, _swearing and _insults):\n"
+		"(the word list's, by chat_filter_slurs, _swearing and _insults):\n"
 		"\"off\"; \"censor\", a line's words shown as stars; \"block\", a line\n"
 		"with them refused (its sender is told why) and a player whose name has\n"
 		"them refused at the door. Links are network.text_chat's." },
@@ -1081,18 +1070,6 @@ static const struct config_setting config_settings[] =
 		_platform_server,
 		"How long a map vote runs (5 to 120 seconds); it ends sooner once every\n"
 		"player has voted." },
-	{ "streamer.enabled", _config_boolean, "false", "HALO_STREAMER_MODE", _environment_value, _platform_all,
-		"Hide offensive words in names and text from other players, maps and mods\n"
-		"as stars, at the levels below (Settings > Network Setup > Streamer Mode)." },
-	{ "streamer.slurs", _config_string, "\"mild\"", "HALO_STREAMER_SLURS", _environment_value, _platform_all,
-		"With streamer.enabled, the slurs (race, sexuality, gender, disability)\n"
-		"hidden: \"off\", \"severe\", \"strong\" (and severe) or \"mild\" (all)." },
-	{ "streamer.swearing", _config_string, "\"strong\"", "HALO_STREAMER_SWEARING", _environment_value, _platform_all,
-		"With streamer.enabled, the swearing and sexual words hidden: \"off\",\n"
-		"\"severe\", \"strong\" (and severe) or \"mild\" (all)." },
-	{ "streamer.insults", _config_string, "\"off\"", "HALO_STREAMER_INSULTS", _environment_value, _platform_all,
-		"With streamer.enabled, the insults that are not slurs hidden: \"off\",\n"
-		"\"severe\", \"strong\" (and severe) or \"mild\" (all)." },
 	{ "crash_reports.upload", _config_string, "\"ask\"", "HALO_CRASH_REPORTS", _environment_value, _platform_windows,
 		"Send a report of each crash (a minidump and halo.log) to the developers'\n"
 		"Sentry project (port/windows/src/win32_crash.c): \"yes\" sends them, \"no\"\n"
@@ -1201,9 +1178,6 @@ static const struct config_setting config_settings[] =
 		"keyboard, a SPACE and start Enter), and a button (a, b, x, y, start, back,\n"
 		"up, down, left, right, lb, rb, lt, rt: pressed for 150 ms),\n"
 		"\"walk\" (the sticks move from then on) or \"still\"." },
-	{ "debug.bot_trace", _config_integer, "0", "HALO_BOT_TRACE", _environment_value, _platform_all,
-		"Log each bot's state (bots.count) every this many seconds: where it is\n"
-		"and goes, its path, target and weapon; 0 never." },
 	{ "debug.update_answer", _config_string, "\"\"", "HALO_UPDATE_ANSWER", _environment_value, _platform_desktop,
 		"The answer to the new version question, for automated tests: \"yes\",\n"
 		"\"no\" or \"never\" (do not ask again, confirmed); empty asks." },
@@ -2071,9 +2045,6 @@ static const struct
 	{ "network.shield_effects", { "stock", "glow", "light_show", "overshield", "glow_overshield",
 		"light_show_overshield", "players", NULL }, NULL },
 	{ "network.coop_enemies_mode", { "none", "per_player", "multiplier", NULL }, NULL },
-	{ "streamer.slurs", { "off", "severe", "strong", "mild", NULL }, NULL },
-	{ "streamer.swearing", { "off", "severe", "strong", "mild", NULL }, NULL },
-	{ "streamer.insults", { "off", "severe", "strong", "mild", NULL }, NULL },
 	{ "crash_reports.upload", { "ask", "yes", "no", NULL }, NULL },
 };
 

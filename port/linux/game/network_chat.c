@@ -1072,7 +1072,7 @@ static char const *chat_refused(
 /* ---------- the server's word filter (server.chat_filter)
 
 A dedicated server may keep words out of its chat and its players' names:
-the words of streamer mode's list (text_filter_match.c), by group (slurs,
+the words of the list (text_filter_match.c), by group (slurs,
 swearing, insults) and the least severity each keeps out, its own settings'
 (server.chat_filter_slurs...). "censor" stars a line's words before the
 line goes on; "block" refuses the line (its sender told why) and a machine
@@ -2513,23 +2513,6 @@ static short chat_line_text(
 	return index;
 }
 
-/* a string as streamer mode shows it (text_filter.c), in place, at most size
-with its end: the whole line's, before it wraps, so that a word spelled out
-over two rows is seen (the rows are then drawn as they are) */
-static void chat_filter_shown(
-	wchar_t *string,
-	short size)
-{
-	wchar_t const *shown = text_filter_unicode(string);
-	short index;
-
-	if (shown == string)
-		return;
-	for (index = 0; shown[index] && index < size - 1; index++)
-		string[index] = shown[index];
-	string[index] = 0;
-}
-
 /* a line's name as drawn: "Name:", "Name (team):" or "Name (vehicle):" */
 static void chat_line_name(
 	struct chat_line const *line,
@@ -2730,8 +2713,6 @@ void network_chat_draw(
 		chat_color(_chat_color_blue, 1.0f, &color);
 		chat_text_color(1.0f, &text_color);
 		draw_string_set_draw_mode(font_index, NONE, 0 /* left */, 0, &color);
-		/* (what the player types is measured and drawn as it is: text_filter.c) */
-		text_filter_suspend();
 		/* (one row: its end, with the caret, where the whole is wider) */
 		chat_line_layout(left, SHORT_MAX, line_height, prompt, text, &layout);
 		{
@@ -2758,7 +2739,6 @@ void network_chat_draw(
 		layout.lengths[0] = (short)(length + 1 - start);
 		chat_draw_layout(font_index, &layout, left, right, touch ? edge : (short)(edge - line_height), line_height,
 			prompt, &color, text, &text_color, 1.0f);
-		text_filter_resume();
 		edge = (short)(edge + (touch ? line_height : -line_height));
 		rows--;
 		if (chat_keyboard.open)
@@ -2820,22 +2800,13 @@ void network_chat_draw(
 			chat_line_name(line, name, NUMBEROF(name));
 			chat_text_color(alpha, &text_color);
 		}
-		/* (streamer mode's words hidden in the whole line, which is then
-		measured and drawn as it is) */
-		chat_filter_shown(name, NUMBEROF(name));
-		chat_filter_shown(text, NUMBEROF(text));
-		text_filter_suspend();
 		draw_string_set_draw_mode(font_index, NONE, 0 /* left */, 0, &color);
 		chat_line_layout(left, right, line_height, name, text, &layout);
 		/* (the newest rows first: an older line that does not fit is not shown) */
 		if (layout.rows > rows)
-		{
-			text_filter_resume();
 			break;
-		}
 		chat_draw_layout(font_index, &layout, left, right, touch ? edge : (short)(edge - layout.rows * line_height),
 			line_height, name, &color, text, &text_color, alpha);
-		text_filter_resume();
 		edge = (short)(edge + (touch ? 1 : -1) * layout.rows * line_height);
 		rows = (short)(rows - layout.rows);
 	}

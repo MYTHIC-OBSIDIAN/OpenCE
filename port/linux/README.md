@@ -365,7 +365,7 @@ PLAYER, and JOIN GAME brings them all into the game.
 In a multiplayer game, the pause menu (escape) has SETTINGS, which opens
 the profile's settings while the game goes on, and for the host END GAME.
 There Network Setup has only its pages that work in a game (Map Sharing,
-Multiplayer HUD with the text chat, and Streamer Mode), not INTERNET PLAY,
+and Multiplayer HUD with the text chat), not INTERNET PLAY,
 which would drop the game, nor the rows for the main menu.
 END GAME ends the game as its time limit does: the players stay, and after
 the carnage report the host picks the next map and gametype (PICK GAME).
@@ -395,69 +395,6 @@ path replaces one of the game's, and another `.xml` file is added.
 `port/assets/menus/README.md` describes the files. If a file has a problem,
 the game uses the Xbox's menus and the log names the file, the line and the
 problem.
-
-## Bots
-
-Computer players (bots) can play a local multiplayer game with you:
-`bots.count` (1 to 15) of them join the lobby of a Slayer game played on
-this computer, which is Multiplayer > Split Screen in the Xbox's menus
-(`display.menus = "xbox"`; the PC version's menus have no game of this
-computer alone). They are players as you are: in the scores, the respawns
-and the game's rules, on the teams that `bots.teams` asks for, and they
-follow the teams' changes in the lobby. They look for enemies, aim, fire,
-throw grenades and pick up better weapons, as well as `bots.skill` lets
-them, and walk the paths that the campaign's AI finds on the maps' walkable
-surfaces (`game/bots.c`). They are never in system link or internet games,
-nor in other gametypes (but SWAT, Infection and Gun Game, which are
-Slayer's: below), and nothing that the machines send each other changes.
-
-`bots.skill` sets six levels, from `"recruit"` (for new players: it reacts
-late, aims loosely and never throws) to `"legendary"`. Each level fights as
-a player of that level does (`game/bots_combat.c`): its reaction is never
-the same twice; the lower levels' aim trails a target that turns back, and
-every level but `"legendary"` keeps an aim error at long range; from
-`"normal"` up a bot aims at the head once the shields are down, paces the
-pistol at range and zooms the sniper rifle (again, a moment after a hit
-knocks the zoom out); its blows and grenades follow its level (how near,
-how soon, how often; from `"heroic"` a throw leads the target's path, from
-`"veteran"` one goes to where a target was last seen); it strafes in the
-level's rhythm, from long sidesteps to short jiggles at the top, halts,
-crouches and jumps; it steps in for a blow when near; from `"normal"` it
-backs off along a path when it is losing, and from `"veteran"` as soon as
-its shields pop; from `"heroic"` it runs in to finish a won fight; it does
-not see a player far above or below where it looks (unless near, or shot by
-them); and from `"veteran"` it prefers high ground as it roams. halo.log's
-bots line each minute is followed by the fight's counts.
-
-## OpenCE gametypes
-
-Create Game's Select Gametype screen has a bank between STANDARD and
-CUSTOM: OPENCE, the port's own gametypes (`game/game_modes.c`).
-
-| Gametype | Rules |
-| --- | --- |
-| SWAT | Team Slayer with no shields, in which a shot to the head of any weapon kills (a bullet's, a plasma bolt's, a needle's or a shotgun pellet's, not a melee's or an explosion's). Everyone starts with a pistol and an assault rifle; no weapons are on the map, no one has grenades, and there is no motion sensor. |
-| Infection | Team Slayer. Humans are red and keep the map's weapons; zombies are blue, carry the Oddball skull and nothing else, move faster, hit harder with the skull, and cannot drive, pick up grenades or powerups. Once two players are alive the round counts down, then the host chooses the first zombies (a human is always left). A human killed by a zombie, by themselves or by a fall becomes a zombie, one killed by a teammate does not; a zombie respawns a zombie, and a player who joins late is one. The zombies win when no human is left, the humans when the round's time runs out (5 minutes). Each player scores a kill of the other side. The rules follow pull request #420's (`game/infection.c`). |
-| Gun Game | Free for all Slayer. Everyone starts with the first weapon of a list (the rocket launcher, the shotgun, the sniper rifle, the plasma rifle, the assault rifle, the needler, the plasma pistol, the pistol, of those the map has); each kill gives the killer the next, and a kill with the last wins. No one picks up a weapon, a weapon emptied is refilled, and a melee kill takes the victim back a weapon (`game/gun_game.c`). |
-| Hardcore Slayer, Hardcore CTF, Hardcore Oddball, Hardcore King | The team gametypes with Hardcore's rules: no motion sensor (the flag, the ball and the hill keep their nav points), no aim assist (no autoaim nor magnetism, for controllers and the mouse alike), friendly fire on, and a kill restores the killer's health, and their shields unless an overshield has them past full. |
-
-Edit Gametypes edits them as any gametype, and its OPENCE OPTIONS screen
-(after TEAMPLAY OPTIONS) gives any gametype these rules: its MODE (NONE,
-SWAT, INFECTION or GUN GAME: Slayer only; Infection is played on teams and
-Gun Game free for all, which the screen's OK sets), HARDCORE (any game
-type), and the mode's own options: Infection's first zombies, zombie speed,
-skull damage, zombie respawn time, countdown and zombie shields, and Gun
-Game's weapon order (strongest first, weakest first, or random, drawn by
-the host for each game) and whether a melee kill demotes. A saved gametype
-keeps them with its PC options (`saved games/playlist_profile.c`, version 2
-of their block; a gametype saved before them has none), and the network
-game carries them to every machine (network version 35, `NETCODE.md`).
-Only the host decides each mode's events (Infection's zombies, Gun Game's
-weapons, Hardcore's restores); the clients take them from it as they take
-the rest of the game. The lobby and Server Setup name the gametype's mode.
-`debug.network_test` hosts them by name: `swat`, `infection`, `gun_game`,
-`hardcore`, `hardcore_ctf`, `hardcore_oddball` and `hardcore_king`
-(`host:bloodgulch:infection`).
 
 ## Settings
 
@@ -566,9 +503,6 @@ the setting for one start of the game. It has priority over the file.
 | `game.language` | `""` | `HALO_LANGUAGE` | The language of the menus: `ja`, `de`, `fr`, `es` or `it`. Empty: English. |
 | `game.enhanced_animations` | `true` | `HALO_ENHANCED_ANIMATIONS` | `true`: the player bipeds' grenade throws keep their legs moving, blended by speed and direction (crouched throws stay crouched, throws in the air use the jump's legs), Warthog and Scorpion riders stay seated to throw and let go of the grips to throw and reload, and a player turns with the aim while throwing, as while meleeing, and in the air, as while running (the original froze the body in a jump and kept the aim within its aiming screen about it, so a shot after turning in the air went between the jump's facing and the crosshair). `false`: the original animations, which freeze the legs during a throw and stand a rider up and the body in the air. The turning with the aim (throwing, in the air) moves where shots go, so in a network game every player turns so whatever this says; `false` turns it off only in a game of one machine. Only in config.toml, not in the menus. |
 | `game.unlock_all_levels` | `false` | `HALO_UNLOCK_ALL_LEVELS` | `true`: a profile created afterward starts with all the campaign levels finished on all the difficulties. `false`: a new profile starts at The Pillar of Autumn, and each level opens when you finish the level before it, as on the Xbox. Existing profiles keep their progress. To start a profile over, type `profile_reset_campaign` in the console. |
-| `bots.count` | `0` | `HALO_BOTS` | Computer players (bots) in a local (split screen) Slayer game: `0` to `15` join its lobby with the players, as far as the game has room. Not in system link or internet games. `0`: none, as in the stock game. Refer to "Bots". |
-| `bots.skill` | `"normal"` | `HALO_BOT_SKILL` | How well the bots play: `"recruit"`, `"easy"`, `"normal"`, `"heroic"`, `"veteran"` or `"legendary"`: how soon they react, how far and how wide they see, how large their aim error is and how fast it settles, how fast they turn, and how they fight. `"easy"`, `"normal"`, `"heroic"` and `"legendary"` keep their numbers; `"recruit"` is below `"easy"`, and `"veteran"` halfway from `"heroic"` to `"legendary"`. Refer to "Bots". |
-| `bots.teams` | `"even"` | `HALO_BOT_TEAMS` | In a team game: `"even"` puts the bots on both teams, evening them with the players; `"against"` puts them all on the team the players are not on. |
 | `paths.data` | `""` | `HALO_DATA_ROOT` | The data root. Refer to "Start the game". |
 | `paths.saves` | `""` | `HALO_SAVE_ROOT` | The save root. Refer to "Files and folders". |
 | `paths.logs` | `""` | `HALO_LOG_ROOT` | The folder of `debug.txt`, `bans.txt` and `cheaters.txt`. Empty: the data root. With it, the data root can be read-only (a dedicated server's maps mounted so). |
@@ -662,7 +596,7 @@ the setting for one start of the game. It has priority over the file.
 | `server.publisher_key_file` | `"publisher.key"` | `HALO_SERVER_PUBLISHER_KEY_FILE` | The operator's Ed25519 key for the master servers (`halo --server --keygen` makes it), next to `config.toml` unless a full path. In a container, `HALO_SERVER_PUBLISHER_KEY` can hold the key itself. |
 | `server.instance` | `""` | `HALO_SERVER_INSTANCE` | A short name that tells this server from the operator's other servers on the master servers (letters, digits, `-` and `_`). Empty: made from `server.name`. |
 | `server.region` | `""` | `HALO_SERVER_REGION` | A region the server browser shows (`eu`, `na-east`...): 16 characters. Empty: none. |
-| `server.chat_filter` | `"off"` | `HALO_SERVER_CHAT_FILTER` | The words the server keeps out of its chat and its players' names (streamer mode's list): `"off"`; `"censor"`, a line's words shown as stars; `"block"`, a line with them refused (its sender told why) and a player whose name has them refused at the door. Links are `network.text_chat`'s. |
+| `server.chat_filter` | `"off"` | `HALO_SERVER_CHAT_FILTER` | The words the server keeps out of its chat and its players' names (the list of `port/assets/text_filter`): `"off"`; `"censor"`, a line's words shown as stars; `"block"`, a line with them refused (its sender told why) and a player whose name has them refused at the door. Links are `network.text_chat`'s. |
 | `server.chat_filter_slurs`, `server.chat_filter_swearing`, `server.chat_filter_insults` | `"mild"`, `"off"`, `"off"` | `HALO_SERVER_CHAT_FILTER_SLURS`, `_SWEARING`, `_INSULTS` | With `server.chat_filter`, each group's words kept out: `"off"`, `"severe"` (the worst), `"strong"` or `"mild"` (all). |
 | `server.vpn_policy` | `"link"` | `HALO_SERVER_VPN_POLICY` | Machines joining from the address of a VPN, a Tor exit or a datacenter (the master servers' netlist): `"link"`, refused unless the player shows a Discord account linked at a master server this server publishes to; `"block"`, refused; `"off"`, let in. Refer to `docs/dedicated_server.md`, "VPNs and linked Discord accounts". |
 | `server.vpn_fail` | `"open"` | `HALO_SERVER_VPN_FAIL` | Until a netlist is held: `"open"` lets every machine in, `"closed"` refuses those from the internet as `server.vpn_policy` `"block"` would. |
@@ -682,10 +616,6 @@ the setting for one start of the game. It has priority over the file.
 | `server.master_publish_address` | `false` | `HALO_SERVER_MASTER_PUBLISH_ADDRESS` | `true`: the master servers can give this server's address to players. `false`: only their probe uses it. |
 | `discord.application_id` | the application of the project | `HALO_DISCORD_APPLICATION` | The Discord application for invites. Empty: no Discord. |
 | `update.auto` | `true` | `HALO_UPDATE_AUTO` | `true`: at start-up, the game looks for a new version. Refer to "Updates". `false`: the game does not look. |
-| `streamer.enabled` | `false` | `HALO_STREAMER_MODE` | `true`: streamer mode hides offensive words, as stars, in the names and text of other players, maps and mods, at the levels below. Refer to "Streamer mode". STREAMER MODE in Settings > Network Setup > Streamer Mode. |
-| `streamer.slurs` | `"mild"` | `HALO_STREAMER_SLURS` | With `streamer.enabled`, the slurs (race, ethnicity, sexuality, gender, disability) hidden: `"off"`, `"severe"`, `"strong"` (strong and severe) or `"mild"` (all). CENSOR SLURS in Settings > Network Setup > Streamer Mode. |
-| `streamer.swearing` | `"strong"` | `HALO_STREAMER_SWEARING` | With `streamer.enabled`, the swearing and sexual words hidden: `"off"`, `"severe"`, `"strong"` or `"mild"`. CENSOR SWEARING in Settings > Network Setup > Streamer Mode. |
-| `streamer.insults` | `"off"` | `HALO_STREAMER_INSULTS` | With `streamer.enabled`, the insults that are not slurs hidden: `"off"`, `"severe"`, `"strong"` or `"mild"`. CENSOR INSULTS in Settings > Network Setup > Streamer Mode. |
 | `crash_reports.upload` | `"ask"` | `HALO_CRASH_REPORTS` | Windows only. `"yes"`: the game sends a report of each crash to the developers. `"no"`: the game sends no reports. `"ask"`: the game asks at the next crash and writes the answer here. Refer to "Crash reports" in [port/windows/README.md](../windows/README.md#crash-reports). |
 | `debug.update_answer` | `""` | `HALO_UPDATE_ANSWER` | The answer to the update question, for automatic tests: `yes`, `no` or `never`. Empty: the game asks. |
 | `debug.fixed_step` | `false` | `HALO_FIXED_STEP` | `true`: a game of this computer alone runs one tick a frame, whatever time has passed, so that it plays the same every time (tests). |
@@ -698,7 +628,6 @@ the setting for one start of the game. It has priority over the file.
 | `debug.network_test`, `debug.network_test_start`, `debug.network_test_kill`, `debug.network_test_score`, `debug.network_test_shoot`, `debug.network_test_vehicle`, `debug.network_test_pickup`, `debug.network_test_pickup_weapon`, `debug.network_test_chat`, `debug.network_test_name`, `debug.network_test_public`, `debug.test_input` | off | `HALO_NETWORK_TEST`, `HALO_NETWORK_TEST_START`, `HALO_NETWORK_TEST_KILL`, `HALO_NETWORK_TEST_SCORE`, `HALO_NETWORK_TEST_SHOOT`, `HALO_NETWORK_TEST_VEHICLE`, `HALO_NETWORK_TEST_PICKUP`, `HALO_NETWORK_TEST_PICKUP_WEAPON`, `HALO_NETWORK_TEST_CHAT`, `HALO_NETWORK_TEST_NAME`, `HALO_NETWORK_TEST_PUBLIC`, `HALO_TEST_INPUT` | Automatic tests of system link, or (`log`) a log of the game one machine plays (`game/network_test.c`). Refer to `NETCODE.md`. `debug.test_input = "menu:a down down a"` presses menu buttons one a second (`a`, `b`, `x`, `y`, `up`, `down`, `left`, `right`, `start`, `back` or `wait`), for testing the menus. |
 | `debug.virtual_gamepads`, `debug.virtual_gamepad_script` | `0`, empty | `HALO_VIRTUAL_GAMEPADS`, `HALO_VIRTUAL_GAMEPAD_SCRIPT` | Desktop: attach this many SDL virtual gamepads (`0` to `4`), which the game takes for gamepads plugged in, and press their buttons from a script of `<seconds> <pad> <what>` entries separated by semicolons: the seconds from when the network lobby first opens, the pad `1` to `4` (`0`: the keyboard, whose `a` is SPACE and `start` Enter), and a button (`a`, `b`, `x`, `y`, `start`, `back`, `up`, `down`, `left`, `right`, `lb`, `rb`, `lt`, `rt`), `walk` (the sticks move from then on) or `still`. For testing split screen without four controllers, for example `"3 2 start; 6 2 a; 8 0 a; 10 1 a; 11 1 a; 14 0 start"` with `debug.network_test = "host:bloodgulch"`. |
 | `debug.network_test_cues`, `debug.network_test_cue_players` | none, `1` | `HALO_NETWORK_TEST_CUES`, `HALO_NETWORK_TEST_CUE_PLAYERS` | Console lines a test runs at their seconds, from the first tick that many players are in (`"<second> <line>\|..."`; not on the web). |
-| `debug.bot_trace` | `0` | `HALO_BOT_TRACE` | Every this many seconds, each bot's state is written to the log: where it is and where it goes, its path, its target and its weapon. `0`: never. |
 | `debug.touch_targets` | `false` | `HALO_TOUCH_TARGETS` | Outlines the tap targets of the menus (item green, value blue, list slot yellow, legend button red, the band beside the slots of a list orange, keys of the on-screen keyboard white), marks where the last finger went down and the last tap landed for 3 seconds, and logs each tap with the target that it hit (for a value, also where it splits into previous and next): to judge the accuracy of touch. |
 | `debug.log_addresses` | `false` | `HALO_LOG_ADDRESSES=1` sets `true` | `true`: other machines' internet addresses are written whole in `debug.txt` and the console, for debugging your own network. `false`: a public address is written as a tag (`addr#3f2a9c`) that matches up only within one run; local network addresses are always whole. Do not post a `debug.txt` written with this on. |
 | `debug.network_latency`, `debug.network_loss`, `debug.network_corrupt`, `debug.network_corrupt_stream`, `debug.network_corrupt_after` | `0` | `HALO_NETWORK_LATENCY`, `HALO_NETWORK_LOSS`, `HALO_NETWORK_CORRUPT`, `HALO_NETWORK_CORRUPT_STREAM`, `HALO_NETWORK_CORRUPT_AFTER` | The game holds all the data that it receives for this number of milliseconds, ignores this percentage of the datagrams, and damages this percentage of the datagrams it receives, and this percentage of its reads of streams, at random (bytes changed, cut short, stretched or replaced), from this many seconds after the start. Use the first two to test the netcode as on the internet, and the others to test that nothing another machine sends can crash the game (a damaged stream is closed, so a little goes a long way; a host's messages to its own client are damaged too, so start damaging once the game has started). |
@@ -889,19 +818,6 @@ Do not give 127.0.0.1 to a copy. Each copy gets to its own address through
 127.0.0.1. Linux and Windows send all of 127.0.0.0/8 to the loopback
 interface.
 
-### Test with many machines
-
-`tools/system_link_bots.py` adds simple machines to a game. Each machine has
-one player. The machines obey the system link protocol, but they do not
-calculate the game or move their players.
-
-1. Start a game on the host.
-2. Enter `python tools/system_link_bots.py --host 127.0.0.200 --machines 127 --start`.
-
-Each machine uses its own loopback address, from 127.0.0.2. The option
-`--start` starts the game when all the machines are in the lobby. If the
-host has no `network.address`, do not give `--host`.
-
 ## Internet play
 
 Machines with an invite link can play system link on the internet. This
@@ -1004,11 +920,6 @@ while the HUD is hidden; opening a menu ends the line being typed. A new
 game starts with no lines. A line has 63 characters at most, letters,
 numbers and punctuation but `|` only (ASCII; `|` becomes `?`). `debug.txt`
 gets every line.
-
-Streamer mode (refer to "Streamer mode") hides offensive words in the
-chat's lines and players' names as it does in all the text the game draws:
-only on your screen, never in what is sent, and never in the line you are
-typing.
 
 The host sends each line on: a player of an older build does not see the
 lines and cannot send them. The host takes 5 lines at once from a machine,
@@ -1137,11 +1048,9 @@ game with a password, whose invite the listing hides, shows no ping, nor
 does a host not reached; a game that is full or starting shows CLOSED.
 REFRESH also asks the hosts for their listings again.
 
-The gametype column names an OpenCE gametype's kind (SWAT, INFECTION, GUN
-GAME, or HC and the game engine for Hardcore: HC CTF, HC SLAYER), which the
-host sends with the game (network version 37), and otherwise the game
-engine's (SLAYER, CTF, KING OF THE HILL). The browser of LAN games, and the
-preview of a game before joining it, name it the same way.
+The gametype column names the game engine (SLAYER, CTF, KING OF THE HILL).
+The browser of LAN games, and the preview of a game before joining it, name
+it the same way.
 
 The browser lists two kinds of games: the dedicated servers that the
 master servers list (`masters.txt`, `network.masters_file`; the official
@@ -1621,48 +1530,6 @@ checks every file before it plays it, and leaves out (with a line in
 replaces. A mod changes nothing that the machines of a
 network game agree on. Refer to [docs/mods.md](../../docs/mods.md).
 
-## Streamer mode
-
-Streamer mode (Settings > Network Setup > Streamer Mode, `streamer.enabled`)
-hides offensive words as stars wherever the game draws text that other
-people or files wrote: the text chat's lines, players' names over their
-heads, in the chat, in the kill feed, on
-the scoreboards and in the lobbies, the server browser's games, the host's
-notices in the console, map and mod names, and the text of a map's or mod's
-own string lists, as well as the message boxes about mods and maps. It
-changes only what this machine shows: the names others see, and what the
-machines send each other, stay as they are.
-
-The words come from Surge AI's rated list of English profanities, reviewed
-for the game (`port/assets/text_filter`), in three groups, each with a level
-that hides that severity and worse:
-
-| Group | Setting | Default | What it has |
-| --- | --- | --- | --- |
-| SLURS | `streamer.slurs` | `"mild"` (all) | Slurs about race, ethnicity, nationality, religion, sexuality, gender and disability |
-| SWEARING | `streamer.swearing` | `"strong"` | Swearing and sexual words; the mildest (damn, hell) show at `"strong"` |
-| INSULTS | `streamer.insults` | `"off"` | Name-calling that is not a slur |
-
-A word is found however it is dressed: in capitals or with accents, in
-look-alike letters (Cyrillic, Greek, full-width, small capitals), in leet
-(`0` for o, `@` for a, `ph` for f), with its letters stretched ("fuuuck"),
-with punctuation between them (`f.u.c.k`), spaced out (`f u c k`, `fu ck`),
-and with characters the game does not draw (zero-width spaces, the menus'
-`|` codes) between them. Each word may be found inside a name, at a word's
-start, or only as a whole word, as fits it, and some words are never
-hidden though a hidden one is inside them (Scunthorpe). `python3
-tools/text_filter_terms.py --check "some text"` shows what would be hidden.
-
-What it cannot catch: letters added into a word or its letters scrambled, new
-spellings, a word split between two names or two lines, voice chat (mute a
-player from the scoreboard, or set `audio.voice_volume` to 0), and pictures.
-What you type is shown as you type it.
-
-Your own words: `text_filter.txt` in the data root, with lines of `add
-<word>` (hidden whenever streamer mode is on) and `allow <word>` (never
-hidden), read when the game starts and when the settings change. The web
-build's page draws its own list of mods, which is not filtered.
-
 ## Map checks
 
 The game reads a map's tags straight into memory and uses them as its own
@@ -1836,7 +1703,6 @@ Other changes:
 | `hs/hs.c` | The console's `mods_reload`, `mods_enable` and `mods_list`, which a client may run too. |
 | `interface/ui_widget.c`, `interface/ui_widget_event_handler_functions.c`, `interface/ui_widget_game_data_input_functions.c` | The main menu is the PC version's from `port/assets/menus` (`display.menus`); the menus' widgets can call the port's functions (`game/menu_functions.c`) and send the PC version's custom activation event; the widgets' memory is 256 KB, not 16 KB; the main menu and Multiplayer clear co-op's controllers, so that a gamepad going back to controller 1 is not a controller unplugged; the lobby's split screen players leave alone, and one who quits in game is not joined to the next game (`interface/player_ui.c`). |
 | `interface/player_ui.c` | Fast setup opens the pregame screen through the port's menus (the lobby), as `interface/ui_widget.c` does. |
-| `game/game_engine.c`, `game/game_engine.h`, `game/game_engine_slayer.c`, `game/game.c`, `game/aim_assist.c`, `game/players.c`, `objects/damage.c`, `objects/objects.c`, `units/units.c`, `items/weapons.c`, `saved games/playlist_profile.c`, `saved games/saved_game_files.c` | OpenCE's gametypes (`game/game_modes.c`, "OpenCE gametypes"): the gametype's PC options carry a mode and Hardcore with their options; the built-in ones are written after the Xbox's default gametypes; Infection's and Gun Game's game engines are Slayer's with their rules; SWAT's headshots, Hardcore's motion sensor, aim assist and restore of the killer; Infection's zombies' skulls, grenades, powerups, seats and melee. |
 | `game/game_time.c`, `main/main.c` | With `debug.fixed_step`, a game of one machine runs a tick a frame, each frame taking a tick's time, so that it plays the same every time (`tools/stagekit`). |
 | `input/input_abstraction.c`, `game/player_control.c`, `game/players.c`, `game/player_queues_new.c`, `units/units.h` | The keyboard and mouse's actions (`src/xinput_sdl.c`, `include/halo_keyboard.h`) join controller 1's game controls; their reload key reloads on its own, and their action key only acts (a control flag of the port's, sent with the player's action, stops the reload the controller's X falls back to). |
 | `saved games/player_profile.h`, `interface/player_ui.c` | A sixth button layout, the Master Chief Collection's Bumper Jumper (`profile.button_preset` 5), and a seventh, Fishsticks (6: zoom on the left trigger, melee on the right stick's button, grenade throw on the right bumper, crouch on B, grenade switch on the pad's left, which then does not move you), and an eighth, Recon (7: the standard buttons with action and reload on the right bumper, grenade switch on the left bumper, flashlight on X). A layout the build does not know (a later build's) gets the standard buttons, not none, which moved start and back and stopped the game. |
@@ -1848,7 +1714,6 @@ Other changes:
 | `render/render.c` | `render_initialize` reads the structure culling tests from `display.structure_culling`. |
 | `models/models.c` | A model's size, which chooses its level of detail and whether it is drawn, is scaled as `display.model_detail` says (`halo_model_detail_scale`, `src/d3d8_gl.c`), and each permutation draws the level `game/model_detail.c` chooses from the model's (stock: the model's). |
 | `interface/hud.c` | In multiplayer, players' names are drawn above their heads (`display.player_names`, `display.player_name_scale`). |
-| `text/draw_string.c`, `interface/terminal.c`, `interface/virtual_keyboard.c` | Streamer mode's words are hidden in every string drawn or measured (`game/text_filter.c`), but in the console's line and the virtual keyboard's text being typed. |
 | `rasterizer/rasterizer_text.c`, `text/draw_string.c` | Text is drawn from an atlas of the fonts' glyphs, rasterized at the resolution the game draws at (`src/text_hires.c`), when the font has every character of the string. Text can be drawn scaled about a point (`rasterizer_text_set_scale`), as the players' names are. Each glyph's advance is centred on the font tag character's, so the layout is the same, and a glyph is cut at a text box only where the font tag's character visibly was. |
 | `interface/first_person_weapons.c` | The first-person hands are drawn with the unit's shield modifier shader, as its body is (`display.viewmodel_shield`). |
 | `render/render_objects.c`, `objects/objects.c` | In first person, your own body is drawn from the waist down with the pose `first_person_legs.c` makes (`display.first_person_legs`); the waist it found and the mesh `object_mesh.c` read are forgotten on a new map. |
@@ -1863,7 +1728,6 @@ Other changes:
 | `cache/cache_files.c`, `networking/network_client_manager.c`, `networking/network_server_manager.c`, `networking/network_server_message_handler.c`, `main/main.c`, `interface/interface.c` | Map sharing (`game/map_share.c`): a client that does not have the game's Custom Edition map asks the host for it instead of leaving, is not given time to precache it until it has it, and adds its players to a game in progress only then; the host gives the game's map its own name and its version (its hash's start), takes the requests from any machine in the game, lobby too, and does not drop a machine that downloads; the transfers run each frame, and their progress is drawn over the screen. |
 | `cutscene/cinematics.c` | A scenario's titles (some Custom Edition maps show their name for the whole game) are not drawn over a menu, as the letterbox is not: the screen's overlays are drawn after the players' menus. |
 | `tag_files/tag_groups.h` | `TAG_BLOCK_GET_ELEMENT` returns an element in the block without a call, and calls `tag_block_get_element_with_size` for anything else. |
-| `game/players.c`, `networking/network_server_manager.c` | Bots (`game/bots.c`, `bots.count`): the lobby of a local Slayer game takes the bot players, each the one player of a machine of its own that no real machine is, and every tick their actions come from `game/bots.c` instead of their empty queues. Nothing changes in a system link or internet game. |
 | `input/input_xbox.c`, `physics/collision_usage.c` | The clock is read only for a button held, and for collision tests only when their times are shown: a read of the clock is slow in a browser. |
 | `main/main.c`, `interface/hud.c`, `interface/hud_unit.c`, `interface/hud_draw.c`, `game/game_engine.c` | The text chat of network games (`game/network_chat.c`): its keys are read each frame, and the debug keys are not while a line is typed; each view's HUD draws its lines, above the motion sensor, whose place the HUD notes (the left of the last picture drawn); the scoreboard's menu has Mute voice and chat, and the host's Mute for everyone. |
 

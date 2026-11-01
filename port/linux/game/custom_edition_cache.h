@@ -196,6 +196,12 @@ struct custom_edition_string_list *custom_edition_locale_strings(
 	char const *name);
 boolean custom_edition_cache_tags_loaded(
 	void);
+/* Whether the loaded map is one of the CUSTOM EDITION list's (the
+custom_maps folder's, not multi_maps' nor digsite_maps'): every vehicle and
+weapon it places spawns, whatever the gametype (game_engine.c). Also
+declared for the game in halo_linux_source_fixups.h. */
+boolean custom_edition_cache_listed_map(
+	void);
 /* Whether the structure bsp reference (of the loaded map's scenario) names
 bytes of the map that load to the top of its tag cache, above its tags:
 logged when not. */

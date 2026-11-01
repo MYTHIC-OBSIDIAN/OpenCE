@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 	one engine's, each rule in its own */
 	CASE("sections")
 	{
-		CHECK(parse("base = \"ctf\"\n[universal]\nlives = 3\n[options]\nhardcore = true\n[ctf]\nassault = true\n"),
+		CHECK(parse("base = \"ctf\"\n[universal]\nlives = 3\n[options]\ntime_limit = 10\n[ctf]\nassault = true\n"),
 			"three tables were refused: %s", file.error);
 		CHECK(!strcmp(file.engine_table, "ctf") && file.rule_count == 3, "engine %s, %d rules", file.engine_table,
 			file.rule_count);

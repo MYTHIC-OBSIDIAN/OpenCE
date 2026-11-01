@@ -329,6 +329,13 @@ game's flags also tell its clients whether the host is a dedicated server
 (`_network_game_cooperative_dedicated_bit`: its loading zones then ask for
 most of the living players).
 
+Then version 42 removes OpenCE's gametypes (SWAT, Infection, Gun Game and
+Hardcore, which versions 35 and 37 added): the gametype's PC options keep
+their 0x2C bytes, but the ten from `mode` on are reserved (zero), Slayer's
+state is always Slayer's own (no `struct distributed_infection_state`), and
+the game's kind is no longer sent: the advertisement's fourth reserved byte
+and the listing's stamp are zero.
+
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
 sources' messages, kinds, bits, structs sent whole or the sizes of their
@@ -1015,8 +1022,7 @@ Unity's Netcode for Entities, lightyear, netfox and the Ares source):
 
 `debug.network_test` (`port/linux/game/network_test.c`) hosts or joins a
 game without the menus (in a team game the joining player takes the other
-team; `local:<map>` plays a local split screen game instead, which the
-bots of `bots.count` join), and `debug.test_input` plays controller 1 with a scripted bot (or,
+team; `local:<map>` plays a local split screen game instead), and `debug.test_input` plays controller 1 with a scripted bot (or,
 `look:<seed>`, one that stands still, only turning and looking up and
 down); each machine logs every player's position, health and shields,
 where they aim and face, their animation state and how hard they move,

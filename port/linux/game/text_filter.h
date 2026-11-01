@@ -1,11 +1,10 @@
 /*
 TEXT_FILTER.H
 
-Streamer mode (Settings > Network Setup > Streamer Mode, streamer.*): the
-words hidden as stars in what is drawn. text_filter_match.c finds them, with
-no game types, so that the harness builds it alone
-(tools/harness/tests/test_text_filter.py); text_filter.c applies them to
-what the game draws.
+The word list a dedicated server keeps out of its chat and its players'
+names (server.chat_filter: network_chat.c). text_filter_match.c finds the
+words, with no game types, so that the harness builds it alone
+(tools/harness/tests/test_text_filter.py).
 */
 
 #ifndef __TEXT_FILTER_H__
@@ -13,8 +12,8 @@ what the game draws.
 
 #include <stddef.h>
 
-/* the groups a player sets a level for, and the player's own words
-(text_filter.txt), hidden whenever streamer mode is on */
+/* the groups a level is set for, and words added to the list (the own
+group) */
 enum text_filter_group
 {
 	_text_filter_slurs,
@@ -53,13 +52,5 @@ int text_filter_word_add(char const *term, int group, int severity, int rule);
 int text_filter_allow_add(char const *word);
 long text_filter_censor(unsigned short const *text, long length, int narrow, unsigned char const *levels,
 	unsigned char *censored);
-
-/* text_filter.c */
-wchar_t const *text_filter_unicode(wchar_t const *string);
-char const *text_filter_string(char const *string);
-void text_filter_suspend(void);
-void text_filter_resume(void);
-void text_filter_exempt(void const *text);
-void text_filter_utf8(char *text);
 
 #endif

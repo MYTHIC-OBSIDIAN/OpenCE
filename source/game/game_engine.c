@@ -537,8 +537,6 @@ symbols in this file:
 /* ---------- headers */
 
 #include "cseries.h"
-#include "game_modes.h" /* port: port/linux/game/game_modes.c */
-#include "infection.h" /* port: port/linux/game/infection.c */
 #include "cseries_windows.h"
 #include "errors.h"
 #include "aim_assist.h"
@@ -1174,9 +1172,7 @@ static void game_engine_generate_title_string(
 	if (game_variant_options_get()->time_limit > 0 &&
 		game_engine_globals.postgame_state == game_engine_mode_active)
 	{
-		/* port: Infection's round's time starts after its countdown */
-		long left = infection_enabled() ? infection_remaining_ticks() :
-			game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
+		long left = game_variant_options_get()->time_limit * 60L * TICKS_PER_SECOND - game_time_get();
 		wchar_t time_string[32];
 
 		ticks_to_unicode_time_string(MAX(left, 0), NUMBEROF(time_string), time_string);
@@ -4273,8 +4269,16 @@ void game_variant_options_default(
 		_radar_players_none : _radar_players_all;
 	options->vehicle_set[0] = options->vehicle_set[1] =
 		variant ? (byte)variant->universal_variant.vehicle_set : 0;
-	/* port: OpenCE's gametypes' options at their defaults, with no mode */
-	game_modes_options_default(options);
+
+	return;
+}
+
+void game_variant_options_sanitize(
+	struct game_variant_options *options)
+{
+	options->force_team_spawns = options->force_team_spawns != FALSE;
+	csmemset(options->reserved_modes, 0, sizeof(options->reserved_modes));
+	csmemset(options->reserved, 0, sizeof(options->reserved));
 
 	return;
 }
@@ -5134,8 +5138,6 @@ void game_engine_player_killed(
 			dead_player_index,
 			friendly_fire);
 	}
-	/* port: OpenCE's gametypes' (Hardcore's restore of the killer) */
-	game_modes_player_killed(killing_player_index, dead_player_index, friendly_fire);
 
 	same_player = killing_player_index == dead_player_index;
 	if (killing_player_index != NONE && dead_player_index != NONE)
@@ -5170,8 +5172,7 @@ void game_engine_player_killed(
 	moves the dead to the other team when his is two or more bigger (his
 	next unit is the other team's, which the clients take it from:
 	network_player_attach_unit) */
-	/* port: (not Infection's teams, which are its roles: infection.c) */
-	if (global_variant.universal_variant.teams && game_variant_options_get()->auto_team_balance && !infection_enabled() &&
+	if (global_variant.universal_variant.teams && game_variant_options_get()->auto_team_balance &&
 		!network_game_distributed_client() && VALID_INDEX(dead_player->team_index, 2) && !dead_player->quit_out_of_game)
 	{
 		struct data_iterator iterator;
@@ -5199,11 +5200,6 @@ void game_engine_player_killed(
 		}
 	}
 
-	/* port: Infection's respawn time (infection.c), the betrayal penalty's
-	after it */
-	if (infection_enabled())
-		dead_player->respawn_timer = game_variant_options_get()->infection_respawn_time * TICKS_PER_SECOND;
-
 	/* port: the gametype's friendly fire penalty: the team killer's next
 	respawn later (the dead's own, if he has one waiting) */
 	{
@@ -5222,9 +5218,7 @@ void game_engine_player_killed(
 		}
 	}
 
-	/* port: (Infection's respawn time may be shorter) */
-	if (!infection_enabled())
-		dead_player->respawn_timer = MAX(dead_player->respawn_timer, 90);
+	dead_player->respawn_timer = MAX(dead_player->respawn_timer, 90);
 	dead_player = player_get(dead_player_index);
 
 	if (!dead_player->quit_out_of_game)
@@ -5470,9 +5464,6 @@ boolean game_engine_hud_draw_motion_sensor(
 			default_draw_motion_sensor = FALSE;
 
 		draw_motion_sensor |= default_draw_motion_sensor;
-		/* port: Hardcore has none (port/linux/game/game_modes.c) */
-		if (game_modes_motion_sensor_hidden())
-			draw_motion_sensor = FALSE;
 	}
 
 	return draw_motion_sensor;
@@ -5729,9 +5720,6 @@ boolean game_engine_should_end_game(
 {
 	boolean should_end_game = FALSE;
 
-	/* port: Infection's round ends by its own rules (infection.c) */
-	if (infection_enabled())
-		return FALSE;
 	if (game_engine && !multiple_teams_alive())
 		should_end_game = TRUE;
 	/* port: the gametype's time limit (game_variant_options) */
@@ -7537,12 +7525,8 @@ static void game_engine_predict_resources(
 	object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_frag_grenade));
 	object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_plasma_grenade));
 
-	/* port: (and Infection's zombies' skull) */
-	if (global_variant.game_engine_index == game_engine_oddball ||
-		game_modes_variant_mode(&global_variant, game_variant_options_get()) == _game_mode_infection)
-	{
+	if (global_variant.game_engine_index == game_engine_oddball)
 		object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_ball));
-	}
 
 	if (global_variant.game_engine_index == game_engine_ctf)
 		object_definition_predict(list_index_to_weapon_definition_index(_weapon_list_flag));
@@ -7579,8 +7563,6 @@ void game_engine_initialize(
 		game_engine_variant_cleanup(&global_variant);
 		/* port: the cleaned variant's (the one given may be any number) */
 		game_engine = game_engines[global_variant.game_engine_index];
-		/* port: an OpenCE gametype's mode's (port/linux/game/game_modes.c) */
-		game_engine = game_modes_engine(game_engine);
 	}
 
 	return;
@@ -7868,6 +7850,11 @@ boolean game_engine_vehicle_placement_allowed(
 
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
+	/* port: a map of the CUSTOM EDITION list places every vehicle, whatever
+	the game type and the gametype's vehicle sets
+	(port/linux/game/custom_edition_cache.c) */
+	if (custom_edition_cache_listed_map())
+		return TRUE;
 	/* (each base's team's, a free-for-all's too, as Halo PC's: its vehicle
 	options have a red and a blue side whatever the game type) */
 	side = game_engine_vehicle_placement_team(placement);
@@ -7988,6 +7975,10 @@ long game_engine_remap_vehicle(
 {
 	long result = vehicle_definition_index;
 
+	/* port: a map of the CUSTOM EDITION list keeps every vehicle it places
+	(game_engine_vehicle_placement_allowed) */
+	if (custom_edition_cache_listed_map())
+		return result;
 	/* port: a Halo Custom Edition map's vehicles are chosen by their
 	placements, and its scripts may create any
 	(port/linux/game/custom_edition_objects.c) */
@@ -8096,9 +8087,14 @@ long game_engine_remap_weapon(
 	if (weapon_list_index == _weapon_list_mp_needler)
 		weapon_list_index = _weapon_list_needler;
 
-	/* port: a custom loadout (game_variant_options) has no weapon set */
+	/* port: a custom loadout (game_variant_options) has no weapon set (a
+	map of the CUSTOM EDITION list keeps each weapon it places, below) */
 	if (game_variant_options_get()->loadout == _loadout_custom)
+	{
+		if (custom_edition_cache_listed_map() && game_engine_weapon_list_definition(weapon_list_index) == NONE)
+			return weapon_definition_index;
 		return game_engine_weapon_list_definition(weapon_list_index);
+	}
 
 	switch (global_variant.universal_variant.weapon_set)
 	{
@@ -8245,6 +8241,10 @@ long game_engine_remap_weapon(
 		break;
 	}
 
+	/* port: a map of the CUSTOM EDITION list keeps each weapon it places,
+	where the set's has none of the map's */
+	if (custom_edition_cache_listed_map() && game_engine_weapon_list_definition(weapon_list_index) == NONE)
+		return weapon_definition_index;
 	return game_engine_weapon_list_definition(weapon_list_index);
 }
 
@@ -9161,7 +9161,9 @@ static void game_engine_update_item_spawn(
 				&scenario->netgame_equipment,
 				equipment_index,
 				struct scenario_netgame_equipment);
-		if (match_game_type(
+		/* port: (a map of the CUSTOM EDITION list: every item it places,
+		whatever the game type) */
+		if (custom_edition_cache_listed_map() || match_game_type(
 			game_engine_get_type(),
 			NUMBEROF(equipment->game_type),
 			equipment->game_type))
@@ -9194,8 +9196,10 @@ static void game_engine_update_item_spawn(
 				struct object_placement_data placement_data;
 				long object_index;
 
-				/* port: the gametype's no weapons on the map */
+				/* port: the gametype's no weapons on the map (but a map of
+				the CUSTOM EDITION list's) */
 				if (definition_index != NONE && game_variant_options_get()->no_map_weapons &&
+					!custom_edition_cache_listed_map() &&
 					object_definition_get(definition_index)->object.type == _object_type_weapon)
 				{
 					continue;
@@ -9319,7 +9323,7 @@ static void handle_custom_starting_equipment(
 
 /* port: a custom loadout's weapon's place in the globals' weapon list
 (game_engine_h's _loadout_weapon_*, from the assault rifle); random: one
-of those the map has (and port/linux/game/gun_game.c's weapons) */
+of those the map has */
 long game_engine_loadout_weapon_definition(
 	byte weapon)
 {
@@ -9491,9 +9495,6 @@ void game_engine_postspawn_player_update(
 				(char)starting_plasma_grenade_count;
 		}
 	}
-	/* port: an OpenCE gametype's mode's equipment (Gun Game's weapon,
-	Infection's skull: port/linux/game/game_modes.c) */
-	game_modes_postspawn(player_index);
 
 	return;
 }
@@ -9869,9 +9870,7 @@ long game_engine_write_network_state(
 	switch (game_engine_get_type())
 	{
 	case game_engine_ctf: written = game_engine_ctf_write_network_state(buffer, size); break;
-	/* port: (Infection's own state: infection.c) */
-	case game_engine_slayer: written = infection_enabled() ? infection_write_network_state(buffer, size) :
-		game_engine_slayer_write_network_state(buffer, size); break;
+	case game_engine_slayer: written = game_engine_slayer_write_network_state(buffer, size); break;
 	case game_engine_oddball: written = game_engine_oddball_write_network_state(buffer, size); break;
 	case game_engine_king: written = game_engine_king_write_network_state(buffer, size); break;
 	case game_engine_race: written = game_engine_race_write_network_state(buffer, size); break;
@@ -9898,8 +9897,7 @@ void game_engine_read_network_state(
 	switch (game_engine_get_type())
 	{
 	case game_engine_ctf: read = game_engine_ctf_read_network_state(buffer, size, first); break;
-	case game_engine_slayer: read = infection_enabled() ? infection_read_network_state(buffer, size, first) :
-		game_engine_slayer_read_network_state(buffer, size, first); break;
+	case game_engine_slayer: read = game_engine_slayer_read_network_state(buffer, size, first); break;
 	case game_engine_oddball: read = game_engine_oddball_read_network_state(buffer, size, first); break;
 	case game_engine_king: read = game_engine_king_read_network_state(buffer, size, first); break;
 	case game_engine_race: read = game_engine_race_read_network_state(buffer, size, first); break;

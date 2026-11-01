@@ -84,7 +84,6 @@ symbols in this file:
 #include "saved games/saved_game_files.h"
 #include "tag_files/files.h"
 #include "game/game_engine_playlist.h"
-#include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "text/text_group.h"
 #include "tag_files/tag_groups.h"
 /* the saved game file checksum is an XDK content signature. */
@@ -126,10 +125,6 @@ struct playlist_profile_data
 	boolean first_time;
 };
 #pragma pack(pop)
-
-/* port: OpenCE's gametypes follow the Xbox's (game_modes.h) */
-typedef char verify_game_modes_first_default_playlist_profile[
-	GAME_MODES_FIRST_DEFAULT_PLAYLIST_PROFILE == NUMBER_OF_DEFAULT_PLAYLIST_PROFILES ? 1 : -1];
 
 typedef char verify_playlist_profile_building_functions_size[
 	sizeof(((struct playlist_profile_data *)0)->
@@ -584,25 +579,15 @@ static void playlist_profile_create_default_profiles_on_disk(
 	{
 		long profile_index;
 
-		/* port: then OpenCE's gametypes (game_modes.c), with their options */
 		for (profile_index = 0;
-			profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES + game_modes_gametype_count();
+			profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES;
 			profile_index++)
 		{
 			wchar_t const *display_name;
 			boolean file_written = FALSE;
-			struct game_variant_options options;
 
-			if (profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES)
-			{
-				variant = *playlist_profile_default_data.default_variant_building_functions[
-					profile_index](&temporary);
-			}
-			else
-			{
-				game_modes_gametype((short)(profile_index - NUMBER_OF_DEFAULT_PLAYLIST_PROFILES), &variant,
-					&options);
-			}
+			variant = *playlist_profile_default_data.default_variant_building_functions[
+				profile_index](&temporary);
 
 			_snprintf(path, MAXIMUM_FILENAME_LENGTH, "z:\\saved\\playlists\\default_playlist\\%02d", profile_index);
 			path[MAXIMUM_FILENAME_LENGTH] = 0;
@@ -610,9 +595,7 @@ static void playlist_profile_create_default_profiles_on_disk(
 			csstrncat(path, "\\blam.lst", MAXIMUM_FILENAME_LENGTH);
 			path[MAXIMUM_FILENAME_LENGTH] = 0;
 
-			display_name = profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES ?
-				unicode_string_list_get_string(string_list_index, (short)profile_index) :
-				game_modes_gametype_name((short)(profile_index - NUMBER_OF_DEFAULT_PLAYLIST_PROFILES));
+			display_name = unicode_string_list_get_string(string_list_index, (short)profile_index);
 
 			/* port: the block cleared (the options' place, unless written below) */
 			csmemset(block, 0, sizeof(block));
@@ -620,22 +603,16 @@ static void playlist_profile_create_default_profiles_on_disk(
 				block,
 				&variant,
 				sizeof(struct game_variant));
-			/* port: (OpenCE's have their own short names: game_modes.c) */
-			if (profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES)
-			{
-				ustrncpy(
-					(wchar_t *)block,
-					display_name,
-					MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1);
-			}
+			ustrncpy(
+				(wchar_t *)block,
+				display_name,
+				MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1);
 			((struct game_variant *)block)->human_readable_game_description[MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1] = 0;
 			((struct game_variant *)block)->flags |= (short)(profile_index << 8);
 			saved_game_file_generate_checksum(
 				block,
 				PLAYLIST_PROFILE_CHECKSUM_DATA_SIZE,
 				(XCALCSIG_SIGNATURE *)(block + PLAYLIST_PROFILE_CHECKSUM_DATA_SIZE));
-			if (profile_index >= NUMBER_OF_DEFAULT_PLAYLIST_PROFILES)
-				playlist_profile_options_to_block(block, &options);
 
 			if (file_reference_create_from_path(&file, path, FALSE) &&
 				file_create(&file) &&
@@ -965,10 +942,10 @@ static boolean playlist_profile_options_from_block(
 	saved_game_file_generate_checksum((byte *)data, size, &checksum);
 	if (csmemcmp(&checksum, data + size, sizeof(checksum)))
 		return FALSE;
-	/* (version 1's: none of OpenCE's gametypes, their options the defaults) */
-	game_modes_options_default(options);
+	/* (version 1's: the first 0x1C bytes) */
+	csmemset(options, 0, sizeof(*options));
 	csmemcpy(options, data + sizeof(header), header.size);
-	game_modes_options_sanitize(options);
+	game_variant_options_sanitize(options);
 	options->friendly_fire = (short)PIN(options->friendly_fire, 0, NUMBER_OF_FRIENDLY_FIRE_MODES - 1);
 	options->radar_players = (byte)PIN(options->radar_players, 0, NUMBER_OF_RADAR_PLAYERS - 1);
 	options->loadout = (byte)PIN(options->loadout, 0, NUMBER_OF_LOADOUTS - 1);

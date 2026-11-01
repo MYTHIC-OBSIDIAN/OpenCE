@@ -28,8 +28,7 @@ const GROUPS = ['player', 'chat', 'game', 'moderation', 'status', 'log', 'master
 const BAN_PRESETS = [['1h', '1 hour'], ['1d', '1 day'], ['7d', '7 days'], ['30d', '30 days'], ['forever', 'For ever']];
 // each gametype's game engine, when /api/gametypes's builtin[] names them
 // alone: the builders' of source/game/game_engine.c for the built-ins
-// (port/linux/game/server_gametypes.c), with their aliases, and game_modes.c's
-// for OpenCE's
+// (port/linux/game/server_gametypes.c), with their aliases
 const ENGINES = {
   slayer: 'slayer', team_slayer: 'slayer', slayer_pro: 'slayer', elimination: 'slayer', phantoms: 'slayer',
   endurance: 'slayer', rockets: 'slayer', snipers: 'slayer',
@@ -40,8 +39,6 @@ const ENGINES = {
   race: 'race', team_race: 'race', rally: 'race', team_rally: 'race',
   ffa: 'slayer', ffa_slayer: 'slayer', teamslayer: 'slayer', tslayer: 'slayer', koth: 'king', team_koth: 'king',
   iron_ctf: 'ctf', teamrace: 'race', teamoddball: 'oddball',
-  swat: 'slayer', infection: 'slayer', gun_game: 'slayer', hardcore: 'slayer', hardcore_ctf: 'ctf',
-  hardcore_oddball: 'oddball', hardcore_king: 'king',
 };
 // the settings the server's own console alone changes (server_commands.c's
 // owner_settings): the page's admin is refused them

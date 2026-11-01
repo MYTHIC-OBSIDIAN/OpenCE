@@ -55,12 +55,11 @@ A probe's line:
 
 ```json
 {"ok":true,"name":"OpenCE Server","map":"bloodgulch","gametype":"ctf","players":5,"max_players":16,
- "teams":true,"in_progress":true,"open":true,"dedicated":true,"network_version":38,"kind":0}
+ "teams":true,"in_progress":true,"open":true,"dedicated":true,"network_version":42}
 ```
 
 `gametype` is the game engine's name (`ctf`, `slayer`, `oddball`, `king`,
-`race`, or `none`), `kind` the OpenCE gametype's kind the host sends (0 for
-none), `open` whether it takes players now.
+`race`, or `none`), `open` whether it takes players now.
 
 The release has a `halo-server` script beside `halo`, which runs
 `halo --server` with its arguments.
@@ -291,8 +290,8 @@ in either case, and is kept as the table spells it:
 | `network.shield_effects` | `stock`, `glow`, `light_show`, `overshield`, `glow_overshield`, `light_show_overshield`, `players` |
 
 A dedicated server may also keep words out of its chat and its players'
-names (`server.chat_filter`, off by default): the words of streamer mode's
-list, by group, each group from the least severity its setting names
+names (`server.chat_filter`, off by default): the words of the list in
+`port/assets/text_filter`, by group, each group from the least severity its setting names
 (`server.chat_filter_slurs`, `mild` by default: every slur;
 `server.chat_filter_swearing` and `server.chat_filter_insults`, `off`).
 `censor` shows a line's words as stars to everyone; `block` refuses the
@@ -810,9 +809,8 @@ a rotation that long is saved whole and read back after a restart.
   `accumulation`, `juggernaut`, `king`, `team_king`, `king_pro`,
   `crazy_king`, `race`, `team_race`, `rally`, `team_rally`, and Halo PC's
   names `ffa`, `ffa_slayer`, `teamslayer`, `tslayer`, `koth`, `team_koth`,
-  `iron_ctf`, `teamrace`, `teamoddball`), an OpenCE gametype's (`swat`,
-  `infection`, `gun_game`, `hardcore`, `hardcore_ctf`, `hardcore_oddball`,
-  `hardcore_king`), a gametype file's name (`gametypes/<name>.toml`), or
+  `iron_ctf`, `teamrace`, `teamoddball`), a gametype file's name
+  (`gametypes/<name>.toml`), or
   `file=<name>` (a gametype a player's game saved, below). A gametype's
   name is letters, digits, `_`, `-` and `.`, in any case.
 - A rule is a gametype rule's name or its short name (`score`, `time`,
@@ -844,7 +842,7 @@ stops with exit code 3 (2 when no rotation map is there), or plays
 ## Gametype files
 
 A gametype file, `gametypes/<name>.toml` (the name `a`–`z`, `0`–`9`, `_`
-and `-`), is a built-in or OpenCE gametype (`base`) and rules over it:
+and `-`), is a built-in gametype (`base`) and rules over it:
 
 ```toml
 base = "team_king"     # the gametype it starts from

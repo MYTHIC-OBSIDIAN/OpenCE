@@ -1,4 +1,4 @@
-"""Streamer mode's words (port/linux/game/text_filter_terms.inc, tools/text_filter_terms.py): the table agrees with the
+"""The chat filter's words (port/linux/game/text_filter_terms.inc, tools/text_filter_terms.py): the table agrees with the
 review (port/assets/text_filter/review.txt) and the allowed words, hides in the English word list just the words
 expected (english.txt), and hides nothing of the game's own text but its two lines of swearing: the menus' (asset-free,
 at the widest levels) and the maps' string lists and HUD messages (assets/maps, else skipped; at the default levels).

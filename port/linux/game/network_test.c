@@ -15,7 +15,7 @@ Automated system link sessions for testing the netcode without the menus
   difficulty, as the Map screen does for a campaign level;
 - "local:<map>[:<variant>...]" the same with a local (split screen) game of
   one player, as Multiplayer > Split Screen of the Xbox's menus sets one up
-  (no other machine joins it: the bots' games, bots.count);
+  (no other machine joins it);
 - "join" searches for games and joins the first it finds, as picking it in
   the system link list does;
 - "browse" joins the game with the most players that the server browser
@@ -56,7 +56,6 @@ Called from the main loop every frame (main.c).
 */
 
 #include "cseries.h"
-#include "game_modes.h"
 #include "main/main.h"
 #include "bink/bink_playback.h"
 #include "interface/player_ui.h"
@@ -1124,11 +1123,11 @@ static void network_test_probe_answer(
 		map[length] = 0;
 		printf("{\"ok\":true,\"name\":\"%s\",\"map\":\"%s\",\"gametype\":\"%s\",\"players\":%d,"
 			"\"max_players\":%d,\"teams\":%s,\"in_progress\":%s,\"open\":%s,\"dedicated\":%s,"
-			"\"network_version\":%u,\"kind\":%u}\n", name, map,
+			"\"network_version\":%u}\n", name, map,
 			game.engine_type >= 0 && game.engine_type < (short)NUMBEROF(engines) ? engines[game.engine_type] : "none",
 			game.player_count, game.maximum_player_count, game.has_teams ? "true" : "false",
 			game.in_progress ? "true" : "false", game.open ? "true" : "false", game.dedicated ? "true" : "false",
-			(unsigned)game.version, (unsigned)game.kind);
+			(unsigned)game.version);
 		fflush(stdout);
 		exit(0);
 	}
@@ -1627,21 +1626,14 @@ void network_test_update(
 				}
 				else
 				{
-					struct game_variant_options options;
-					/* (one of OpenCE's gametypes by its name: game_modes.c) */
-					boolean opence = game_modes_gametype_by_name(variant_name, &variant, &options);
-
 					network_game_server_change_map_name(global_network_game_server_get(), path);
 					/* the variant, as picking the game settings does */
-					if (!opence)
-						variant = *game_engine_get_variant_by_name(&variant, variant_name);
+					variant = *game_engine_get_variant_by_name(&variant, variant_name);
 					platform_log("network test: game %d, %s", network_test.variant_index + 1, variant_name);
 					/* debug.network_test_score: a short game, to test the next */
 					if (network_test.score_to_win > 0)
 						variant.universal_variant.score_to_win = network_test.score_to_win;
 					player_ui_set_game_variant(&variant);
-					if (opence)
-						player_ui_set_game_variant_options(&options);
 					network_game_server_change_game_variant(global_network_game_server_get(), &variant);
 				}
 				network_test.map_set = TRUE;

@@ -393,6 +393,10 @@ real player_look_yaw_rate[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {0};
 before it, and after its first moments: player_control_new_unit) */
 static long player_control_first_unit_tick[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {NONE, NONE, NONE, NONE};
 static boolean player_control_first_unit_given[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {FALSE};
+/* (the tick the map's first unit came, for the jump log) */
+static long player_control_first_unit_log_tick[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {NONE, NONE, NONE, NONE};
+/* port: (sdl_platform.c) a gamepad's A's last press and release */
+void halo_gamepad_a_times(long *down_ago, long *down_late, long *up_ago, long *up_late);
 /* port: how long after it a jump pressed is the press that started the game */
 #define PLAYER_CONTROL_FIRST_UNIT_JUMP_TICKS 15
 real player_look_pitch_rate[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {0};
@@ -1082,6 +1086,7 @@ void player_control_new_unit(
 	{
 		player_control_first_unit_given[local_player_index] = TRUE;
 		player_control_first_unit_tick[local_player_index] = game_time_get();
+		player_control_first_unit_log_tick[local_player_index] = game_time_get();
 	}
 
 	if (unit_index != NONE)
@@ -1414,6 +1419,26 @@ static void get_local_player_input_blob(
 					control->reset_button_when_released_bit_vector |= FLAG(_button_jump);
 				}
 			}
+			/* port: and a jump that starts in the map's first seconds while a
+			gamepad's A is down, as it has been since before the first unit
+			came (the A that started the game, reaching the game seconds late:
+			debug.txt's jump at ticks 52 to 260 with no press after the menu's) */
+			if (player_control_first_unit_log_tick[local_player_index] != NONE &&
+				input_state->buttons[_button_jump] == 1 &&
+				game_time_get() - player_control_first_unit_log_tick[local_player_index] < 15 * TICKS_PER_SECOND)
+			{
+				long down_ago, down_late, up_ago, up_late;
+				long since_first_unit_ms = (game_time_get() - player_control_first_unit_log_tick[local_player_index]) *
+					1000 / TICKS_PER_SECOND;
+
+				halo_gamepad_a_times(&down_ago, &down_late, &up_ago, &up_late);
+				/* (the A down now, and since before the unit) */
+				if (down_ago > since_first_unit_ms + 250 && (up_ago < 0 || up_ago > down_ago))
+				{
+					control->inhibited_button_bit_vector |= FLAG(_button_jump);
+					control->reset_button_when_released_bit_vector |= FLAG(_button_jump);
+				}
+			}
 
 			{
 				byte effective_buttons[NUMBER_OF_ACTION_CONTROL_BUTTONS] = {0};
@@ -1528,13 +1553,18 @@ static void get_local_player_input_blob(
 					static long logged = 0;
 
 					if (logged < 48 && player->unit_index != NONE &&
-						(effective_buttons[_button_jump] || input_state->buttons[_button_jump]) &&
-						game_time_get() < 30 * 10)
+						input_state->buttons[_button_jump] == 1 &&
+						game_time_get() < 30 * 15)
 					{
+						long down_ago, down_late, up_ago, up_late;
+
 						logged++;
-						error(_error_silent, "jump input: local player %d at tick %ld: button %d, effective %d, held back %04x",
-							local_player_index, game_time_get(), (int)input_state->buttons[_button_jump],
-							(int)effective_buttons[_button_jump], (unsigned)control->inhibited_button_bit_vector);
+						halo_gamepad_a_times(&down_ago, &down_late, &up_ago, &up_late);
+						error(_error_silent, "jump input: local player %d at tick %ld (first unit at %ld): effective %d, held back %04x; "
+							"a gamepad's A went down %ld ms ago (seen %ld ms late), up %ld ms ago (seen %ld ms late)",
+							local_player_index, game_time_get(), player_control_first_unit_log_tick[local_player_index],
+							(int)effective_buttons[_button_jump], (unsigned)control->inhibited_button_bit_vector,
+							down_ago, down_late, up_ago, up_late);
 					}
 				}
 				SET_FLAG(
@@ -1992,6 +2022,7 @@ void player_control_initialize_for_new_map(
 		/* port: (no first unit yet on this map: player_control_new_unit) */
 		player_control_first_unit_given[local_player_index] = FALSE;
 		player_control_first_unit_tick[local_player_index] = NONE;
+		player_control_first_unit_log_tick[local_player_index] = NONE;
 		player_control_new_unit(local_player_index, NONE);
 		if (player_look_pitch_rate[local_player_index] == 0.f)
 		{

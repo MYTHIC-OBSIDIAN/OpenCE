@@ -1,4 +1,4 @@
-# Streamer mode's review of Surge AI's profanity list (tools/text_filter_terms.py):
+# The chat filter's review of Surge AI's profanity list (tools/text_filter_terms.py):
 # every base word of its profanity_en.csv kept (its group, severity and rule;
 # - for Surge AI's severity and the rule worked out) or dropped. The words are
 # ROT13'd; tools/text_filter_terms.py --list shows them.

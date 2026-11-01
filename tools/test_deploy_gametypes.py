@@ -1,7 +1,7 @@
 """The gametype files deploy/gametypes ships, checked against the rules the
 server reads them by, taken from its sources: the rule table of
 port/linux/src/server_rotation.c, the tables server_toml.c takes, the
-built-in and OpenCE gametypes of port/linux/game/server_gametypes.c and the
+built-in gametypes of port/linux/game/server_gametypes.c and the
 game engine of each built-in's builder in source/game/game_engine.c. A key the
 server would refuse (an alias, a rule in the wrong table, a value out of its
 range) fails here, without a build or the game.
@@ -17,13 +17,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 GAMETYPES = sorted((ROOT / "deploy/gametypes").glob("*.toml"))
-
-# (game_modes.c's game_modes_gametype: the builder each of OpenCE's
-# gametypes starts from; checked against server_gametypes.c's list below)
-OPENCE_ENGINES = {
-    "swat": "slayer", "infection": "slayer", "gun_game": "slayer", "hardcore": "slayer",
-    "hardcore_ctf": "ctf", "hardcore_oddball": "oddball", "hardcore_king": "king",
-}
 
 
 def c_strings(text):
@@ -57,7 +50,7 @@ def engine_tables():
 
 
 def gametype_engines():
-    """Each built-in, alias and OpenCE gametype's game engine (its table's name)."""
+    """Each built-in and alias gametype's game engine (its table's name)."""
     gametypes = (ROOT / "port/linux/game/server_gametypes.c").read_text()
     engine = (ROOT / "source/game/game_engine.c").read_text()
     builders = {}
@@ -70,9 +63,6 @@ def gametype_engines():
         engines[name] = builders[builder]
     for alias, name in re.findall(r'\{ "(\w+)", "(\w+)" \}', gametypes):
         engines[alias] = engines[name]
-    opence = c_strings(re.search(r"server_opence_gametypes\[\]\s*=\s*\{(.*?)\};", gametypes, re.S).group(1))
-    assert sorted(opence) == sorted(OPENCE_ENGINES), "OpenCE's gametypes changed: update OPENCE_ENGINES"
-    engines.update(OPENCE_ENGINES)
     return engines
 
 

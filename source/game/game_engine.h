@@ -221,27 +221,6 @@ enum
 	VARIANT_VEHICLE_SET_CUSTOM = 0xFF
 };
 
-/* port: OpenCE's gametypes (port/linux/game/game_modes.c): a mode's rules
-over its game engine's (Slayer's), and Hardcore's over any */
-enum
-{
-	_game_mode_none = 0,
-	_game_mode_swat,
-	_game_mode_infection,
-	_game_mode_gun_game,
-	NUMBER_OF_GAME_MODES
-};
-
-enum
-{
-	/* Gun Game's weapons: the strongest first, the weakest first, or in an
-	order the host draws for each game */
-	_gun_game_order_strongest_first = 0,
-	_gun_game_order_weakest_first,
-	_gun_game_order_random,
-	NUMBER_OF_GUN_GAME_ORDERS
-};
-
 /* (the starting equipment, generic or the map's, is the variant's own:
 _game_variant_generic_starting_equipment_bit) */
 struct game_variant_options
@@ -266,24 +245,8 @@ struct game_variant_options
 	/* no weapons spawn on the map (its grenades and powerups do): for
 	a loadout of none, melee only */
 	boolean no_map_weapons;
-	/* port: OpenCE's gametypes (game_modes.c): the mode (_game_mode_*), and
-	Hardcore's rules (no motion sensor, no aim assist, a kill restores the
-	killer's health and shields) */
-	byte mode;
-	boolean hardcore;
-	/* Infection: the zombies chosen at the start, their speed and their
-	skull's melee damage (percent), their respawn time and the countdown
-	before the first are chosen (seconds), and whether they have shields */
-	byte infection_initial_zombies;
-	byte infection_zombie_speed;
-	byte infection_skull_damage;
-	byte infection_respawn_time;
-	byte infection_countdown;
-	boolean infection_zombie_shields;
-	/* Gun Game: the weapons' order (_gun_game_order_*), and whether a melee
-	kill takes the victim back a weapon */
-	byte gun_game_order;
-	boolean gun_game_melee_demotes;
+	/* port: (bytes OpenCE's own gametypes, since removed, once kept: zero) */
+	byte reserved_modes[10];
 	/* port: Teamplay Options' FORCE TEAM SPAWNS: a team game other than CTF
 	spawns its players as CTF does, only at the map's CTF starting locations
 	of their own team (game_engine_get_starting_location_rating). Taken from
@@ -422,6 +385,10 @@ short game_engine_friendly_damage(
 them, or built in): the Xbox game's play */
 void game_variant_options_default(
 	struct game_variant const *variant,
+	struct game_variant_options *options);
+/* port: a variant's PC options from elsewhere (a saved gametype, another
+machine): its booleans 0 or 1, its reserved bytes zero */
+void game_variant_options_sanitize(
 	struct game_variant_options *options);
 void game_engine_playlist_initialize(
 	void);

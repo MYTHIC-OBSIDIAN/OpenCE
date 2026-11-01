@@ -286,7 +286,7 @@ test("the gametype form's fields: every engine's and the base's own", () => {
 test("each gametype's engine: the server's word, else the builders' of game_engine.c", () => {
   for (const [name, engine] of [['juggernaut', 'oddball'], ['stalker', 'oddball'], ['slayer_pro', 'slayer'], ['phantoms', 'slayer'],
     ['ctf_pro', 'ctf'], ['invasion', 'ctf'], ['king_pro', 'king'], ['crazy_king', 'king'], ['team_rally', 'race'],
-    ['swat', 'slayer'], ['gun_game', 'slayer'], ['hardcore_ctf', 'ctf'], ['hardcore_oddball', 'oddball'], ['koth', 'king']]) {
+    ['koth', 'king']]) {
     assert.strictEqual(app.engineOf(name), engine, name);
   }
   assert.strictEqual(app.engineOf('nothing'), null);

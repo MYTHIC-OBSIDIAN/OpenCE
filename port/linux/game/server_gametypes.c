@@ -3,7 +3,7 @@ SERVER_GAMETYPES.C
 
 A dedicated server's gametypes (server_gametypes.h; docs/dedicated_server.md):
 the variant of a built-in gametype by its name (the Xbox's default gametypes'
-builders, game_engine_playlist.h), of OpenCE's (game_modes.c), of a gametype
+builders, game_engine_playlist.h), of a gametype
 file (gametypes/<name>.toml: its base, then its rules) or of a gametype a
 player's game saved (gametypes/<name>.gametype), with a rotation entry's own
 rules over it. Each rule is checked to be of the variant's game engine: a
@@ -16,7 +16,6 @@ bad gametype never reaches the wire, where the clients play by it.
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 #include "text/unicode.h"
-#include "game_modes.h"
 #include "server_gametypes.h"
 
 #include "../src/server_mode.h" /* port: port/linux/src/server_mode.c */
@@ -84,19 +83,11 @@ static struct
 	{ "teamoddball", "team_oddball" },
 };
 
-static char const *const server_opence_gametypes[] =
-{
-	"swat", "infection", "gun_game", "hardcore", "hardcore_ctf", "hardcore_oddball", "hardcore_king",
-};
-
 char const *server_gametype_builtin_name(
 	long index)
 {
 	if (index >= 0 && index < (long)NUMBEROF(server_builtin_gametypes))
 		return server_builtin_gametypes[index].name;
-	index -= (long)NUMBEROF(server_builtin_gametypes);
-	if (index >= 0 && index < (long)NUMBEROF(server_opence_gametypes))
-		return server_opence_gametypes[index];
 	return NULL;
 }
 
@@ -114,7 +105,7 @@ char const *server_gametype_engine_name(
 	}
 }
 
-/* a built-in's or OpenCE's gametype by its name (or alias): TRUE */
+/* a built-in gametype by its name (or alias): TRUE */
 static boolean server_gametype_base(
 	char const *name,
 	struct game_variant *variant,
@@ -142,7 +133,7 @@ static boolean server_gametype_base(
 			return TRUE;
 		}
 	}
-	return game_modes_gametype_by_name(name, variant, options);
+	return FALSE;
 }
 
 static void server_gametype_flag(
@@ -195,7 +186,6 @@ static void server_gametype_rule(
 	else if (!strcmp(key, "primary_weapon")) options->primary_weapon = (byte)value;
 	else if (!strcmp(key, "secondary_weapon")) options->secondary_weapon = (byte)value;
 	else if (!strcmp(key, "no_map_weapons")) options->no_map_weapons = (boolean)(value != 0);
-	else if (!strcmp(key, "hardcore")) options->hardcore = (boolean)(value != 0);
 	else if (!strcmp(key, "team_vehicles"))
 	{
 		byte set = value == 1 ? VARIANT_VEHICLE_SET_PC : value == 2 ? VARIANT_VEHICLE_SET_CUSTOM :
@@ -384,7 +374,7 @@ boolean server_gametype_build(
 	/* (CTF always has teams) */
 	if (variant->game_engine_index == game_engine_ctf)
 		variant->universal_variant.teams = TRUE;
-	game_modes_options_sanitize(options);
+	game_variant_options_sanitize(options);
 	return TRUE;
 }
 

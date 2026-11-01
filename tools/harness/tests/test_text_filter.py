@@ -1,4 +1,4 @@
-"""Streamer mode's matcher (port/linux/game/text_filter_match.c), taken whole, with a list of made-up words so that the
+"""The chat filter's matcher (port/linux/game/text_filter_match.c), taken whole, with a list of made-up words so that the
 cases spell nothing offensive: how a word is found however it is dressed (case, accents, look-alikes, leet, repeats,
 spaces and punctuation, the game's "|" codes), the rules of where it may be, the allowed words and the levels."""
 

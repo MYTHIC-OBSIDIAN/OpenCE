@@ -371,7 +371,7 @@ def test_the_rotation_is_validated_whole(sim):
     assert [item["index"] for item in body["error"]["rejected"]] == [1, 2, 3, 4]
     assert sim.request("GET", "/api/rotation", headers=headers)[2] == rotation
     status, _, body = sim.request("PUT", "/api/rotation", {"entries": [
-        "bloodgulch:ctf", "sidewinder:team_slayer+score=50+time=15", "custom_maps\\hugeass:swat"]}, headers=headers)
+        "bloodgulch:ctf", "sidewinder:team_slayer+score=50+time=15", "custom_maps\\hugeass:slayer"]}, headers=headers)
     # (a rule by its full name, its value a whole number: true 1, a choice its index)
     assert status == 200 and [entry["rules"] for entry in body["entries"]] == [
         {}, {"score_to_win": 50, "time_limit": 15}, {}]
@@ -402,13 +402,14 @@ def test_maps_have_titles_and_players_a_ping_once_playing(sim):
 def test_gametype_files_are_validated_with_a_line(sim):
     headers = sim.browser()
     status, _, gametypes = sim.request("GET", "/api/gametypes", headers=headers)
-    assert {"ctf", "slayer_pro", "crazy_king", "team_rally", "swat", "hardcore_ctf"} <= set(gametypes["builtin"])
+    assert {"ctf", "slayer_pro", "crazy_king", "team_rally"} <= set(gametypes["builtin"])
+    assert not {"swat", "infection", "gun_game", "hardcore"} & set(gametypes["builtin"])
     assert gametypes["files"][0].keys() == {"name", "base", "description", "error"}
     assert any("-" in item["name"] for item in gametypes["files"])
     fields = gametypes["schema"]["fields"]
     assert {"key", "alias", "engine", "table", "type", "min", "max", "choices", "default", "description"} == \
         set(fields[0])
-    assert {"team_vehicles", "goal_radar", "hardcore"} <= {field["key"] for field in fields}
+    assert {"team_vehicles", "goal_radar"} <= {field["key"] for field in fields}
     assert {field["type"] for field in fields} == {"integer", "boolean", "choice"}
     text = 'base = "oddball"\nname = "Ball"\n\n[oddball]\nball_spawn_count = 4\n'
     assert sim.request("PUT", "/api/gametypes/ball", {"text": text}, headers=headers)[0] == 200

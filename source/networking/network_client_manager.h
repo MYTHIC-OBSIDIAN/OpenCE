@@ -28,7 +28,6 @@ struct network_advertised_game_summary
 	boolean in_progress;
 	boolean dedicated;
 	word version;
-	byte kind;
 };
 
 struct network_advertised_game;
@@ -60,11 +59,6 @@ boolean network_game_client_set_team(
 (else the player is told, and it is not to be joined) */
 /* port: whether the advertised game is under way, not in its lobby */
 boolean network_game_client_advertised_game_in_progress(
-	struct network_game_client *client,
-	struct network_advertised_game const *game);
-/* port: the advertised game's kind (port/linux/game/game_modes.h's
-game_modes_kind) */
-byte network_game_client_advertised_game_kind(
 	struct network_game_client *client,
 	struct network_advertised_game const *game);
 boolean network_game_client_advertised_game_compatible(

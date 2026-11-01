@@ -1,7 +1,7 @@
-# Streamer mode's words
+# The chat filter's words
 
-The words streamer mode hides (Settings > Network Setup > Streamer Mode; the
-`streamer.*` settings in `port/linux/README.md`). The game builds them in
+The words a dedicated server can keep out of its chat and its players' names
+(`server.chat_filter` in `port/linux/README.md`). The game builds them in
 from `port/linux/game/text_filter_terms.inc`, which
 `tools/text_filter_terms.py` writes from Surge AI's list and these files:
 

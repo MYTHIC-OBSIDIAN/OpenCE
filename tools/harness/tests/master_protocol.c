@@ -399,7 +399,6 @@ static int make_listing(unsigned char *bytes, int format, int flags, int name_le
 			bytes[size++] = (unsigned char)('a' + text);
 	}
 	memset(bytes + size, 0, 8);
-	bytes[size] = 3;
 	size += 8;
 	memcpy(data, "hceu-lobby-1", 12);
 	memcpy(data + 12, bytes, (size_t)size);
@@ -979,19 +978,18 @@ int main(int argc, char **argv)
 			listing.sequence == 412 && listing.time == 1760900000UL, "version %d, flags %d, sequence %lu, time %lu",
 			listing.version, listing.flags, listing.sequence, listing.time);
 		CHECK(!strcmp(hex_of(listing.token, 16), "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf"), "token %s", hex_of(listing.token, 16));
-		CHECK(listing.player_count == 5 && listing.maximum_player_count == 16 && listing.engine_type == 1 &&
-			listing.kind == 0, "%d of %d, engine %d, kind %d", listing.player_count, listing.maximum_player_count,
-			listing.engine_type, listing.kind);
+		CHECK(listing.player_count == 5 && listing.maximum_player_count == 16 && listing.engine_type == 1,
+			"%d of %d, engine %d", listing.player_count, listing.maximum_player_count, listing.engine_type);
 		CHECK(!strcmp(listing.name, "OpenCE Dedicated") && !strcmp(listing.map, "bloodgulch") &&
 			!strcmp(listing.gametype, "CTF"), "named %s, %s, %s", listing.name, listing.map, listing.gametype);
-		/* (the second: a password's game in progress, its token sealed, SWAT
-		with Hardcore) */
+		/* (the second: a password's game in progress, its token sealed, its
+		stamp's first byte not zero: reserved, and read past) */
 		size = hex_decode(vector_listings[1].bytes, bytes, sizeof(bytes));
 		listing_read(bytes, size, &listing);
-		CHECK(listing.flags == (_listing_open | _listing_in_progress | _listing_password) && listing.kind == 0x81 &&
+		CHECK(listing.flags == (_listing_open | _listing_in_progress | _listing_password) &&
 			!memcmp(listing.sealed_token, bytes + 46, P2P_SEALED_TOKEN_SIZE) &&
-			listing.player_count == bytes[46 + P2P_SEALED_TOKEN_SIZE], "the password's game was read as flags %d, kind %d",
-			listing.flags, listing.kind);
+			listing.player_count == bytes[46 + P2P_SEALED_TOKEN_SIZE], "the password's game was read as flags %d",
+			listing.flags);
 		/* (the third: a tombstone) */
 		size = hex_decode(vector_listings[2].bytes, bytes, sizeof(bytes));
 		listing_read(bytes, size, &listing);
@@ -1025,7 +1023,7 @@ int main(int argc, char **argv)
 		CHECK(size == 268 && listing_good(bytes, size), "the longest listing (%d bytes) was refused", size);
 		listing_read(bytes, size, &listing);
 		CHECK(strlen(listing.name) == 32 && strlen(listing.map) == 32 && strlen(listing.gametype) == 24 &&
-			listing.kind == 3 && listing.engine_type == 2, "the longest listing was read as %s / %s / %s",
+			listing.engine_type == 2, "the longest listing was read as %s / %s / %s",
 			listing.name, listing.map, listing.gametype);
 		CHECK(!listing_read(bytes, size - 1, &listing) && !listing_read(bytes, 139, &listing),
 			"a listing cut short was read");

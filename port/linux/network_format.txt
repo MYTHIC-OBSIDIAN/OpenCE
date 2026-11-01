@@ -1,4 +1,4 @@
-version 41
+version 42
 bound CHAT_TEXT_SIZE 64
 bound DISCORD_ID_SIZE 24
 bound DISCORD_NAME_SIZE 40
@@ -13,7 +13,6 @@ bound DISTRIBUTED_RELAYED_ACTION_MINIMUM_SIZE 14
 bound DISTRIBUTED_UNIT_STATE_MAXIMUM_SIZE 3 + 4 + (4 + 2) + (12 + 3 * 6) + 2 + 2 * 2 + 4 * 2 + 2 * NUMBER_OF_PLAYER_POWERUPS + 2 + 1
 bound DISTRIBUTED_UNIT_STATE_MINIMUM_SIZE 3
 bound GAME_ALLEGIANCE_BITVECTOR_LONGS 4
-bound HALO_PORT_MAXIMUM_NETWORK_PLAYERS 128
 bound LEVEL_NAME_BYTES 64
 bound MAP_SHARE_HASH_BYTES 32
 bound MAXIMUM_DEVICE_GROUPS 1024
@@ -50,13 +49,6 @@ enum _distributed_actor_shield_charging_bit 2
 enum _distributed_actor_shield_depleted_bit 1
 enum _distributed_actor_shield_over_charging_bit 3
 enum _distributed_actor_super_camouflaged_bit 5
-enum _distributed_infection_active 2
-enum _distributed_infection_countdown 1
-enum _distributed_infection_finished 3
-enum _distributed_infection_role_human 1
-enum _distributed_infection_role_none 0
-enum _distributed_infection_role_zombie 2
-enum _distributed_infection_waiting 0
 enum _distributed_message_actor_damage 73
 enum _distributed_message_actor_states 64
 enum _distributed_message_aim_assist_policy 90
@@ -279,8 +271,6 @@ struct distributed_fire_origin 700dfdb20582
 struct distributed_fire_origin_message 7613e8f9d43e
 struct distributed_hit_report 9a44ca43a88b
 struct distributed_hit_report_message 37279f2addca
-struct distributed_infection_player d8b98eecf26b
-struct distributed_infection_state 8a01c46945ad
 struct distributed_inventory 05a279a76ba5
 struct distributed_inventory_message 11825a84dc29
 struct distributed_map_share_offer 4bea857123c2
@@ -310,4 +300,4 @@ struct distributed_voice_down e3751d692f16
 struct distributed_voice_up 3d74ee44e4cb
 struct distributed_votekick_request 7e29ffd54bd1
 struct distributed_votekick_status b94458cdc180
-struct game_variant_options 0e258e4cf85b
+struct game_variant_options bba212e08395

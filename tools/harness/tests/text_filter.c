@@ -1,5 +1,5 @@
 /*
-Streamer mode's matcher (port/linux/game/text_filter_match.c), taken whole: each line read (UTF-8; or, narrow, bytes as
+The chat filter's matcher (port/linux/game/text_filter_match.c), taken whole: each line read (UTF-8; or, narrow, bytes as
 the game's char strings) is written back with the code units it hides as '*'. The levels of SLURS, SWEARING and
 INSULTS are the arguments (0 off, 1 mild and worse, 2 strong and worse, 3 severe); the player's own words are always
 hidden. "--add word" and "--allow word" before them add a player's word and an allowed one.

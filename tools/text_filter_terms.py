@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Streamer mode's words (port/linux/game/text_filter_match.c): writes
+"""The chat filter's words (port/linux/game/text_filter_match.c): writes
 port/linux/game/text_filter_terms.inc from Surge AI's rated list of
 profanities and this project's review of it, and lists or tries them.
 
@@ -237,7 +237,7 @@ def c_string(key):
 
 def write_terms(terms, allowed, csv_path):
     digest = hashlib.sha256(Path(csv_path).read_bytes()).hexdigest() if csv_path else None
-    lines = ["/* port/linux/game/text_filter_terms.inc: streamer mode's words, written by",
+    lines = ["/* port/linux/game/text_filter_terms.inc: the chat filter's words, written by",
              "tools/text_filter_terms.py from Surge AI's profanity_en.csv",
              f"(sha256 {digest}) and port/assets/text_filter/review.txt and allow.txt.",
              "Each term's letters are xor'd with TEXT_FILTER_TERM_KEY. Do not edit. */", "",
@@ -301,7 +301,7 @@ def fold_letters(code):
 
 def write_fold():
     lines = ["/* port/linux/game/text_filter_fold.inc: the characters above ASCII that",
-             "streamer mode reads as letters (a-z bits), written by tools/text_filter_terms.py",
+             "the chat filter reads as letters (a-z bits), written by tools/text_filter_terms.py",
              f"--fold from Unicode {unicodedata.unidata_version}'s names and its look-alikes. Do not edit. */", "",
              "static struct text_filter_fold const text_filter_folds[] =", "{"]
     for code in range(0x80, 0x10000):

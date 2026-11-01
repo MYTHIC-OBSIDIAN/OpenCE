@@ -393,7 +393,7 @@ def test_rotation_moderation_and_shutdown(machines):
 
 
 def test_word_filter_keeps_a_name_out(machines):
-    """with server.chat_filter "block", a player whose name has a word of the filter's list (streamer mode's) is
+    """with server.chat_filter "block", a player whose name has a word of the filter's list (port/assets/text_filter) is
     refused at the door, and the server says why; the word is ROT13'd here, as in the filter's own tests"""
     _needs_game("bloodgulch")
     port = _free_port()

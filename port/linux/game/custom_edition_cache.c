@@ -1364,6 +1364,16 @@ boolean custom_edition_cache_tags_loaded(
 	return custom_edition_cache_globals.tags_loaded;
 }
 
+boolean custom_edition_cache_listed_map(
+	void)
+{
+	char const *path = custom_edition_cache_globals.map_path;
+
+	return custom_edition_cache_globals.tags_loaded && path[0] &&
+		_strnicmp(path, CUSTOM_EDITION_PC_MAP_DIRECTORY, strlen(CUSTOM_EDITION_PC_MAP_DIRECTORY)) &&
+		_strnicmp(path, CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY, strlen(CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY));
+}
+
 boolean custom_edition_cache_relies_on(
 	short behaviour)
 {
