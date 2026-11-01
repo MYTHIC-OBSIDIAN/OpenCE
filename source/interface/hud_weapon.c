@@ -1357,6 +1357,25 @@ static void crosshairs_draw(
 	return;
 }
 
+/* port: the anchor a weapon HUD element is placed from. Custom Edition's
+(and Halo PC's) statics, meters and numbers have one of their own where the
+Xbox's header has its pad: from the HUD's (0), or top left, top right,
+bottom left, bottom right or center (1 to 5). Halo PC's sniper rifle anchors
+its angle ticks and its zoom numbers at the center, at (-176, 9) and
+(176, 9): from the top left, one was drawn off the screen and the other
+left of the scope's middle. */
+static struct hud_absolute_placement_definition const *weapon_hud_element_anchor(
+	struct weapon_hud_interface_definition const *definition,
+	struct weapon_hud_element_header const *header,
+	struct hud_absolute_placement_definition *anchored)
+{
+	if (!custom_edition_cache_tags_loaded() || header->pad <= 0 || header->pad > NUMBER_OF_HUD_ANCHORS)
+		return &definition->absolute_placement;
+	*anchored = definition->absolute_placement;
+	anchored->corner = (short)(header->pad - 1);
+	return anchored;
+}
+
 /* port: a hud element's state (or crosshair) type is the map's, and indexes
 the state tables (8 states, 19 crosshair states; retail elements use up to 7
 and 18): an element of any other is not drawn, and that is said once */
@@ -1402,6 +1421,8 @@ static void render_weapon_hud(
 	short state_index;
 	short map_type_flags;
 	short element_index;
+	/* port: an element's own anchor (weapon_hud_element_anchor) */
+	struct hud_absolute_placement_definition anchored;
 
 	csmemset(
 		stack_buffer,
@@ -1775,7 +1796,8 @@ static void render_weapon_hud(
 			state_index = element->header.state_type;
 			hud_draw_static_element(
 				local_player_index,
-				&definition->absolute_placement,
+				/* port: (its own anchor: weapon_hud_element_anchor) */
+				weapon_hud_element_anchor(definition, &element->header, &anchored),
 				&element->static_element,
 				state_flags[state_index],
 				hud_state->last_weapon_flash_time[state_index]);
@@ -1808,7 +1830,7 @@ static void render_weapon_hud(
 			value = (byte)number_values[state_index];
 			hud_draw_meter(
 				local_player_index,
-				&definition->absolute_placement,
+				weapon_hud_element_anchor(definition, &element->header, &anchored),
 				&element->meter_element,
 				value,
 				value,
@@ -1886,7 +1908,7 @@ static void render_weapon_hud(
 				hud_zoomed_layout_begin(&window_bounds);
 			hud_draw_numbers(
 				local_player_index,
-				&definition->absolute_placement,
+				weapon_hud_element_anchor(definition, &element->header, &anchored),
 				&element->number_element,
 				value,
 				decimal_value,
