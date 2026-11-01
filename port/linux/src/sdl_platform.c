@@ -2369,6 +2369,16 @@ void platform_menus_set_active(BOOL active)
 	pthread_mutex_unlock(&input_lock);
 }
 
+BOOL platform_menus_active(void)
+{
+	BOOL active;
+
+	pthread_mutex_lock(&input_lock);
+	active = input_state.menus;
+	pthread_mutex_unlock(&input_lock);
+	return active;
+}
+
 void platform_binding_capture_begin(void)
 {
 	pthread_mutex_lock(&input_lock);

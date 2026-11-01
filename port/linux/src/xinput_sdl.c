@@ -288,6 +288,46 @@ static void vote_pad_hold_over(XINPUT_GAMEPAD *pad)
 		pad->wButtons &= (WORD)~vote_held_buttons;
 }
 
+/* a controller's buttons held as the menus give way to the game, or the
+game to the menus, which neither gets till each is let go, as the keyboard's
+keys (keys_held_over_switch): the A that started a game would reach it as
+a jump */
+static WORD switch_held_buttons[PORT_COUNT];
+static unsigned char switch_held_analog[PORT_COUNT];
+static int switch_menus[PORT_COUNT] = { -1, -1, -1, -1 };
+
+static void pad_held_over_switch(short port, XINPUT_GAMEPAD *pad)
+{
+	int menus = platform_menus_active() != FALSE;
+	int index;
+
+	if (switch_menus[port] != menus)
+	{
+		if (switch_menus[port] >= 0)
+		{
+			switch_held_buttons[port] = pad->wButtons;
+			switch_held_analog[port] = 0;
+			for (index = 0; index < 8; index++)
+			{
+				if (pad->bAnalogButtons[index])
+					switch_held_analog[port] |= (unsigned char)(1 << index);
+			}
+		}
+		switch_menus[port] = menus;
+	}
+	switch_held_buttons[port] &= pad->wButtons;
+	pad->wButtons &= (WORD)~switch_held_buttons[port];
+	for (index = 0; index < 8; index++)
+	{
+		if (!(switch_held_analog[port] & (1 << index)))
+			continue;
+		if (pad->bAnalogButtons[index])
+			pad->bAnalogButtons[index] = 0;
+		else
+			switch_held_analog[port] &= (unsigned char)~(1 << index);
+	}
+}
+
 int halo_gamepad_last_used(void)
 {
 	Uint64 pad, keyboard;
@@ -1526,6 +1566,7 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	right: network_votekick.c) */
 	if (port == 0)
 		vote_pad_hold_over(&state->Gamepad);
+	pad_held_over_switch((short)port, &state->Gamepad);
 	if (captured) memset(&state->Gamepad, 0, sizeof(state->Gamepad));
 
 	if (memcmp(&state->Gamepad, &controllers[port].previous, sizeof(state->Gamepad)))

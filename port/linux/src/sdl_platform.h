@@ -45,6 +45,7 @@ void halo_input_shown_name(const char *binding, char *shown, size_t size);
 
 /* whether a menu is up (halo_ui_pointer_update, every frame) */
 void platform_menus_set_active(BOOL active);
+BOOL platform_menus_active(void);
 /* rebinding a control (Settings > Controls Setup): from now the next key,
 mouse button or wheel turn is taken, and none reaches the game or the
 menus; nor does the keyboard after, until every key and button is up */
