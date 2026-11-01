@@ -456,9 +456,9 @@ static boolean hs_node_link(
 /* the scripts' syntax: hs.c checks its header and hs_compile_postprocess
 each node's type, function, script and constants, but the runtime follows
 the links between nodes as they are. Every link must name a node in use, no
-node may be reached twice, and every node in use must be reached from a
-script's or global's root or a node no link reaches (so that none is in a
-cycle). If not, no script runs (the syntax data is let go of; hs.c then
+node may be reached by two links, every script's and global's root must be
+a node in use, and every node in use must be reached from a node no link
+reaches (so that none is in a cycle). If not, no script runs (the syntax data is let go of; hs.c then
 runs none, where it finds one script damaged it stops only that one) */
 static boolean scenario_check_scripts(
 	struct tag_validation *validation,
@@ -483,21 +483,9 @@ static boolean scenario_check_scripts(
 	}
 	node_data = (struct hs_syntax_node const *)(nodes + 1);
 
+	/* the links first: no node is reached by two (so that none is in a
+	cycle but a whole one, found below) */
 	memset(hs_nodes_reached, 0, sizeof(hs_nodes_reached));
-	for (index = 0; index < scenario->hs_scripts.count && !error; index++)
-	{
-		struct hs_script const *script = (struct hs_script const *)scenario->hs_scripts.address + index;
-
-		if (!hs_node_link(nodes, script->root_expression_index, TRUE))
-			error = "a script's root is not a node, or is another's";
-	}
-	for (index = 0; index < scenario->hs_globals.count && !error; index++)
-	{
-		struct hs_global const *global = (struct hs_global const *)scenario->hs_globals.address + index;
-
-		if (!hs_node_link(nodes, global->initialization_expression_index, TRUE))
-			error = "a global's root is not a node, or is another's";
-	}
 	for (index = 0; index < nodes->count && !error; index++)
 	{
 		struct hs_syntax_node const *node = &node_data[index];
@@ -510,27 +498,33 @@ static boolean scenario_check_scripts(
 			error = "a node links to one that is not a node, or is another's";
 		}
 	}
-
-	/* (every node is reached at most once, so the walk takes each once) */
-	walk_count = 0;
-	for (index = 0; index < nodes->count && !error; index++)
-	{
-		if (node_data[index].datum_header && !TEST_FLAG(hs_nodes_reached[index / 32], index % 32))
-			hs_nodes_to_walk[walk_count++] = (short)index;
-	}
+	/* (a script's or global's root may also be a node a link reaches: a
+	root is where the runtime starts, not a link, and makes no cycle.
+	Invader 0.55 gives a startup script the second expression of its body
+	for its root, which the first's next reaches: Digsite's spasm.map) */
 	for (index = 0; index < scenario->hs_scripts.count && !error; index++)
 	{
 		long root = ((struct hs_script const *)scenario->hs_scripts.address)[index].root_expression_index;
 
-		if (root != NONE)
-			hs_nodes_to_walk[walk_count++] = (short)root;
+		if (root != NONE && !hs_node_valid(nodes, root))
+			error = "a script's root is not a node";
 	}
 	for (index = 0; index < scenario->hs_globals.count && !error; index++)
 	{
 		long root = ((struct hs_global const *)scenario->hs_globals.address)[index].initialization_expression_index;
 
-		if (root != NONE)
-			hs_nodes_to_walk[walk_count++] = (short)root;
+		if (root != NONE && !hs_node_valid(nodes, root))
+			error = "a global's root is not a node";
+	}
+
+	/* (every node is reached by at most one link, so the walk from those
+	no link reaches takes each node once; a script's root is one of them,
+	or reached from one) */
+	walk_count = 0;
+	for (index = 0; index < nodes->count && !error; index++)
+	{
+		if (node_data[index].datum_header && !TEST_FLAG(hs_nodes_reached[index / 32], index % 32))
+			hs_nodes_to_walk[walk_count++] = (short)index;
 	}
 	memset(hs_nodes_reached, 0, sizeof(hs_nodes_reached));
 	while (walk_count > 0 && !error)

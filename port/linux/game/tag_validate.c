@@ -75,6 +75,9 @@ enum
 	/* the claims: a bit for each byte of the largest tag cache */
 	CLAIM_BITS = 32,
 	CLAIM_WORDS = TAG_VALIDATE_MAXIMUM_TAG_CACHE_SIZE / CLAIM_BITS,
+	/* a Custom Edition map's blocks and data, by where they start (shared
+	extents, below): a power of two */
+	SHARED_EXTENT_RECORDS = 1 << 18,
 
 	/* a Custom Edition map's models (cache_file_formats.c) */
 	GBXMODEL_GROUP_TAG = 'mod2',
@@ -216,6 +219,34 @@ static struct
 holds */
 static unsigned long tag_validate_claims[CLAIM_WORDS];
 
+/* Shared extents: Invader builds a Custom Edition map's block or data that
+is the same as one it has already written as that one (Digsite's
+spasm.map: twelve of a cyborg animation graph's unit seats share their
+animations, IK points and weapon classes with others). Each block and
+data a Custom Edition map's tags claim is recorded by where it starts, so
+that a block of the same schema (or data) at the same place, no longer
+than it, is taken as the same bytes: they are walked once, through the
+first, and a runtime value written to them is written to both, as in
+Halo CE. Anything else that overlaps is still refused. (keys: an offset
++ 1; 0 a free record, SHARED_EXTENT_REMOVED a removed one) */
+#define SHARED_EXTENT_REMOVED 0xFFFFFFFFUL
+struct shared_extent
+{
+	unsigned long key;
+	unsigned long size;
+	void const *definition;
+};
+static struct shared_extent shared_extent_records[SHARED_EXTENT_RECORDS];
+/* (the records, for a Custom Edition map's tags: NULL for the Xbox's) */
+static struct shared_extent *shared_extents;
+static unsigned long shared_extent_count;
+static long shared_extents_taken;
+/* (the definition recorded for data, whose bytes have no schema) */
+static char const shared_extent_data;
+/* (a block found to share its bytes, whose elements are walked through the
+first: its definition, which the walk sets to NULL, until then) */
+static char const shared_extent_block;
+
 static char const tag_validate_empty_name[] = "";
 
 /* ---------- prototypes */
@@ -226,6 +257,7 @@ static void validate_fields(struct tag_validation *validation, byte *base,
 	struct tag_schema_definition const *definition);
 static void validation_begin(struct tag_validation *validation, void *tag_header, long tag_data_size,
 	unsigned long tag_cache_size, boolean custom_edition, char const *map_name);
+static void shared_extents_forget(unsigned long first, unsigned long size);
 
 /* ---------- private code */
 
@@ -412,6 +444,7 @@ static void unclaim(
 
 	if (first > tag_validate_globals.tag_cache_size || size > tag_validate_globals.tag_cache_size - first)
 		return;
+	shared_extents_forget(first, size);
 	for (bit = first; bit < end; )
 	{
 		if (bit % CLAIM_BITS == 0 && end - bit >= CLAIM_BITS)
@@ -425,6 +458,125 @@ static void unclaim(
 			bit++;
 		}
 	}
+}
+
+static unsigned long shared_extent_slot(
+	unsigned long first)
+{
+	return (unsigned long)((first * 2654435761UL) & 0xFFFFFFFFUL) >> 14 & (SHARED_EXTENT_RECORDS - 1);
+}
+
+/* the record of what starts at the tag cache's offset first, or NULL */
+static struct shared_extent *shared_extent_find(
+	unsigned long first)
+{
+	unsigned long slot;
+	unsigned long probes;
+
+	if (!shared_extents)
+		return NULL;
+	for (slot = shared_extent_slot(first), probes = 0; probes < SHARED_EXTENT_RECORDS;
+		slot = (slot + 1) & (SHARED_EXTENT_RECORDS - 1), probes++)
+	{
+		if (!shared_extents[slot].key)
+			return NULL;
+		if (shared_extents[slot].key == first + 1)
+			return &shared_extents[slot];
+	}
+	return NULL;
+}
+
+/* (a Custom Edition map's) the size bytes at address, just claimed, as a
+block of `definition` or data */
+static void shared_extent_record(
+	void const *address,
+	unsigned long size,
+	void const *definition)
+{
+	unsigned long first = (unsigned long)((byte const *)address - (byte const *)tag_validate_globals.header);
+	struct shared_extent *record;
+	unsigned long slot;
+
+	if (!tag_validate_globals.custom_edition || !shared_extents || !size)
+		return;
+	record = shared_extent_find(first);
+	if (!record)
+	{
+		/* (full enough: what is not recorded cannot be shared, and is
+		refused as before) */
+		if (shared_extent_count >= SHARED_EXTENT_RECORDS / 4 * 3)
+			return;
+		for (slot = shared_extent_slot(first);
+			shared_extents[slot].key && shared_extents[slot].key != SHARED_EXTENT_REMOVED;
+			slot = (slot + 1) & (SHARED_EXTENT_RECORDS - 1))
+		{
+		}
+		record = &shared_extents[slot];
+		if (!record->key)
+			shared_extent_count++;
+	}
+	record->key = first + 1;
+	record->size = size;
+	record->definition = definition;
+}
+
+/* whether the size bytes at address, a block of `definition` or data, are
+those of one already claimed there, every byte still claimed */
+static boolean shared_extent_taken(
+	void const *address,
+	unsigned long size,
+	void const *definition)
+{
+	unsigned long first = (unsigned long)((byte const *)address - (byte const *)tag_validate_globals.header);
+	struct shared_extent const *record;
+	unsigned long bit;
+
+	if (!tag_validate_globals.custom_edition || !size ||
+		(unsigned long)address < (unsigned long)tag_validate_globals.header)
+	{
+		return FALSE;
+	}
+	record = shared_extent_find(first);
+	if (!record || record->definition != definition || size > record->size)
+		return FALSE;
+	for (bit = first; bit < first + size; bit++)
+	{
+		if (!(tag_validate_claims[bit / CLAIM_BITS] & (1UL << (bit % CLAIM_BITS))))
+			return FALSE;
+	}
+	shared_extents_taken++;
+	return TRUE;
+}
+
+/* forgets the records of what starts in the size bytes at the tag cache's
+offset first, as they are unclaimed */
+static void shared_extents_forget(
+	unsigned long first,
+	unsigned long size)
+{
+	unsigned long slot;
+
+	if (!shared_extents)
+		return;
+	for (slot = 0; slot < SHARED_EXTENT_RECORDS; slot++)
+	{
+		unsigned long key = shared_extents[slot].key;
+
+		if (key && key != SHARED_EXTENT_REMOVED && key - 1 >= first && key - 1 - first < size)
+			shared_extents[slot].key = SHARED_EXTENT_REMOVED;
+	}
+}
+
+/* every record forgotten, kept from now on for a Custom Edition map's tags
+only */
+static void shared_extents_reset(
+	boolean custom_edition)
+{
+	shared_extents = custom_edition ? shared_extent_records : NULL;
+	if (shared_extents)
+		memset(shared_extents, 0, sizeof(shared_extent_records));
+	shared_extent_count = 0;
+	shared_extents_taken = 0;
 }
 
 /* whether a string ends in the region, or in the tags (where a bsp's tag
@@ -609,12 +761,19 @@ static void validate_block_extent(
 			block->count, definition->size, (unsigned long)block->address);
 		return;
 	}
+	if (shared_extent_taken(block->address, (unsigned long)block->count * definition->size, definition))
+	{
+		/* (its elements are walked through the block that claimed them) */
+		block->definition = (void *)&shared_extent_block;
+		return;
+	}
 	if (!claim(block->address, (unsigned long)block->count * definition->size))
 	{
 		tag_validate_refuse(validation, "has %ld elements of %ld bytes at %08lx, which overlap another's",
 			block->count, definition->size, (unsigned long)block->address);
 		return;
 	}
+	shared_extent_record(block->address, (unsigned long)block->count * definition->size, definition);
 	if (!block->count)
 		block->address = NULL;
 
@@ -647,6 +806,11 @@ static void validate_data_extent(
 		}
 		return;
 	}
+	if (data->size && region_contains(validation, data->address, data->size) &&
+		shared_extent_taken(data->address, (unsigned long)data->size, &shared_extent_data))
+	{
+		return;
+	}
 	if (data->size &&
 		(!region_contains(validation, data->address, data->size) || !claim(data->address, data->size)))
 	{
@@ -654,6 +818,7 @@ static void validate_data_extent(
 			data->size, (unsigned long)data->address);
 		return;
 	}
+	shared_extent_record(data->address, (unsigned long)data->size, &shared_extent_data);
 	if (!data->size)
 		data->address = NULL;
 
@@ -841,6 +1006,12 @@ static void validate_fields(
 					struct tag_block *block = (struct tag_block *)address;
 					long element_index;
 
+					/* (a block sharing another's bytes: walked through that one) */
+					if (block->definition == (void *)&shared_extent_block)
+					{
+						block->definition = NULL;
+						break;
+					}
 					/* (the elements, through every pass) */
 					for (element_index = 0;
 						element_index < block->count && !validation->refused;
@@ -1554,6 +1725,7 @@ static void validation_begin(
 	tag_validate_globals.custom_edition = custom_edition;
 	snprintf(tag_validate_globals.map_name, sizeof(tag_validate_globals.map_name), "%s", map_name);
 	memset(tag_validate_claims, 0, sizeof(tag_validate_claims));
+	shared_extents_reset(custom_edition);
 	validation_new(validation, tag_header, (unsigned long)tag_data_size);
 
 	return;
@@ -1636,7 +1808,20 @@ boolean tag_validate_custom_edition_tags(
 	this build's, custom_edition_geometry.c) */
 	validate_buffers(&validation, NULL, 0, NULL, 0);
 
-	return validate_tag_table(&validation, header->instances, header->tag_count);
+	{
+		boolean valid = validate_tag_table(&validation, header->instances, header->tag_count);
+
+		if (valid && shared_extents_taken)
+		{
+			char message[MAXIMUM_MESSAGE_LENGTH];
+
+			snprintf(message, sizeof(message),
+				"the map '%s' has %ld blocks and data that share the bytes of others the same, as Invader builds them",
+				tag_validate_globals.map_name, shared_extents_taken);
+			tag_validate_report(message);
+		}
+		return valid;
+	}
 }
 
 boolean tag_validate_structure_bsp(
