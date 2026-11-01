@@ -255,9 +255,9 @@ each other and their allies and bump into each other, the enemies, pickups
 and vehicles are the level's, and a team wiped reverts to the last
 checkpoint. A LAN co-op game has no Server Setup: the level's difficulty
 chosen, the lobby opens (the game named after player 1). An internet one's
-Server Setup has its listing, password and invite, without CO-OP OPTIONS. Only the host skips a
-cutscene (SPACE or A, as alone, with nothing on the screen saying so); the
-other player's skip key does nothing. From a cutscene's start until the
+Server Setup has its listing, password and invite, without CO-OP OPTIONS. Either player skips a
+cutscene for both (SPACE or A, as alone, with nothing on the screen saying
+so), as in split screen co-op. From a cutscene's start until the
 players are given control, the other player sees the host's view itself,
 letterbox and all, as split screen shows one view for both.
 

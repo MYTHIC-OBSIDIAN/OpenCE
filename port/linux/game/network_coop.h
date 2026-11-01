@@ -137,17 +137,21 @@ void network_coop_note_scenery_animation(long object_index, long animation_graph
 
 /* player_control.c: whether the skip key should do anything, and the press.
 network_coop_vote_skip returns FALSE outside network co-op, where the
-cinematic is skipped as usual; in it only the host's press skips. */
+cinematic is skipped as usual; in it either player's press skips it for
+both (a client's sent to the host), as either player's does in split
+screen co-op. */
 boolean network_coop_skip_offered(void);
 boolean network_coop_vote_skip(void);
 /* the pause menu's REVERT TO SAVED in network co-op
-(ui_widget_event_handler_functions.c): the host's is done for every machine
-(main_revert_map), a client's sent to the host to do. TRUE if sent or
-done. */
+(ui_widget_event_handler_functions.c), and a client's skip key in a
+skippable cutscene (network_coop_vote_skip): the host's are done for every
+machine (main_revert_map, the skip), a client's sent to the host to do.
+TRUE if sent or done. */
 enum
 {
 	_coop_pause_request_none,
 	_coop_pause_request_revert,
+	_coop_pause_request_skip,
 	NUMBER_OF_COOP_PAUSE_REQUESTS
 };
 boolean network_coop_pause_request(short request);

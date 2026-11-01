@@ -76,8 +76,8 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
 
   A co-op game holds two players at most
   (`HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS`), each the campaign's Master
-  Chief. Only the host skips a cutscene: its skip key does, a client's
-  does nothing (there is no vote). The host then reverts as single player does, but keeps its clock
+  Chief. Either player skips a cutscene for both: the host's skip key
+  does, and a client's asks the host to (there is no vote). The host then reverts as single player does, but keeps its clock
   moving forward (the netcode depends on that) and moves the script
   threads' wake times along with it. The object, device and name syncs
   bring the clients up to date.

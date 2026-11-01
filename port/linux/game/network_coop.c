@@ -55,9 +55,9 @@ says its choice, and the host, which alone deals damage, keeps everyone's.
 A player away from the controls for over 70 seconds is hurt by every
 player, whatever either chose, until their next input.
 
-Only the host skips a cutscene, as the one player of a solo game does:
-its skip key during a skippable cutscene skips it (a client's does
-nothing; there is no vote). The skip itself is the campaign's: the host reverts to the state saved when the cutscene began
+Either player skips a cutscene, as in split screen co-op: the host's skip
+key during a skippable cutscene skips it, and a client's asks the host to
+(a pause request: there is no vote). The skip itself is the campaign's: the host reverts to the state saved when the cutscene began
 and the script carries on past it. Clients catch up through the object,
 device and name syncs. The host keeps its clock running through the revert,
 because the netcode needs it to only go forward (network_coop_reverted).
@@ -438,7 +438,7 @@ struct distributed_coop_object_looks_message
 };
 
 /* a client's pause menu request (once its skip vote: the message's number
-is kept), REVERT TO SAVED for the host to do: sent in
+is kept), REVERT TO SAVED or its skip key's, for the host to do: sent in
 PAUSE_REQUEST_REPEAT_TICKS ticks' messages in case one is lost, numbered so
 that the host does each once */
 struct distributed_coop_skip_vote
@@ -2960,8 +2960,9 @@ void network_coop_note_object_effect(
 	event->value = marker_index;
 }
 
-/* host: a pause menu request done for every machine: the revert, at the
-end of the frame (main.c) */
+/* host: a pause menu request (or a client's skip) done for every machine:
+the revert, at the end of the frame (main.c), or the skip, if one is
+offered (host_count_skip_votes) */
 static void host_pause_request(
 	short request,
 	long machine_index)
@@ -2970,6 +2971,11 @@ static void host_pause_request(
 	{
 		error(_error_silent, "co-op: REVERT TO SAVED (machine %ld)", machine_index);
 		main_revert_map();
+	}
+	else if (request == _coop_pause_request_skip && skip_vote.offered)
+	{
+		error(_error_silent, "co-op: skip asked (machine %ld)", machine_index);
+		skip_vote.voted = TRUE;
 	}
 }
 
@@ -3007,21 +3013,24 @@ boolean network_coop_pause_request(
 	}
 	if (!coop_client())
 		return FALSE;
+	/* (a skip key held is one request, not one a tick) */
+	if (request == _coop_pause_request_skip && pause_requests.request == request && pause_requests.ticks_left > 0)
+		return TRUE;
 	pause_requests.request = (byte)request;
 	pause_requests.sequence++;
 	pause_requests.ticks_left = PAUSE_REQUEST_REPEAT_TICKS;
 	return TRUE;
 }
 
-/* (a client's skip key does nothing: only the host skips) */
+/* (a client's skip key asks the host while the host offers a skip) */
 boolean network_coop_skip_offered(
 	void)
 {
-	return FALSE;
+	return coop_client() && skip_vote.offered && coop_presentation.cinematic_started;
 }
 
 /* the skip key pressed: the host's skips (host_count_skip_votes), a
-client's is ignored */
+client's asks the host to (network_coop_pause_request) */
 boolean network_coop_vote_skip(
 	void)
 {
@@ -3029,6 +3038,8 @@ boolean network_coop_vote_skip(
 		return FALSE;
 	if (coop_host())
 		skip_vote.voted = TRUE;
+	else if (network_coop_skip_offered())
+		network_coop_pause_request(_coop_pause_request_skip);
 	return TRUE;
 }
 
@@ -3118,7 +3129,7 @@ void network_coop_client_tick(
 		client_host_camera_set(FALSE);
 		player_input_enable(TRUE);
 	}
-	/* (a client sends no skip vote: only the host skips) */
+	/* (its skip key asks the host by a pause request, below: no vote) */
 	skip_vote.voted = FALSE;
 	/* its pause menu's request, to the host */
 	if (pause_requests.ticks_left > 0)
