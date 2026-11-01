@@ -1480,7 +1480,6 @@ long tag_validate_custom_edition_infer_groups(
 	char instance_text[5];
 
 	validation_begin(&validation, tag_header, loaded_size, tag_cache_size, TRUE, map_name);
-	tag_validate_report(message);
 	if (!schemas_fit() || tag_cache_size > TAG_VALIDATE_MAXIMUM_TAG_CACHE_SIZE ||
 		loaded_size < (long)sizeof(*header) || (unsigned long)loaded_size > tag_cache_size ||
 		header->signature != TAG_HEADER_SIGNATURE ||
@@ -1517,7 +1516,6 @@ long tag_validate_custom_edition_infer_groups(
 	}
 	tag_validate_pending_groups.count = 0;
 	tag_validate_inference.regrouped += pending_applied;
-	tag_validate_report(message);
 	tag_validate_inference.regrouped = 0;
 	do
 	{
@@ -1571,7 +1569,6 @@ void tag_validate_custom_edition_note_structure_bsp(
 	struct tag_schema_group const *group;
 	unsigned long root_address;
 	byte *root;
-	char message[MAXIMUM_MESSAGE_LENGTH];
 
 	if (bsp_index == 0)
 		tag_validate_pending_groups.count = 0;
@@ -1603,7 +1600,6 @@ void tag_validate_custom_edition_note_structure_bsp(
 	tag_validate_inference_defer = TRUE;
 	infer_walk(&context, root, group->definition, 0);
 	tag_validate_inference_defer = FALSE;
-	tag_validate_report(message);
 
 	return;
 }
