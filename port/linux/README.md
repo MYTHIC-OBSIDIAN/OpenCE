@@ -256,14 +256,15 @@ and vehicles are the level's, and a team wiped reverts to the last
 checkpoint. A LAN co-op game has no Server Setup: the level's difficulty
 chosen, the lobby opens (the game named after player 1). An internet one's
 Server Setup has its listing, password and invite, without CO-OP OPTIONS. Only the host skips a
-cutscene (SPACE or A, as alone; "PRESS SPACE OR A TO SKIP" shows it when it
-can); the other player's skip key does nothing.
+cutscene (SPACE or A, as alone, with nothing on the screen saying so); the
+other player's skip key does nothing. From a cutscene's start until the
+players are given control, the other player sees the host's view itself,
+letterbox and all, as split screen shows one view for both.
 
 An online co-op game's pause menu has the split screen co-op's options (its
-rows, in its order: no SETTINGS). REVERT TO SAVED and RESTART LEVEL, from
-either player, are done by the host for both: the revert to the last
-checkpoint, as split screen's, and the restart a return to the lobby with
-the same level, which starts again at once. Its players spawn and respawn as split
+rows, in its order: no SETTINGS). REVERT TO SAVED, from either player, is
+done by the host for both (to the last checkpoint, as split screen's); there
+is no RESTART LEVEL. Its players spawn and respawn as split
 screen's do: both at the level's start, and a dead player beside the other
 once nothing is dangerous (watching them meanwhile, with no text on the
 screen); only one who joins a level in progress spawns beside a teammate.

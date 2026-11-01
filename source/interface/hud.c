@@ -1483,9 +1483,6 @@ void hud_draw_screen(
 			hud_draw_player_names();
 		/* port: (a dead network co-op player watching a teammate is told
 		nothing, as split screen's: no spawn text) */
-		/* port: the network co-op host's line that it can skip a cinematic */
-		if (cinematic_in_progress())
-			coop_skip_vote_draw(render.local_player_index);
 
 		/* port: the match clock, in multiplayer */
 		if (game_engine_running() && !cinematic_in_progress() &&

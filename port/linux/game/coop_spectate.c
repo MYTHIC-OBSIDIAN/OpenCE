@@ -7,8 +7,6 @@ safe). The campaign's dead camera would watch the body; instead this
 follows a teammate from behind, and A (jump on the keyboard) switches to
 the next one. director.c and hud.c call in here.
 
-It also draws the line telling the host's player how to skip a cutscene
-(network_coop.c skips it; only the host can).
 */
 
 #include "cseries.h"
@@ -197,44 +195,4 @@ void coop_spectate_camera(
 	camera->facing.yaw += turn * SPECTATE_TURN;
 	camera->facing.pitch = SPECTATE_PITCH;
 	camera->distance = SPECTATE_DISTANCE;
-}
-
-/* centred text near the bottom of the screen, in the HUD's font */
-static void draw_bottom_text(
-	wchar_t const *text)
-{
-	long font_index = hud_get_font_index();
-	struct font_header *font;
-	real_argb_color color = *global_real_argb_white;
-	rectangle2d bounds;
-	short height;
-
-	if (font_index == NONE)
-		return;
-	font = font_definition_get(font_index);
-	height = (short)(font->ascending_height + font->descending_height);
-	bounds = render.camera.window_bounds;
-	bounds.y0 = (short)(bounds.y1 - 3 * height - 24);
-	bounds.y1 = (short)(bounds.y1 - 24);
-	/* draw mode 2: centered */
-	draw_string_set_draw_mode(font_index, NONE, 2, 0, &color);
-	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
-}
-
-void coop_skip_vote_draw(
-	short local_player_index)
-{
-	short votes, voters;
-	boolean voted;
-	wchar_t text[96];
-
-	/* once, for the first local player */
-	if (local_player_index != local_player_get_next(NONE) || !network_coop_skip_vote_status(&votes, &voters, &voted))
-		return;
-	/* (the host's player alone skips: no vote) */
-	if (voted)
-		return;
-	usnprintf(text, NUMBEROF(text) - 1, L"PRESS SPACE OR A TO SKIP");
-	text[NUMBEROF(text) - 1] = 0;
-	draw_bottom_text(text);
 }

@@ -2355,16 +2355,53 @@ static void pause_settings_patch(void)
 	}
 }
 
+/* whether a widget runs an event handler function: itself, a widget it
+contains, or one it opens (its confirmation), a few levels down */
+static boolean widget_runs_function(long tag_index, long function, short depth)
+{
+	struct ui_widget_definition const *widget;
+	struct ui_widget_event_handler_reference const *handlers;
+	struct ui_widget_child_reference const *children;
+	long index;
+
+	if (tag_index == NONE || function == NONE || depth > 4)
+		return FALSE;
+	widget = tag_get(UI_WIDGET_DEFINITION_TAG, tag_index);
+	if (!widget)
+		return FALSE;
+	handlers = widget->event_handlers.address;
+	for (index = 0; index < widget->event_handlers.count; index++)
+	{
+		if (TEST_FLAG(handlers[index].flags, _event_handler_run_function_bit) && handlers[index].function == function)
+			return TRUE;
+		if (TEST_FLAG(handlers[index].flags, _event_handler_open_widget_bit) &&
+			widget_runs_function(handlers[index].widget_tag.index, function, (short)(depth + 1)))
+		{
+			return TRUE;
+		}
+	}
+	children = widget->child_widgets.address;
+	for (index = 0; index < widget->child_widgets.count; index++)
+	{
+		if (widget_runs_function(children[index].widget_tag.index, function, (short)(depth + 1)))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 /* network co-op's pause menu: the full-screen list's rows made the split
 screen co-op pause menu's (the same options, in its order, from its own
-widgets, at the full-screen list's place: no SETTINGS); TRUE if done */
+widgets, at the full-screen list's place: no SETTINGS), but RESTART LEVEL
+(a network co-op game is not restarted from its pause menu); TRUE if done */
 static boolean pause_coop_rows(struct ui_widget_definition *list)
 {
 	long screen = tag_loaded(UI_WIDGET_DEFINITION_TAG, SPLIT_SCREEN_PAUSE_SCREEN);
 	struct ui_widget_definition const *definition;
 	struct ui_widget_child_reference const *children;
 	struct ui_widget_child_reference const *rows = list->child_widgets.address;
-	long child;
+	long restart = function_index("pause game restart level", "pause", 0);
+	long revert = function_index("pause game restart at checkpoint", "pause", 0);
+	long child, count = 0;
 
 	if (screen == NONE || list->child_widgets.count <= 0)
 		return FALSE;
@@ -2388,12 +2425,22 @@ static boolean pause_coop_rows(struct ui_widget_definition *list)
 			return FALSE;
 		for (row = 0; row < split->child_widgets.count; row++)
 		{
-			placed[row] = split_rows[row];
-			placed[row].horizontal_offset = rows[0].horizontal_offset;
-			placed[row].vertical_offset = rows[0].vertical_offset;
+			/* (not one that runs the revert too: a confirmation offering
+			both; the restart does nothing in co-op anyway) */
+			if (widget_runs_function(split_rows[row].widget_tag.index, restart, 0) &&
+				!widget_runs_function(split_rows[row].widget_tag.index, revert, 0))
+			{
+				continue;
+			}
+			placed[count] = split_rows[row];
+			placed[count].horizontal_offset = rows[0].horizontal_offset;
+			placed[count].vertical_offset = rows[0].vertical_offset;
+			count++;
 		}
+		if (!count)
+			return FALSE;
 		list->child_widgets.address = placed;
-		list->child_widgets.count = split->child_widgets.count;
+		list->child_widgets.count = count;
 		return TRUE;
 	}
 	return FALSE;

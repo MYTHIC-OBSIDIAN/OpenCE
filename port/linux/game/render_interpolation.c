@@ -693,6 +693,10 @@ void render_interpolation_correct_object(long object_index, real_vector3d const 
 
 static struct observer_result direct_cameras[MAXIMUM_LOCAL_PLAYERS];
 
+/* whether each local player's camera this frame is a network co-op host's
+view (render_interpolation_blended_camera) */
+static boolean coop_host_view_drawn[MAXIMUM_LOCAL_PLAYERS];
+
 static struct observer_result const *render_interpolation_blended_camera(
 	short local_player_index,
 	struct observer_result const *observer);
@@ -739,10 +743,16 @@ struct observer_result const *render_interpolation_camera(
 	short local_player_index,
 	struct observer_result const *observer)
 {
+	struct observer_result const *blended;
+
 	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
 		return observer;
-	return render_interpolation_direct_camera(local_player_index,
-		render_interpolation_blended_camera(local_player_index, observer));
+	blended = render_interpolation_blended_camera(local_player_index, observer);
+	/* (the host's view a co-op client draws is the host's: not turned by this
+	machine's aim) */
+	if (coop_host_view_drawn[local_player_index])
+		return blended;
+	return render_interpolation_direct_camera(local_player_index, blended);
 }
 
 /* between two of the observer's results: the position, the axes (up kept
@@ -794,11 +804,53 @@ static struct observer_result const *render_interpolation_blended_camera(
 	struct interpolated_camera *camera;
 	real t = interpolation_fraction;
 
-	if (!interpolation_rendering || !observer)
-	{
+	if (!observer)
 		return observer;
-	}
 	camera = &interpolated_cameras[local_player_index];
+	/* a network co-op client from a cutscene's start until the players are
+	given control: the host's own view, as the host drew it (between its last
+	two ticks, a cut a cut; moving with a filmed object as it is drawn), not
+	this machine's observer easing toward it (network_coop.c) */
+	{
+		struct network_coop_view previous, latest;
+
+		if (network_coop_client_host_view(&previous, &latest))
+		{
+			struct observer_result a = *observer, b = *observer;
+			real_matrix4x3 const *drawn;
+
+			a.position = previous.position;
+			a.forward = previous.forward;
+			a.up = previous.up;
+			a.field_of_view = previous.field_of_view;
+			b.position = latest.position;
+			b.forward = latest.forward;
+			b.up = latest.up;
+			b.field_of_view = latest.field_of_view;
+			if (latest.object_index != NONE && interpolation_rendering &&
+				object_try_and_get_and_verify_type(latest.object_index, _object_mask_all) &&
+				(drawn = render_interpolation_object_node_matrices(latest.object_index)) != NULL)
+			{
+				real_matrix4x3 const *nodes = (real_matrix4x3 const *)object_header_block_get(
+					latest.object_index, &object_get(latest.object_index)->object.node_matrices);
+
+				camera->blended = b;
+				camera->blended.position.x += drawn[0].position.x - nodes[0].position.x;
+				camera->blended.position.y += drawn[0].position.y - nodes[0].position.y;
+				camera->blended.position.z += drawn[0].position.z - nodes[0].position.z;
+			}
+			else if (interpolation_rendering && !observer_cut(&a, &b))
+				observer_blend(&a, &b, t, &camera->blended);
+			else
+				camera->blended = b;
+			camera->valid = FALSE;
+			coop_host_view_drawn[local_player_index] = TRUE;
+			return &camera->blended;
+		}
+		coop_host_view_drawn[local_player_index] = FALSE;
+	}
+	if (!interpolation_rendering)
+		return observer;
 	/* A scripted camera that moves with an object (a cinematic's camera
 	point relative to a lifepod or dropship, or a unit's eyes in one) is
 	placed by the object as it stands after the last tick. Blended from its

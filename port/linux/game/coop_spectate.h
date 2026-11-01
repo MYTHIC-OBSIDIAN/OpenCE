@@ -1,8 +1,7 @@
 /*
 COOP_SPECTATE.H
 
-Spectating in network co-op, and the host's line that it can skip the
-cutscene (coop_spectate.c).
+Spectating in network co-op (coop_spectate.c).
 */
 
 #ifndef __COOP_SPECTATE_H
@@ -27,9 +26,5 @@ boolean coop_spectate_nothing_to_watch(
 /* keeps the dead camera behind the watched unit as it turns */
 void coop_spectate_camera(
 	struct dead_camera *camera);
-
-/* during a skippable cutscene in network co-op, on the host: how to skip it */
-void coop_skip_vote_draw(
-	short local_player_index);
 
 #endif

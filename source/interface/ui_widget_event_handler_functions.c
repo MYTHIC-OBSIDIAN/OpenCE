@@ -2006,10 +2006,10 @@ static boolean pause_game_restart_level(
 	struct event_record *event,
 	boolean *widget_deleted)
 {
-	/* port: in network co-op the host restarts the level for every machine
-	(a client asks it to: network_coop.c) */
+	/* port: not in network co-op, whose pause menu has no RESTART LEVEL
+	(menu_tags.c's pause_coop_rows): it would restart one machine only */
 	if (network_coop_active())
-		return network_coop_pause_request(_coop_pause_request_restart);
+		return FALSE;
 	main_reset_map();
 	return TRUE;
 }

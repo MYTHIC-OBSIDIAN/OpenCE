@@ -438,7 +438,7 @@ struct distributed_coop_object_looks_message
 };
 
 /* a client's pause menu request (once its skip vote: the message's number
-is kept), REVERT TO SAVED or RESTART LEVEL for the host to do: sent in
+is kept), REVERT TO SAVED for the host to do: sent in
 PAUSE_REQUEST_REPEAT_TICKS ticks' messages in case one is lost, numbered so
 that the host does each once */
 struct distributed_coop_skip_vote
@@ -469,6 +469,12 @@ static struct
 	/* the object the host's cutscene camera is placed relative to, here
 	(NONE: none), which the camera is drawn moving with between ticks */
 	long camera_object_index;
+	/* the host's own view on the last two ticks played, drawn instead of
+	this machine's while view_active (network_coop_client_host_view) */
+	boolean view_active;
+	boolean view_previous_valid;
+	struct network_coop_view view_previous;
+	struct network_coop_view view_latest;
 	real_point3d watching_host_position;
 	real_vector3d watching_host_forward;
 	long heard_time;
@@ -2046,6 +2052,8 @@ void network_coop_new_game(
 {
 	csmemset(&coop_presentation, 0, sizeof(coop_presentation));
 	coop_presentation.camera_object_index = NONE;
+	coop_presentation.view_latest.object_index = NONE;
+	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
@@ -2952,8 +2960,8 @@ void network_coop_note_object_effect(
 	event->value = marker_index;
 }
 
-/* host: a pause menu request done for every machine: the revert or the
-level's restart at the end of the frame (main.c) */
+/* host: a pause menu request done for every machine: the revert, at the
+end of the frame (main.c) */
 static void host_pause_request(
 	short request,
 	long machine_index)
@@ -2962,11 +2970,6 @@ static void host_pause_request(
 	{
 		error(_error_silent, "co-op: REVERT TO SAVED (machine %ld)", machine_index);
 		main_revert_map();
-	}
-	else if (request == _coop_pause_request_restart)
-	{
-		error(_error_silent, "co-op: RESTART LEVEL (machine %ld)", machine_index);
-		main_coop_restart_level();
 	}
 }
 
@@ -2979,6 +2982,17 @@ long network_coop_client_camera_object(
 	if (!coop_client() || !coop_presentation.host_camera || !coop_presentation.cinematic_started)
 		return NONE;
 	return coop_presentation.camera_object_index;
+}
+
+boolean network_coop_client_host_view(
+	struct network_coop_view *previous,
+	struct network_coop_view *latest)
+{
+	if (!coop_client() || !coop_presentation.view_active)
+		return FALSE;
+	*latest = coop_presentation.view_latest;
+	*previous = coop_presentation.view_previous_valid ? coop_presentation.view_previous : coop_presentation.view_latest;
+	return TRUE;
 }
 
 boolean network_coop_pause_request(
@@ -3056,22 +3070,6 @@ void network_coop_skip_done(
 	skip_vote_clear();
 	skip_vote.requested = FALSE;
 	skip_vote.cooldown_until = game_time_get() + SKIP_COOLDOWN_TICKS;
-}
-
-boolean network_coop_skip_vote_status(
-	short *votes,
-	short *voters,
-	boolean *voted)
-{
-	/* (the host's player alone: a client is shown nothing) */
-	boolean offered = coop_host() && skip_vote.offered;
-
-	if (!offered || skip_vote.voters <= 0)
-		return FALSE;
-	*votes = skip_vote.votes;
-	*voters = skip_vote.voters;
-	*voted = skip_vote.voted;
-	return TRUE;
 }
 
 /* host, after each tick */
@@ -3447,6 +3445,45 @@ void network_coop_handle_presentation(
 	coop_presentation.heard_any = TRUE;
 }
 
+/* client: the host's own view of this tick played, kept as the latest (the
+one before it the previous), and whether it is drawn instead of this
+machine's: from a cutscene's start until the players are given control
+(the host's cinematic, or its players' input off), as split screen shows
+one view for both through a cutscene */
+static void client_view_record(
+	struct distributed_coop_presentation const *presentation)
+{
+	struct network_coop_view view;
+	struct object_datum *filmed;
+	boolean valid;
+
+	csmemset(&view, 0, sizeof(view));
+	view.object_index = NONE;
+	view.position = presentation->camera_position;
+	distributed_vector_unpack(&presentation->camera_forward, DISTRIBUTED_UNIT_SCALE, &view.forward);
+	distributed_vector_unpack(&presentation->camera_up, DISTRIBUTED_UNIT_SCALE, &view.up);
+	view.field_of_view = PIN((real)presentation->camera_field_of_view / FIELD_OF_VIEW_SCALE,
+		CAMERA_MINIMUM_FIELD_OF_VIEW, CAMERA_MAXIMUM_FIELD_OF_VIEW);
+	filmed = presentation->camera_object_index != NONE &&
+		distributed_object_index_valid(presentation->camera_object_index) ?
+		object_try_and_get(presentation->camera_object_index) : NULL;
+	if (filmed && distributed_real_valid(presentation->camera_object_offset.i) &&
+		distributed_real_valid(presentation->camera_object_offset.j) &&
+		distributed_real_valid(presentation->camera_object_offset.k) &&
+		magnitude_squared3d(&presentation->camera_object_offset) < CAMERA_OBJECT_DISTANCE * CAMERA_OBJECT_DISTANCE * 4.0f)
+	{
+		point_from_line3d(&filmed->object.position, &presentation->camera_object_offset, 1.0f, &view.position);
+		view.object_index = presentation->camera_object_index;
+	}
+	valid = presentation->camera_field_of_view != 0 && distributed_point_valid(&view.position, CAMERA_WORLD_BOUND) &&
+		distributed_axes_make_valid(&view.forward, &view.up) && valid_real_vector3d_axes2(&view.forward, &view.up);
+	coop_presentation.view_previous_valid = coop_presentation.view_active && valid;
+	coop_presentation.view_previous = coop_presentation.view_latest;
+	coop_presentation.view_latest = view;
+	coop_presentation.view_active = valid &&
+		(TEST_FLAG(presentation->flags, _presentation_cinematic_bit) || presentation->input_disabled);
+}
+
 static void client_presentation_apply(
 	struct distributed_coop_presentation const *presentation)
 {
@@ -3482,11 +3519,14 @@ static void client_presentation_apply(
 	instead only when the cutscene leaves the camera with the player. A
 	player with no unit and nobody to watch also gets the host's view,
 	rather than a dead camera at the world origin. */
+	client_view_record(presentation);
 	client_host_camera_set((coop_presentation.cinematic_started && presentation->camera_scripted) ||
-		coop_spectate_nothing_to_watch(0));
+		coop_presentation.view_active || coop_spectate_nothing_to_watch(0));
 	/* (also outside a cinematic: a cutscene that leaves the players their
-	controls shows the bars too) */
-	cinematic_show_letterbox(TEST_FLAG(presentation->flags, _presentation_letterbox_bit));
+	controls shows the bars too). Only as it changes: each call restarts the
+	bars' clock (cinematics.c), so called every tick they never grew in */
+	if ((TEST_FLAG(presentation->flags, _presentation_letterbox_bit) != 0) != (cinematic_globals->show_letterbox != 0))
+		cinematic_show_letterbox(TEST_FLAG(presentation->flags, _presentation_letterbox_bit));
 	objects_port_set_activating_cluster((short)(presentation->activating_cluster - 1));
 	if (coop_presentation.host_camera)
 	{
@@ -3520,8 +3560,11 @@ static void client_presentation_apply(
 		{
 			boolean camera_ready = TRUE;
 
-			if (!(coop_presentation.cinematic_started && presentation->camera_scripted))
+			if (!(coop_presentation.cinematic_started && presentation->camera_scripted) &&
+				!coop_presentation.view_active)
+			{
 				camera_ready = client_watch_host_from_behind(&position, &forward, &up);
+			}
 			if (camera_ready && valid_real_vector3d_axes2(&forward, &up))
 				scripted_camera_set_camera_point_relative(&position, &forward, &up,
 					PIN((real)presentation->camera_field_of_view / FIELD_OF_VIEW_SCALE, CAMERA_MINIMUM_FIELD_OF_VIEW,

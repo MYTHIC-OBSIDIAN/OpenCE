@@ -2411,32 +2411,6 @@ static void main_won_map_private(
 	return;
 }
 
-/* port: a network co-op host's RESTART LEVEL (the pause menu's, its own or
-a client's: network_coop.c): the round ends for everyone, as a level won
-does, back to the lobby with the same level, whose countdown starts at once,
-so that every machine loads it again from its start, as split screen's
-restart does. Done here, between ticks, as a level won is. */
-static boolean main_coop_restart_wanted;
-
-void main_coop_restart_level(
-	void)
-{
-	main_coop_restart_wanted = TRUE;
-}
-
-static void main_coop_restart_level_private(
-	void)
-{
-	struct network_game_server *server = global_network_game_server_get();
-
-	main_coop_restart_wanted = FALSE;
-	if (!main_coop_host() || !server)
-		return;
-	error(_error_silent, "co-op: the host restarts the level");
-	network_game_server_port_cooperative_won(NULL);
-	network_game_server_port_countdown_begin(server, 0);
-}
-
 void main_set_map_name(
 	char const *map_name)
 {
@@ -3476,12 +3450,6 @@ void main_loop(
 			if (main_globals.won_map)
 			{
 				main_won_map_private();
-			}
-
-			/* port: a network co-op host's RESTART LEVEL */
-			if (main_coop_restart_wanted)
-			{
-				main_coop_restart_level_private();
 			}
 
 			if (main_globals.respawn)
