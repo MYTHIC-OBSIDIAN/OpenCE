@@ -145,6 +145,7 @@ symbols in this file:
 #include "text/font_group.h"
 #include "text/text_group.h"
 #include "text/unicode.h"
+#include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #include "controller_remap.h" /* port: port/linux/game/controller_remap_game.c */
 
@@ -556,8 +557,24 @@ static void render_state_bitmap(
 	if (bitmap && _texture_cache_bitmap_get_hardware_format(
 		(struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
+		real bitmap_scale;
+
 		bitmap = hud_hires_sprite_bitmap(bitmap, icon->sequence_index);
 		scale = local_player_count() > 1 ? 0.75f : 1.0f;
+		/* port: Halo PC draws its message icons at half their size for each
+		of its HUD scale flags their bitmap has: its own maps' (both, four
+		times the Xbox's: a weapon's pickup icon). Their offsets are the
+		screen's, as the Xbox's are */
+		bitmap_scale = scale;
+		if (custom_edition_cache_tags_loaded())
+		{
+			word group_flags = bitmap_group_get(bitmap_group_index)->flags;
+
+			if (TEST_FLAG(group_flags, 4))
+				bitmap_scale *= 0.5f;
+			if (TEST_FLAG(group_flags, 7))
+				bitmap_scale *= 0.5f;
+		}
 		point.x = (short)(icon->offset.x * scale + cursor_bounds->x0);
 		point.y = (short)(cursor_bounds->y1 - icon->offset.y * scale);
 		hud_draw_bitmap_direct(
@@ -565,7 +582,7 @@ static void render_state_bitmap(
 			_hud_corner_bottom_left,
 			&point,
 			clip,
-			scale,
+			bitmap_scale,
 			0.0f,
 			TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color,
 			FALSE);
@@ -574,12 +591,12 @@ static void render_state_bitmap(
 		else if (clip)
 		{
 			cursor_bounds->x0 = (short)(
-				((clip->x1 - clip->x0) * bitmap->width + icon->width_offset) * scale + point.x);
+				(clip->x1 - clip->x0) * bitmap->width * bitmap_scale + icon->width_offset * scale + point.x);
 		}
 		else
 		{
 			cursor_bounds->x0 = (short)(
-				(bitmap->width + icon->width_offset) * scale + point.x);
+				bitmap->width * bitmap_scale + icon->width_offset * scale + point.x);
 		}
 	}
 
