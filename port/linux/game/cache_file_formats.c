@@ -263,6 +263,9 @@ bitmap.json: "half hud scale", "force hud use highres scale") */
 #define BITMAP_GROUP_FLAGS_OFFSET 0x06
 #define BITMAP_HALF_HUD_SCALE_BIT 4
 #define BITMAP_FORCE_HUD_HIGH_RESOLUTION_SCALE_BIT 7
+/* (hud_bitmap_scale_flags) */
+#define HUD_BITMAP_HALF_SCALE 1
+#define HUD_BITMAP_FORCE_HIGH_RESOLUTION 2
 #define UNIT_HUD_INTERFACE_GROUP_TAG 'unhi'
 #define UNIT_HUD_INTERFACE_BYTES 0x56C
 #define UNIT_HUD_INTERFACE_AUXILIARY_OVERLAYS_OFFSET 0x3A4
@@ -3272,46 +3275,52 @@ static void hud_meters_convert(
 flag at half the size of its bitmap, and Custom Edition's HUD bitmaps are
 made for that: in Blood Gulch every flagged element draws a bitmap twice the
 size of the one its Xbox counterpart draws, and every other element one of
-the same size (docs/custom_edition_caches.md). A bitmap may ask the same of
-every element that draws it (hud_bitmap_halves_scale). This build has no
-such flags (hud_draw.c draws a bitmap at its size times the placement's
-scale), so the scale takes them in.
+the same size (docs/custom_edition_caches.md). A bitmap's force HUD high
+resolution scale flag asks the same of every element that draws it, and its
+half HUD scale flag halves it again (hud_bitmap_scale_flags). This build has
+no such flags (hud_draw.c draws a bitmap at its size times the placement's
+scale), so the scale takes them in:
+- Halo PC's own maps' sheets have both bitmap flags and are four times the
+  Xbox's (512x128 for 128x32), flagged elements or not: a quarter;
+- Digsite's weapons (spasm.map) flag their elements and give their own
+  sheets the half flag, twice Custom Edition's (an assault rifle's counter
+  512x136 to the stock 227x53): a quarter;
+- Custom Edition's stock sheets have neither, their flagged elements a half.
 
 Halo PC reads the placement's flag only on statics, meters and numbers, as
 Chimera found (adapted from Chimera, by SnowyMouse): crosshair and overlay
-items are halved by their bitmap's flags alone. A number keeps its flag,
+items are scaled by their bitmap's flags alone. A number keeps its flag,
 which hud_draw_numbers reads: its scale is not its digits'. */
 static void hud_placement_convert(
 	uint8_t *placement,
-	int bitmap_halves_scale,
+	int bitmap_flags,
+	int reads_placement_flag,
 	struct custom_edition_conversion_report *report)
 {
 	uint16_t flags = read_u16(placement + HUD_PLACEMENT_SCALING_FLAGS_OFFSET);
+	int high_resolution = (reads_placement_flag && flag_is_set(flags, HUD_SCALING_USE_HIGH_RESOLUTION_SCALE_BIT)) ||
+		(bitmap_flags & HUD_BITMAP_FORCE_HIGH_RESOLUTION);
+	float scale = (high_resolution ? 0.5f : 1.0f) * ((bitmap_flags & HUD_BITMAP_HALF_SCALE) ? 0.5f : 1.0f);
 
-	if (flag_is_set(flags, HUD_SCALING_USE_HIGH_RESOLUTION_SCALE_BIT) || bitmap_halves_scale)
+	if (reads_placement_flag)
 	{
-		/* (a bitmap with both of Halo PC's flags is four times the Xbox's:
-		Halo PC's own maps' HUD sheets, 512x128 for 128x32, 512x512 reticles
-		for 128x128; hud_bitmap_halves_scale says 2, and it is halved
-		again) */
-		float scale = bitmap_halves_scale == 2 ? 0.25f : 0.5f;
-
-		write_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET) * scale);
-		write_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET) * scale);
 		write_u16(
 			placement + HUD_PLACEMENT_SCALING_FLAGS_OFFSET,
 			(uint16_t)(flags & ~(1U << HUD_SCALING_USE_HIGH_RESOLUTION_SCALE_BIT)));
+	}
+	if (scale != 1.0f)
+	{
+		write_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_WIDTH_SCALE_OFFSET) * scale);
+		write_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET, read_f32(placement + HUD_PLACEMENT_HEIGHT_SCALE_OFFSET) * scale);
 		report->hud_placements_rescaled++;
 	}
 
 	return;
 }
 
-/* whether the bitmap a HUD element draws (its tag reference) has Halo PC's
-half HUD scale or force HUD high resolution scale flag: 1 for either, 2 for
-both (each halves it: Halo PC's own maps' HUD bitmaps have both, and are
-four times the Xbox's), 0 for neither */
-static int hud_bitmap_halves_scale(
+/* Halo PC's HUD scale flags of the bitmap a HUD element draws (its tag
+reference): HUD_BITMAP_HALF_SCALE and HUD_BITMAP_FORCE_HIGH_RESOLUTION */
+static int hud_bitmap_scale_flags(
 	struct load_state const *state,
 	uint8_t const *reference)
 {
@@ -3334,7 +3343,8 @@ static int hud_bitmap_halves_scale(
 	}
 	flags = read_u16(state->tag_cache + offset + BITMAP_GROUP_FLAGS_OFFSET);
 
-	return flag_is_set(flags, BITMAP_HALF_HUD_SCALE_BIT) + flag_is_set(flags, BITMAP_FORCE_HUD_HIGH_RESOLUTION_SCALE_BIT);
+	return (flag_is_set(flags, BITMAP_HALF_HUD_SCALE_BIT) ? HUD_BITMAP_HALF_SCALE : 0) |
+		(flag_is_set(flags, BITMAP_FORCE_HUD_HIGH_RESOLUTION_SCALE_BIT) ? HUD_BITMAP_FORCE_HIGH_RESOLUTION : 0);
 }
 
 /* the placement at `placement_offset` in each element of the block at
@@ -3482,6 +3492,36 @@ struct hud_conversion
 	struct custom_edition_conversion_report *report;
 };
 
+/* The placements converted (their tag cache offsets + 1; 0 a free slot):
+Invader builds a block that is the same as one already written as that one
+(spasm.map's Digsite assault rifles share their HUD elements), and a
+placement reached again must not be scaled again. Reset by each
+conversion. */
+#define CONVERTED_PLACEMENT_SLOTS 16384
+static uint32_t converted_placements[CONVERTED_PLACEMENT_SLOTS];
+static uint32_t converted_placement_count;
+
+/* whether the placement at `offset` is converted already; else noted as
+converted now (when there is room to note it) */
+static int placement_converted_before(
+	uint32_t offset)
+{
+	uint32_t slot = (offset * 2654435761U >> 18) & (CONVERTED_PLACEMENT_SLOTS - 1);
+
+	while (converted_placements[slot])
+	{
+		if (converted_placements[slot] == offset + 1)
+			return 1;
+		slot = (slot + 1) & (CONVERTED_PLACEMENT_SLOTS - 1);
+	}
+	if (converted_placement_count < CONVERTED_PLACEMENT_SLOTS / 4 * 3)
+	{
+		converted_placements[slot] = offset + 1;
+		converted_placement_count++;
+	}
+	return 0;
+}
+
 static uint8_t *hud_conversion_block_elements(
 	void *context,
 	uint8_t const *block,
@@ -3509,17 +3549,11 @@ static void hud_conversion_placement(
 	int items)
 {
 	struct hud_conversion const *conversion = context;
-	int bitmap_halves_scale = bitmap ? hud_bitmap_halves_scale(conversion->state, bitmap) : 0;
+	int bitmap_flags = bitmap ? hud_bitmap_scale_flags(conversion->state, bitmap) : 0;
 
-	if (items)
-	{
-		if (bitmap_halves_scale)
-			hud_placement_convert(placement, bitmap_halves_scale, conversion->report);
-	}
-	else
-	{
-		hud_placement_convert(placement, bitmap_halves_scale, conversion->report);
-	}
+	if (placement_converted_before((uint32_t)(placement - conversion->state->tag_cache)))
+		return;
+	hud_placement_convert(placement, bitmap_flags, !items, conversion->report);
 
 	return;
 }
@@ -3864,6 +3898,8 @@ enum cache_file_status custom_edition_cache_convert(
 	{
 		return _cache_file_status_bad_tag_instances_range;
 	}
+	memset(converted_placements, 0, sizeof(converted_placements));
+	converted_placement_count = 0;
 	report->behaviours = custom_edition_behaviours_find(map_name, read_u32(tag_cache + TAG_INDEX_CHECKSUM_OFFSET));
 	if (flag_is_set(report->behaviours, _custom_edition_behaviour_disable_bitmap_hud_scale_flags))
 	{
