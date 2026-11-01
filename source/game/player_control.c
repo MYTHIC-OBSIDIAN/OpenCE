@@ -1055,9 +1055,8 @@ void player_control_new_unit(
 	struct player_control *control = player_control_get(local_player_index);
 	/* port: the buttons held back until released (player_control_inhibit_buttons)
 	kept for the new unit: the menus hold every button back as they close
-	(ui_widget.c), and the A that started the game, still down (or seen
-	down on the first tick) as the player's first unit spawned, made it
-	jump. Jump is held back for a new unit until released, too */
+	(ui_widget.c), and a button still down from them is not taken by the
+	player's first unit */
 	word inhibited = control->inhibited_button_bit_vector;
 	word reset_when_released = control->reset_button_when_released_bit_vector;
 
@@ -1072,11 +1071,6 @@ void player_control_new_unit(
 	control->pitch_minimum = -DEGREES_TO_RADIANS(85.5f);
 	control->inhibited_button_bit_vector = inhibited & reset_when_released;
 	control->reset_button_when_released_bit_vector = reset_when_released;
-	if (unit_index != NONE)
-	{
-		control->inhibited_button_bit_vector |= FLAG(_button_jump);
-		control->reset_button_when_released_bit_vector |= FLAG(_button_jump);
-	}
 
 	if (unit_index != NONE)
 	{
