@@ -335,6 +335,26 @@ static const real_plane3d screen_plane =
 };
 
 static boolean warned_about_missing_subclusters;
+/* port: display.portal_clipping (port/linux/src/port_config.c): whether
+each room seen is drawn within the bounds of the portals it is seen through,
+as the Xbox drew it, or within the whole view */
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+
+static boolean structure_visibility_portal_clipping(
+	void)
+{
+	static unsigned long changes = (unsigned long)-1;
+	static boolean clipping = TRUE;
+
+	if (changes != config_changes())
+	{
+		changes = config_changes();
+		clipping = config_boolean("display.portal_clipping") != 0;
+	}
+	return clipping;
+}
+
 /* port: whether a map's malformed bsp was reported (once each) */
 static boolean warned_about_portal_hull_vertices;
 static boolean warned_about_invalid_structure_bsp;
@@ -1871,6 +1891,16 @@ static void structure_visibility_find_clusters(
 				&structure->clusters,
 				rendered_cluster->cluster_index,
 				struct structure_visibility_cluster);
+			/* port: the whole view's frustum, the rooms seen being the
+			portals' still (display.portal_clipping): a room's portal bounds
+			left its objects and parts of its level out of a frame or two
+			as the camera moved (Digsite's m1_exploration_moonbase, whose
+			terrain is cut into many rooms) */
+			if (!structure_visibility_portal_clipping())
+			{
+				rendered_cluster->frustum = render.frustum;
+				continue;
+			}
 			render_camera_build_clipped_frustum_bounds(
 				&render.camera,
 				&rendered_cluster->clip_bounds,

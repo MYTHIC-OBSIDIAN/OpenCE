@@ -282,6 +282,13 @@ static const struct config_setting config_settings[] =
 		"facing away, 8 smaller groups, 16 nearer rooms first; 0 walks them as\n"
 		"the Xbox does. The console's structure_culling changes it until the\n"
 		"game quits." },
+	{ "display.portal_clipping", _config_boolean, "false", "HALO_PORTAL_CLIPPING", _environment_value,
+		_platform_all,
+		"true: draw each room of the level seen through a doorway (a portal)\n"
+		"only within that doorway's bounds on the screen, as the Xbox did.\n"
+		"false: the rooms seen are the same, each drawn within the whole view,\n"
+		"so that none of a room's objects or level drop out for a frame as the\n"
+		"camera moves." },
 	{ "display.model_detail", _config_string, "\"stock\"", "HALO_MODEL_DETAIL", _environment_value, _platform_all,
 		"Which of their levels of detail models are drawn at: \"stock\" chooses by\n"
 		"their size on the Xbox's 480 lines, at any resolution; \"native\" by their\n"
