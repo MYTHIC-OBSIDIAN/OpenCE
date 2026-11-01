@@ -43,8 +43,6 @@ enum
 	_game_engine_race,
 };
 
-/* a variant's vehicle set that places no vehicle (game_engine_remap_vehicle) */
-#define VEHICLE_SET_NONE 1
 
 /* the game types a vehicle placement is placed in by default */
 enum
@@ -106,9 +104,11 @@ static short default_spawn_flag_bit(
 boolean custom_edition_vehicles_by_placement(
 	void)
 {
+	/* (whatever a team's set: NONE places none at placement,
+	game_engine_vehicle_placement_allowed, and the other team's may place
+	some by the flags) */
 	return custom_edition_cache_tags_loaded() &&
 		game_engine_running() &&
-		game_engine_get_variant()->universal_variant.vehicle_set != VEHICLE_SET_NONE &&
 		default_spawn_flag_bit() != NONE;
 }
 

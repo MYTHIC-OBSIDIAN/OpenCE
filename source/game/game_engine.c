@@ -7951,8 +7951,11 @@ long game_engine_remap_vehicle(
 	/* port: a Halo Custom Edition map's vehicles are chosen by their
 	placements, and its scripts may create any
 	(port/linux/game/custom_edition_objects.c) */
-	if (custom_edition_vehicles_by_placement())
+	if (custom_edition_vehicles_by_placement() &&
+		global_variant.universal_variant.vehicle_set != _game_engine_vehicles_none)
+	{
 		return result;
+	}
 	/* port: and the PC vehicle set's are every one the map places
 	(game_engine_vehicle_placement_allowed) */
 	if (game_engine && (game_variant_options_get()->vehicle_set[0] == VARIANT_VEHICLE_SET_PC ||
