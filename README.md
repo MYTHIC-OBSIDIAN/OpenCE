@@ -15,7 +15,7 @@
 > on a Bink decoder adapted from FFmpeg's, LGPL 2.1 or later). The map lists show Halo PC's maps (the multi_maps folder's) in
 > MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
-> STANDARD and CUSTOM (OpenCE's own gametypes are in STANDARD). Its
+> STANDARD alone (OpenCE's own gametypes are in it; saved gametypes are not listed). Its
 > GitHub Actions build Windows only: each push uploads
 > `halo-windows-release`, and a push to `main` or `lan-digsite` publishes
 > it as a release.
@@ -116,7 +116,7 @@ The Arch-based distribution release is available on the [AUR](https://aur.archli
 
 Halo Custom Edition maps are placed in `custom_maps` folder, not in the `maps` folder itself. It requires `bitmaps.map`, `sounds.map`, and `loc.map` in the `custom_maps` folder, which you must copy over from your existing installed copy of Halo Custom Edition. The maps folder is only for Xbox maps that's extracted from your disc image, not Halo Custom Edition. 
 
-Halo PC's maps **are not included by default**: the Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia), and Halo PC's own versions of the Xbox maps (Blood Gulch and the rest, with Halo PC's vehicle spawns: rocket warthogs, banshees and turrets). Copy them, with Halo PC's own `bitmaps.map` and `sounds.map`, from your Halo PC install's `maps` folder into a **`multi_maps`** folder beside `maps` (Halo PC's `ui.map` stays out: the game's `ui.map` must be the Xbox's). Halo PC's maps in the `maps` folder itself are not played (the game warns of them when it starts). Both Halo PC's own maps (version 7) and Custom Edition's copies of them work. They are listed first in **MULTIPLAYER**, by their names as Halo PC's list has them, with the PC menus' descriptions, and Halo PC's version of an Xbox map takes the Xbox map's place there (the Xbox maps that have no version in `multi_maps` follow them); a map of `multi_maps` plays from there whatever other folder has one of its name. The Gearbox maps' pictures, and the menus' pictures that have no redraw, come from your own install (Halo PC's versions of the Xbox maps show the Xbox maps' pictures):
+Halo PC's maps **are not included by default**: the Gearbox exclusive maps (Ice Fields, Death Island, Danger Canyon, Infinity, Timberland and Gephyrophobia), and Halo PC's own versions of the Xbox maps (Blood Gulch and the rest, with Halo PC's vehicle spawns: rocket warthogs, banshees and turrets). Copy them, with Halo PC's own `bitmaps.map` and `sounds.map`, from your Halo PC install's `maps` folder into a **`multi_maps`** folder beside `maps` (Halo PC's `ui.map` stays out: the game's `ui.map` must be the Xbox's). Halo PC's maps in the `maps` folder itself are not played (the game warns of them when it starts). Both Halo PC's own maps (version 7) and Custom Edition's copies of them work. They are **MULTIPLAYER**'s maps, by their names as Halo PC's list has them, with the PC menus' descriptions (the Xbox's own multiplayer maps are not listed); a map of `multi_maps` plays from there whatever other folder has one of its name. The Gearbox maps' pictures, and the menus' pictures that have no redraw, come from your own install (Halo PC's versions of the Xbox maps show the Xbox maps' pictures):
 
 ```sh
 python3 tools/pc_map_pictures.py "<Halo PC or Halo CE install>/maps" <game>/multi_maps --menus <game>

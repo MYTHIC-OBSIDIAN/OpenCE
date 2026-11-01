@@ -19,10 +19,9 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 	0x6000 + n     CE campaign map (played alone or as co-op)
 	0x6800 + n     Digsite map n (the DIGSITE list's), installed or not
 
-The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 as
-MULTIPLAYER after the Halo PC maps of the multi_maps folder (Gearbox's six,
-and Halo PC's versions of the Xbox's, which take the place of those they are
-versions of), the Digsite maps as DIGSITE,
+The map lists (port/linux/game/menu_functions.c) show the Halo PC maps of
+the multi_maps folder (Gearbox's six, and Halo PC's versions of the Xbox's)
+as MULTIPLAYER, the Xbox's own not at all, the Digsite maps as DIGSITE,
 and the other CE multiplayer maps as CUSTOM EDITION.
 */
 
@@ -106,20 +105,12 @@ short custom_edition_maps_display_index_of(
 	short index);
 
 /* the Halo PC multiplayer maps of the multi_maps folder, which
-MULTIPLAYER lists first (by their names, as Halo PC's list): how many, and each
+MULTIPLAYER lists (by their names, as Halo PC's list): how many, and each
 one's display index (NONE past them) */
 short custom_edition_maps_pc_count(
 	void);
 short custom_edition_maps_pc_display_index(
 	short index);
-/* whether one of the multi_maps folder's maps is named `name` (a file's
-name without .map: bloodgulch for Halo PC's version of the Xbox's), and
-whether the one of a display index is */
-boolean custom_edition_maps_pc_has(
-	char const *name);
-boolean custom_edition_maps_pc_named(
-	short display_index,
-	char const *name);
 
 /* the Digsite maps (DIGSITE's, all of them, found or not): how many, and
 each one's display index (NONE past them) */

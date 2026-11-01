@@ -221,7 +221,6 @@
 	</strings>
 	<strings name="main_menu/gametype_select/var_gametype_banks" map="ui\shell\main_menu\gametype_select\var_gametype_banks">
 		<string text="STANDARD" map="0"/>
-		<string text="CUSTOM" map="2"/>
 	</strings>
 	<strings name="main_menu/main_menu_options" map="ui\shell\main_menu\main_menu_options">
 		<string text="NEW CAMPAIGN" map="0"/>

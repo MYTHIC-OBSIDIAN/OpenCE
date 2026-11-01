@@ -983,7 +983,7 @@ static boolean campaign_continue(short controller)
 /* ---- the map lists (New Game's and the Map screen's): their first row's
 chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the Halo
 PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions of
-the Xbox's, then those of the Xbox's 13 it has no version of), DIGSITE (the Digsite
+the Xbox's; the Xbox's own are not listed), DIGSITE (the Digsite
 maps, a fixed list, each played as its file's scenario type says) or
 CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
 custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
@@ -1130,96 +1130,20 @@ static short xbox_multiplayer_map_count(short multiplayer_map_count)
 	return (short)PIN(multiplayer_map_count, 0, XBOX_MULTIPLAYER_MAPS);
 }
 
-static char const *scenario_name(char const *path);
-
-/* whether the Xbox's multiplayer map `xbox_map` (its index in the
-multiplayer maps) has a Halo PC version in multi_maps, which MULTIPLAYER
-lists in its place */
-static boolean xbox_multiplayer_map_replaced(short xbox_map)
-{
-	char const *const *names;
-	short count = xbox_multiplayer_map_count(ui_widget_port_multiplayer_maps(&names, NULL));
-
-	return xbox_map >= 0 && xbox_map < count && custom_edition_maps_pc_has(scenario_name(names[xbox_map]));
-}
-
 /* MULTIPLAYER's entries: multi_maps' Halo PC maps (custom_edition_maps.c),
-then the Xbox's that none of them is a version of */
+the Xbox's own not listed */
 static short multiplayer_entry_count(short multiplayer_map_count)
 {
-	short count = custom_edition_maps_pc_count();
-	short xbox_map;
-
-	for (xbox_map = 0; xbox_map < xbox_multiplayer_map_count(multiplayer_map_count); xbox_map++)
-	{
-		if (!xbox_multiplayer_map_replaced(xbox_map))
-			count++;
-	}
-	return count;
-}
-
-/* the Xbox map (its index in the multiplayer maps) of MULTIPLAYER's entry,
-or NONE for one of multi_maps' */
-static short multiplayer_entry_xbox_map(short entry)
-{
-	char const *const *names;
-	short count = xbox_multiplayer_map_count(ui_widget_port_multiplayer_maps(&names, NULL));
-	short xbox_map;
-
-	entry -= custom_edition_maps_pc_count();
-	if (entry < 0)
-		return NONE;
-	for (xbox_map = 0; xbox_map < count; xbox_map++)
-	{
-		if (xbox_multiplayer_map_replaced(xbox_map))
-			continue;
-		if (!entry--)
-			return xbox_map;
-	}
-	return NONE;
-}
-
-/* MULTIPLAYER's entry for an Xbox map (its index in the multiplayer maps):
-its Halo PC version's, if multi_maps has one */
-static short multiplayer_entry_of_xbox_map(short xbox_map)
-{
-	char const *const *names;
-	short count = xbox_multiplayer_map_count(ui_widget_port_multiplayer_maps(&names, NULL));
-	short entry = custom_edition_maps_pc_count();
-	short index;
-
-	if (xbox_map < 0 || xbox_map >= count)
-		return 0;
-	if (xbox_multiplayer_map_replaced(xbox_map))
-	{
-		for (index = 0; index < custom_edition_maps_pc_count(); index++)
-		{
-			if (custom_edition_maps_pc_named(custom_edition_maps_pc_display_index(index), scenario_name(names[xbox_map])))
-				return index;
-		}
-		return 0;
-	}
-	for (index = 0; index < xbox_map; index++)
-	{
-		if (!xbox_multiplayer_map_replaced(index))
-			entry++;
-	}
-	return entry;
+	(void)multiplayer_map_count;
+	return custom_edition_maps_pc_count();
 }
 
 /* MULTIPLAYER's entry's name: one of multi_maps' (by its display index:
-custom_edition_maps.c), else an Xbox map's */
+custom_edition_maps.c) */
 static void multiplayer_map_text(short map, wchar_t *text)
 {
-	short xbox_map = multiplayer_entry_xbox_map(map);
-	wchar_t const *name;
+	wchar_t const *name = custom_edition_maps_name(custom_edition_maps_pc_display_index(map));
 
-	if (xbox_map != NONE)
-	{
-		string_get("pc\\main_menu\\mp_map_list", xbox_map, text);
-		return;
-	}
-	name = custom_edition_maps_name(custom_edition_maps_pc_display_index(map));
 	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
 	text[ROW_TEXT_LENGTH - 1] = 0;
 }
@@ -1329,8 +1253,7 @@ static short map_kind_display_index(short kind, short entry)
 	switch (kind)
 	{
 	case MAP_KIND_MULTIPLAYER:
-		return multiplayer_entry_xbox_map(entry) != NONE ? multiplayer_entry_xbox_map(entry) :
-			custom_edition_maps_pc_display_index(entry);
+		return custom_edition_maps_pc_display_index(entry);
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_display_index(entry);
 	case MAP_KIND_CUSTOM_MULTIPLAYER:
@@ -1347,8 +1270,6 @@ static short map_kind_level_index(short kind, short entry)
 {
 	if (kind == MAP_KIND_SINGLEPLAYER)
 		return NONE;
-	if (kind == MAP_KIND_MULTIPLAYER && multiplayer_entry_xbox_map(entry) != NONE)
-		return multiplayer_entry_xbox_map(entry);
 	return custom_edition_maps_level_index(map_kind_display_index(kind, entry));
 }
 
@@ -1360,7 +1281,7 @@ static short map_kind_of_level_index(short level_index, short *kind)
 
 	*kind = MAP_KIND_MULTIPLAYER;
 	if (level_index < XBOX_MULTIPLAYER_MAPS)
-		return multiplayer_entry_of_xbox_map((short)MAX(level_index, 0));
+		return 0;
 	entry = custom_edition_maps_entry(custom_edition_maps_level_display_index(level_index), &part);
 	if (entry == NONE)
 		return 0;
@@ -3680,22 +3601,22 @@ static boolean gametype_setup_apply(void);
 static void gametype_setup_type(wchar_t *text);
 
 /* ---- the gametype list: its spinner's bank (STANDARD: the built-in ones,
-the Xbox's and OpenCE's own, game_modes.c, CUSTOM: those saved) in its first
-row, then the bank's gametypes. (This LAN build has no OPENCE bank: OpenCE's
-built-in gametypes are listed in STANDARD.) */
+the Xbox's and OpenCE's own, game_modes.c) in its first row, then the bank's
+gametypes. (This LAN build has no OPENCE bank, OpenCE's built-in gametypes
+being listed in STANDARD, and no CUSTOM bank: the gametypes saved are not
+listed.) */
 
 enum
 {
 	GAMETYPE_BANK_STANDARD = 0,
-	GAMETYPE_BANK_CUSTOM,
 	NUMBER_OF_GAMETYPE_BANKS
 };
 
-/* a gametype's bank */
+/* a gametype's bank, NONE for one saved (not listed) */
 static short gametype_bank(long profile_index)
 {
 	if (!((unsigned long)profile_index & PLAYLIST_READ_ONLY_BIT))
-		return GAMETYPE_BANK_CUSTOM;
+		return NONE;
 	return GAMETYPE_BANK_STANDARD;
 }
 
@@ -3756,7 +3677,7 @@ static boolean gametype_list_initialize(struct widget_instance *list)
 	short last, index;
 
 	multiplayer.gametype_count = ui_widget_port_gametypes(multiplayer.gametypes, MAXIMUM_GAMETYPES, &last);
-	gametype_bank_read(multiplayer.gametype_count ? gametype_bank(multiplayer.gametypes[last]) : GAMETYPE_BANK_STANDARD);
+	gametype_bank_read(GAMETYPE_BANK_STANDARD);
 	for (index = 0; index < multiplayer.bank_count; index++)
 	{
 		if (multiplayer.bank[index] == last)

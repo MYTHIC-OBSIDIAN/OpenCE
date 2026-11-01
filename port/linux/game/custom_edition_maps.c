@@ -35,7 +35,7 @@ This LAN build lists the multiplayer maps of the multi_maps folder (Halo PC's:
 its own six, Gearbox's Danger Canyon, Death Island, Gephyrophobia, Ice
 Fields, Infinity and Timberland, and its versions of the Xbox's, with Halo
 PC's bitmaps.map and sounds.map beside them) first in the map lists'
-MULTIPLAYER, by their names (the Xbox maps they are versions of left out), and a fixed list of the Digsite maps
+MULTIPLAYER, by their names (the Xbox's own multiplayer maps are not listed), and a fixed list of the Digsite maps
 (digsite_maps) in their DIGSITE; CUSTOM EDITION leaves them out. A map of
 multi_maps plays from there whatever other folder has one of its name; the
 Digsite maps are looked for first in digsite_maps, then in the folders of
@@ -1046,29 +1046,6 @@ short custom_edition_maps_pc_display_index(
 {
 	return index < 0 || index >= custom_edition_maps_pc_count() ? NONE :
 		FIRST_DISPLAY_INDEX + custom_edition_maps_globals.pc[index];
-}
-
-boolean custom_edition_maps_pc_named(
-	short display_index,
-	char const *name)
-{
-	struct custom_edition_map *map = display_index >= FIRST_DISPLAY_INDEX ? custom_edition_map_get(display_index) : NULL;
-	short length = map ? map_share_name_base_length(map->name) : 0;
-
-	return map && map->pc && (short)csstrlen(name) == length && !_strnicmp(map->name, name, length);
-}
-
-boolean custom_edition_maps_pc_has(
-	char const *name)
-{
-	short index;
-
-	for (index = 0; index < custom_edition_maps_pc_count(); index++)
-	{
-		if (custom_edition_maps_pc_named(custom_edition_maps_pc_display_index(index), name))
-			return TRUE;
-	}
-	return FALSE;
 }
 
 short custom_edition_maps_digsite_count(
