@@ -579,7 +579,9 @@ checked against the sample maps.
   textures larger than 4096 pixels a side, are not drawn.
 - **Halo PC's HUD meters' minimum alpha** (where the Xbox's meters have an
   overlays block) is dropped, and **its weapon functions "primary firing on"
-  and "secondary firing on"** are the Xbox's primary and secondary firing.
+  and "secondary firing on"** are read as Halo PC reads them: 1 from a
+  shot until the next is due (`source/items/weapons.c`), not the Xbox's
+  primary and secondary firing, which drop between shots.
 - **Button prompts on replaced icon sheets** show what the map's icon bitmap
   has where the Xbox's buttons are.
 - **Channel orders are per texture**: multipurpose maps and meters also drawn
