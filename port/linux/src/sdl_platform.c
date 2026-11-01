@@ -274,6 +274,12 @@ BOOL platform_sdl_initialize(void)
 		flags = SDL_INIT_EVENTS;
 	}
 #endif
+#ifdef HALO_WINDOWS
+	/* (the windows' and the taskbar's icon: halo.exe's own, the pixel art of
+	port/windows/halo.rc's icon 1, with its hand-drawn small sizes) */
+	SDL_SetHint(SDL_HINT_WINDOWS_INTRESOURCE_ICON, "1");
+	SDL_SetHint(SDL_HINT_WINDOWS_INTRESOURCE_ICON_SMALL, "1");
+#endif
 	if (!SDL_Init(flags))
 	{
 		/* (tried again by each caller that needs SDL, some of them every
@@ -1345,8 +1351,10 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 	}
 #ifndef HALO_ANDROID
 #ifndef HALO_GLES
-	/* the game's icon, which the desktop shows for the window (on Windows
-	also halo.exe's own, port/windows/halo.rc; a web page has its own) */
+	/* the game's icon, which the desktop shows for the window (not on
+	Windows, whose windows and taskbar show halo.exe's own, port/windows/
+	halo.rc: SDL_HINT_WINDOWS_INTRESOURCE_ICON; a web page has its own) */
+#ifndef HALO_WINDOWS
 	if (platform_window_icon_size)
 	{
 		SDL_Surface *icon = SDL_LoadPNG_IO(SDL_IOFromConstMem(platform_window_icon, platform_window_icon_size), true);
@@ -1355,6 +1363,7 @@ BOOL platform_video_initialize(unsigned long width, unsigned long height)
 			platform_log("cannot set the window's icon: %s", SDL_GetError());
 		SDL_DestroySurface(icon);
 	}
+#endif
 	/* the pointer the menus show (platform_ui_pointer_set_active), in place
 	of the system's, at the window's size */
 	if (platform_menu_cursor_size && !menu_cursor_picture)
