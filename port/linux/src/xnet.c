@@ -50,6 +50,7 @@ alone peers reach.
 #include "port_config.h"
 #include "p2p.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -412,6 +413,77 @@ int WSAAPI halo_ws_closesocket(SOCKET socket)
 	return winsock_result(posix_socket_close((int)socket));
 }
 
+/* ---------- the system link's log (halo.log): the address this machine
+gives the games it hosts, where its broadcasts go, and the first datagrams
+from each other machine heard; a LAN where no game is found shows which
+side is not heard */
+
+enum { MAXIMUM_LOGGED_SOURCES = 32 };
+
+static unsigned long title_address(void);
+
+static void address_text(unsigned long address, char *text, size_t size)
+{
+	const unsigned char *bytes = (const unsigned char *)&address;
+
+	snprintf(text, size, "%u.%u.%u.%u", bytes[0], bytes[1], bytes[2], bytes[3]);
+}
+
+static void log_broadcast(int result, int error, const posix_ulong *directed, int directed_count,
+	const struct sockaddr_in *broadcast)
+{
+	static char last[512];
+	char line[512];
+	char text[24];
+	int index;
+	size_t used;
+
+	address_text(title_address(), text, sizeof(text));
+	used = (size_t)snprintf(line, sizeof(line), "system link: this machine is %s; broadcasts to port %u go to "
+		"255.255.255.255", text, (unsigned)halo_ws_ntohs(broadcast->sin_port));
+	for (index = 0; index < directed_count && used < sizeof(line); index++)
+	{
+		address_text(directed[index], text, sizeof(text));
+		used += (size_t)snprintf(line + used, sizeof(line) - used, ", %s", text);
+	}
+	if (result < 0 && used < sizeof(line))
+		snprintf(line + used, sizeof(line) - used, " (failed: error %d)", error);
+	if (strcmp(line, last))
+	{
+		snprintf(last, sizeof(last), "%s", line);
+		platform_log("%s", line);
+	}
+}
+
+static void log_source(const struct sockaddr *address, int address_length, int length)
+{
+	static unsigned long logged[MAXIMUM_LOGGED_SOURCES];
+	static int logged_count;
+	const struct sockaddr_in *source = (const struct sockaddr_in *)address;
+	char text[24];
+	int index;
+
+	if (!address || address_length < (int)sizeof(*source) || source->sin_family != AF_INET ||
+		source->sin_addr.s_addr == loopback_address() ||
+		(halo_ws_ntohl(source->sin_addr.s_addr) & 0xFFC00000) == 0x64400000 ||
+		logged_count >= MAXIMUM_LOGGED_SOURCES)
+	{
+		return;
+	}
+	for (index = 0; index < logged_count; index++)
+	{
+		if (logged[index] == source->sin_addr.s_addr)
+			return;
+	}
+	logged[logged_count++] = source->sin_addr.s_addr;
+	/* (this machine's own broadcasts come back to it) */
+	if (source->sin_addr.s_addr == title_address())
+		return;
+	address_text(source->sin_addr.s_addr, text, sizeof(text));
+	platform_log("system link: heard %s (from its port %u, %d bytes)", text,
+		(unsigned)halo_ws_ntohs(source->sin_port), length);
+}
+
 int WSAAPI halo_ws_bind(SOCKET socket, const struct sockaddr *address, int address_length)
 {
 	struct sockaddr_in local;
@@ -568,6 +640,7 @@ int WSAAPI halo_ws_sendto(SOCKET socket, const char *buffer, int length, int fla
 					if (result < 0 && sent >= 0)
 						result = sent;
 				}
+				log_broadcast(result, result < 0 ? posix_socket_last_error() : 0, directed, directed_count, &target);
 			}
 		}
 		/* (the broadcast's own error, which what follows would overwrite) */
@@ -982,6 +1055,8 @@ int WSAAPI halo_ws_recvfrom(SOCKET socket, char *buffer, int length, int flags,
 	if (delayed_enabled())
 		return delayed_receive(socket, buffer, length, flags, address, address_length, 1);
 	result = posix_socket_recvfrom((int)socket, buffer, length, flags, address, address_length);
+	if (result >= 0 && address_length)
+		log_source(address, *address_length, result);
 	if (result >= 0)
 		peer_incoming_address(0, address, address_length);
 	return winsock_result(result);
