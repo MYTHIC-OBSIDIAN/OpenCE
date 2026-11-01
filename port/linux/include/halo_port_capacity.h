@@ -108,6 +108,10 @@ players, more each), have room for several times a level's own. */
 objects, noncollideable objects, lights) */
 #define HALO_PORT_MAXIMUM_CLUSTER_REFERENCES 8192 /* (2048) */
 #define HALO_PORT_MAXIMUM_RENDERED_OBJECTS 1024 /* (256) */
+/* how far the view reaches, world units: past any map's level, so that only
+its fog ends it (the depth's precision is the near plane's, whatever the
+far's: display.reversed_depth's floats or the Xbox's 24 bits) */
+#define HALO_PORT_FAR_CLIP_DISTANCE 100000.f /* (1024.f) */
 #define HALO_PORT_MAXIMUM_CACHED_OBJECT_RENDER_STATES 1024 /* (256) */
 /* objects one explosion can damage */
 #define HALO_PORT_MAXIMUM_AREA_OF_EFFECT_OBJECTS 256 /* (64) */

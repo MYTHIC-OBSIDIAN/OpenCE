@@ -565,10 +565,12 @@ void _rasterizer_screen_flash(
 	void);
 /* ---------- globals */
 
+/* port: the far clip plane past any map's level (HALO_PORT_FAR_CLIP_DISTANCE,
+halo_port_capacity.h), here and in rasterizer_globals */
 const struct rasterizer_global_defaults rasterizer_global_defaults =
 {
 	0.0625f,
-	1024.f,
+	HALO_PORT_FAR_CLIP_DISTANCE,
 	0.01171875f,
 	1024.f
 };
@@ -592,7 +594,7 @@ struct rasterizer_globals_definition rasterizer_globals =
 	0,
 	{ 0 },
 	0.0625f,
-	1024.f,
+	HALO_PORT_FAR_CLIP_DISTANCE,
 	0.01171875f,
 	1024.f,
 	NULL,
