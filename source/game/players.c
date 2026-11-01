@@ -482,9 +482,6 @@ static struct
 	a script or a skipped cutscene (players_coop_bsp_switch_ready) */
 	short structure_bsp_index;
 	long bsp_switch_time;
-	/* when each local player was last told the host's crossing switches
-	the BSP (players_coop_show_host_wait) */
-	long host_wait_message_times[MAXIMUM_LOCAL_PLAYERS];
 	/* where each player last stood on the ground, and on which BSP: where
 	everyone comes back when the last checkpoint was on another one */
 	short ground_structure_bsp_index;
@@ -3023,10 +3020,6 @@ waits for every machine to have loaded it */
 #define COOP_BSP_SWITCH_SETTLE_TICKS (2 * TICKS_PER_SECOND)
 #define COOP_BSP_SWITCH_WAIT_TICKS (10 * TICKS_PER_SECOND)
 
-/* how often a client's player standing on a loading zone is reminded that
-the host's crossing switches the BSP */
-#define COOP_HOST_WAIT_MESSAGE_TICKS (3 * TICKS_PER_SECOND)
-
 /* Co-op host, each tick: a player stranded for COOP_STRANDED_TICKS is moved
 beside a grounded teammate inside the BSP, else any teammate inside it, else
 to the last checkpoint. Skipped while scripts hold the controls, since
@@ -3461,30 +3454,10 @@ static boolean players_coop_bsp_switch_ready(
 	return TRUE;
 }
 
-/* port: whether a living player of the host's has a unit (on the host, its
-local players) */
-static boolean players_coop_host_alive(
-	void)
-{
-	short local_player_index;
-
-	for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
-	{
-		long player_index = local_player_get_player_index(local_player_index);
-
-		if (player_index != NONE && player_get(player_index)->unit_index != NONE)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-/* port: whether the unit's crossing switches the BSP in network co-op. Only
-the host's does, and brings the whole team to the host
-(players_reconnect_to_structure_bsp), so no one running ahead or doubling
-back drags the others through the level. With none of the host's players
-alive anyone's does, so the team never waits on the host's respawn. Never
-while the unit's machine still loads the host's BSP. */
+/* port: whether the unit's crossing switches the BSP in network co-op:
+anyone's does, and brings the other player to them, as either player's does
+in split screen co-op. Never while the unit's machine still loads the host's
+BSP. */
 static boolean players_coop_bsp_switch_allowed(
 	long unit_index,
 	short bsp_switch_trigger_volume_index)
@@ -3499,33 +3472,7 @@ static boolean players_coop_bsp_switch_allowed(
 	drags the team back through the level */
 	if (network_coop_bsp_switch_majority())
 		return players_coop_bsp_switch_majority(bsp_switch_trigger_volume_index);
-	return player_get(player_index)->local_player_index != NONE || !players_coop_host_alive();
-}
-
-/* port: tells a co-op client's players standing on a loading zone that the
-host's crossing switches the BSP, at once and every
-COOP_HOST_WAIT_MESSAGE_TICKS while they stand there */
-static void players_coop_show_host_wait(
-	void)
-{
-	short local_player_index;
-
-	for (local_player_index = 0; local_player_index < MAXIMUM_LOCAL_PLAYERS; local_player_index++)
-	{
-		long player_index = local_player_get_player_index(local_player_index);
-		long unit_index = player_index != NONE ? player_get(player_index)->unit_index : NONE;
-		long *time = &players_coop_state.host_wait_message_times[local_player_index];
-
-		if (unit_index == NONE || players_coop_bsp_switch_trigger(unit_index) == NONE)
-		{
-			*time = 0;
-			continue;
-		}
-		if (*time != 0 && game_time_get() - *time < COOP_HOST_WAIT_MESSAGE_TICKS)
-			continue;
-		*time = game_time_get();
-		hud_print_message(local_player_index, L"Waiting for the host to cross");
-	}
+	return TRUE;
 }
 
 static void player_teleport_on_bsp_switch(
@@ -3550,7 +3497,7 @@ static void player_teleport_on_bsp_switch(
 	if (biped)
 	{
 		/* port: in network co-op a loading zone brings the whole team to
-		whoever crossed it, the host (players_coop_bsp_switch_allowed).
+		whoever crossed it (players_coop_bsp_switch_allowed).
 		Only one BSP is ever loaded, so anyone left elsewhere would stand
 		outside it, or on a trigger that switches it straight back
 		(players_update_after_game waits for players_coop_bsp_switch_ready
@@ -5114,10 +5061,6 @@ void players_update_after_game(
 		players_coop_state.structure_bsp_index = global_structure_bsp_index;
 		players_coop_state.bsp_switch_time = game_time_get();
 	}
-	/* (a dedicated server's clients are told how many more players a zone
-	needs by the server instead: players_coop_bsp_switch_majority) */
-	if (network_coop_active() && network_game_distributed_client() && !network_coop_host_dedicated())
-		players_coop_show_host_wait();
 
 	data_iterator_new(&iterator, player_data);
 	while (player = data_iterator_next(&iterator))

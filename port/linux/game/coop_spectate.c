@@ -1,11 +1,11 @@
 /*
 COOP_SPECTATE.C
 
-Spectating in network co-op. A dead player watches a living teammate
-until they respawn (players.c respawns them beside a teammate once it is
-safe). The campaign's dead camera would watch the body; instead this
-follows a teammate from behind, and A (jump on the keyboard) switches to
-the next one. director.c and hud.c call in here.
+Spectating in network co-op, which is no longer used: a dead player has the
+campaign's dead camera, on their body and then their partner, as split
+screen co-op's has (coop_spectating). Once this followed a teammate from
+behind, A (jump on the keyboard) switching to the next one. director.c calls
+in here; network_coop.c's coop_spectate_nothing_to_watch still is.
 
 */
 
@@ -124,7 +124,9 @@ static boolean unit_is_passenger(
 boolean coop_spectating(
 	void)
 {
-	return network_coop_active();
+	/* (never: a dead network co-op player has the campaign's dead camera, on
+	their body and then their partner, as split screen co-op's has) */
+	return FALSE;
 }
 
 long coop_spectate_unit(

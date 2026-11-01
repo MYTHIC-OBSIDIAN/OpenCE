@@ -58,15 +58,12 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   Until a client has the host's, the host takes none of its players'
   movement and none of its loading zones, and after any switch no loading
   zone switches again until every machine has the new BSP (ten seconds at
-  most). Only the host's crossing of a loading zone switches the BSP, and
-  it brings every player to the host, however far behind, so no one
-  running ahead or doubling back drags the team through the level (while
-  none of the host's players are alive, anyone's crossing does); a client
-  standing on a loading zone is told it waits for the host. A player
+  most). Either player's crossing of a loading zone switches the BSP and
+  brings the other to them, as in split screen co-op. A player
   outside the loaded BSP and falling for two seconds is brought back beside
   the host, else a teammate. The players spawn at the level's start, as
-  split screen's do, and a dead player watches a living teammate
-  (`coop_spectate.c`) and comes back beside one by the campaign's own test
+  split screen's do, and a dead player watches through the campaign's
+  dead camera and comes back beside the other by the campaign's own test
   (`players_respawn_coop`: nothing dangerous, the teammate on the ground).
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted

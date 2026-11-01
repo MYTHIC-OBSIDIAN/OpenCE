@@ -1478,8 +1478,9 @@ void hud_draw_screen(
 			hud_draw_players();
 		}
 
-		/* port: players' names above their heads, in multiplayer and network co-op */
-		if ((game_engine_running() || network_coop_active()) && !cinematic_in_progress())
+		/* port: players' names above their heads, in multiplayer (not network
+		co-op, which shows none, as split screen co-op) */
+		if (game_engine_running() && !cinematic_in_progress())
 			hud_draw_player_names();
 		/* port: (a dead network co-op player watching a teammate is told
 		nothing, as split screen's: no spawn text) */

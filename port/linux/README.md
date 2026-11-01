@@ -266,8 +266,11 @@ rows, in its order: no SETTINGS). REVERT TO SAVED, from either player, is
 done by the host for both (to the last checkpoint, as split screen's); there
 is no RESTART LEVEL. Its players spawn and respawn as split
 screen's do: both at the level's start, and a dead player beside the other
-once nothing is dangerous (watching them meanwhile, with no text on the
-screen); only one who joins a level in progress spawns beside a teammate.
+once nothing is dangerous (watching through the campaign's dead camera
+meanwhile, their body and then their partner, with no text on the screen);
+only one who joins a level in progress spawns beside a teammate. Either
+player's crossing of a loading zone brings the other along, and no names
+are drawn over the players' heads, as in split screen co-op.
 
 The menus are XML files in `port/assets/menus` (`tools/ce_menus.py` writes
 them from the PC version's tags), which the game contains. To change them,
