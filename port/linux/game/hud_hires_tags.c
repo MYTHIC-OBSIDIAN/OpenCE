@@ -71,6 +71,9 @@ boolean custom_edition_cache_halo_pc(void);
 void hud_hires_map_loaded(const long *assets, long count);
 /* (hud_pc_icons.c) */
 void hud_pc_icons_map_loaded(void);
+boolean hud_pc_weapon_sheet(char const *tag);
+boolean hud_pc_sheet_painted(char const *tag, long bitmap_index);
+long hud_pc_painted_bitmaps(struct bitmap_data **bitmaps, long maximum);
 void hud_hires_map_unloaded(void);
 void hud_hires_tags_loaded(long scenario_index);
 void hud_hires_tags_unloaded(void);
@@ -100,7 +103,9 @@ static struct
 static long hires_bitmap_count = 0;
 
 /* Sheets without redraws: retain their original lettering and sprite layout. */
-static struct { struct bitmap_data *bitmap; long kind; } upscale_bitmaps[16];
+/* (kind 5: a stock weapon's HUD sheet painted with Halo PC's art,
+hud_pc_icons.c, which may be compressed and 512 pixels wide) */
+static struct { struct bitmap_data *bitmap; long kind; } upscale_bitmaps[64];
 static long upscale_bitmap_count;
 static struct { struct bitmap_data *bitmap; long signature; } ce_stock_bitmaps[128];
 static long ce_stock_bitmap_count;
@@ -225,9 +230,27 @@ void hud_hires_tags_loaded(
 			}
 		}
 	}
-	/* (the weapon pickup icons of the Xbox's maps, the campaign's too: Halo
-	PC's, painted over the message icons' upscaled sheet) */
+	/* (the stock weapons' HUD of the Xbox's maps, the campaign's too, its
+	pickup icons, meters, crosshairs and scopes: Halo PC's art, painted over
+	their sheets' upscaled textures, in place of their redraws, below) */
 	hud_pc_icons_map_loaded();
+	{
+		struct bitmap_data *painted[64];
+		long count = hud_pc_painted_bitmaps(painted, NUMBEROF(painted));
+		long index, other;
+
+		for (index = 0; index < count && upscale_bitmap_count < NUMBEROF(upscale_bitmaps); index++)
+		{
+			for (other = 0; other < upscale_bitmap_count && upscale_bitmaps[other].bitmap != painted[index]; other++)
+			{
+			}
+			if (other == upscale_bitmap_count)
+			{
+				upscale_bitmaps[upscale_bitmap_count].bitmap = painted[index];
+				upscale_bitmaps[upscale_bitmap_count++].kind = 5;
+			}
+		}
+	}
 	for (asset = 0; asset < asset_count && hires_bitmap_count < MAXIMUM_HIRES_BITMAPS; asset++)
 	{
 		long group_index = tag_loaded(BITMAP_GROUP_TAG, hud_hires_asset_tag(asset));
@@ -243,6 +266,15 @@ void hud_hires_tags_loaded(
 		if (custom_edition_cache_tags_loaded() && !custom_edition_cache_halo_pc() &&
 			(!hud_hires_asset_custom_edition(asset) || !custom_edition_cache_stock_tag(group_index)))
 			continue;
+		/* (the stock weapons' HUD is Halo PC's art: a Custom Edition or Halo PC
+		map's own sheets, drawn as they are, and an Xbox map's painted with
+		Halo PC's, hud_pc_icons.c; a bitmap Halo PC's does not have keeps its
+		redraw) */
+		if (custom_edition_cache_tags_loaded() ? hud_pc_weapon_sheet(hud_hires_asset_tag(asset)) :
+			hud_pc_sheet_painted(hud_hires_asset_tag(asset), hud_hires_asset_bitmap(asset)))
+		{
+			continue;
+		}
 		/* (and Halo PC's meters, digits and damage arrows, laid out otherwise
 		than the Xbox's, are drawn from the Xbox's redraws laid out as
 		theirs: port/assets/hud/pc_layout.json) */
