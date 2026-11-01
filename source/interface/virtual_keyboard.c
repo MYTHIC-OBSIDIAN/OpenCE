@@ -359,6 +359,37 @@ static void virtual_keyboard_set_active(boolean active)
 	platform_text_typing(active);
 }
 
+/* the text ".fortune" typed (on the keyboard on the screen, or the
+computer's: port) shows one of the keyboard's fortunes as its caption, and
+gives back the text that was there */
+static void virtual_keyboard_fortune_check(
+	void)
+{
+	if (ustrcmp(virtual_keyboard_globals.text_buffer, L".fortune") == 0)
+	{
+		unsigned long fortune_index = system_milliseconds() % NUMBER_OF_VIRTUAL_KEYBOARD_FORTUNES;
+		fortune_index = MIN(fortune_index, NUMBER_OF_VIRTUAL_KEYBOARD_FORTUNES - 1);
+		virtual_keyboard_globals.caption_index = FIRST_VIRTUAL_KEYBOARD_FORTUNE_STRING_INDEX +
+			fortune_index;
+		if (virtual_keyboard_globals.saved_text[0])
+		{
+			ustrcpy(virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.saved_text);
+			virtual_keyboard_globals.cursor = virtual_keyboard_globals.text_buffer +
+				ustrlen(virtual_keyboard_globals.text_buffer);
+		}
+		else
+		{
+			csmemset(
+				virtual_keyboard_globals.text_buffer,
+				0,
+				virtual_keyboard_globals.buffer_size);
+			virtual_keyboard_globals.cursor = virtual_keyboard_globals.text_buffer;
+		}
+	}
+
+	return;
+}
+
 /* ---------- public code */
 
 boolean virtual_keyboard_initialize(
@@ -1129,27 +1160,7 @@ static boolean virtual_keyboard_select(
 					virtual_keyboard_globals.cursor,
 					move_size);
 				*virtual_keyboard_globals.cursor++ = virtual_keyboard_get_current_character();
-				if (ustrcmp(virtual_keyboard_globals.text_buffer, L".fortune") == 0)
-				{
-					unsigned long fortune_index = system_milliseconds() % NUMBER_OF_VIRTUAL_KEYBOARD_FORTUNES;
-					fortune_index = MIN(fortune_index, NUMBER_OF_VIRTUAL_KEYBOARD_FORTUNES - 1);
-					virtual_keyboard_globals.caption_index = FIRST_VIRTUAL_KEYBOARD_FORTUNE_STRING_INDEX +
-						fortune_index;
-					if (virtual_keyboard_globals.saved_text[0])
-					{
-						ustrcpy(virtual_keyboard_globals.text_buffer, virtual_keyboard_globals.saved_text);
-						virtual_keyboard_globals.cursor = virtual_keyboard_globals.text_buffer +
-							ustrlen(virtual_keyboard_globals.text_buffer);
-					}
-					else
-					{
-						csmemset(
-							virtual_keyboard_globals.text_buffer,
-							0,
-							virtual_keyboard_globals.buffer_size);
-						virtual_keyboard_globals.cursor = virtual_keyboard_globals.text_buffer;
-					}
-				}
+				virtual_keyboard_fortune_check();
 				ui_play_audio_feedback_sound(_ui_audio_feedback_forward);
 			}
 			else
@@ -1200,6 +1211,7 @@ static void virtual_keyboard_port_type(
 					((byte *)virtual_keyboard_globals.cursor - (byte *)virtual_keyboard_globals.text_buffer) -
 					sizeof(wchar_t));
 			*virtual_keyboard_globals.cursor++ = (wchar_t)(unsigned char)key.ascii_code;
+			virtual_keyboard_fortune_check();
 			ui_play_audio_feedback_sound(_ui_audio_feedback_forward);
 		}
 		else
