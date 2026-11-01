@@ -150,8 +150,12 @@ static void pc_icons_forget(void)
 {
 	short index;
 
+	/* (the game's free takes no NULL: debug_memory.c) */
 	for (index = 0; index < PC_MAXIMUM_BITMAPS; index++)
-		free(pc_icons.bitmaps[index].pixels);
+	{
+		if (pc_icons.bitmaps[index].pixels)
+			free(pc_icons.bitmaps[index].pixels);
+	}
 	csmemset(pc_icons.bitmaps, 0, sizeof(pc_icons.bitmaps));
 	pc_icons.bitmap_count = 0;
 	pc_icons.sequence_count = 0;
@@ -291,7 +295,8 @@ static boolean pc_icons_read_map(char const *name)
 done:
 	if (!success)
 		pc_icons_forget();
-	free(tag_data);
+	if (tag_data)
+		free(tag_data);
 	return success;
 }
 
