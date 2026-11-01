@@ -949,10 +949,6 @@ STRING_INSERTS = {
     # menu_functions.c's filters_help)
     f"{MT}/join_game/filters/cap_filter_options": [(11, [
         "Show servers on maps you do not have if their\\nhost shares them: they download as you join."])],
-    # (the gametype editor's OPENCE OPTIONS' words, after the PC version's:
-    # menu_functions.c's playlist_edit_description)
-    f"{PLAYLIST_EDIT}/playlist_edit_list_extended_dsc_text": [(8, [
-        "Choose the rules of OpenCE's\\ngametypes: SWAT, Infection,\\nGun Game and Hardcore.\\nThis gametype:"])],
     f"{PLAYER_EDIT}/player_options_labels": [(8, ["AIM ASSIST:", "SHIELD EFFECTS:"])],
     f"{PLAYER_EDIT}/cap_player_options": [(28, AIM_ASSIST_HELP + SHIELD_EFFECTS_HELP)],
     # (Teamplay Options' voice chat and vote kick rows, after its own:
@@ -1095,9 +1091,8 @@ WIDGET_PATCHES = {
     # (its rows 27 apart, not 30, so that ten fit above the help, which keeps
     # the three lines some have: ce_menus.py's CHILD_OFFSETS)
     f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
-    # (no OPENCE OPTIONS in the gametype editor in this LAN build: its rows
-    # are the PC version's; _opence_options' screen is still written, and
-    # nothing opens it)
+    # (no OPENCE OPTIONS in this LAN build: its gametype editor's rows are
+    # the PC version's, and _opence_options' screen is not written)
     # (the profile settings' picture: on Gamepad Setup's row, the profile's
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
@@ -2282,7 +2277,6 @@ def multiplayer_files() -> dict:
         "main_menu/settings_select/multiplayer_setup/item_options_edit".replace("/", ".") + ".port.xml": head + _item_options_extras() + ["</menus>", ""],
         PLAYER_EDIT.replace("/", ".") + ".port.xml": head + _player_options_extras() + ["</menus>", ""],
         TEAMPLAY_EDIT.replace("/", ".") + ".port.xml": head + _teamplay_options_extras() + ["</menus>", ""],
-        OPENCE_EDIT.replace("/", ".") + ".port.xml": head + _opence_options() + ["</menus>", ""],
         MODS.replace("/", ".") + ".xml": [head[0], "<!-- The port's Mods screen, in the PC version's style "
                                           "(tools/port_settings.py) -->", head[2]] + _mods() + _credits_item() + ["</menus>", ""],
     }
