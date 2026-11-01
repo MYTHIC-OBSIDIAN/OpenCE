@@ -335,6 +335,48 @@ static int directed_broadcasts(posix_ulong *targets, int maximum_count)
 	return count;
 }
 
+/* (halo.log) the system link as the game starts: this machine's address
+and where its broadcasts will go */
+static void address_text(unsigned long address, char *text, size_t size);
+static unsigned long title_address(void);
+
+static void log_system_link_start(void)
+{
+	posix_ulong directed[MAXIMUM_DIRECTED_BROADCASTS];
+	unsigned long targets[MAXIMUM_BROADCAST_TARGETS];
+	int directed_count = directed_broadcasts(directed, MAXIMUM_DIRECTED_BROADCASTS);
+	int target_count = broadcast_targets(targets, MAXIMUM_BROADCAST_TARGETS);
+	unsigned long local;
+	char line[512];
+	char text[24];
+	size_t used;
+	int index;
+
+	address_text(title_address(), text, sizeof(text));
+	used = (size_t)snprintf(line, sizeof(line), "system link: this machine is %s%s; broadcasts go to ", text,
+		local_address_setting(&local) ? " (network.address)" : "");
+	if (target_count)
+	{
+		for (index = 0; index < target_count && used < sizeof(line); index++)
+		{
+			address_text(targets[index], text, sizeof(text));
+			used += (size_t)snprintf(line + used, sizeof(line) - used, "%s%s", index ? ", " : "", text);
+		}
+		if (used < sizeof(line))
+			snprintf(line + used, sizeof(line) - used, " (network.broadcast)");
+	}
+	else
+	{
+		used += (size_t)snprintf(line + used, sizeof(line) - used, "255.255.255.255");
+		for (index = 0; index < directed_count && used < sizeof(line); index++)
+		{
+			address_text(directed[index], text, sizeof(text));
+			used += (size_t)snprintf(line + used, sizeof(line) - used, ", %s", text);
+		}
+	}
+	platform_log("%s", line);
+}
+
 /* ---------- Winsock */
 
 /* (debug.network_latency, below) */
@@ -370,6 +412,7 @@ int WSAAPI WSAStartup(WORD version_requested, LPWSADATA data)
 	/* here, before the game's network threads start */
 	net_settings_read();
 	delayed_enabled();
+	log_system_link_start();
 	p2p_initialize(local_address_setting(&local) ? local : loopback_address());
 	if (data)
 	{
@@ -430,7 +473,7 @@ static void address_text(unsigned long address, char *text, size_t size)
 }
 
 static void log_broadcast(int result, int error, const posix_ulong *directed, int directed_count,
-	const struct sockaddr_in *broadcast)
+	const struct sockaddr_in *broadcast, int network_broadcast)
 {
 	static char last[512];
 	char line[512];
@@ -439,13 +482,16 @@ static void log_broadcast(int result, int error, const posix_ulong *directed, in
 	size_t used;
 
 	address_text(title_address(), text, sizeof(text));
-	used = (size_t)snprintf(line, sizeof(line), "system link: this machine is %s; broadcasts to port %u go to "
-		"255.255.255.255", text, (unsigned)halo_ws_ntohs(broadcast->sin_port));
+	used = (size_t)snprintf(line, sizeof(line), "system link: this machine is %s; broadcasts to port %u go to %s",
+		text, (unsigned)halo_ws_ntohs(broadcast->sin_port), network_broadcast ? "" : "255.255.255.255");
 	for (index = 0; index < directed_count && used < sizeof(line); index++)
 	{
 		address_text(directed[index], text, sizeof(text));
-		used += (size_t)snprintf(line + used, sizeof(line) - used, ", %s", text);
+		used += (size_t)snprintf(line + used, sizeof(line) - used, "%s%s",
+			network_broadcast && !index ? "" : ", ", text);
 	}
+	if (network_broadcast && used < sizeof(line))
+		used += (size_t)snprintf(line + used, sizeof(line) - used, " (network.broadcast)");
 	if (result < 0 && used < sizeof(line))
 		snprintf(line + used, sizeof(line) - used, " (failed: error %d)", error);
 	if (strcmp(line, last))
@@ -619,6 +665,8 @@ int WSAAPI halo_ws_sendto(SOCKET socket, const char *buffer, int length, int fla
 				if (sent >= 0 || index == 0)
 					result = sent;
 			}
+			log_broadcast(result, result < 0 ? posix_socket_last_error() : 0, (const posix_ulong *)targets,
+				target_count, &target, 1);
 		}
 		else
 		{
@@ -640,7 +688,7 @@ int WSAAPI halo_ws_sendto(SOCKET socket, const char *buffer, int length, int fla
 					if (result < 0 && sent >= 0)
 						result = sent;
 				}
-				log_broadcast(result, result < 0 ? posix_socket_last_error() : 0, directed, directed_count, &target);
+				log_broadcast(result, result < 0 ? posix_socket_last_error() : 0, directed, directed_count, &target, 0);
 			}
 		}
 		/* (the broadcast's own error, which what follows would overwrite) */

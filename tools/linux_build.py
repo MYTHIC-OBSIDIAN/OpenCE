@@ -170,8 +170,11 @@ def updater_defines(release: bool) -> str:
     number = os.environ.get("HALO_BUILD_NUMBER", "0")
     if not number.isdigit():
         number = "0"
+    label = os.environ.get("HALO_BUILD_LABEL", "0")
+    if not label.isdigit():
+        label = "0"
     flavor = "release" if release else "debug"
-    return (f'-DHALO_BUILD_NUMBER={number} -DHALO_BUILD_FLAVOR=\\"{flavor}\\" '
+    return (f'-DHALO_BUILD_NUMBER={number} -DHALO_BUILD_LABEL={label} -DHALO_BUILD_FLAVOR=\\"{flavor}\\" '
             f'-DHALO_BUILD_REPOSITORY=\\"{build_repository()}\\"')
 
 def configuration_defines(sln: Any) -> List[str]:

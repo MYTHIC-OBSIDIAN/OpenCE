@@ -90,6 +90,10 @@ def main() -> int:
     if os.environ.get("GITHUB_REF") == "refs/heads/main" and os.environ.get("GITHUB_RUN_NUMBER", "").isdigit():
         os.environ["HALO_BUILD_NUMBER"] = os.environ["GITHUB_RUN_NUMBER"]
         print(f"build number {os.environ['HALO_BUILD_NUMBER']}", flush=True)
+    # every CI build is labelled with its run number in its log, numbered
+    # or not (a branch's builds are released as build-<n> too)
+    if os.environ.get("GITHUB_RUN_NUMBER", "").isdigit():
+        os.environ["HALO_BUILD_LABEL"] = os.environ["GITHUB_RUN_NUMBER"]
     run(configure)
 
     run(["ninja", args.platform])

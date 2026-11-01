@@ -40,6 +40,11 @@ update.h's: posix_update.c on Linux, win32_update.c on Windows.
 #ifndef HALO_BUILD_NUMBER
 #define HALO_BUILD_NUMBER 0
 #endif
+/* the CI run that built it, numbered or not (tools/ci_build.py), for the
+log: 0 for a build of one's own */
+#ifndef HALO_BUILD_LABEL
+#define HALO_BUILD_LABEL 0
+#endif
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
@@ -712,8 +717,12 @@ void updater_start(void)
 	watching, but for a test with its answer) */
 	if (HALO_BUILD_NUMBER <= 0)
 	{
-		platform_log("update: not looked for: only the builds CI numbers update themselves (this one has no "
-			"number)");
+		if (HALO_BUILD_LABEL > 0)
+			platform_log("update: not looked for: only the builds CI numbers update themselves (this is build-%d "
+				"of a branch)", (int)HALO_BUILD_LABEL);
+		else
+			platform_log("update: not looked for: only the builds CI numbers update themselves (this one has no "
+				"number)");
 		return;
 	}
 	if (!config_boolean("update.auto"))
