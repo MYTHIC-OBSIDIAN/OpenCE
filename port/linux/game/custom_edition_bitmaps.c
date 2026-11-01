@@ -127,7 +127,9 @@ nothing. */
 struct shader_model_maps
 {
 	struct shader shader;
-	byte reserved28[0x7C];
+	byte reserved28[0x24];
+	short change_color_source;
+	byte reserved4E[0x56];
 	struct tag_reference base_map;
 	byte reservedB4[0x8];
 	struct tag_reference multipurpose_map;
@@ -137,6 +139,8 @@ struct shader_model_maps
 	struct tag_reference reflection_cube_map;
 };
 
+typedef char verify_shader_model_maps_change_color_source_offset[
+	offsetof(struct shader_model_maps, change_color_source) == 0x4C ? 1 : -1];
 typedef char verify_shader_model_maps_base_map_index_offset[
 	offsetof(struct shader_model_maps, base_map.index) == 0xB0 ? 1 : -1];
 typedef char verify_shader_model_maps_multipurpose_map_index_offset[
@@ -626,6 +630,36 @@ static void weapon_hud_statics_note(
 	return;
 }
 
+/* Whether a model shader's multipurpose map is in the Xbox's channel order
+as Halo PC ships it. Halo PC keeps a multipurpose map's color change mask in
+alpha, and Gearbox left many of the Xbox's maps as they were, compressed as
+DXT1, which has no alpha: Halo PC draws such a shader's change color over the
+whole of it, and its specular mask from the wrong channel (the Elites',
+Grunts', Jackals' and the Covenant crates' armor and metal). A map of a
+shader that changes color, all of whose bitmaps are DXT1, is drawn as the
+Xbox draws it, its channels as they are. */
+static boolean multipurpose_map_in_xbox_order(
+	struct tag_view const *view,
+	struct shader_model_maps const *shader)
+{
+	struct bitmap_group *group;
+	long index;
+
+	if (shader->change_color_source <= 0 || shader->multipurpose_map.index == NONE)
+		return FALSE;
+	group = view_tag_get(view, shader->multipurpose_map.index, BITMAP_GROUP_TAG, sizeof(struct bitmap_group));
+	if (!group || group->bitmaps.count <= 0)
+		return FALSE;
+	for (index = 0; index < group->bitmaps.count; index++)
+	{
+		struct bitmap_data *bitmap = view_block_element(view, &group->bitmaps, index, sizeof(*bitmap));
+
+		if (!bitmap || bitmap->format != _bitmap_format_dxt1)
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /* the bitmaps of the tags `view` reads whose channels Halo PC keeps
 elsewhere (custom_edition_reordered_bitmaps_find) */
 static boolean reordered_bitmaps_find(
@@ -639,13 +673,32 @@ static boolean reordered_bitmaps_find(
 	long multipurpose_count = 0;
 	long meter_count = 0;
 	long kept_count = 0;
+	long xbox_order_count = 0;
 	long bitmap_index;
 
 	/* the bitmaps drawn in Halo PC's orders: model shaders' multipurpose
-	maps and HUD meters */
+	maps (but those left in the Xbox's, multipurpose_map_in_xbox_order,
+	whichever of their shaders found them) and HUD meters */
 	tag_index = NONE;
 	while ((shader = view_tag_next(view, SHADER_MODEL_GROUP_TAG, sizeof(*shader), &tag_index)) != NULL)
 	{
+		long other_index = NONE;
+		struct shader_model_maps *other;
+		boolean xbox_order = FALSE;
+
+		if (shader->multipurpose_map.index == NONE)
+			continue;
+		while (!xbox_order &&
+			(other = view_tag_next(view, SHADER_MODEL_GROUP_TAG, sizeof(*other), &other_index)) != NULL)
+		{
+			xbox_order = other->multipurpose_map.index == shader->multipurpose_map.index &&
+				multipurpose_map_in_xbox_order(view, other);
+		}
+		if (xbox_order)
+		{
+			xbox_order_count++;
+			continue;
+		}
 		if (!reordered_bitmaps_mark(view, shader->multipurpose_map.index, NONE, _custom_edition_channels_multipurpose))
 		{
 			return FALSE;
@@ -723,10 +776,11 @@ static boolean reordered_bitmaps_find(
 	{
 		error(
 			_error_silent,
-			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not)",
+			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not; %ld model shaders' change-colored DXT1 multipurpose maps are the Xbox's already)",
 			multipurpose_count,
 			meter_count,
-			kept_count);
+			kept_count,
+			xbox_order_count);
 	}
 	else
 	{
