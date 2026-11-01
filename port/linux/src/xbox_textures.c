@@ -822,12 +822,10 @@ static GLuint texture_entry_result(struct texture_entry *entry, GLenum *target,
 
 			entry->hud_upscale_checked = TRUE;
 			/* Verified stock CE sheets also include compressed and 512-pixel atlases. */
-			/* (and the stock weapons' sheets painted with Halo PC's art, kind 5:
-			hud_pc_icons.c) */
-			if (entry->size && (!entry->description.compressed || kind >= 4) && entry->target == GL_TEXTURE_2D &&
+			if (entry->size && (!entry->description.compressed || kind == 4) && entry->target == GL_TEXTURE_2D &&
 				format_information(entry->description.format).kind != _texel_p8 &&
-				entry->description.width <= (kind >= 4 ? 512 : 256) &&
-				entry->description.height <= (kind >= 4 ? 512 : 256) &&
+				entry->description.width <= (kind == 4 ? 512 : 256) &&
+				entry->description.height <= (kind == 4 ? 512 : 256) &&
 				kind &&
 				custom_edition_texels_order(entry->address) == _custom_edition_channels_xbox &&
 				texture_entry_pixels_valid(entry))

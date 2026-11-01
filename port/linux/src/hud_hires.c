@@ -473,12 +473,11 @@ unsigned int hud_hires_upscale_texture(unsigned long address, const unsigned cha
 
 	if (!xgpu_gl_ready())
 		return 0;
-	pixels = kind >= 4 ? upscale_pixels(bgra, width, height, 512) : hud_hires_upscale_pixels(bgra, width, height);
+	pixels = kind == 4 ? upscale_pixels(bgra, width, height, 512) : hud_hires_upscale_pixels(bgra, width, height);
 	if (!pixels)
 		return 0;
 	upscale_outline(pixels, bgra, width, height, kind);
-	/* (the stock weapons' HUD of the Xbox's maps: Halo PC's art,
-	port/linux/game/hud_pc_icons.c) */
+	/* (the Xbox's weapon pickup icons: Halo PC's, port/linux/game/hud_pc_icons.c) */
 	hud_pc_icons_paint(address, (long)width, (long)height, pixels);
 	*levels = 1;
 	for (largest = (width > height ? width : height) * 4; largest > 1; largest >>= 1)
