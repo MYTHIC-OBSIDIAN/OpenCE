@@ -1282,6 +1282,21 @@ def test_resource_tags_are_found_by_name_at_another_index(report_tool, tmp_path,
     assert report["load"] == "ok"
 
 
+def test_a_renamed_stock_bitmap_is_read_at_its_index(report_tool, tmp_path):
+    """Invader keeps a copy of a stock bitmap renamed ("...\\hud_ammo_meters
+    ce", Digsite's spasm.map) at the stock entry's index, and no entry has
+    its name: Halo CE reads bitmaps at their index."""
+    path = Map().write(tmp_path)
+    data = bytearray((tmp_path / "bitmaps.map").read_bytes())
+    names_offset = struct.unpack_from("<i", data, 4)[0]
+    at = data.index(b"test\\external bitmap\0", names_offset)
+    data[at:at + 20] = b"test\\stock bitmapxyz"
+    (tmp_path / "bitmaps.map").write_bytes(data)
+    _, report = report_one(report_tool, path)
+    assert report["load"] == "ok"
+    assert report["resource_tags"].startswith("bitmaps 1")
+
+
 def test_a_file_length_of_zero_is_the_whole_file(report_tool, tmp_path):
     """Invader leaves the header's file length 0 (blood_covenantv3)."""
     path = Map().write(tmp_path, "test.map")

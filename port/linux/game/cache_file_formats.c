@@ -1533,14 +1533,21 @@ static enum cache_file_status resource_tag_load(
 	}
 	/* (a map built against another resource map than the player's, as an
 	editing tool may build one (Invader), names an entry the player's keeps
-	at another index: it is found by its name) */
+	at another index: it is found by its name. A tag renamed from a stock
+	one, "ui\hud\bitmaps\combined\hud_ammo_meters ce" for its
+	"...\hud_ammo_meters", keeps the stock entry's index and no entry has
+	its name: Halo CE reads it at its index, as it reads every bitmap) */
 	if (item_index < (uint32_t)map->item_count && !strcmp(map->items[item_index].name, name))
 	{
 		item = &map->items[item_index];
 	}
 	else if ((item = resource_map_find(map, name)) == NULL)
 	{
-		return load_fail(state, _cache_file_status_missing_resource_item, item_index);
+		if (item_index >= (uint32_t)map->item_count)
+		{
+			return load_fail(state, _cache_file_status_missing_resource_item, item_index);
+		}
+		item = &map->items[item_index];
 	}
 	status = tag_cache_allocate(state, item->size, &offset);
 	if (status != _cache_file_status_ok)
