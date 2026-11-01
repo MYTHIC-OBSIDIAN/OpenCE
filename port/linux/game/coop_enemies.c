@@ -415,17 +415,12 @@ static void coop_enemies_rider_place(
 void coop_enemies_new_game(
 	void)
 {
-	char const *mode = config_string("network.coop_enemies_mode");
-
 	csmemset(&coop_enemies, 0, sizeof(coop_enemies));
-	/* (an amount past Server Setup's, as it shows it: its nearest choice's
-	end) */
-	coop_enemies.percent = (short)PIN(config_integer("network.coop_enemies"), COOP_ENEMIES_MINIMUM_PERCENT,
-		COOP_ENEMIES_MAXIMUM_PERCENT);
-	coop_enemies.multiplier = (short)PIN(config_integer("network.coop_enemies_multiplier"),
-		COOP_ENEMIES_MINIMUM_MULTIPLIER, COOP_ENEMIES_MAXIMUM_MULTIPLIER);
-	coop_enemies.mode = !strcmp(mode, "per_player") ? _coop_enemies_per_player :
-		!strcmp(mode, "multiplier") ? _coop_enemies_multiplier : _coop_enemies_none;
+	/* (none: co-op's enemies are the campaign's, as split screen's, whatever
+	network.coop_enemies_mode says) */
+	coop_enemies.percent = COOP_ENEMIES_MINIMUM_PERCENT;
+	coop_enemies.multiplier = COOP_ENEMIES_MINIMUM_MULTIPLIER;
+	coop_enemies.mode = _coop_enemies_none;
 }
 
 void coop_enemies_reset(

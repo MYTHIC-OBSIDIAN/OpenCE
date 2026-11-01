@@ -283,12 +283,11 @@ static void pickups_place(long source_index)
 
 void coop_pickups_new_game(void)
 {
-	char const *mode = config_string("network.coop_pickups");
-
-	pickups_enabled = !strcmp(mode, "per_player") || !strcmp(mode, "multiplier");
-	pickups_percent = (short)PIN(config_integer("network.coop_enemies"), 25, 200);
-	pickups_multiplier = !strcmp(mode, "multiplier") ?
-		(short)PIN(config_integer("network.coop_enemies_multiplier"), 2, 32) : 0;
+	/* (none: co-op's pickups are the campaign's, as split screen's, whatever
+	network.coop_pickups says) */
+	pickups_enabled = FALSE;
+	pickups_percent = 25;
+	pickups_multiplier = 0;
 }
 
 void coop_pickups_register(long object_index, struct scenario_object_datum const *source, struct tag_block *palette)

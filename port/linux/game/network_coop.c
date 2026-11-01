@@ -2147,12 +2147,9 @@ static boolean network_coop_hosting_public(
 boolean network_coop_wipe_reverts(
 	void)
 {
-	char const *mode;
-
+	/* (a team wiped reverts to the last checkpoint, as split screen's does,
+	whatever network.coop_team_wipe says) */
 	if (!coop_host())
-		return FALSE;
-	mode = config_string("network.coop_team_wipe");
-	if (!strcmp(mode, "respawn") || (strcmp(mode, "revert") && network_coop_hosting_public()))
 		return FALSE;
 	if (!checkpoint_players_match())
 	{
@@ -2194,10 +2191,12 @@ boolean network_coop_ally_friendly_fire(
 	return !TEST_FLAG(game->cooperative_flags, _network_game_cooperative_no_ally_friendly_fire_bit);
 }
 
+/* (always: the players hurt each other, as split screen's do, whatever
+network.coop_own_friendly_fire says) */
 boolean network_coop_own_friendly_fire(
 	void)
 {
-	return config_boolean("network.coop_own_friendly_fire") != 0;
+	return TRUE;
 }
 
 void network_coop_note_player_friendly_fire(

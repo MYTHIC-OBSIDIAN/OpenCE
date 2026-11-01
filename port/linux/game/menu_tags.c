@@ -1622,15 +1622,15 @@ static void *pause_button(struct cache_file_tag_instance *instances, struct ui_w
 	return button;
 }
 
-/* the list's buttons: SETTINGS, and the host's END GAME or network co-op's
-FRIENDLY FIRE (whose text says the machine's choice: menu_functions.c), put
+/* the list's buttons: SETTINGS, and a multiplayer host's END GAME (network
+co-op has none: its friendly fire is the campaign's, as split screen's), put
 before LEAVE GAME or REVERT TO SAVED (quit); returns how many were added, and
 how much taller the list grew for them (growth) */
 static long pause_list_patch(struct cache_file_tag_instance *instances, struct ui_widget_definition *list, long quit,
 	boolean host, short *growth)
 {
 	struct ui_widget_child_reference *children = list->child_widgets.address;
-	long count = list->child_widgets.count, added = host || build.coop ? 2 : 1, child;
+	long count = list->child_widgets.count, added = host && !build.coop ? 2 : 1, child;
 	struct ui_widget_child_reference *grown = allocate((count + added) * sizeof(struct ui_widget_child_reference));
 	struct ui_widget_definition const *model = tag_get(UI_WIDGET_DEFINITION_TAG, children[quit].widget_tag.index);
 	long settings_widget = widget_named(PAUSE_SETTINGS_SCREEN);
@@ -1646,14 +1646,10 @@ static long pause_list_patch(struct cache_file_tag_instance *instances, struct u
 	tags[0] = next_tag();
 	buttons[0] = pause_button(instances, model, names[0], "SETTINGS",
 		function_index("profile set edit begin", "pause", 0), build.widget_tags[settings_widget], NULL, NONE);
-	names[1] = build.coop ? "pause/friendly_fire_button" : "pause/end_game_button";
+	names[1] = "pause/end_game_button";
 	tags[1] = added > 1 ? next_tag() : NONE;
-	buttons[1] = build.coop ?
-		pause_button(instances, model, names[1], "FRIENDLY FIRE ON",
-			function_index("port coop friendly fire", "pause", 0), NONE, "FRIENDLY FIRE OFF",
-			game_data_input_index("port coop friendly fire text", "pause", 0)) :
-		host ? pause_button(instances, model, names[1], "END GAME",
-			function_index("port pause end game", "pause", 0), NONE, NULL, NONE) : NULL;
+	buttons[1] = added > 1 ? pause_button(instances, model, names[1], "END GAME",
+		function_index("port pause end game", "pause", 0), NONE, NULL, NONE) : NULL;
 	if (!buttons[0] || (added > 1 && !buttons[1]))
 		return 0;
 	for (child = 0; child < added; child++)
@@ -2027,7 +2023,7 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 	if (collection == NONE || quit_function == NONE)
 		return;
 	screens = tag_get('Soul', collection);
-	rebuilt = pause_rebuild(screens, quit_function, host || build.coop ? 2 : 1);
+	rebuilt = pause_rebuild(screens, quit_function, host && !build.coop ? 2 : 1);
 	for (screen = 0; screen < screens->count; screen++)
 	{
 		long screen_tag = ((struct tag_reference const *)screens->address)[screen].index;
@@ -2103,13 +2099,13 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 		}
 	}
 	if (patched_list != NONE)
-		platform_log("menus: the pause menu has SETTINGS%s", host ? " and END GAME" : "");
+		platform_log("menus: the pause menu has SETTINGS%s", host && !build.coop ? " and END GAME" : "");
 }
 
 /* ---------- the campaign's pause menu
 
 Its list gets the same SETTINGS (pause_list_patch) before REVERT TO SAVED, a
-copy of it, and in network co-op FRIENDLY FIRE after SETTINGS. The rows use
+copy of it (network co-op too: its friendly fire is the campaign's). The rows use
 the PC version's pause menu's pitch, so a highlight sits clear of the next
 label. The prompts (B and A) stay that same gap under the last row, and the
 box beside the mission objectives grows with them. Settings there has only
@@ -2425,7 +2421,7 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 				pause_campaign_grow_box(definition, need);
 			}
 			pause_settings_patch();
-			platform_log("menus: the pause menu has SETTINGS%s", build.coop ? " and FRIENDLY FIRE" : "");
+			platform_log("menus: the pause menu has SETTINGS");
 		}
 		return;
 	}

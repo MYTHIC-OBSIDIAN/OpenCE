@@ -2359,8 +2359,7 @@ static struct
 	{ "controls.push_to_talk", L"PUSH TO TALK", 3 },
 	{ "controls.chat", L"CHAT", 3 },
 	{ "controls.team_chat", L"TEAM CHAT", 3 },
-	{ "controls.vote_yes", L"VOTE YES", 3 },
-	{ "controls.vote_no", L"VOTE NO", 3 },
+	/* (not VOTE YES and VOTE NO, which keep their keys in config.toml) */
 };
 
 static struct
@@ -3520,6 +3519,9 @@ static void map_list_update(struct widget_instance *list)
 	profile_name_show(description);
 }
 
+/* (below: a LAN co-op game's settings, without Server Setup) */
+static void cooperative_lan_start(void);
+
 /* "mp level select" (the list's OK): the map chosen, or a level's
 difficulties, or the level at the difficulty chosen. FALSE stays on the Map
 screen (the gametypes open on TRUE). */
@@ -3539,9 +3541,16 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 
 		if (!map_ready(map_name))
 			return FALSE;
-		/* the co-op game set up, then Server Setup in the gametypes' place */
+		/* the co-op game set up, then (on the LAN) the lobby, its settings
+		the campaign's split screen's, or (on the internet) Server Setup in
+		the gametypes' place, for its listing, password and invite */
 		if (!ui_widget_port_cooperative_level_choose(map_name, chosen))
 			return campaign_fail();
+		if (multiplayer.mode == _multiplayer_mode_host_lan)
+		{
+			cooperative_lan_start();
+			return ui_widget_port_open(list, LOBBY_NAME, widget_deleted);
+		}
 		return ui_widget_port_open(list, SERVER_SETUP_NAME, widget_deleted);
 	}
 	/* (a Digsite map not installed) */
@@ -3826,14 +3835,6 @@ enum
 	NUMBER_OF_COOPERATIVE_ENEMIES_MODES
 };
 
-/* co-op's FRIENDLY FIRE's choices (network.coop_friendly_fire's values, as
-gametype_options' coop_friendly_fire_spinner and server_start have them, in
-this order) */
-static short const cooperative_friendly_fire_modes[] =
-{
-	_friendly_fire_off, _friendly_fire_on, _friendly_fire_shields_only, _friendly_fire_explosives_only
-};
-
 /* the most players Server Setup shows and sets: the multiplayer game's, or
 the co-op game's (COOPERATIVE_DEFAULT_PLAYERS the first time in each game
 hosted: multiplayer_host) */
@@ -3966,7 +3967,8 @@ static void server_settings_update(struct widget_instance *list)
 		{
 			struct widget_instance *help = list->parameters.list.extended_description;
 
-			visible_set(named(list, "op_coop_options", 0), cooperative);
+			/* (not CO-OP OPTIONS: co-op's settings are the campaign's) */
+			visible_set(named(list, "op_coop_options", 0), FALSE);
 			visible_set(named(list, "op_voice_options", 0), cooperative);
 			if (help && list->focused_child == named(list, "op_coop_options", 0))
 				help->parameters.text_box.string_list_index = COOPERATIVE_OPTIONS_HELP;
@@ -4061,30 +4063,41 @@ static boolean invite_copy(void)
 	return TRUE;
 }
 
-/* "ss start game": the settings given the server, then the lobby */
-/* the co-op game's settings, as CO-OP OPTIONS left them in config.toml
-(network.coop_friendly_fire, in cooperative_friendly_fire_modes' order,
-network.coop_player_collisions and network.coop_ally_friendly_fire), given
-the game's server: Server Setup's START, and a dedicated server's co-op
-entry (server_director.c's server_apply_entry) */
+/* the co-op game's settings, the campaign's split screen co-op's (CO-OP
+OPTIONS' choices in config.toml are not read), given the game's server:
+Server Setup's START, a LAN co-op game's level chosen (cooperative_lan_start)
+and a dedicated server's co-op entry (server_director.c's
+server_apply_entry) */
 void ui_widget_port_cooperative_settings_apply(void)
 {
-	static char const *const friendly_fire_names[] = { "off", "on", "shields_only", "explosives_only" };
-	char const *friendly_fire = config_string("network.coop_friendly_fire");
-	short index;
-
+	/* (locked to the campaign's split screen co-op, whatever CO-OP OPTIONS
+	left in config.toml: the players hurt each other and the allies, and
+	bump into each other) */
 	multiplayer.cooperative_friendly_fire = _friendly_fire_on;
-	for (index = 0; friendly_fire && index < (short)NUMBEROF(friendly_fire_names); index++)
-	{
-		if (!strcmp(friendly_fire, friendly_fire_names[index]))
-			multiplayer.cooperative_friendly_fire = cooperative_friendly_fire_modes[index];
-	}
-	multiplayer.cooperative_no_player_collisions = !config_boolean("network.coop_player_collisions");
+	multiplayer.cooperative_no_player_collisions = FALSE;
 	network_game_server_port_set_cooperative_friendly_fire(multiplayer.cooperative_friendly_fire);
-	network_game_server_port_set_cooperative_player_collisions(!multiplayer.cooperative_no_player_collisions);
-	network_game_server_port_set_cooperative_ally_friendly_fire(config_boolean("network.coop_ally_friendly_fire"));
+	network_game_server_port_set_cooperative_player_collisions(TRUE);
+	network_game_server_port_set_cooperative_ally_friendly_fire(TRUE);
 }
 
+/* a LAN co-op game, which has no Server Setup: its name player 1's, two
+players, no password, its settings the campaign's (as split screen's) */
+static void cooperative_lan_start(void)
+{
+	if (player_ui_get_active_player_profile_index(0) != NONE)
+	{
+		struct player_profile profile;
+
+		player_ui_get_active_player_profile(0, &profile);
+		ustrncpy(multiplayer.game_name, profile.player_name, NUMBEROF(multiplayer.game_name) - 1);
+		multiplayer.game_name[NUMBEROF(multiplayer.game_name) - 1] = 0;
+	}
+	network_game_server_port_set_settings(multiplayer.game_name, HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS);
+	p2p_set_hosting_password(NULL);
+	ui_widget_port_cooperative_settings_apply();
+}
+
+/* "ss start game": the settings given the server, then the lobby */
 static boolean server_start(void)
 {
 	if (text_field_editing(NULL))

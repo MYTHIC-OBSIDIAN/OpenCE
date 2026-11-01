@@ -209,14 +209,13 @@ static boolean vehicles_home_clear(struct coop_vehicle_home const *home)
 
 void coop_vehicles_new_game(void)
 {
-	char const *mode = config_string("network.coop_vehicles");
-
 	csmemset(&coop_vehicle_homes, 0, sizeof(coop_vehicle_homes));
 	saved_valid = FALSE;
-	vehicles_enabled = !strcmp(mode, "per_player") || !strcmp(mode, "multiplier");
-	vehicles_percent = (short)PIN(config_integer("network.coop_enemies"), 25, 200);
-	vehicles_multiplier = !strcmp(mode, "multiplier") ?
-		(short)PIN(config_integer("network.coop_enemies_multiplier"), 2, 32) : 0;
+	/* (none: co-op's vehicles are the campaign's, as split screen's, whatever
+	network.coop_vehicles says) */
+	vehicles_enabled = FALSE;
+	vehicles_percent = 25;
+	vehicles_multiplier = 0;
 }
 
 void coop_vehicles_register(long index, struct scenario_object_datum const *source)
