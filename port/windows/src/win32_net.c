@@ -365,6 +365,56 @@ posix_ulong posix_local_ipv4_address(void)
 	return result;
 }
 
+int posix_directed_broadcasts(posix_ulong *targets, int maximum)
+{
+	ULONG size = 16 * 1024;
+	IP_ADAPTER_ADDRESSES *adapters = NULL, *adapter;
+	ULONG status;
+	int count = 0;
+
+	do
+	{
+		free(adapters);
+		adapters = malloc(size);
+		if (!adapters)
+			return 0;
+		status = GetAdaptersAddresses(AF_INET,
+			GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER, NULL, adapters, &size);
+	}
+	while (status == ERROR_BUFFER_OVERFLOW);
+	if (status == NO_ERROR)
+	{
+		for (adapter = adapters; adapter && count < maximum; adapter = adapter->Next)
+		{
+			IP_ADAPTER_UNICAST_ADDRESS *address;
+
+			if (adapter->OperStatus != IfOperStatusUp || adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
+				continue;
+			for (address = adapter->FirstUnicastAddress; address && count < maximum; address = address->Next)
+			{
+				struct sockaddr_in *ipv4 = (struct sockaddr_in *)address->Address.lpSockaddr;
+				ULONG prefix = address->OnLinkPrefixLength;
+				posix_ulong host, broadcast;
+				int index;
+
+				if (ipv4->sin_family != AF_INET || prefix < 1 || prefix > 30)
+					continue;
+				host = ntohl(ipv4->sin_addr.s_addr);
+				if ((host >> 24) == 127)
+					continue;
+				broadcast = htonl(host | (0xFFFFFFFFUL >> prefix));
+				for (index = 0; index < count && targets[index] != broadcast; index++)
+				{
+				}
+				if (index == count)
+					targets[count++] = broadcast;
+			}
+		}
+	}
+	free(adapters);
+	return count;
+}
+
 void posix_random_bytes(void *buffer, posix_ulong size)
 {
 	/* the keys and invites made from these must not be guessable */

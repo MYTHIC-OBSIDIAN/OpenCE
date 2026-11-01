@@ -1517,6 +1517,14 @@ posix_ulong posix_local_ipv4_address(void)
 	return local_address();
 }
 
+/* (the browser's relay delivers 255.255.255.255 to every peer itself) */
+int posix_directed_broadcasts(posix_ulong *targets, int maximum)
+{
+	(void)targets;
+	(void)maximum;
+	return 0;
+}
+
 posix_ulong posix_resolve_ipv4(const char *host)
 {
 	int index;

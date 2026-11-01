@@ -500,6 +500,34 @@ posix_ulong posix_local_ipv4_address(void)
 	return result ? result : interface_address(0);
 }
 
+int posix_directed_broadcasts(posix_ulong *targets, int maximum)
+{
+	struct ifaddrs *addresses, *entry;
+	int count = 0;
+
+	if (getifaddrs(&addresses) != 0)
+		return 0;
+	for (entry = addresses; entry && count < maximum; entry = entry->ifa_next)
+	{
+		if (entry->ifa_addr && entry->ifa_addr->sa_family == AF_INET &&
+			entry->ifa_broadaddr && entry->ifa_broadaddr->sa_family == AF_INET &&
+			(entry->ifa_flags & (IFF_UP | IFF_RUNNING | IFF_BROADCAST)) == (IFF_UP | IFF_RUNNING | IFF_BROADCAST) &&
+			!(entry->ifa_flags & IFF_LOOPBACK))
+		{
+			posix_ulong broadcast = ((struct sockaddr_in *)entry->ifa_broadaddr)->sin_addr.s_addr;
+			int index;
+
+			for (index = 0; index < count && targets[index] != broadcast; index++)
+			{
+			}
+			if (index == count && broadcast != htonl(INADDR_BROADCAST) && broadcast != htonl(INADDR_ANY))
+				targets[count++] = broadcast;
+		}
+	}
+	freeifaddrs(addresses);
+	return count;
+}
+
 void posix_random_bytes(void *buffer, posix_ulong size)
 {
 	unsigned char *cursor = buffer;

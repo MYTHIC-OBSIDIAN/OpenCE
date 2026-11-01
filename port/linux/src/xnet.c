@@ -309,6 +309,31 @@ static int broadcast_targets(unsigned long *targets, int maximum_count)
 	return count;
 }
 
+/* this machine's local networks' broadcast addresses
+(posix_directed_broadcasts), looked up again every few seconds as the
+game broadcasts */
+enum { MAXIMUM_DIRECTED_BROADCASTS = 8, DIRECTED_BROADCASTS_REFRESH_MILLISECONDS = 5000 };
+
+static int directed_broadcasts(posix_ulong *targets, int maximum_count)
+{
+	static posix_ulong cached[MAXIMUM_DIRECTED_BROADCASTS];
+	static int cached_count;
+	static DWORD looked_up;
+	static int looked;
+	DWORD now = GetTickCount();
+	int count;
+
+	if (!looked || now - looked_up >= DIRECTED_BROADCASTS_REFRESH_MILLISECONDS)
+	{
+		cached_count = posix_directed_broadcasts(cached, MAXIMUM_DIRECTED_BROADCASTS);
+		looked_up = now;
+		looked = 1;
+	}
+	count = cached_count < maximum_count ? cached_count : maximum_count;
+	memcpy(targets, cached, (size_t)count * sizeof(*targets));
+	return count;
+}
+
 /* ---------- Winsock */
 
 /* (debug.network_latency, below) */
@@ -526,6 +551,24 @@ int WSAAPI halo_ws_sendto(SOCKET socket, const char *buffer, int length, int fla
 		else
 		{
 			result = posix_socket_sendto((int)socket, buffer, length, flags, address, address_length);
+			/* and to each local network's own broadcast address: Windows
+			sends the one above out of a single interface (a VPN's or a
+			virtual machine's adapter can be it), where each of these goes
+			out of its own */
+			{
+				posix_ulong directed[MAXIMUM_DIRECTED_BROADCASTS];
+				int directed_count = directed_broadcasts(directed, MAXIMUM_DIRECTED_BROADCASTS);
+
+				for (index = 0; index < directed_count; index++)
+				{
+					int sent;
+
+					target.sin_addr.s_addr = directed[index];
+					sent = posix_socket_sendto((int)socket, buffer, length, flags, &target, sizeof(target));
+					if (result < 0 && sent >= 0)
+						result = sent;
+				}
+			}
 		}
 		/* (the broadcast's own error, which what follows would overwrite) */
 		send_error = result < 0 ? posix_socket_last_error() : 0;

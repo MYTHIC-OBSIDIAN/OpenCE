@@ -120,6 +120,13 @@ the one its default route leaves from (on Android, first that of an
 interface with broadcasts: Wi-Fi, not mobile data), else the first of an
 interface that is up and not loopback; or 0 */
 posix_ulong posix_local_ipv4_address(void);
+/* the broadcast address of each local network this machine is on (each
+IPv4 interface that is up, not loopback, with a broadcast address), up to
+maximum of them into targets (network byte order): their count. Windows
+sends a datagram to 255.255.255.255 out of one interface only (a VPN's or
+a virtual machine's adapter may be the one), where one of these goes out
+of its own */
+int posix_directed_broadcasts(posix_ulong *targets, int maximum);
 /* fills buffer with cryptographically random bytes; aborts the process if
 the system has none to give */
 void posix_random_bytes(void *buffer, posix_ulong size);
