@@ -869,6 +869,10 @@ static void custom_edition_cache_report_log(
 		(long)report->sound_sample_ranges_checked,
 		(long)report->relocated_pointer_count,
 		TEST_FLAG(report->warnings, _custom_edition_warning_checksum_mismatch_bit) ? "mismatched" : "matched");
+	if (report->script_strings_extended)
+	{
+		error(_error_silent, "custom edition: the scenario's script strings were given the console's 0x400 bytes, which the map left out");
+	}
 	if (report->scenario_regrouped)
 		error(_error_silent, "custom edition: the scenario tag had another group (map protection) and was given the scenario's");
 

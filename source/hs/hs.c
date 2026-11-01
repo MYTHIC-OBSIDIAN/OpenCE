@@ -13396,7 +13396,7 @@ static void hs_allocate(
 			scenario->hs_string_constants.size = 0;
 		if (hs_syntax_data && hs_syntax_data_allocated)
 			return;
-		error(0, "the scenario's script data is missing or damaged; its scripts won't run");
+		error(_error_silent, "the scenario's script data is missing or damaged; its scripts won't run");
 	}
 
 	hs_syntax_data = data_new(
@@ -15330,7 +15330,7 @@ boolean hs_scenario_postprocess(
 	if (scenario->hs_globals.count<0 ||
 		scenario->hs_globals.count>MAXIMUM_HS_GLOBALS-hs_external_global_count)
 	{
-		error(0, "the scenario has %ld script globals, more than the %d there is room for; its scripts won't run",
+		error(_error_silent, "the scenario has %ld script globals, more than the %d there is room for; its scripts won't run",
 			scenario->hs_globals.count,
 			MAXIMUM_HS_GLOBALS-hs_external_global_count);
 		hs_scenario_scripts_disable(scenario);
@@ -15348,7 +15348,7 @@ boolean hs_scenario_postprocess(
 
 			if (!hs_type_valid(global->type))
 			{
-				error(0, "the scenario's script global #%d has no type (%d); its scripts won't run",
+				error(_error_silent, "the scenario's script global #%d has no type (%d); its scripts won't run",
 					global_index,
 					global->type);
 				hs_scenario_scripts_disable(scenario);
@@ -15362,7 +15362,7 @@ boolean hs_scenario_postprocess(
 	if (scenario->hs_scripts.count<0 ||
 		scenario->hs_scripts.count>MAXIMUM_HS_SCRIPTS_PER_SCENARIO)
 	{
-		error(0, "the scenario has %ld scripts, more than the %d there is room for; its scripts won't run",
+		error(_error_silent, "the scenario has %ld scripts, more than the %d there is room for; its scripts won't run",
 			scenario->hs_scripts.count,
 			MAXIMUM_HS_SCRIPTS_PER_SCENARIO);
 		hs_scenario_scripts_disable(scenario);
@@ -15383,21 +15383,23 @@ boolean hs_scenario_postprocess(
 	}
 	else
 	{
+		/* port: logged, not fatal (an _error_immediate stops the game,
+		errors.c): the map plays without its scripts, as the messages say */
 		if (recompile)
-			error(0, "recompiling scripts after scenarios were merged.");
+			error(_error_silent, "recompiling scripts after scenarios were merged.");
 		else if (!error_message)
-			error(0, "an unspecified error occurred loading scripts");
+			error(_error_silent, "an unspecified error occurred loading scripts");
 		else if (!error_source)
-			error(0, "%s", error_message);
+			error(_error_silent, "%s", error_message);
 		else
-			error(0, "%s: %s", error_source, error_message);
+			error(_error_silent, "%s: %s", error_source, error_message);
 
 		/* port: the map's script source is not compiled again. A cache
 		file's blocks can't be resized (tag_block_resize), so the recompile
 		never reset the map's scripts and globals and none ran afterwards
 		either way; and the source is the map's, which the compiler would
 		recurse into as deep as it nests. The nodes go, and none run */
-		error(0, "the scenario's scripts won't run");
+		error(_error_silent, "the scenario's scripts won't run");
 		data_delete_all(hs_syntax_data);
 		hs_scenario_scripts_disable(scenario);
 		success = FALSE;

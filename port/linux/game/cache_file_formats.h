@@ -238,6 +238,9 @@ struct custom_edition_load_report
 	/* 1 when the scenario tag had another group (map protection renames it)
 	and was given the scenario's */
 	int32_t scenario_regrouped;
+	/* scenarios whose script strings were given the console's bytes after
+	them, which the map left out */
+	int32_t script_strings_extended;
 };
 
 /* Where Halo PC keeps what a texture holds in other channels than this

@@ -258,6 +258,7 @@ static int report_custom_edition_cache(
 		printf("sound_sample_ranges_checked: %" PRId32 "\n", report.sound_sample_ranges_checked);
 		printf("relocated_pointers: %" PRId32 "\n", report.relocated_pointer_count);
 		printf("scenario_regrouped: %" PRId32 "\n", report.scenario_regrouped);
+		printf("script_strings_extended: %" PRId32 "\n", report.script_strings_extended);
 		printf("computed_checksum: 0x%08" PRIx32 "\n", report.computed_checksum);
 		printf("trailing_bytes: 0x%" PRIx32 "\n", report.trailing_bytes);
 		print_flags("warnings", report.warnings, warning_names, NUMBER_OF_CUSTOM_EDITION_WARNINGS);

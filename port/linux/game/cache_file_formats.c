@@ -51,6 +51,10 @@ globals) never read; one that sets any is refused. */
 #define UNICODE_STRING_LIST_GROUP_TAG 'ustr'
 #define HUD_MESSAGE_TEXT_GROUP_TAG 'hmt '
 #define SCENARIO_GROUP_TAG 'scnr'
+/* a scenario's script strings (a tag data), and the bytes at their end
+that the console's expressions are compiled into (hs.c) */
+#define SCENARIO_SCRIPT_STRINGS_OFFSET 0x488
+#define SCRIPT_CONSOLE_STRING_BYTES 0x400
 #define STRUCTURE_BSP_GROUP_TAG 'sbsp'
 #define GBXMODEL_GROUP_TAG 'mod2'
 
@@ -2527,6 +2531,61 @@ enum cache_file_status custom_edition_cache_load(
 			return status;
 		}
 	}
+
+	/* each scenario's script strings with the console's 0x400 bytes after
+	them (hs.c: the game compiles what is typed at the console into the
+	last 0x400 bytes, and takes a string offset past the others as bad,
+	stopping every script). Invader 0.55 leaves them out (Digsite's
+	spasm.map): the strings are copied after the tags with room for them */
+	for (tag_index_value = 0; tag_index_value < tag_count; tag_index_value++)
+	{
+		uint8_t const *instance = tag_instances + (uint32_t)tag_index_value * TAG_INSTANCE_BYTES;
+		uint32_t scenario_offset;
+		uint8_t *strings_data;
+		int32_t size;
+		uint32_t address;
+		uint32_t strings_offset;
+		uint32_t used;
+		uint32_t extended_offset;
+
+		if (read_u32(instance + TAG_INSTANCE_GROUP_OFFSET) != SCENARIO_GROUP_TAG ||
+			read_u32(instance + TAG_INSTANCE_IN_RESOURCE_MAP_OFFSET) ||
+			!tag_cache_offset(&state, read_u32(instance + TAG_INSTANCE_ADDRESS_OFFSET),
+				SCENARIO_SCRIPT_STRINGS_OFFSET + TAG_DATA_BYTES, &scenario_offset))
+		{
+			continue;
+		}
+		strings_data = state.tag_cache + scenario_offset + SCENARIO_SCRIPT_STRINGS_OFFSET;
+		size = read_s32(strings_data);
+		address = read_u32(strings_data + TAG_DATA_ADDRESS_OFFSET);
+		if (size <= 0 || !tag_cache_offset(&state, address, (uint32_t)size, &strings_offset))
+		{
+			continue;
+		}
+		/* (the strings in use, with the last one's terminator) */
+		for (used = (uint32_t)size; used > 0 && !state.tag_cache[strings_offset + used - 1]; used--)
+		{
+		}
+		used += used < (uint32_t)size ? 1 : 0;
+		if ((uint32_t)size - used >= SCRIPT_CONSOLE_STRING_BYTES)
+		{
+			continue;
+		}
+		state.tag_index = tag_index_value;
+		status = tag_cache_allocate(&state, used + SCRIPT_CONSOLE_STRING_BYTES, &extended_offset);
+		if (status != _cache_file_status_ok)
+		{
+			return status;
+		}
+		/* (the allocation may follow the scenario: its bytes are found again) */
+		strings_data = state.tag_cache + scenario_offset + SCENARIO_SCRIPT_STRINGS_OFFSET;
+		memmove(state.tag_cache + extended_offset, state.tag_cache + strings_offset, used);
+		memset(state.tag_cache + extended_offset + used, 0, SCRIPT_CONSOLE_STRING_BYTES);
+		write_u32(strings_data, used + SCRIPT_CONSOLE_STRING_BYTES);
+		write_u32(strings_data + TAG_DATA_ADDRESS_OFFSET, CUSTOM_EDITION_TAG_CACHE_ADDRESS + extended_offset);
+		report->script_strings_extended++;
+	}
+	state.tag_index = NO_TAG_INDEX;
 
 	/* every tag whose layout this module knows, wherever it came from: each
 	address must now lie within the loaded tags, each bitmap's pixels and
