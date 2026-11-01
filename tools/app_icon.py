@@ -3,10 +3,11 @@
 
     python tools/app_icon.py
 
-- opence-icon.png, the helmet on its background (512x512): the Windows
-  executable's icon (port/windows/opence-icon.ico, which port/windows/halo.rc
-  puts in halo.exe) and the desktop builds' window icon (opence-icon-256.png,
-  which tools/embed_assets.py embeds and sdl_platform.c gives the window);
+- opence-icon.png, the helmet on its background (512x512): the desktop
+  builds' window icon (opence-icon-256.png, which tools/embed_assets.py
+  embeds and sdl_platform.c gives the window). The Windows executable's icon
+  (port/windows/opence-icon.ico, which port/windows/halo.rc puts in halo.exe)
+  is a pixel art icon of its own, not made here;
 - opence-icon-render.png, the helmet alone on transparency (1024x1024, the same
   framing): the Android app's launcher icon;
 - opence-icon.png again: the web page's icons (port/web/site/icons), its tab's,
@@ -106,8 +107,8 @@ def main() -> None:
     # the desktop's icons
     icon.resize((256, 256), Image.LANCZOS).save(WINDOW_ICON, optimize=True)
     print(f"{WINDOW_ICON.relative_to(ROOT)}: 256x256")
-    icon.save(WINDOWS_ICON, sizes=[(size, size) for size in WINDOWS_SIZES])
-    print(f"{WINDOWS_ICON.relative_to(ROOT)}: {', '.join(str(size) for size in WINDOWS_SIZES)}")
+    # (not the Windows executable's: port/windows/opence-icon.ico is a pixel
+    # art icon of its own, kept as it is)
     web_icons(icon)
 
     # the launcher's layers
