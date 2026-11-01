@@ -276,6 +276,10 @@ symbols in this file:
 #include "structures/structure_bsp_definitions.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
 
+/* port: the ticks jump must be let go after a player's biped spawns
+(biped_update_jumping) */
+#define BIPED_SPAWN_JUMP_RELEASE_TICKS 15
+
 /* port: port/linux/game/network_objects.c's (a client deletes the host's
 objects on the host's word alone) */
 boolean network_objects_may_delete(long object_index);
@@ -2203,9 +2207,42 @@ static void biped_update_jumping(
 	struct unit_animation_update_data *animation)
 {
 	struct biped_datum *biped = biped_get(biped_index);
+	boolean spawn_jump_held = FALSE; /* port: below */
 
 	biped_definition_get(biped->definition_index);
-	if (!TEST_FLAG(biped->biped.flags, _biped_airborne_bit) &&
+	/* port: a player's new biped starts its recovery below zero
+	(biped_new) and counts up only while jump is let go: a jump held, or
+	handed to it, as it spawns (the A that started the game) is no jump
+	until let go for BIPED_SPAWN_JUMP_RELEASE_TICKS; an AI's is ready at
+	once, as before */
+	if ((signed char)biped->biped.jump_recovery_timer < 0)
+	{
+		if (biped->unit.player_index == NONE)
+		{
+			biped->biped.jump_recovery_timer = SCHAR_MAX;
+		}
+		else if (TEST_FLAG(biped->unit.control_flags, _unit_control_jump_bit))
+		{
+			static long logged = 0;
+
+			if (logged < 16)
+			{
+				logged++;
+				error(_error_silent, "spawn jump held back: biped %08lX of player %08lX at tick %ld",
+					(unsigned long)biped_index, (unsigned long)biped->unit.player_index, game_time_get());
+			}
+			spawn_jump_held = TRUE;
+		}
+		else
+		{
+			biped->biped.jump_recovery_timer = (char)((signed char)biped->biped.jump_recovery_timer + 1);
+			if ((signed char)biped->biped.jump_recovery_timer >= 0)
+				biped->biped.jump_recovery_timer = SCHAR_MAX;
+		}
+	}
+	if (!spawn_jump_held &&
+		(signed char)biped->biped.jump_recovery_timer >= 0 &&
+		!TEST_FLAG(biped->biped.flags, _biped_airborne_bit) &&
 		biped->biped.landing != 1)
 	{
 		if (biped->biped.jump_recovery_timer < SCHAR_MAX)
@@ -4162,7 +4199,8 @@ boolean biped_new(
 	struct biped_definition *definition = biped_definition_get(biped->definition_index);
 
 	biped->biped.ground_plane = depths_of_hell;
-	biped->biped.jump_recovery_timer = 127;
+	/* port: below zero, ready once jump is let go (biped_update_jumping) */
+	biped->biped.jump_recovery_timer = (char)-BIPED_SPAWN_JUMP_RELEASE_TICKS;
 	biped->biped.support_surface_index = NONE;
 	biped->biped.pathfinding_surface_index = NONE;
 	object_get_origin(biped_index, &biped->biped.pathfinding_point);
