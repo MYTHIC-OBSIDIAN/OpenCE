@@ -30,7 +30,10 @@ struct rasterizer_cinematic_screen_effect_parameters
 	boolean filter_desaturation_uses_convolution_mask;
 	boolean video_on;
 	short video_overbright_mode;
-	byte reserved26[2];
+	/* port: how many times the mask's size is halved where it is drawn
+	(a Halo PC map's HUD bitmaps: interface.c) */
+	byte convolution_mask_halvings;
+	byte reserved27;
 	struct bitmap_data *video_scanline_map;
 	real video_noise_intensity;
 	real video_noise_map_scale;

@@ -276,6 +276,13 @@ static void rasterizer_screen_effect_set_texture_transforms(
 
 		convolution_size.i = convolution_bitmap->width;
 		convolution_size.j = convolution_bitmap->height;
+		/* port: a mask drawn smaller than its pixels (a Halo PC map's, by its
+		HUD flags: interface.c) */
+		if (convolution_bitmap == parameters->convolution_mask && parameters->convolution_mask_halvings)
+		{
+			convolution_size.i /= (real)(1 << MIN(parameters->convolution_mask_halvings, 4));
+			convolution_size.j /= (real)(1 << MIN(parameters->convolution_mask_halvings, 4));
+		}
 		scanline_size.i = scanline_bitmap->width;
 		scanline_size.j = scanline_bitmap->height;
 		noise_size.i = noise_bitmap->width;

@@ -88,6 +88,7 @@ symbols in this file:
 #include "interface/hud_definitions.h"
 #include "interface/interface.h"
 #include "interface/hud_messaging.h"
+#include "interface/hud_draw.h"
 #include "interface/terminal.h"
 #include "interface/virtual_keyboard.h"
 #include "interface/weapon_hud_interface_definition.h"
@@ -619,6 +620,14 @@ void interface_draw_screen(
 						&bitmap_group_get(mask_tag_index)->bitmaps,
 						0,
 						struct bitmap_data);
+					/* port: a Halo PC map's mask (sniper_scope_mask2, 2048x1024 to
+					the Xbox's 512x256) at the size its HUD flags give it, as the
+					HUD's own bitmaps are (hud_bitmap_group_halo_pc_scale) */
+					{
+						real scale = hud_bitmap_group_halo_pc_scale(mask_tag_index);
+
+						parameters.convolution_mask_halvings = scale <= 0.25f ? 2 : scale <= 0.5f ? 1 : 0;
+					}
 					parameters.filter_light_enhancement_uses_convolution_mask =
 						TEST_FLAG(
 							screen_effect->light_enhancement_flags,
