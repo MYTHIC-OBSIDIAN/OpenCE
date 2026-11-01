@@ -51,13 +51,6 @@ static const char *const certificate_bundles[] =
 	"/etc/ssl/cert.pem", /* Alpine, Arch, Void */
 };
 
-/* Android's folders of them, the first found used */
-static const char *const certificate_folders[] =
-{
-	"/apex/com.android.conscrypt/cacerts", /* Android 14 and later */
-	"/system/etc/security/cacerts",
-};
-
 static pthread_once_t certificates_once = PTHREAD_ONCE_INIT;
 static mbedtls_x509_crt certificates;
 static int certificates_loaded;
@@ -83,17 +76,6 @@ static void load_certificates(void)
 				fprintf(stderr, "halo-linux: update: SSL_CERT_FILE is ignored; the update server is checked "
 					"against %s\n", certificate_bundles[index]);
 			}
-			return;
-		}
-	}
-	/* Android's: a folder of one certificate a file, updated with the
-Conscrypt module from Android 14 (the system's own is the older one) */
-	for (index = 0; index < sizeof(certificate_folders) / sizeof(*certificate_folders); index++)
-	{
-		if (access(certificate_folders[index], R_OK) == 0 &&
-			mbedtls_x509_crt_parse_path(&certificates, certificate_folders[index]) >= 0 && certificates.version)
-		{
-			certificates_loaded = 1;
 			return;
 		}
 	}

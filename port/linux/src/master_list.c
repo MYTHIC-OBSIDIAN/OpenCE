@@ -20,10 +20,8 @@ The server browser's master servers (master_list.h).
 #include <string.h>
 #include <time.h>
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 #include <SDL3/SDL.h>
 #include "update.h"
-#endif
 
 enum
 {
@@ -112,16 +110,12 @@ static char *masters_file(const char *setting, char *path, int size)
 	config_folder(folder, sizeof(folder));
 	snprintf(path, (size_t)size, "%s%s", folder, setting);
 	text = config_file_read(path, &length);
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 	base = SDL_GetBasePath();
 	if (!text && base)
 	{
 		snprintf(path, (size_t)size, "%s%s", base, setting);
 		text = config_file_read(path, &length);
 	}
-#else
-	(void)base;
-#endif
 	return text;
 }
 
@@ -374,112 +368,6 @@ static void header_value(const char *headers, const char *name, char *value, int
 	}
 }
 
-#if defined(HALO_WEB)
-/* the page's fetch (port/web/src/web_library.js's web_js_fetch), which this
-thread waits for: its answer in the slot. The page claims the slot for its
-answer by changing its id to -id (Atomics.compareExchange), writes it, then
-sets done; the thread gives up on it by changing the id to 0 the same way,
-so an answer and a give-up never cross */
-struct web_fetch_slot
-{
-	int id;
-	int done;
-	int status;
-	char *body;
-	int size;
-	char signature[128];
-	char key[32];
-};
-/* (url: a copy the page frees once read) */
-void web_js_fetch(char *url, struct web_fetch_slot *slot, int id);
-
-static int fetch(const char *url, struct fetched *fetched)
-{
-	/* (one slot, which the page writes into: one fetch at a time, a thread
-	of an earlier opening of the browser's included) */
-	static pthread_mutex_t one_at_a_time = PTHREAD_MUTEX_INITIALIZER;
-	static struct web_fetch_slot slot;
-	static int next_id;
-	char *url_copy = strdup(url);
-	int id, waited, fetched_one;
-
-	if (!url_copy)
-		return 0;
-	pthread_mutex_lock(&one_at_a_time);
-	/* (no answer of an earlier fetch writes to it now: it was taken, or
-	given up on before the page claimed it) */
-	memset(&slot, 0, sizeof(slot));
-	if (++next_id <= 0)
-		next_id = 1;
-	id = next_id;
-	__atomic_store_n(&slot.id, id, __ATOMIC_SEQ_CST);
-	web_js_fetch(url_copy, &slot, id);
-	for (waited = 0; !__atomic_load_n(&slot.done, __ATOMIC_ACQUIRE) && waited < 500; waited++)
-	{
-		struct timespec pause = { 0, 20 * 1000 * 1000 };
-
-		nanosleep(&pause, NULL);
-	}
-	if (!__atomic_load_n(&slot.done, __ATOMIC_ACQUIRE))
-	{
-		int expected = id;
-
-		/* (given up on: an answer coming later finds another id, and the
-		page drops it) */
-		if (__atomic_compare_exchange_n(&slot.id, &expected, 0, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-		{
-			pthread_mutex_unlock(&one_at_a_time);
-			return 0;
-		}
-		/* (the page claimed it as the time ran out: its answer is being
-		written, at once) */
-		while (!__atomic_load_n(&slot.done, __ATOMIC_ACQUIRE))
-		{
-			struct timespec pause = { 0, 1000 * 1000 };
-
-			nanosleep(&pause, NULL);
-		}
-	}
-	fetched->status = slot.status;
-	fetched->body = slot.body;
-	fetched->size = (unsigned long)slot.size;
-	snprintf(fetched->signature, sizeof(fetched->signature), "%s", slot.signature);
-	snprintf(fetched->key, sizeof(fetched->key), "%s", slot.key);
-	fetched_one = slot.status > 0;
-	pthread_mutex_unlock(&one_at_a_time);
-	return fetched_one;
-}
-#elif defined(HALO_ANDROID)
-/* the app's host (port/android/host/host_https.c) */
-int host_https_get(const char *url, int *status, char *headers, int headers_size, char *body, int body_capacity,
-	int *body_size, char *error, int error_size);
-
-static int fetch(const char *url, struct fetched *fetched)
-{
-	enum { HEADERS_SIZE = 4096 };
-	/* (each call's own: a thread of an earlier opening of the browser's may
-	be fetching too) */
-	char *headers = malloc(HEADERS_SIZE);
-	char error[256];
-	int body_size = 0;
-
-	fetched->body = malloc(MAXIMUM_ANSWER + 1);
-	if (!headers || !fetched->body || !host_https_get(url, &fetched->status, headers, HEADERS_SIZE, fetched->body,
-		MAXIMUM_ANSWER, &body_size, error, sizeof(error)))
-	{
-		free(headers);
-		free(fetched->body);
-		fetched->body = NULL;
-		return 0;
-	}
-	fetched->body[body_size] = 0;
-	fetched->size = (unsigned long)body_size;
-	header_value(headers, "Signature", fetched->signature, sizeof(fetched->signature));
-	header_value(headers, "Signature-Key", fetched->key, sizeof(fetched->key));
-	free(headers);
-	return 1;
-}
-#else
 static int fetch(const char *url, struct fetched *fetched)
 {
 	struct update_response response;
@@ -497,7 +385,6 @@ static int fetch(const char *url, struct fetched *fetched)
 	header_value(response.headers, "Signature-Key", fetched->key, sizeof(fetched->key));
 	return 1;
 }
-#endif
 
 int master_list_get(const char *url, int *status, char **body, unsigned long *size)
 {
@@ -522,17 +409,6 @@ int master_list_client_masters(char (*urls)[MASTER_LIST_URL_SIZE], unsigned char
 {
 	int count = master_list_read_file(config_string("network.masters_file"), urls, keys, MASTER_LIST_MAXIMUM_MASTERS);
 
-#if defined(HALO_WEB)
-	if (!count)
-	{
-		struct fetched fetched;
-
-		memset(&fetched, 0, sizeof(fetched));
-		if (fetch("masters.json", &fetched) && fetched.status == 200)
-			count = master_list_read_json(fetched.body, fetched.size, urls, keys, MASTER_LIST_MAXIMUM_MASTERS);
-		free(fetched.body);
-	}
-#endif
 	if (!count)
 		count = master_list_read_defaults(urls, keys, MASTER_LIST_MAXIMUM_MASTERS);
 	return count;

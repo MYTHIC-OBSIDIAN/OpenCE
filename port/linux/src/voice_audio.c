@@ -7,8 +7,7 @@ Opus (port/third_party/opus); and the other players' voices, decoded into a
 buffer each and mixed into the game's output (dsound_sdl.c's mix, at its
 48 kHz, stereo) at their gain and pan.
 
-The microphone is opened on its own thread (SDL asks Android for the
-permission to record there, and waits for the answer), and only while voice
+The microphone is opened on its own thread, and only while voice
 chat may send: network_voice.c closes it otherwise. A speaker plays once
 VOICE_PREBUFFER_SAMPLES are buffered (the network's jitter), and waits again
 when its buffer runs out; a frame lost in between is made up from the next
@@ -154,7 +153,7 @@ int voice_audio_microphone(int open)
 	if (!platform_sdl_initialize())
 		return FALSE;
 	{
-		/* (audio.input_device: Settings > Audio's, none on Android) */
+		/* (audio.input_device: Settings > Audio's) */
 		const char *device = config_string("audio.input_device");
 
 		device = device && device[0] ? device : "default";
@@ -297,7 +296,7 @@ int voice_audio_encode(const float *frame, int bitrate, unsigned char *packet, i
 			return 0;
 		}
 		/* (a lost frame made up from the next's redundancy; modest
-		complexity: Android runs the game emulated) */
+		complexity) */
 		opus_encoder_ctl(encoder, OPUS_SET_INBAND_FEC(1));
 		opus_encoder_ctl(encoder, OPUS_SET_PACKET_LOSS_PERC(10));
 		opus_encoder_ctl(encoder, OPUS_SET_COMPLEXITY(5));

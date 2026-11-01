@@ -1,7 +1,7 @@
 /*
 HALO_PORT_CAPACITY.H
 
-Memory capacity of the native builds (Windows, Linux, Android), sized for the
+Memory capacity of the native builds (Windows, Linux), sized for the
 session limits in halo_port_limits.h, which includes this file. The Xbox
 sizes are given in parentheses below.
 
@@ -21,8 +21,7 @@ The Xbox game state is 0x345000 bytes at 0x80061000 and ends where the tag
 cache begins (0x803A6000). Cache files are linked to that tag cache address,
 so the game state cannot grow in place. The native builds put a 16 MB game
 state above the tag cache (which ends at 0x819A6000), inside the Xbox memory
-window (0x80000000-0xA0000000, Android's to 0x88000000:
-port/linux/src/platform.h) and below everything the window hands out
+window (0x80000000-0xA0000000: port/linux/src/platform.h) and below everything the window hands out
 top-down (texture and sound caches, Direct3D resources).
 
 The CPU part holds about 17.2 MB of pools at the sizes below (the Xbox pools
@@ -43,14 +42,9 @@ were made for Halo PC, which has no such bound: a texture that does not fit
 is drawn as the default one ("YOU GOT STABBED" in debug.txt; Elite_Alpha_Siege
 did at 22 MB), and a frame of bigass_v3 draws more than 64 MB (DamnationCE's
 measurement). The desktop builds' cache is 256 MB, half their 512 MB memory
-window (port/linux/src/platform.h), whose pages are backed as they are used.
-Android's window is 128 MB, as the web build's, and its cache the Xbox's. */
+window (port/linux/src/platform.h), whose pages are backed as they are used. */
 
-#if defined(HALO_ARM64_GUEST) || defined(HALO_WEB)
-#define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x580 /* (0x580) */
-#else
 #define HALO_PORT_TEXTURE_CACHE_PAGE_COUNT 0x4000 /* (0x580) */
-#endif
 #define HALO_PORT_TEXTURE_CACHE_SIZE (HALO_PORT_TEXTURE_CACHE_PAGE_COUNT*0x4000) /* (0x1600000) */
 
 /* ---------- sounds
@@ -60,14 +54,9 @@ the Xbox. Halo Custom Edition maps' sounds, converted when they load
 (port/linux/game/custom_edition_sounds.c), and those of sound tags loaded
 over a map's by mods (mod_sounds.c), are longer than the Xbox maps' and fill it (a
 campaign map's dialogue and music did, "SOUND CACHE BLOWN" in debug.txt).
-The desktop builds' cache is 16 MB; Android's and the web build's windows keep
-the Xbox's. */
+The desktop builds' cache is 16 MB. */
 
-#if defined(HALO_ARM64_GUEST) || defined(HALO_WEB)
-#define HALO_PORT_SOUND_CACHE_SIZE 0x400000 /* (0x400000) */
-#else
 #define HALO_PORT_SOUND_CACHE_SIZE 0x1000000 /* (0x400000) */
-#endif
 
 /* ---------- particles and lights a frame draws
 
@@ -78,16 +67,11 @@ A busy multiplayer fight spends the Xbox's 512 and 128, and plasma bolts,
 charge glows and flashlights stop drawing. The desktop builds draw four
 times as many. Only what is drawn changes: these are rebuilt every frame,
 outside the game state, and nothing of them reaches the network, so
-machines with other limits still play the same game. Android's and the web
-build's keep the Xbox's. (The transparent geometry groups: below.) */
+machines with other limits still play the same game. (The transparent
+geometry groups: below.) */
 
-#if defined(HALO_ARM64_GUEST) || defined(HALO_WEB)
-#define HALO_PORT_MAXIMUM_RENDERED_PARTICLE_GROUPS 512 /* (512) */
-#define HALO_PORT_MAXIMUM_RENDERED_LIGHTS 128 /* (128) */
-#else
 #define HALO_PORT_MAXIMUM_RENDERED_PARTICLE_GROUPS 2048 /* (512) */
 #define HALO_PORT_MAXIMUM_RENDERED_LIGHTS 512 /* (128) */
-#endif
 
 /* ---------- AI
 

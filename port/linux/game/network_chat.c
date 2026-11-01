@@ -5,18 +5,15 @@ The text chat of network games (port/linux/NETCODE.md), as the PC version
 had it: T (controls.chat) starts a line to everyone, Y (controls.team_chat)
 one to the player's team; Tab, while typing, turns it to everyone, the team
 or the vehicle in turn; Enter sends it, Escape lets it go. A controller's
-D-pad Up (the touch controls' too) opens an on-screen keyboard instead,
-whose keys the stick moves through and A types, a tap types (the
-touchscreen), and the controller then drives nothing else (xinput_sdl.c's
-halo_chat_pad_buttons, halo_chat_taps). The lines are
+D-pad Up opens an on-screen keyboard instead, whose keys the stick moves
+through and A types, and the controller then drives nothing else
+(xinput_sdl.c's halo_chat_pad_buttons). The lines are
 drawn above the motion sensor, at half the HUD font's size, each with its
 player's name in their team's colour, wrapped to a column a little over half
 the view wide, and fade after a while; where the motion sensor is not drawn
 (its player dead), where it was last drawn in a view of that size. While a
 line is typed, Page Up and Page Down (and the mouse wheel) scroll back through
-the last CHAT_MAXIMUM_LINES. Where the touch controls hold the bottom left
-(Android, and a browser whose touch controls are used), they go at the top
-left under the weapon's panel, the newest highest, at the font's own size. Each local player's view shows the lines that
+the last CHAT_MAXIMUM_LINES. Each local player's view shows the lines that
 player hears; the first local player types, and their view shows the line
 being typed (its end, when it is wider than the column). No line is typed or
 shown in a menu, a cinematic, or while the HUD is hidden, and the lines of a
@@ -145,12 +142,6 @@ enum
 	MAXIMUM_CHAT_MACHINES = HALO_PORT_MAXIMUM_NETWORK_MACHINES,
 	/* the caret's half period while typing */
 	CHAT_CARET_MILLISECONDS = 500,
-	/* with the touch controls: the top of the lines, in the HUD's units (480
-	high, before its scale), below the tallest weapon's panel at the top left */
-	CHAT_TOP_UNITS = 60,
-	/* with the touch controls: the rows shown at once there, the one being
-	typed among them (a fifth would reach the tops of their Up and Fire) */
-	CHAT_LINES_SHOWN_ANDROID = 4,
 	/* a key's Ctrl (struct key_stroke's modifier_flags: menu_functions.c's) */
 	CHAT_KEY_MODIFIER_CONTROL_BIT = 1,
 	/* the host: its chat settings sent again this often (to a machine that
@@ -174,14 +165,12 @@ enum
 	CHAT_KEYBOARD_REPEAT_FIRST_MILLISECONDS = 350,
 	CHAT_KEYBOARD_REPEAT_MILLISECONDS = 120,
 	/* its width, in hundredths of the window's: at the bottom right, clear
-	of the lines above the motion sensor; on Android at the bottom in the
-	middle, between the touch controls (the lines are at the top left) */
+	of the lines above the motion sensor */
 	CHAT_KEYBOARD_WIDTH_PERCENT = 40,
-	CHAT_KEYBOARD_WIDTH_PERCENT_ANDROID = 36,
 };
 
 /* the lines' size, of the HUD font's: laid out at its size, then drawn scaled
-about the column's corner (not with the touch controls, on a phone's screen) */
+about the column's corner */
 #define CHAT_TEXT_SCALE 0.5f
 
 /* the on-screen keyboard's last row's wide keys */
@@ -340,7 +329,7 @@ static struct
 	unsigned long held;
 	unsigned long repeat_at;
 	/* where its keys were last drawn, in thousandths of the window across
-	and down (a tap's place: halo_chat_taps) */
+	and down */
 	boolean drawn;
 	short left;
 	short top;
@@ -761,23 +750,6 @@ static void chat_keyboard_move(
 	*column = (short)(*column - *column % width);
 	*column = (short)((*column + columns_right * width % CHAT_KEYBOARD_COLUMNS + CHAT_KEYBOARD_COLUMNS) %
 		CHAT_KEYBOARD_COLUMNS);
-}
-
-/* the on-screen keyboard's key at a place in it (0 to 1 across and down);
-FALSE outside it */
-static boolean chat_keyboard_key_at(
-	real x,
-	real y,
-	short *row,
-	short *column)
-{
-	if (x < 0.0f || x >= 1.0f || y < 0.0f || y >= 1.0f)
-		return FALSE;
-	*row = (short)(y * CHAT_KEYBOARD_ROWS);
-	*column = (short)(x * CHAT_KEYBOARD_COLUMNS);
-	if (*row == CHAT_KEYBOARD_ROWS - 1)
-		*column = (short)(*column - *column % CHAT_KEYBOARD_WIDE_COLUMNS);
-	return TRUE;
 }
 
 static boolean chat_alphanumeric(
@@ -1888,8 +1860,6 @@ static void chat_keyboard_update(
 	unsigned long now = system_milliseconds();
 	short rows_down = 0;
 	short columns_right = 0;
-	float x;
-	float y;
 
 	if (TEST_FLAG(pressed, HALO_CHAT_PAD_B))
 	{
@@ -1932,19 +1902,6 @@ static void chat_keyboard_update(
 		chat_input_delete();
 	if (chat_input.active && TEST_FLAG(pressed, HALO_CHAT_PAD_Y))
 		chat_keyboard.shift = !chat_keyboard.shift;
-	/* (a tap on a key presses it; elsewhere it closes the keyboard, as the
-	touch controls, B among them, hide while it is up: touch_input.c) */
-	if (chat_input.active && chat_input.controller == 0 && halo_chat_taps(&x, &y) && chat_keyboard.drawn)
-	{
-		if (chat_keyboard_key_at((real)(x * 1000.0f - chat_keyboard.left) / (real)(chat_keyboard.right - chat_keyboard.left),
-			(real)(y * 1000.0f - chat_keyboard.top) / (real)(chat_keyboard.bottom - chat_keyboard.top),
-			&chat_keyboard.row, &chat_keyboard.column))
-		{
-			chat_keyboard_press();
-		}
-		else
-			chat_input_end();
-	}
 }
 
 unsigned char network_chat_keyboard_open(
@@ -2202,15 +2159,6 @@ void network_chat_note_motion_sensor(
 	chat_motion_sensors[local_player_index].view_height =
 		(short)(render.camera.window_bounds.y1 - render.camera.window_bounds.y0);
 	chat_motion_sensors[local_player_index].players = local_player_count();
-}
-
-/* where the lines go (and the on-screen keyboard): at the top left, the
-newest highest, where the touch controls hold the bottom left (Android, and
-a browser whose touch controls are used: xinput_sdl.c) */
-static boolean chat_touch_layout(
-	void)
-{
-	return halo_chat_touch_layout() != 0;
 }
 
 /* whether the lines are all white, as Custom Edition draws them
@@ -2532,15 +2480,14 @@ static void chat_line_name(
 	name[length] = 0;
 }
 
-/* the on-screen keyboard, at the window's bottom right (with the touch
-controls in the middle, between them: chat_touch_layout), the key picked
+/* the on-screen keyboard, at the window's bottom right, the key picked
 lit; where its keys are kept, for taps */
 static void chat_keyboard_draw(
 	long font_index,
 	rectangle2d const *window,
 	short line_height)
 {
-	short percent = chat_touch_layout() ? CHAT_KEYBOARD_WIDTH_PERCENT_ANDROID : CHAT_KEYBOARD_WIDTH_PERCENT;
+	short percent = CHAT_KEYBOARD_WIDTH_PERCENT;
 	short window_width = (short)(window->x1 - window->x0);
 	short window_height = (short)(window->y1 - window->y0);
 	short key_width = (short)(window_width * percent / 100 / CHAT_KEYBOARD_COLUMNS);
@@ -2551,10 +2498,7 @@ static void chat_keyboard_draw(
 
 	if (window_width <= 0 || window_height <= 0 || key_width <= 4)
 		return;
-	if (chat_touch_layout())
-		keys.x0 = (short)((window->x0 + window->x1 - key_width * CHAT_KEYBOARD_COLUMNS) / 2);
-	else
-		keys.x0 = (short)(window->x1 - window_width / 25 - key_width * CHAT_KEYBOARD_COLUMNS);
+	keys.x0 = (short)(window->x1 - window_width / 25 - key_width * CHAT_KEYBOARD_COLUMNS);
 	keys.x1 = (short)(keys.x0 + key_width * CHAT_KEYBOARD_COLUMNS);
 	keys.y1 = (short)(window->y1 - line_height);
 	keys.y0 = (short)(keys.y1 - key_height * CHAT_KEYBOARD_ROWS);
@@ -2606,9 +2550,9 @@ static void chat_keyboard_draw(
 			rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, label);
 		}
 	}
-	/* (in thousandths of the viewport, which fills the screen as a tap's
-	place is of it: the window inside it can be smaller, as on Android; the
-	keys are drawn from the viewport's top left) */
+	/* (in thousandths of the viewport, which fills the screen: the window
+	inside it can be smaller; the keys are drawn from the viewport's top
+	left) */
 	{
 		short viewport_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
 		short viewport_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
@@ -2631,7 +2575,6 @@ void network_chat_draw(
 	boolean speaker = chat_input.active ? local_player_index == controller_remap_local_player(chat_input.controller) :
 		local_player_index == local_player_get_next(NONE);
 	boolean typing = speaker && chat_input.active && !console_is_active();
-	boolean touch = chat_touch_layout();
 	rectangle2d window = render.camera.window_bounds;
 	real_argb_color text_color;
 	struct font_header *font;
@@ -2639,8 +2582,8 @@ void network_chat_draw(
 	short window_width;
 	short left;
 	short right;
-	/* the edge the next line is drawn from (down from it with the touch
-	controls, up from it without), and the rows left to draw */
+	/* the edge the next line is drawn from (up from it), and the rows left
+	to draw */
 	short edge;
 	short rows;
 	short index;
@@ -2660,7 +2603,7 @@ void network_chat_draw(
 	line_height = font->ascending_height + font->descending_height + font->leading_height;
 	if (line_height <= 0 || window_width <= 0)
 		return;
-	scale = touch ? 1.0f : CHAT_TEXT_SCALE;
+	scale = CHAT_TEXT_SCALE;
 	/* (above the motion sensor, a little in from its left, the newest
 	lowest: where it was last drawn in a view of this size, drawn now or not
 	(a dead player's is not); where it has not been, about where it would be) */
@@ -2681,15 +2624,6 @@ void network_chat_draw(
 	}
 	right = (short)MAX(window.x0 + window_width * CHAT_COLUMN_PERCENT / 100, left + 8 * line_height);
 	rows = local_player_count() > 1 ? CHAT_LINES_SHOWN_SPLIT : CHAT_LINES_SHOWN;
-	if (touch)
-	{
-		/* (the touch controls' stick and buttons are at the bottom left: the
-		lines go at the top left, under the weapon's panel, in the same column,
-		the newest highest, as wide as the view) */
-		edge = (short)(window.y0 + CHAT_TOP_UNITS * hud_globals_get_scale(local_player_count() > 1));
-		right = (short)(window.x1 - line_height);
-		rows = CHAT_LINES_SHOWN_ANDROID;
-	}
 	right = (short)MIN(right, window.x1);
 	/* (laid out at the font's size, the column as much wider; drawn scaled
 	about its corner where the lines start, the bottom left, or the top left
@@ -2737,9 +2671,9 @@ void network_chat_draw(
 		layout.rows = 1;
 		layout.starts[0] = start;
 		layout.lengths[0] = (short)(length + 1 - start);
-		chat_draw_layout(font_index, &layout, left, right, touch ? edge : (short)(edge - line_height), line_height,
+		chat_draw_layout(font_index, &layout, left, right, (short)(edge - line_height), line_height,
 			prompt, &color, text, &text_color, 1.0f);
-		edge = (short)(edge + (touch ? line_height : -line_height));
+		edge = (short)(edge - line_height);
 		rows--;
 		if (chat_keyboard.open)
 		{
@@ -2758,9 +2692,9 @@ void network_chat_draw(
 			draw_string_set_draw_mode(font_index, NONE, 0 /* left */, 0, &text_color);
 			chat_line_layout(left, right, line_height, empty, hint, &layout);
 			layout.rows = 1;
-			chat_draw_layout(font_index, &layout, left, right, touch ? edge : (short)(edge - line_height), line_height,
+			chat_draw_layout(font_index, &layout, left, right, (short)(edge - line_height), line_height,
 				empty, &text_color, hint, &text_color, 0.6f);
-			edge = (short)(edge + (touch ? line_height : -line_height));
+			edge = (short)(edge - line_height);
 			rows--;
 		}
 	}
@@ -2805,9 +2739,9 @@ void network_chat_draw(
 		/* (the newest rows first: an older line that does not fit is not shown) */
 		if (layout.rows > rows)
 			break;
-		chat_draw_layout(font_index, &layout, left, right, touch ? edge : (short)(edge - layout.rows * line_height),
+		chat_draw_layout(font_index, &layout, left, right, (short)(edge - layout.rows * line_height),
 			line_height, name, &color, text, &text_color, alpha);
-		edge = (short)(edge + (touch ? 1 : -1) * layout.rows * line_height);
+		edge = (short)(edge - layout.rows * line_height);
 		rows = (short)(rows - layout.rows);
 	}
 	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);

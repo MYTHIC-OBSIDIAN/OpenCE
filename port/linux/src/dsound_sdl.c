@@ -1548,7 +1548,7 @@ static BOOL audio_started = FALSE;
 static char audio_device_name[PLATFORM_AUDIO_DEVICE_NAME_SIZE];
 static unsigned long audio_device_read_at = (unsigned long)-1;
 
-/* audio.output_device ("default": the system's; none on Android) */
+/* audio.output_device ("default": the system's) */
 static const char *audio_device_setting(void)
 {
 	const char *name = config_string("audio.output_device");
@@ -1599,13 +1599,9 @@ static void *silent_clock_thread(void *parameter)
 }
 
 /* audio.channels: "stereo", "5.1", or "auto" for 5.1 when the device has
-at least six channels. Android and the browser play stereo */
+at least six channels */
 static unsigned long choose_output_channels(SDL_AudioDeviceID device)
 {
-#if defined(HALO_ANDROID) || defined(HALO_WEB) || defined(HALO_ARM64_GUEST)
-	(void)device;
-	return 2;
-#else
 	const char *setting = config_string("audio.channels");
 	SDL_AudioSpec format;
 
@@ -1621,7 +1617,6 @@ static unsigned long choose_output_channels(SDL_AudioDeviceID device)
 		SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &format, NULL)) && format.channels >= 6)
 		return 6;
 	return 2;
-#endif
 }
 
 static void audio_start(void)
@@ -1646,13 +1641,6 @@ static void audio_start(void)
 		spec.format = SDL_AUDIO_F32;
 		spec.channels = (int)output_channels;
 		spec.freq = OUTPUT_RATE;
-#ifdef HALO_ARM64_GUEST
-		/* frames per callback: on Android each callback is handed to a thread
-		that can run the guest (host_sdl.c): 512 left it too little time and
-		the menus' music broke up, which 1024 does not (about 21 ms at 48 kHz,
-		11 ms more than 512) */
-		SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "1024");
-#elif !defined(HALO_WEB)
 		/* (a browser's, SDL's own: with room for the page's scheduling, which
 		512 frames underran) */
 		{
@@ -1667,7 +1655,6 @@ static void audio_start(void)
 			snprintf(frames, sizeof(frames), "%ld", buffer_frames);
 			SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames);
 		}
-#endif
 		audio_device_read_at = config_changes();
 		audio_stream = SDL_OpenAudioDeviceStream(platform_audio_device(FALSE, audio_device_name), &spec,
 			audio_callback, NULL);

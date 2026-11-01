@@ -58,7 +58,7 @@ real view_distance_object_pixels(
 		return level_of_detail_pixels;
 	}
 	model = model_definition_get(model_index);
-	/* (render_model measures it scaled as display.model_detail says) */
+	/* (render_model measures it scaled as halo_model_detail_scale says) */
 	smallest = model->detail_cutoff_pixels[0] / halo_model_detail_scale(FALSE);
 	return level_of_detail_pixels < smallest ? smallest : level_of_detail_pixels;
 }

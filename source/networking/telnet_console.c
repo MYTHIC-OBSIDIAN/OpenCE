@@ -56,7 +56,7 @@ enum
 	MAXIMUM_TELNET_CLIENTS = 1,
 	TELNET_CLIENT_BUFFER_SIZE = 128,
 	/* the Xbox's was 23 (telnet), which a program that is not the
-	administrator cannot listen on (Linux, Android): the native builds' is
+	administrator cannot listen on (Linux): the native builds' is
 	debug.telnet_console_port */
 	TELNET_CONSOLE_DEFAULT_PORT = 2323,
 	_transport_endpoint_type_telnet = 0x12

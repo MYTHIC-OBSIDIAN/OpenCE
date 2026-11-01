@@ -32,9 +32,9 @@ def test_configuration_defines():
 
 
 def test_every_native_build_takes_the_configuration_defines():
-    # (the guest, the game and the platform layer of all three: one place
-    # decides what --release and --profile define)
-    for name in ("linux_build.py", "windows_build.py", "android_build.py"):
+    # (the game and the platform layer of both: one place decides what
+    # --release and --profile define)
+    for name in ("linux_build.py", "windows_build.py"):
         text = (ROOT / "tools" / name).read_text(encoding="utf-8")
         assert "configuration_defines(sln)" in text, name
         assert '["-DHALO_RELEASE"] if' not in text, name
@@ -423,7 +423,7 @@ def preprocess_flags():
         missing.append("a configured build (build.ninja)")
     if missing:
         unavailable("needs " + ", ".join(missing))
-    # (HALO_PROFILE_OBJECTS names another configured flavour's object folder, such as build/android/guest/obj,
+    # (HALO_PROFILE_OBJECTS names another configured flavour's object folder,
     # where this computer has no build of its own)
     objects = os.environ.get("HALO_PROFILE_OBJECTS") or f"build/{'windows' if os.name == 'nt' else 'linux'}/obj"
 
@@ -435,7 +435,6 @@ def preprocess_flags():
         words = parse_compile_command(command, windows=os.name == "nt")
         while words and not words[0].startswith("-"):
             words = words[1:]
-        # (the Android guest's command is a pipeline whose first compile makes assembly)
         words = words[:words.index("&&")] if "&&" in words else words
         kept, skip = [], False
         for word in words:

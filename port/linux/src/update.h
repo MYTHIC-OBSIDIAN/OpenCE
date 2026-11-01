@@ -4,8 +4,7 @@ UPDATE.H
 What the desktop self-updater (updater.c) needs of the system: a download
 over HTTPS, and putting files in place of the running game's and starting
 it again. posix_update.c does it on Linux (Mbed TLS, the system's
-certificate authorities), win32_update.c on Windows (WinHTTP). The Android
-app updates itself in Java (port/android).
+certificate authorities), win32_update.c on Windows (WinHTTP).
 
 Only integers and strings cross here: the two sides are compiled with
 different structure layouts.

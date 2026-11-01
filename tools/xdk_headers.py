@@ -43,7 +43,6 @@ OUTPUT = XDK / "xdk_pdb.h"
 TARGETS = {
     "linux": ["--target=i686-linux-gnu", "-m32", "-malign-double", "-fshort-wchar"],
     "windows": ["--target=i686-pc-windows-msvc"],
-    "android": ["--target=arm64_32-apple-watchos", "-fshort-wchar"],
 }
 
 AGGREGATE_LEAVES = (LF_STRUCTURE, LF_CLASS, LF_UNION, LF_ENUM)

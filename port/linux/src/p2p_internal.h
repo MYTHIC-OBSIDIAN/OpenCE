@@ -264,8 +264,7 @@ void p2p_seal_token(const unsigned char *key, const unsigned char *signing_key, 
 int p2p_unseal_token(const unsigned char *key, const unsigned char *signing_key, const unsigned char *sealed,
 	unsigned char *token);
 
-/* ---------- WebRTC: tunnels to and from browsers (p2p_webrtc.c in the
-native builds, port/web/src/web_p2p.c in the browser) */
+/* ---------- WebRTC: tunnels to and from browsers (p2p_webrtc.c) */
 
 enum
 {

@@ -12,11 +12,9 @@ it exists, so that the player's edits and comments stay.
 
 #include "platform.h"
 #include "port_config.h"
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 /* (the command line: --config, --server, --probe...) */
 #include "posix.h"
 #include "posix_server.h"
-#endif
 #include "tomlc17.h"
 
 #include <SDL3/SDL.h>
@@ -55,12 +53,9 @@ enum config_environment
 enum
 {
 	_platform_desktop = 1,
-	_platform_android = 2,
-	_platform_all = _platform_desktop | _platform_android,
+	_platform_all = _platform_desktop,
 	/* (of the desktop builds, only Windows) */
 	_platform_windows = 4,
-	/* (the web build, which has the desktop's settings, and these) */
-	_platform_web = 8,
 	/* (a dedicated server's, of the Linux and Windows builds: written into
 	config.toml only in server mode) */
 	_platform_server = 16,
@@ -72,28 +67,18 @@ struct config_setting
 	enum config_type type;
 	/* as it is written in the file */
 	const char *default_value;
-	/* NULL: none, for a setting the Android app reads from the file itself */
+	/* NULL: none */
 	const char *environment;
 	enum config_environment environment_style;
 	unsigned platforms;
 	const char *comment;
 };
 
-/* crouching's keys (in a browser C alone: a page cannot keep Ctrl+W, Ctrl+S or
-Ctrl+D, which moving and crouching would press, from the browser) */
-#ifdef HALO_WEB
-#define CROUCH_KEYS "\"C\""
-#else
+/* crouching's keys */
 #define CROUCH_KEYS "\"Left Ctrl, C\""
-#endif
 
-/* display.resolution_scaling's default: on Android the Xbox's 480 lines, which
-a phone's GPU draws with time to spare, elsewhere the window's resolution */
-#ifdef HALO_ANDROID
-#define RESOLUTION_SCALING "\"original\""
-#else
+/* display.resolution_scaling's default: the window's resolution */
 #define RESOLUTION_SCALING "\"native\""
-#endif
 
 static const struct config_setting config_settings[] =
 {
@@ -112,19 +97,15 @@ static const struct config_setting config_settings[] =
 	{ "display.resolution_scaling", _config_string, RESOLUTION_SCALING, "HALO_RESOLUTION_SCALING", _environment_value,
 		_platform_all,
 		"\"native\" draws at the window's resolution (fullscreen, the display's or\n"
-		"display.resolution; on Android, the display's); \"75%\", \"50%\" or \"25%\"\n"
+		"display.resolution); \"75%\", \"50%\" or \"25%\"\n"
 		"draw that part of it each way and scale it up; \"original\" draws the\n"
-		"Xbox's 480 lines (640x480; on Android, at the display's shape) and\n"
-		"scales them up, as Android does unless this is set." },
+		"Xbox's 480 lines (640x480) and scales them up." },
 	{ "display.window_size", _config_string, "\"\"", "HALO_WINDOW_SIZE", _environment_value, _platform_desktop,
 		"The window's size, \"<width>x<height>\" (\"1920x1080\"), 640x480 or more (it\n"
 		"can be resized). Empty: display.window_scale's." },
 	{ "display.window_scale", _config_integer, "2", "HALO_WINDOW_SCALE", _environment_value, _platform_desktop,
 		"Where display.window_size is empty: the window's size as a multiple of\n"
 		"640x480." },
-	{ "display.screen_width", _config_integer, "0", "HALO_SCREEN_WIDTH", _environment_value, _platform_android,
-		"Columns of the 480-line picture: 0 for the display's shape, 640 for the\n"
-		"Xbox's 4:3." },
 	{ "display.vsync", _config_boolean, "true", "HALO_NO_VSYNC", _environment_set_is_false, _platform_all,
 		"Wait for the display between frames; false draws as fast as possible." },
 	{ "display.max_fps", _config_integer, "0", "HALO_MAX_FPS", _environment_value, _platform_all,
@@ -147,7 +128,7 @@ static const struct config_setting config_settings[] =
 		"or \"smaa\" smooth the 3D view once it is drawn (the HUD and menus stay\n"
 		"sharp); \"ssaa2x\" draws at twice the resolution each way (four times\n"
 		"the work); \"msaa2x\", \"msaa4x\" or \"msaa8x\" draw with that many samples\n"
-		"a pixel. Android has \"fxaa\" for \"smaa\", and no \"ssaa2x\"." },
+		"a pixel." },
 	{ "display.interpolation", _config_boolean, "true", "HALO_INTERPOLATION", _environment_value, _platform_all,
 		"Draw a frame for every display refresh, blending between the game's 30\n"
 		"ticks a second; false keeps the original 30 frames a second." },
@@ -251,10 +232,6 @@ static const struct config_setting config_settings[] =
 		"Sharpen textures seen at a grazing angle (floors, walls, terrain), which\n"
 		"the Xbox did not: 2, 4, 8 or 16 times; 0 filters as the Xbox did. 4 keeps\n"
 		"most of 16's sharpness at less cost on slower GPUs." },
-	{ "display.dxt1_astc", _config_boolean, "true", "HALO_DXT1_ASTC", _environment_value, _platform_android,
-		"On a GPU without DXT textures (Mali), give it the DXT1 textures as ASTC,\n"
-		"which holds them nearly as they are in a quarter of the memory of the\n"
-		"32-bit texels they are otherwise decoded to; false decodes them." },
 	{ "display.latency_meter", _config_boolean, "false", "HALO_LATENCY_METER", _environment_value, _platform_all,
 		"In a network game, your round trip to the host in milliseconds at the\n"
 		"screen's top right, with bars (the host: its slowest player's), and\n"
@@ -289,12 +266,6 @@ static const struct config_setting config_settings[] =
 		"false: the rooms seen are the same, each drawn within the whole view,\n"
 		"so that none of a room's objects or level drop out for a frame as the\n"
 		"camera moves." },
-	{ "display.model_detail", _config_string, "\"stock\"", "HALO_MODEL_DETAIL", _environment_value, _platform_all,
-		"Which of their levels of detail models are drawn at: \"stock\" chooses by\n"
-		"their size on the Xbox's 480 lines, at any resolution; \"native\" by their\n"
-		"size on the display's, so that more detail is kept at a distance at high\n"
-		"resolutions; \"highest\" draws the models \"native\" does, each at its most\n"
-		"detailed level." },
 	{ "display.multiplayer_draw_distance", _config_boolean, "true", "HALO_MULTIPLAYER_DRAW_DISTANCE",
 		_environment_value, _platform_all,
 		"In multiplayer games, draw players at any distance (the Xbox left a\n"
@@ -379,25 +350,8 @@ static const struct config_setting config_settings[] =
 		"The microphone voice chat listens to: a device's name as Settings >\n"
 		"Audio lists it, or \"default\" for the system's (also if it is not found)." },
 
-	{ "input.touch_controls", _config_string, "\"auto\"", "HALO_TOUCH_CONTROLS", _environment_value, _platform_android | _platform_web,
-		"The on-screen touch controls in a game: \"auto\" shows them on a\n"
-		"touchscreen while no controller is connected, \"on\" also with a\n"
-		"controller, \"off\" never. A device without a touchscreen never shows\n"
-		"them. The menus take taps in any case. On Android, the carnage\n"
-		"report's CONTINUE and LEAVE buttons follow the same rule (otherwise\n"
-		"it shows its A and B prompt)." },
-	{ "input.touch_aim_assist", _config_boolean, "true", "HALO_TOUCH_AIM_ASSIST", _environment_value, _platform_android | _platform_web,
-		"The touch controls' swipe aiming gets a controller's aim assist: the\n"
-		"aim slows over a target and follows a moving one. false: none, as a\n"
-		"mouse (the bullets' own autoaim stays)." },
 	{ "input.mouse_sensitivity", _config_real, "1.0", "HALO_MOUSE_SENSITIVITY", _environment_value, _platform_desktop,
 		"How far the view turns for the mouse's movement." },
-	{ "input.playstation_kernel_driver", _config_boolean, "false", "HALO_PLAYSTATION_KERNEL_DRIVER",
-		_environment_value, _platform_desktop,
-		"Linux: a PlayStation controller (DualSense, DualShock 4) through the\n"
-		"kernel's driver of it (hid-playstation, hid-sony), which needs no setup;\n"
-		"false: through SDL's own, which needs Steam's udev rules to open it. Read\n"
-		"at start-up." },
 	{ "input.invert_mouse", _config_boolean, "false", "HALO_MOUSE_INVERT", _environment_set_is_true, _platform_desktop,
 		"Moving the mouse forward looks down." },
 	{ "network.block_mouse_aim_assist", _config_boolean, "false", "HALO_NET_BLOCK_MOUSE_AIM_ASSIST", _environment_value,
@@ -606,7 +560,7 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"Seconds a host waits for a machine it hears nothing from before it\n"
 		"drops it (5 to 300; the stock game's 15). Longer keeps players whose\n"
-		"connection stalls (a browser tab in the background) at the cost of\n"
+		"connection stalls at the cost of\n"
 		"frozen players for longer when one really goes." },
 	{ "network.allow_upnp", _config_boolean, "true", "HALO_NET_ALLOW_UPNP", _environment_value, _platform_all,
 		"Let internet play ask the router (UPnP) to forward its port, for\n"
@@ -1115,8 +1069,7 @@ static const struct config_setting config_settings[] =
 	{ "debug.network_test_cues", _config_string, "\"\"", "HALO_NETWORK_TEST_CUES", _environment_value, _platform_all,
 		"Console lines an automated test runs at a game second, from the first tick\n"
 		"every player of debug.network_test_cue_players has a unit:\n"
-		"\"<second> <line>|<second> <line>...\" (the host's, or a game of one machine;\n"
-		"not on the web)." },
+		"\"<second> <line>|<second> <line>...\" (the host's, or a game of one machine)." },
 	{ "debug.network_test_cue_players", _config_integer, "1", "HALO_NETWORK_TEST_CUE_PLAYERS", _environment_value,
 		_platform_all,
 		"The players debug.network_test_cues waits for." },
@@ -1229,14 +1182,6 @@ static const struct config_setting config_settings[] =
 		"Log texture uploads." },
 	{ "debug.texture_no_cache", _config_boolean, "false", "HALO_TEXTURE_NO_CACHE", _environment_set_is_true, _platform_all,
 		"Upload textures again every time they are used." },
-	{ "debug.sample_seconds", _config_real, "0.0", "HALO_SAMPLE", _environment_value, _platform_android,
-		"Log where every game thread is this often, in seconds (read by the\n"
-		"app, port/android/host/host_debug.c); 0 never." },
-	{ "debug.memory_watch", _config_boolean, "true", NULL, _environment_value, _platform_android,
-		"Notice the game's writes to cached textures and vertices by page\n"
-		"protection; false compares page contents once a frame instead, which is\n"
-		"slower. Under ARM translation (the x86 emulator) the app always compares\n"
-		"contents. Read by the app from the file (port/android/host/host_main.c)." },
 #ifdef HALO_PROFILE
 	{ "debug.profile_record", _config_boolean, "false", "HALO_PROFILE_RECORD", _environment_value, _platform_all,
 		"Record a profile with no command (configure.py --profile builds): from\n"
@@ -1256,11 +1201,7 @@ static const struct config_setting config_settings[] =
 
 #define NUMBER_OF_CONFIG_SETTINGS (sizeof(config_settings) / sizeof(config_settings[0]))
 
-#ifdef HALO_ANDROID
-#define CONFIG_BUILD_PLATFORM _platform_android
-#elif defined(HALO_WEB)
-#define CONFIG_BUILD_PLATFORM (_platform_desktop | _platform_web)
-#elif defined(_WIN32)
+#if   defined(_WIN32)
 #define CONFIG_BUILD_PLATFORM (_platform_desktop | _platform_windows)
 #else
 #define CONFIG_BUILD_PLATFORM _platform_desktop
@@ -1290,7 +1231,6 @@ static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* ---------- the command line */
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 /* whether the command line has the argument name ("--server"), and with
 value, the one after it (or after "=": --config=<path>) */
 static int config_argument(const char *name, char *value, size_t size)
@@ -1311,19 +1251,11 @@ static int config_argument(const char *name, char *value, size_t size)
 	}
 	return 0;
 }
-#endif
 
 /* ---------- the file */
 
 static void config_path(char *path, size_t size)
 {
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-	/* the data folder, which the app names (port/android/host/host_main.c;
-	on the web, port/web/src/web_main.c) */
-	const char *root = getenv("HALO_DATA_ROOT");
-
-	snprintf(path, size, "%s/config.toml", root && *root ? root : ".");
-#else
 	/* HALO_CONFIG_FILE or --config <path> (a dedicated server's instance's
 	own), else the executable's folder's, with its separator */
 	const char *file = getenv("HALO_CONFIG_FILE");
@@ -1338,36 +1270,11 @@ static void config_path(char *path, size_t size)
 		return;
 	base = SDL_GetBasePath();
 	snprintf(path, size, "%sconfig.toml", base ? base : "");
-#endif
 }
 
 /* the whole file, NUL terminated, or NULL; free() it */
 static char *config_read_file(const char *path, size_t *size)
 {
-#ifdef HALO_ARM64_GUEST
-	FILE *file = fopen(path, "rb");
-	char *text = NULL;
-	long length;
-
-	if (!file)
-		return NULL;
-	if (fseek(file, 0, SEEK_END) == 0 && (length = ftell(file)) >= 0 && fseek(file, 0, SEEK_SET) == 0)
-	{
-		text = malloc((size_t)length + 1);
-		if (text && fread(text, 1, (size_t)length, file) == (size_t)length)
-		{
-			text[length] = 0;
-			*size = (size_t)length;
-		}
-		else
-		{
-			free(text);
-			text = NULL;
-		}
-	}
-	fclose(file);
-	return text;
-#else
 	/* SDL's, for UTF-8 paths on Windows */
 	void *data = SDL_LoadFile(path, size);
 	char *text;
@@ -1382,29 +1289,16 @@ static char *config_read_file(const char *path, size_t *size)
 	}
 	SDL_free(data);
 	return text;
-#endif
 }
 
 static int config_write_file(const char *path, const char *text)
 {
-#ifdef HALO_ARM64_GUEST
-	FILE *file = fopen(path, "wb");
-	int written;
-
-	if (!file)
-		return 0;
-	written = fwrite(text, 1, strlen(text), file) == strlen(text);
-	return fclose(file) == 0 && written;
-#elif !defined(HALO_ANDROID) && !defined(HALO_WEB)
 	/* (a dedicated server's holds its passwords: its user's to read alone) */
 	if (!SDL_SaveFile(path, text, strlen(text)))
 		return 0;
 	if (config_server_mode)
 		posix_server_private_file(path);
 	return 1;
-#else
-	return SDL_SaveFile(path, text, strlen(text));
-#endif
 }
 
 struct config_text
@@ -1463,8 +1357,6 @@ static void config_append_setting(struct config_text *text, const struct config_
 		if (*line)
 			line++;
 	}
-#ifndef HALO_ANDROID
-	/* (Android apps have no environment to set) */
 	switch (setting->environment_style)
 	{
 	case _environment_value:
@@ -1478,7 +1370,6 @@ static void config_append_setting(struct config_text *text, const struct config_
 		break;
 	}
 	config_append(text, buffer);
-#endif
 	snprintf(buffer, sizeof(buffer), "%s = %s\n", dot + 1, setting->default_value);
 	config_append(text, buffer);
 }
@@ -1490,20 +1381,12 @@ static char *config_default_text(void)
 	char section[32] = "";
 	size_t index;
 
-#ifdef HALO_ANDROID
-	config_append(&text,
-		"# Halo settings\n"
-		"#\n"
-		"# The game writes this file with the defaults when it is missing: delete\n"
-		"# it to go back to them.\n");
-#else
 	config_append(&text,
 		"# Halo settings\n"
 		"#\n"
 		"# The game writes this file with the defaults when it is missing: delete\n"
 		"# it to go back to them. Each setting can also be set for one run with\n"
 		"# the environment variable named with it, which wins over this file.\n");
-#endif
 	/* each section once, where its first setting is, with all of its
 	settings: TOML refuses a section twice, and the whole file would go
 	unread (config_join_sections) */
@@ -1952,7 +1835,6 @@ static int config_skip_line(char *text, int line_number, const char *message)
 	return 1;
 }
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 /* a config.toml the game never reads, likely edited in its place: said in
 the log, with the one it reads (path) */
 static void config_report_unread(const char *path)
@@ -1991,7 +1873,6 @@ static void config_report_unread(const char *path)
 #endif
 	}
 }
-#endif
 
 /* ---------- words */
 
@@ -2025,7 +1906,6 @@ static const struct
 		"purple", "cyan", "cobalt", "orange", "teal", "sage", "brown", "tan", "maroon", "salmon", NULL }, NULL },
 	{ "audio.resampler", { "sinc", "linear", NULL }, NULL },
 	{ "audio.voice_chat", { "push_to_talk", "open_mic", "off", NULL }, NULL },
-	{ "input.touch_controls", { "auto", "on", "off", NULL }, NULL },
 	{ "game.console_log", { "important", "all", "none", NULL }, NULL },
 	{ "game.language", { "", "ja", "de", "fr", "es", "it", NULL }, NULL },
 	{ "network.text_chat", { "on", "links", "off", NULL }, NULL },
@@ -2177,7 +2057,6 @@ static const char *config_environment(const struct config_setting *setting)
 	return environment;
 }
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 /* a dedicated server (port/linux/src/server_mode.c) has no window, sound,
 microphone or player, never asks anything, and is reached only as its
 settings say, whatever the file and the environment say of these (for this
@@ -2256,7 +2135,6 @@ static void config_apply_server_mode(void)
 	config_values[config_setting_index("network.allow_upnp")].boolean =
 		config_values[config_setting_index("server.upnp")].boolean;
 }
-#endif
 
 static void config_load(void)
 {
@@ -2283,7 +2161,6 @@ static void config_load(void)
 	}
 
 	config_path(path, sizeof(path));
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 	config_report_unread(path);
 	/* (a dedicated server's file has its settings too: asked for by the
 	command line or the environment, or by the file's server.enabled; a
@@ -2299,7 +2176,6 @@ static void config_load(void)
 	settings: the file read is left as it is) */
 	config_answer_only = config_argument("--help", NULL, 0) || config_argument("--version", NULL, 0) ||
 		config_argument("--keygen", NULL, 0) || config_argument("--sign", NULL, 0) || config_probe_mode;
-#endif
 	text = config_read_file(path, &size);
 	if (text)
 	{
@@ -2336,10 +2212,8 @@ static void config_load(void)
 			}
 			for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++)
 				config_set_from_file(&config_values[index], &config_settings[index], result.toptab);
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 			if (config_values[config_setting_index("server.enabled")].boolean && !config_probe_mode)
 				config_server_mode = 1;
-#endif
 			config_report_unknown_keys(result.toptab);
 			platform_log("settings: %s", path);
 			/* (a file with lines skipped is left as the player wrote it, to
@@ -2396,12 +2270,10 @@ static void config_load(void)
 			break;
 		}
 	}
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 	if (config_server_mode)
 		config_apply_server_mode();
 	else if (config_probe_mode)
 		config_apply_probe_mode();
-#endif
 	config_check_words();
 }
 
@@ -2648,10 +2520,8 @@ void config_folder(char *path, size_t size)
 
 	config_path(file, sizeof(file));
 	separator = strrchr(file, '/');
-#ifndef HALO_ANDROID
 	if (!separator || (strrchr(file, '\\') && strrchr(file, '\\') > separator))
 		separator = strrchr(file, '\\');
-#endif
 	if (separator)
 		separator[1] = 0;
 	else
@@ -2748,7 +2618,6 @@ int config_reload(const char *prefix)
 		/* (the old string kept, as config_set_from_text keeps it) */
 		config_values[index] = value;
 	}
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 	/* (what the run forces, forced again: a server started by --server
 	stays one whatever the file's server.enabled says, and its router asked
 	as its server.upnp now says) */
@@ -2756,7 +2625,6 @@ int config_reload(const char *prefix)
 		config_apply_server_mode();
 	else if (config_probe_mode)
 		config_apply_probe_mode();
-#endif
 	config_change_count++;
 	pthread_mutex_unlock(&config_lock);
 	toml_free(result);

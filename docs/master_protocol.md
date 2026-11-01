@@ -73,7 +73,7 @@ as the release's) leaves the official master, built into the game
 (`master_list_read_defaults` in `port/linux/src/master_list.c`) and the web
 page (`servers.js`):
 `https://master.opencommunityedition.com ed25519:89f4eda71229f11f3538679f49ef7fb0c2b407b380093f7f4fe02105b92225aa`.
-The web build reads its site's `masters.json` before the official master. The URL is an origin with no path, or a path
+The URL is an origin with no path, or a path
 the master is served under as it is (a proxy must not rewrite paths, since
 the path is signed).
 
@@ -428,7 +428,7 @@ players. Its headers:
 | `ETag` | `"` and the first 16 hexadecimal digits of SHA-256 of the body, and `"`; `If-None-Match` with it answers `304` |
 | `Cache-Control` | `public, max-age=5` (the master serves the same body for 5 seconds) |
 | `Content-Encoding` | `gzip` when the request's `Accept-Encoding` asks for it |
-| `Access-Control-Allow-Origin` | `*` (and `Access-Control-Expose-Headers` names the four above), for the web build |
+| `Access-Control-Allow-Origin` | `*` (and `Access-Control-Expose-Headers` names the four above), for browser clients |
 
 A client:
 
@@ -594,7 +594,7 @@ GET /v1/pass?key=<64 hex>&ts=<unix seconds>&sig=<128 hex>
 ```
 
 No `Authorization` header: the signature is in the query, so a client that
-can only make GET requests without headers (the web build, Android) can
+can only make GET requests without headers can
 ask. `sig` is the player key's signature of:
 
 ```

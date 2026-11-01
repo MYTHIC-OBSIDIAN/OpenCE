@@ -112,7 +112,6 @@ const char *platform_data_root(void)
 						snprintf(root, sizeof(root), "%s", executable);
 				}
 			}
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 			/* (a dedicated server asks nobody: it says what is missing and
 			stops, server_mode.c) */
 			if (!has_maps(root) && executable_directory[0] && !halo_server_mode() &&
@@ -121,7 +120,6 @@ const char *platform_data_root(void)
 			{
 				snprintf(root, sizeof(root), "%s", executable_directory);
 			}
-#endif
 			if (!has_maps(root))
 				platform_log("no maps/ folder found; set paths.data in config.toml to the folder that holds maps/");
 		}
@@ -595,8 +593,8 @@ static BOOL read_at(struct platform_file *file, LPVOID buffer, DWORD count, LPDW
 			break;
 		if (bounce)
 		{
-			/* (where pages are watched by their hashes, port/web, so that a
-			page long unchanged is checked again in the next frame) */
+			/* (where pages are watched by their hashes, so that a page long
+			unchanged is checked again in the next frame) */
 			memory_watch_prepare_write((char *)buffer + total, (unsigned long)result);
 			memcpy((char *)buffer + total, staging, (size_t)result);
 		}

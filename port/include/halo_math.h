@@ -9,8 +9,8 @@ inputs, and what the host does not correct (projectiles, devices, the
 objects it does not send, port/linux/NETCODE.md) only stays the same on
 every machine if their floating point results agree to the last bit. The
 C libraries' sin, pow and the rest are
-not the same bit for bit (glibc on Linux, the UCRT on Windows, musl on
-Android), and the compiler folds calls with constant arguments using the
+not the same bit for bit (glibc on Linux, the UCRT on Windows), and the
+compiler folds calls with constant arguments using the
 build machine's own. So the game calls halo_ versions instead, built on
 every port from the same source (musl's, in port/third_party/musl-math),
 and never known to the compiler as builtins.

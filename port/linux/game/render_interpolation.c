@@ -2,7 +2,7 @@
 RENDER_INTERPOLATION.C
 
 Frames between the game's 30 Hz ticks, for the native ports (port/linux,
-port/android, port/windows; see port/linux/README.md, "Frame rate").
+port/windows; see port/linux/README.md, "Frame rate").
 
 The game simulates in 30 Hz ticks and originally drew one frame per tick.
 The ports draw at the display's refresh rate instead, and every frame shows
@@ -701,16 +701,11 @@ turns every frame (player_control.c), but the observer keeps it as of the
 last tick and the blend above draws it a tick later still. On foot, the view
 points where the player aims now (display.direct_camera). In a vehicle's
 seat or a cinematic the view is the seat's or the script's: left as it is.
-Desktop only: display.direct_camera is not an Android setting, and its
-default would otherwise apply there. */
+*/
 static struct observer_result const *render_interpolation_direct_camera(
 	short local_player_index,
 	struct observer_result const *observer)
 {
-#ifdef HALO_ANDROID
-	(void)local_player_index;
-	return observer;
-#else
 	static int enabled;
 	static unsigned long read_at = (unsigned long)-1;
 	struct observer_result *direct;
@@ -737,7 +732,6 @@ static struct observer_result const *render_interpolation_direct_camera(
 	player_control_get_facing_direction(local_player_index, &direct->forward);
 	observer_up_from_forward(&direct->forward, &direct->up);
 	return direct;
-#endif
 }
 
 struct observer_result const *render_interpolation_camera(

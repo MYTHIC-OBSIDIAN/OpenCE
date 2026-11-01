@@ -1,15 +1,14 @@
 /*
 MODEL_DETAIL.C
 
-The geometry each of a model's permutations draws when display.model_detail
-is "native" or "highest" (halo_model_detail_scale, port/linux/src/d3d8_gl.c),
-which choose the model's level of detail at sizes the Xbox's 480 lines
-rarely or never reached (render_model, source/models/models.c). "stock"
-draws each permutation at the model's level, as the Xbox did.
+The geometry each of a model's permutations draws: always its most detailed
+level (halo_model_detail_scale, port/linux/src/d3d8_gl.c), at sizes the
+Xbox's 480 lines rarely or never reached (render_model,
+source/models/models.c). The console's debug_model_lod still picks a level.
 
 Two kinds of a map's levels are not made for those sizes:
 - a permutation may have no geometry at a level, and draw nothing there:
-  "highest" would leave the part out at every distance, so it draws its
+  its most detailed level would leave the part out at every distance, so it draws its
   most detailed level below that has some;
 - a level whose cutoff is over 1000 pixels is the model's inside, made for
   a camera within it (a10's cryotube's top level, at 3000, is the inside of

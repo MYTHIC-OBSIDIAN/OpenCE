@@ -4,8 +4,7 @@ XISO.C
 The maps folder out of an Xbox disc image, for the desktop games (Linux and
 Windows). When no data root has a maps folder, sdl_platform.c asks the player
 for their disc image of Halo and this copies the image's maps folder next to
-the executable. (The Android app's copy of this is XisoExtractor.java, the
-web page's xiso-worker.js.)
+the executable.
 
 Written from a description of the Xbox's disc file system, XDVDFS
 (xboxdevwiki's XDVDFS page, https://xboxdevwiki.net/XDVDFS, and the format
@@ -43,7 +42,6 @@ left) and given the name maps only when every file is complete.
 #include "platform.h"
 #include "xiso.h"
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 
 #include "posix.h"
 
@@ -901,4 +899,3 @@ done:
 	return succeeded;
 }
 
-#endif

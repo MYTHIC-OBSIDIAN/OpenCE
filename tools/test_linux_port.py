@@ -239,7 +239,7 @@ def test_menus_are_well_formed():
             assert set(element.attrib) <= MENU_ATTRIBUTES[element.tag], where
             # (the platforms that show it: menu_files.c's MENU_PLATFORM)
             assert element.get("platform") is None or \
-                set(element.get("platform").split()) <= {"desktop", "android", "web"}, where
+                set(element.get("platform").split()) <= {"desktop"}, where
             # (menu_files.c's whole numbers, which the tags keep in shorts,
             # its true/false attributes, and no text but whitespace outside
             # <string>s)
@@ -411,19 +411,30 @@ def test_config_has_each_section_once(tmp_path):
     if not compiler:
         pytest.skip("needs a C compiler")
     root = Path(__file__).resolve().parent.parent
+    # (port_config.c reads and writes its file through SDL: the build
+    # machine's SDL 3)
+    sdl = subprocess.run(["pkg-config", "--cflags", "--libs", "sdl3"], capture_output=True, text=True) \
+        if shutil.which("pkg-config") else None
+    if not sdl or sdl.returncode != 0:
+        pytest.skip("needs SDL 3's development files (pkg-config sdl3)")
     stubs = tmp_path / "stubs"
-    (stubs / "SDL3").mkdir(parents=True)
-    (stubs / "SDL3" / "SDL.h").write_text("")
+    stubs.mkdir(parents=True)
     (stubs / "platform.h").write_text("void platform_log(const char *format, ...);\n")
+    # (the command line and a server's private file: none here)
+    (stubs / "posix.h").write_text("typedef unsigned long posix_ulong;\n"
+                                   "static int posix_command_line_argument(int index, char *buffer, posix_ulong size)\n"
+                                   "{ (void)index; (void)buffer; (void)size; return 0; }\n")
+    (stubs / "posix_server.h").write_text("static int posix_server_private_file(const char *path)\n"
+                                          "{ (void)path; return 1; }\n")
     # (beside the stubs, which it then includes instead of the platform layer's)
     for name in ("port_config.c", "port_config.h"):
         shutil.copy(root / "port/linux/src" / name, stubs / name)
     (tmp_path / "main.c").write_text(CONFIG_PROGRAM)
     program = tmp_path / "config_program"
-    subprocess.run([compiler, "-DHALO_ANDROID=1", "-DHALO_ARM64_GUEST=1", f"-I{stubs}",
+    subprocess.run([compiler, f"-I{stubs}",
                     f"-I{root}/port/third_party/tomlc17", "-o", str(program),
                     str(tmp_path / "main.c"), str(stubs / "port_config.c"),
-                    str(root / "port/third_party/tomlc17/tomlc17.c"), "-lpthread"], check=True)
+                    str(root / "port/third_party/tomlc17/tomlc17.c"), *sdl.stdout.split(), "-lpthread"], check=True)
     data = tmp_path / "data"
     data.mkdir()
     config = data / "config.toml"

@@ -37,17 +37,9 @@ When the texture cannot be drawn, the sprites are drawn from their bitmap.
 #include "controller_glyphs.h"
 #include "scenario/scenario_definitions.h"
 #include "cache/texture_cache.h"
-#ifdef HALO_ANDROID
-#include "android_ce_texture_cache.h"
-#endif
 
 static boolean hud_hires_bitmap_resident(struct bitmap_data const *bitmap)
 {
-#ifdef HALO_ANDROID
-	/* CE heap pixels have no Xbox LRU block. Query without touching their age. */
-	if (android_ce_texture_resident(bitmap))
-		return TRUE;
-#endif
 	return bitmap->cache_block_index != NONE;
 }
 

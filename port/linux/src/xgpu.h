@@ -23,37 +23,6 @@ the camera: surfaces a few millimetres apart, which 24 bits run together
 past a few tens of metres (Blood Gulch's lights on the base), stay apart. */
 extern BOOL xgpu_reversed_depth;
 
-#ifdef HALO_GLES
-/* OpenGL ES features that are optional (d3d8_gl.c gl_initialize) */
-struct xgpu_capabilities
-{
-	BOOL copy_image;
-	BOOL border_clamp;
-	BOOL anisotropy;
-	BOOL s3tc;
-	/* KHR_texture_compression_astc_ldr: DXT1 as ASTC where there is no S3TC
-	(display.dxt1_astc) */
-	BOOL astc;
-	/* ES 3.2, or the EXT/OES_draw_elements_base_vertex extension: glDrawElementsBaseVertex */
-	BOOL base_vertex;
-	/* ES 3.1 with fragment atomic counters: exact visibility test counts */
-	BOOL atomic_counters;
-	/* GL_RGBA16F can be drawn into and blended (EXT_color_buffer_half_float
-	or EXT_color_buffer_float): display.hdr's back buffer */
-	BOOL color_buffer_half_float;
-	/* "300 es" or "310 es" */
-	const char *shading_language;
-};
-
-extern struct xgpu_capabilities xgpu_capabilities;
-
-/* port/android/guest/runtime/guest_host.h */
-int host_gl_has_extension(const char *name);
-void host_gl_read_buffer(unsigned int buffer, unsigned int offset, unsigned int size, void *data);
-void host_gl_buffer_write(unsigned int target, unsigned int offset, unsigned int size, const void *data);
-void host_gl_fence_frame(unsigned int slot);
-void host_gl_wait_frame(unsigned int slot);
-#endif
 
 /* ---------- GL state
 
@@ -148,8 +117,6 @@ struct nv2a_pixel_shader_key
 	unsigned long alpha_test_function;
 	unsigned char fog_enable;
 	unsigned char fog_table_mode;
-	/* inside a visibility test: count the samples that pass (Android) */
-	unsigned char count_samples;
 	/* a high-res HUD meter (hud_hires.h) drawn with the meter's blend (the
 	destination kept by the source's alpha): that alpha is eased to 1 by the
 	coverage texture 0's green holds, so that the meter darkens what is
@@ -179,12 +146,7 @@ struct nv2a_pixel_shader_key
 
 char *nv2a_pixel_shader_to_glsl(const struct nv2a_pixel_shader_key *key);
 
-#ifdef HALO_GLES
-/* ES samplers have no LOD bias of their own */
-#define XGPU_PIXEL_UNIFORMS_ES "uniform vec4 texture_lod_bias;\n"
-#else
 #define XGPU_PIXEL_UNIFORMS_ES ""
-#endif
 
 /* the combiner registers that live in uniforms rather than in the program:
 C0/C1 of each stage and the final combiner, and texture constants */
@@ -335,19 +297,6 @@ up: as it is (SDR), or, with scale more than 0, made linear and scaled by
 it (an HDR display's scRGB framebuffer: scale is its SDR white) */
 BOOL xgpu_post_present(GLuint texture, int x, int y, int width, int height, float scale);
 
-/* Android: a vertex (indices 0) or index (1) buffer resource whose size
-bytes the game wrote once and will not write again, drawn from a GL buffer
-of its own; and the end of one, when the game releases it (d3d8_gl.c) */
-void xgpu_static_buffer_add(const void *resource, unsigned long size, int indices);
-void xgpu_static_buffer_remove(const void *resource, int indices);
-/* Android: an Xbox map's count vertex (indices 0) or index (1) buffers,
-stride bytes apart, whose data lie from the first of them to end and are
-not written while they are registered; and their end (d3d8_gl.c) */
-void xgpu_static_buffers_add(const void *buffers, long count, unsigned long stride, int indices, const void *end);
-void xgpu_static_buffers_remove(const void *buffers, long count, unsigned long stride, int indices);
-/* Android: size bytes of vertices or indices from start, as above */
-void xgpu_static_range_add(const void *start, unsigned long size, int indices);
-void xgpu_static_range_remove(const void *start, int indices);
 /* fills the corners x0, y0 to x1, y1 of the window (row 0 at the bottom)
 with color, as it is (an HDR display's scRGB framebuffer: linear, 1.0 at 80
 nits), or only the ring ring[0], ring[1] (its centre in the window), from

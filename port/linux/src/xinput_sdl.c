@@ -40,7 +40,6 @@ drive the controller.
 #include "platform.h"
 #include "sdl_platform.h"
 #include "port_config.h"
-#include "touch_input.h"
 /* port/linux/game/network_aim_assist.c */
 extern unsigned char network_aim_assist_block_mouse(void);
 #include "halo_keyboard.h"
@@ -116,18 +115,14 @@ static Uint64 wheel_press_until_ms = 0;
 static BOOL wheel_scrolling = FALSE;
 /* the way the scroll under way turns: 1 up (away), -1 down */
 static int wheel_direction = 0;
-/* when port 0's aim last moved, by the mouse, by the right stick, and by
-the touch controls (their swipe, gyroscope or stick: halo_linux_mouse_aiming,
-halo_linux_touch_aiming) */
+/* when port 0's aim last moved, by the mouse and by the right stick
+(halo_linux_mouse_aiming) */
 static Uint64 mouse_aimed_ms = 0;
 static Uint64 stick_aimed_ms = 0;
 /* when the first player last pressed a gamepad's button or moved its
 sticks, and a key or mouse button of theirs (halo_gamepad_last_used) */
 static Uint64 pad_used_ms = 0;
 static Uint64 keyboard_used_ms = 0;
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-static Uint64 touch_aimed_ms = 0;
-#endif
 
 /* the right stick's deflection that counts as aiming with it, clear of a
 worn stick's drift */
@@ -187,15 +182,6 @@ int halo_linux_mouse_look(short gamepad_index, float *yaw, float *pitch)
 	return TRUE;
 }
 
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-/* the touch controls moved the player or the aim (halo_linux_touch_aiming) */
-static void touch_used(void)
-{
-	pthread_mutex_lock(&mouse_lock);
-	touch_aimed_ms = SDL_GetTicks();
-	pthread_mutex_unlock(&mouse_lock);
-}
-#endif
 
 /* ---------- the text chat's on-screen keyboard (halo_keyboard.h) */
 
@@ -236,11 +222,6 @@ unsigned long halo_chat_pad_buttons(void)
 	return chat_pad[port >= 0 && port < PORT_COUNT ? port : 0];
 }
 
-int halo_chat_taps(float *x, float *y)
-{
-	return touch_input_chat_taps(x, y);
-}
-
 int halo_chat_wheel_steps(void)
 {
 	int steps;
@@ -250,22 +231,6 @@ int halo_chat_wheel_steps(void)
 	chat_wheel_steps = 0;
 	pthread_mutex_unlock(&mouse_lock);
 	return steps;
-}
-
-int halo_chat_touch_layout(void)
-{
-#if defined(HALO_ANDROID)
-	return TRUE;
-#elif defined(HALO_WEB)
-	int used;
-
-	pthread_mutex_lock(&mouse_lock);
-	used = touch_aimed_ms != 0;
-	pthread_mutex_unlock(&mouse_lock);
-	return used;
-#else
-	return FALSE;
-#endif
 }
 
 /* the first controller's buttons held as the on-screen keyboard closed (the
@@ -334,84 +299,7 @@ int halo_gamepad_last_used(void)
 	return pad != 0 && pad > keyboard;
 }
 
-/* the touch controls' stick as the player's movement (input_abstraction.c's
-keyboard_controls_update), forward and strafe -1..1, whatever the
-profile's sticks do; nonzero while it is pushed. Nothing but on Android and
-the web (port/web/site/touch.js). */
-int halo_linux_touch_move(short controller_index, float *forward, float *strafe)
-{
-	*forward = 0.0f;
-	*strafe = 0.0f;
-	if (controller_index != 0)
-		return FALSE;
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-	if (!touch_input_move(forward, strafe) || network_chat_controller() == 0)
-	{
-		*forward = 0.0f;
-		*strafe = 0.0f;
-		return FALSE;
-	}
-	touch_used();
-	return TRUE;
-#else
-	return FALSE;
-#endif
-}
-
-/* the touch controls' swipe and gyroscope since the last call, in radians at
-the mouse's rate per pixel (the view applies its own sensitivity), each
-apart: player_control.c inverts the swipe as the profile inverts the stick,
-not the gyroscope, which turns as the phone does, and makes them the
-stick's rate before the magnetism. Nothing but on Android and the web. */
-int halo_linux_touch_look(short gamepad_index, float *yaw, float *pitch, float *gyro_yaw, float *gyro_pitch)
-{
-	*yaw = 0.0f;
-	*pitch = 0.0f;
-	*gyro_yaw = 0.0f;
-	*gyro_pitch = 0.0f;
-	if (gamepad_index != 0)
-		return FALSE;
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-	touch_input_look(0.0022f, yaw, pitch, gyro_yaw, gyro_pitch);
-	/* (none while the chat's on-screen keyboard is up: what was swiped is
-	dropped, not saved for after) */
-	if (network_chat_keyboard_open() && network_chat_controller() == 0)
-	{
-		*yaw = 0.0f;
-		*pitch = 0.0f;
-		*gyro_yaw = 0.0f;
-		*gyro_pitch = 0.0f;
-	}
-	if (*yaw == 0.0f && *pitch == 0.0f && *gyro_yaw == 0.0f && *gyro_pitch == 0.0f)
-		return FALSE;
-	touch_used();
-	return TRUE;
-#else
-	return FALSE;
-#endif
-}
-
-/* whether port 0's player aims with the touch controls without their aim
-assist (input.touch_aim_assist false): no magnetism, as for the mouse
-(player_control.c), until a stick moves the aim again */
-int halo_linux_touch_aiming(short gamepad_index)
-{
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-	int aiming;
-
-	if (gamepad_index != 0 || touch_input_aim_assist())
-		return FALSE;
-	pthread_mutex_lock(&mouse_lock);
-	aiming = touch_aimed_ms != 0 && touch_aimed_ms >= stick_aimed_ms;
-	pthread_mutex_unlock(&mouse_lock);
-	return aiming;
-#else
-	(void)gamepad_index;
-	return FALSE;
-#endif
-}
-
-/* Port zero defaults to keyboard/mouse until the stick or touch aims.
+/* Port zero defaults to keyboard/mouse until the stick aims.
    Merely having a controller connected does not enable mouse magnetism. */
 static int mouse_is_aim_device(short gamepad_index)
 {
@@ -419,10 +307,6 @@ static int mouse_is_aim_device(short gamepad_index)
     if (gamepad_index != 0) return FALSE;
     pthread_mutex_lock(&mouse_lock);
     aiming = stick_aimed_ms == 0 || mouse_aimed_ms >= stick_aimed_ms;
-#ifdef HALO_ANDROID
-    if (touch_aimed_ms != 0 && touch_aimed_ms >= mouse_aimed_ms &&
-        touch_aimed_ms >= stick_aimed_ms) aiming = FALSE;
-#endif
     pthread_mutex_unlock(&mouse_lock);
     return aiming;
 }
@@ -506,17 +390,13 @@ void platform_text_typing(int typing)
 {
 	text_typing_keyboard = typing != 0;
 	text_typing_update();
-#ifdef HALO_ANDROID
-	/* (on a touchscreen: Android's on-screen keyboard as well, sdl_platform.c) */
-	platform_screen_keyboard(text_typing_keyboard, FALSE);
-#endif
 }
 
 void platform_text_field(int typing, int password)
 {
 	text_typing_field = typing != 0;
 	text_typing_update();
-	/* (with no keyboard: Steam's on-screen one, or Android's, sdl_platform.c) */
+	/* (with no keyboard: Steam's on-screen one, sdl_platform.c) */
 	platform_screen_keyboard(text_typing_field, typing && password);
 }
 
@@ -575,10 +455,6 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 		k[SDL_SCANCODE_KP_ENTER] || virtual_keyboard_done);
 	pad->bAnalogButtons[XINPUT_GAMEPAD_B] |= analog(k[SDL_SCANCODE_ESCAPE] || k[SDL_SCANCODE_BACKSPACE] ||
 		(mouse && m[SDL_BUTTON_X1]));
-#ifdef HALO_ANDROID
-	/* the system back key (gesture or button) backs out of menus */
-	pad->bAnalogButtons[XINPUT_GAMEPAD_B] |= analog(k[SDL_SCANCODE_AC_BACK]);
-#endif
 	pad->bAnalogButtons[XINPUT_GAMEPAD_X] |= analog(k[SDL_SCANCODE_DELETE] || k[SDL_SCANCODE_E]);
 	pad->bAnalogButtons[XINPUT_GAMEPAD_Y] |= analog(k[SDL_SCANCODE_TAB]);
 }
@@ -648,8 +524,7 @@ static int bindings[NUMBER_OF_HALO_KEYBOARD_ACTIONS][MAXIMUM_BINDINGS];
 static unsigned long bindings_read_at = (unsigned long)-1;
 static unsigned long keyboard_actions_held;
 
-/* (the C library's case: SDL's string functions are not the Android
-guest's) */
+/* (the C library's case) */
 static int same_name(const char *a, const char *b)
 {
 	for (; *a && *b; a++, b++)
@@ -713,13 +588,6 @@ void halo_input_shown_name(const char *binding, char *shown, size_t size)
 	SDL_Keycode key;
 
 	snprintf(shown, size, "%s", binding);
-#ifdef HALO_ANDROID
-	/* (the Android guest's SDL has no keyboard layouts to ask: the US
-	names, which match a hardware keyboard's usual labels there) */
-	(void)input;
-	(void)key;
-	return;
-#else
 	if (input < 0 || input >= SDL_SCANCODE_COUNT)
 		return;
 	/* (as in key events: the French number row shows its numbers, and a
@@ -738,7 +606,6 @@ void halo_input_shown_name(const char *binding, char *shown, size_t size)
 		shown[0] = (char)key;
 		shown[1] = 0;
 	}
-#endif
 }
 
 static void bindings_read(void)
@@ -859,14 +726,8 @@ the same weapon straight back. Timed in milliseconds, not polls: polls come
 once a frame, at the display's refresh rate. */
 #define WHEEL_PRESS_MS 50
 #define WHEEL_SCROLL_GAP_MS 200
-/* how far the wheel turns before it switches: a notch. A browser's notch is
-pixels, which SDL counts as a notch per 100, and some send fewer for one
-(about half), so in the web build half of SDL's notch is one */
-#ifdef HALO_WEB
-#define WHEEL_NOTCH 0.5f
-#else
+/* how far the wheel turns before it switches: a notch */
 #define WHEEL_NOTCH 1.0f
-#endif
 
 /* debug.test_input "bot:<seed>": a scripted player for the automated
 network tests (port/linux/game/network_test.c), different for each seed:
@@ -1103,31 +964,6 @@ static int sdl_gamepads(SDL_Gamepad *gamepads[PORT_COUNT])
 	ids = SDL_GetGamepads(&count);
 	if (!ids)
 		return 0;
-#ifdef HALO_ANDROID
-	{
-		/* Android can list input devices with a few gamepad buttons (the
-		emulator's keyboard, some phones' key devices) as generic gamepads:
-		recognised controllers take the first ports */
-		int pass;
-
-		for (pass = 0; pass < 2; pass++)
-		{
-			for (index = 0; index < count && found < PORT_COUNT; index++)
-			{
-				SDL_Gamepad *gamepad = SDL_GetGamepadFromID(ids[index]);
-				SDL_GamepadType type;
-				BOOL recognised;
-
-				if (!gamepad)
-					continue;
-				type = SDL_GetGamepadType(gamepad);
-				recognised = type != SDL_GAMEPAD_TYPE_UNKNOWN && type != SDL_GAMEPAD_TYPE_STANDARD;
-				if (recognised == (pass == 0))
-					gamepads[found++] = gamepad;
-			}
-		}
-	}
-#else
 	for (index = 0; index < count && found < PORT_COUNT; index++)
 	{
 		SDL_Gamepad *gamepad = SDL_GetGamepadFromID(ids[index]);
@@ -1135,7 +971,6 @@ static int sdl_gamepads(SDL_Gamepad *gamepads[PORT_COUNT])
 		if (gamepad)
 			gamepads[found++] = gamepad;
 	}
-#endif
 	SDL_free(ids);
 	return found;
 }
@@ -1321,11 +1156,6 @@ void halo_virtual_gamepads_start(void)
 
 static void virtual_gamepads_attach(void)
 {
-#ifdef HALO_ANDROID
-	/* (the Android host's SDL has no virtual joysticks for the guest: the
-	automated test's gamepads are the desktop's) */
-	virtual_pad_count = 0;
-#else
 	long wanted = config_integer("debug.virtual_gamepads");
 	int index;
 
@@ -1361,7 +1191,6 @@ static void virtual_gamepads_attach(void)
 		virtual_pad_count++;
 	}
 	platform_log("virtual gamepads: %d attached", virtual_pad_count);
-#endif
 }
 
 static int virtual_button(const char *what, size_t length)
@@ -1392,7 +1221,6 @@ static int virtual_button(const char *what, size_t length)
 /* the script's state at this moment, set on the pads */
 static void virtual_gamepads_update(void)
 {
-#ifndef HALO_ANDROID
 	BOOL pressed[PORT_COUNT][SDL_GAMEPAD_BUTTON_COUNT];
 	int triggers[PORT_COUNT][2];
 	BOOL keyboard_pressed = FALSE, keyboard_enter = FALSE;
@@ -1481,7 +1309,6 @@ static void virtual_gamepads_update(void)
 		SDL_SetJoystickVirtualAxis(virtual_pads[pad], SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
 			triggers[pad][1] ? (Sint16)triggers[pad][1] : -32768);
 	}
-#endif
 }
 
 /* ---------- XAPI */
@@ -1611,7 +1438,7 @@ int halo_linux_debug_camera_input(int *middle, int *up, int *down, float *wheel)
 
 /* reads a controller's state; for port 0 the keyboard, mouse, debug input
 and touchscreen are merged into the first gamepad's; runs on the game's main
-thread (touch_input_gamepad relies on it); returns ERROR_SUCCESS or
+thread; returns ERROR_SUCCESS or
 ERROR_DEVICE_NOT_CONNECTED for an unknown port */
 DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 {
@@ -1680,10 +1507,6 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 		if (port_gamepad(gamepads, count, 0))
 			controller_remap_merge(&physical, &state->Gamepad);
 		test_input_gamepad(&state->Gamepad);
-		touch_input_gamepad(&state->Gamepad);
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-		touch_input_controls(&state->Gamepad, input.menus);
-#endif
 		if (abs(state->Gamepad.sThumbRX) > STICK_AIMING_DEFLECTION ||
 			abs(state->Gamepad.sThumbRY) > STICK_AIMING_DEFLECTION)
 		{
@@ -1725,12 +1548,6 @@ DWORD WINAPI XInputSetState(HANDLE device, PXINPUT_FEEDBACK feedback)
 	feedback->Header.dwStatus = ERROR_SUCCESS;
 	if (port < 0)
 		return ERROR_DEVICE_NOT_CONNECTED;
-#if defined(HALO_ANDROID) || defined(HALO_WEB)
-	/* the phone vibrates for the touch controls' player (in a browser, where
-	it can) */
-	if (port == 0)
-		touch_input_rumble(feedback->Rumble.wLeftMotorSpeed, feedback->Rumble.wRightMotorSpeed);
-#endif
 	count = sdl_gamepads(gamepads);
 	if (port_gamepad(gamepads, count, port))
 	{

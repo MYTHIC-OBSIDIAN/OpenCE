@@ -1,6 +1,6 @@
 # Halo Custom Edition maps
 
-The native builds (Linux, Windows, Android) load and run Halo Custom Edition
+The game loads and runs Halo Custom Edition
 caches (`.map`, cache version 609), with the Custom Edition resource maps
 `bitmaps.map`, `sounds.map` and `loc.map`. A cache that needs OpenSauce
 (its OpenSauce header asks for memory upgrades, mod data files or the like)
@@ -139,7 +139,7 @@ map_name custom_maps\hugeass
   in `maps`, which is told to go in `custom_maps`.
 - **Xbox caches** take the path they took before.
 
-The desktop builds' Xbox memory window is 512 MB (Android's 128 MB), in
+The desktop builds' Xbox memory window is 512 MB, in
 which the texture cache is 256 MB: Custom Edition maps draw more texture
 than the Xbox's 22 MB cache holds, and their geometry is made into
 Direct3D buffers in the same memory (`port/linux/include/halo_port_capacity.h`).
@@ -343,8 +343,7 @@ changed:
 - **Texture memory.** A frame of `Elite_Alpha_Siege.map` draws more than the
   22 MB of textures the Xbox texture cache holds, and textures that did not
   fit were drawn as the default one. The desktop builds' texture cache is
-  256 MB, in a 512 MB memory window (`halo_port_capacity.h`), for every map;
-  Android's is the Xbox's.
+  256 MB, in a 512 MB memory window (`halo_port_capacity.h`), for every map.
 - **Scripts.** A compiled script names each function it calls, and each
   engine global it uses, by its index in the engine's tables, and Halo PC's
   tables have entries this build's do not, in among the ones both have: from
@@ -475,7 +474,6 @@ file the same as the host's; with `network.map_download` off, or a host with
 ### Not tested
 
 - **Playing**: nobody played the maps through.
-- **Android** builds, and was not run.
 
 ## Evidence
 

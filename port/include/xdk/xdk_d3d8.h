@@ -39,7 +39,7 @@ PDB lists are the game's own copies of them, with external linkage) */
 #endif
 
 /* __declspec(selectany) data: one copy of a table defined in every unit.
-The Linux and Android prefix header maps it to a weak definition; an
+The Linux prefix header maps it to a weak definition; an
 MSVC-target compiler has the real thing. */
 #ifndef DECLSPEC_SELECTANY
 #define DECLSPEC_SELECTANY __declspec(selectany)

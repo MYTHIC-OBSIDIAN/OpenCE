@@ -1,6 +1,6 @@
 # The dedicated server: reference
 
-`halo --server` runs the game as a host with no window, sound or player of
+`halo.exe --server` runs the game as a host with no window, sound or player of
 its own: other machines join it on the LAN, by its invite link or from the
 server browser, as they join any host. `port/linux/README.md`, "Dedicated
 server", says how to run one; this document is the reference for what it
@@ -13,17 +13,12 @@ The code is `port/linux/src/server_*.c` (the platform side: the mode, the
 standard input, the log, the rotation's grammar, the HTTP and WebSocket
 server, the master servers' publisher) and `port/linux/game/server_*.c`
 (the game side: the director that plays one game after another, the
-commands, the gametypes, the status). The Android and web builds have no
-dedicated server: they compile those files to nothing, but for
-`server_json.c` (the JSON reader, which the server browser's list of master
-servers uses in every build) and `server_rotation.c` (the rotation's
-grammar and the gametype rules), which every build compiles.
+commands, the gametypes, the status).
 
 ## Panels and fleets
 
-A game panel (Pterodactyl, PufferPanel, MCSManager: `deploy/`) runs one
-server and reads its standard output; `deploy/systemd` and `deploy/docker`
-run servers on one machine. For many servers on many machines, `opence-fleet`
+A game panel runs one server and reads its standard output. For many
+servers on many machines, `opence-fleet`
 ([github.com/OpenCommunityEdition/opence-fleet](https://github.com/OpenCommunityEdition/opence-fleet))
 is one control plane over them all: an agent on each machine runs the
 servers and drives each through this document's API, as the owner from
@@ -60,9 +55,6 @@ A probe's line:
 
 `gametype` is the game engine's name (`ctf`, `slayer`, `oddball`, `king`,
 `race`, or `none`), `open` whether it takes players now.
-
-The release has a `halo-server` script beside `halo`, which runs
-`halo --server` with its arguments.
 
 ## Exit codes and signals
 
@@ -354,8 +346,7 @@ to everyone, logged and a `coop_bsp_switch` event names who crossed.
 
 ### Updates
 
-`server.auto_update` is `install` by default (the Docker image's, `check`:
-its image is updated instead). The server asks GitHub for the latest
+`server.auto_update` is `install` by default. The server asks GitHub for the latest
 release `server.update_check_minutes` (30) after the last check (the first
 two minutes after it starts), and when there is a newer one says so (a
 `warning` event) and, with `install`, installs it on a thread of its own.

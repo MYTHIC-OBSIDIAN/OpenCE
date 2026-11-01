@@ -16,13 +16,10 @@ fonts and their tags from port/assets/fonts/fonts.json, the menu files
 listed in port/assets/menus/menus.json, and SMAA's shader and lookup
 textures, as port/linux/src/hud_hires.h, text_hires.h, menu_files.h and
 xgpu_post.c declare them. The builds generate it
-(hud_assets_build, called by tools/linux_build.py, windows_build.py and
-android_build.py), so the assets are the committed source and Android needs
-no files beside its guest image.
+(hud_assets_build, called by tools/linux_build.py and windows_build.py), so
+the assets are the committed source.
 
-The data are 32-bit words, not bytes: the Android build passes the guest's
-assembly through tools/android_asm_convert.py, which rewrites identifiers in
-operands (it keeps .ascii strings as they are, but once garbled them).
+The data are 32-bit words, not bytes.
 """
 
 import json
@@ -54,7 +51,8 @@ MENU_LIST = MENU_ASSETS / "menus.json"
 SMAA_ASSETS = Path("port/third_party/smaa")
 SMAA_FILES = (("SMAA.hlsl", "xgpu_smaa_shader"), ("area_tex.zlib", "xgpu_smaa_area_texture"),
               ("search_tex.zlib", "xgpu_smaa_search_texture"))
-# the desktop windows' icon (tools/app_icon.py; port/linux/src/sdl_platform.c)
+# the Linux developer build's window icon (port/linux/src/sdl_platform.c; on
+# Windows the windows take halo.exe's own)
 WINDOW_ICON = Path("port/assets/icon/opence-icon-256.png")
 # the pointer the menus show in place of the system's (port/linux/src/sdl_platform.c)
 MENU_CURSOR = Path("port/assets/cursor/menu_cursor.png")
@@ -271,8 +269,7 @@ def main() -> None:
     lines.append("")
     # SMAA's shader, as text a GLSL compiler takes (ASCII, ending in a NUL),
     # and its lookup textures (xgpu_post.c); each of size 0 that the
-    # checkout does not have. The OpenGL ES renderer has no SMAA.
-    lines.append("#ifndef HALO_GLES")
+    # checkout does not have.
     present = dict(smaa_files())
     for name, symbol in SMAA_FILES:
         data = (ROOT / SMAA_ASSETS / name).read_bytes() if name in present else b""
@@ -297,8 +294,6 @@ def main() -> None:
     lines.extend(words(data) if data else ["\t0,"])
     lines.append("};")
     lines.append(f"const unsigned long platform_menu_cursor_size = {len(data)};")
-    lines.append("")
-    lines.append("#endif")
     output = Path(sys.argv[1])
     output.parent.mkdir(parents=True, exist_ok=True)
     text = "\n".join(lines) + "\n"

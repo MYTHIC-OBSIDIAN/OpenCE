@@ -87,14 +87,6 @@ D-pad's keys then (port/linux/game/network_votekick.c) */
 int halo_gamepad_last_used(void);
 /* Raw physical snapshot: suppress the button which opened controller chat. */
 unsigned long halo_chat_pad_buttons_for_port(short port);
-/* the taps on the touchscreen outside the menus since the last call while
-that keyboard is up, and where the latest was (0 to 1 across and down the
-window) */
-int halo_chat_taps(float *x, float *y);
-/* whether the touch controls hold the screen's bottom left, where the chat
-then goes at the top left: on Android, and in a browser once its touch
-controls have been used */
-int halo_chat_touch_layout(void);
 /* the mouse wheel's notches turned while a chat line is typed, since the
 last call (up positive): they scroll the lines, not the weapons */
 int halo_chat_wheel_steps(void);

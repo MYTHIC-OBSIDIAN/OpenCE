@@ -57,10 +57,6 @@ at startup whether to play them anyway, turn those named off, or quit
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HALO_WEB
-/* (port/web/src/web_library.js) */
-void web_js_post(int kind, const char *text);
-#endif
 
 /* ---------- constants */
 
@@ -801,30 +797,14 @@ static int text_file_write(const char *path, const char *text)
 {
 	char temporary[MAXIMUM_PATH_LENGTH];
 	int written;
-#ifdef HALO_ARM64_GUEST
-	FILE *file;
-#endif
 
 	if (snprintf(temporary, sizeof(temporary), "%s.new", path) >= (int)sizeof(temporary))
 		return 0;
-#ifdef HALO_ARM64_GUEST
-	/* (the guest's own C library: SDL's are the host's) */
-	file = fopen(temporary, "wb");
-	if (!file)
-		return 0;
-	written = fwrite(text, 1, strlen(text), file) == strlen(text);
-	written = fclose(file) == 0 && written;
-	if (written)
-		written = rename(temporary, path) == 0;
-	if (!written)
-		remove(temporary);
-#else
 	written = SDL_SaveFile(temporary, text, strlen(text));
 	if (written)
 		written = SDL_RenamePath(temporary, path);
 	if (!written)
 		SDL_RemovePath(temporary);
-#endif
 	return written;
 }
 
@@ -1035,27 +1015,17 @@ int port_mods_file_read(long file, unsigned long offset, void *buffer, unsigned 
 	unsigned char *staging = NULL;
 	unsigned long done = 0;
 	int read = 1;
-#ifdef HALO_ARM64_GUEST
-	FILE *stream;
-#else
 	SDL_IOStream *stream;
-#endif
 
 	if (file < 0 || file >= port_mods.file_count)
 		return 0;
 	path = port_mods.files[file].path;
 	if (bounce && !(staging = malloc(READ_BOUNCE_SIZE)))
 		return 0;
-#ifdef HALO_ARM64_GUEST
-	stream = fopen(path, "rb");
-	if (!stream || fseek(stream, (long)offset, SEEK_SET) != 0)
-		read = 0;
-#else
 	/* (SDL's, for UTF-8 paths on Windows) */
 	stream = SDL_IOFromFile(path, "rb");
 	if (!stream || SDL_SeekIO(stream, (Sint64)offset, SDL_IO_SEEK_SET) < 0)
 		read = 0;
-#endif
 	while (read && done < size)
 	{
 		unsigned long wanted = size - done;
@@ -1063,11 +1033,7 @@ int port_mods_file_read(long file, unsigned long offset, void *buffer, unsigned 
 
 		if (bounce && wanted > READ_BOUNCE_SIZE)
 			wanted = READ_BOUNCE_SIZE;
-#ifdef HALO_ARM64_GUEST
-		read = fread(bounce ? staging : destination, 1, wanted, stream) == wanted;
-#else
 		read = SDL_ReadIO(stream, bounce ? staging : destination, wanted) == wanted;
-#endif
 		if (read && bounce)
 		{
 			memory_watch_prepare_write(destination, wanted);
@@ -1077,11 +1043,7 @@ int port_mods_file_read(long file, unsigned long offset, void *buffer, unsigned 
 	}
 	if (stream)
 	{
-#ifdef HALO_ARM64_GUEST
-		fclose(stream);
-#else
 		SDL_CloseIO(stream);
-#endif
 	}
 	free(staging);
 	return read;
@@ -1480,11 +1442,6 @@ void port_mods_startup(void)
 	else if (answer == 2)
 	{
 		platform_log("mods: quitting, as asked, over mods that cannot be played together");
-#ifdef HALO_WEB
-		/* (the page starts again: a worker's exit does not end the page's
-		game) */
-		web_js_post(4, "quit");
-#endif
 		exit(EXIT_SUCCESS);
 	}
 	else if (answer < 0)

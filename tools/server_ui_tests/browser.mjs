@@ -8,7 +8,7 @@
 //
 //     node tools/server_ui_tests/browser.mjs [chromium] [firefox]
 //
-// (with Playwright where Node finds it: NODE_PATH, as port/web/tests' do)
+// (with Playwright where Node finds it: NODE_PATH)
 
 import { createRequire } from 'node:module';
 

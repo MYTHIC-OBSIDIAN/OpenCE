@@ -6,8 +6,8 @@ renderer and the size of the 3D view (display.stats_log, off by default):
 a graphics bug's report, or two builds compared, says which of them was
 running and what the frame rate was, without reading numbers off a screen.
 
-Nothing is sent anywhere and nothing is drawn: it is the port's log (logcat
-on Android). The renderer's text is the driver's own (glGetString, in
+Nothing is sent anywhere and nothing is drawn: it is the port's log. The
+renderer's text is the driver's own (glGetString, in
 d3d8_gl.c's gl_initialize) and the mode is the game engine's, as the
 scoreboard names it.
 */
@@ -25,7 +25,7 @@ scoreboard names it.
 /* port_config.c's */
 int config_boolean(const char *name);
 unsigned long config_changes(void);
-/* the port's log, logcat on Android (platform.h) */
+/* the port's log (platform.h) */
 void platform_log(const char *format, ...);
 /* the engine's clock (source/cseries/cseries_windows.c) */
 unsigned long system_milliseconds(void);

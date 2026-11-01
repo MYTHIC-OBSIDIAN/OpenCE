@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# root build script: writes build.ninja for the native ports (Linux, Windows,
-# Android) and the web port
+# root build script: writes build.ninja for the Windows build, and the Linux
+# build that is kept as a developer's compile check (`ninja linux`)
 
 import argparse
 import io
@@ -11,9 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from tools import ninja_syntax
-from tools.android_build import android_configure_inputs, generate_android_build
 from tools.linux_build import check_profile_options, generate_linux_build, linux_configure_inputs
-from tools.web_build import generate_web_build, web_configure_inputs
 from tools.windows_build import generate_windows_build, windows_configure_inputs
 
 
@@ -26,23 +24,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--linux-cc",
     metavar="BINARY",
-    help="compiler for the native Linux build, `ninja linux` (default: clang)",
+    help="compiler for the Linux developer build, `ninja linux`, a compile check never released (default: clang)",
 )
 parser.add_argument(
     "--compiler-launcher",
     metavar="BINARY",
     help="a program that runs each compile, such as ccache "
-    "(links and the Android host's few units run the compiler directly)",
+    "(links run the compiler directly)",
 )
 parser.add_argument(
     "--release",
     action="store_true",
-    help="release builds (Linux, Windows, Android, web): assertions are not checked",
+    help="release builds (Linux, Windows): assertions are not checked",
 )
 parser.add_argument(
     "--profile",
     action="store_true",
-    help="profiling builds (Linux, Windows, Android): CPU scopes recorded on a "
+    help="profiling builds (Linux, Windows): CPU scopes recorded on a "
     "console command or launch setting (README, \"Profiling builds\"); not with --pgo=train",
 )
 parser.add_argument(
@@ -56,11 +54,7 @@ parser.add_argument(
     "--portable",
     action="store_true",
     help="x86 builds (Linux, Windows): code for any x86-64 processor (SSE2) rather than for this "
-    "machine's (-march=native, the default); use it for builds that run on other computers. On Linux it also "
-    "builds against Debian 11's glibc 2.31 rather than this machine's, and brings its own SDL 3 (libSDL3.so.0, "
-    "beside the executable), so that it starts on SteamOS and older distributions: the first build downloads "
-    "the Debian packages and SDL's source (build/linux/third_party, tools/linux_sysroot.py), and needs CMake, "
-    "pkgconf and wayland-scanner, not the 32-bit SDL 3",
+    "machine's (-march=native, the default); use it for builds that run on other computers",
 )
 parser.add_argument(
     "--pgo",
@@ -79,22 +73,6 @@ parser.add_argument(
     type=Path,
     help="profile-guided optimisation from this profile instead",
 )
-parser.add_argument(
-    "--android-ndk",
-    type=str,
-    help="Android NDK for `ninja android` (default: ANDROID_NDK_HOME, or the newest under the Android SDK)",
-)
-parser.add_argument(
-    "--android-guest-cc",
-    type=str,
-    help="clang with the arm64_32 target for the Android guest (default: clang)",
-)
-parser.add_argument(
-    "--web-emcc",
-    type=str,
-    help="Emscripten's emcc for `ninja web` (default: emcc on the PATH, then EMSDK's or ~/emsdk's)",
-)
-
 # no need to spam those extra flags when running on Windows
 if not is_windows():
     parser.add_argument(
@@ -143,9 +121,6 @@ sln = SimpleNamespace(
     port_portable=args.portable,
     port_pgo=args.pgo,
     port_pgo_profile=args.pgo_profile,
-    android_ndk=args.android_ndk,
-    android_guest_cc=args.android_guest_cc,
-    web_emcc=args.web_emcc,
 )
 if not is_windows():
     sln.windows_cc = args.windows_cc
@@ -170,9 +145,7 @@ n.variable("python", f'"{sys.executable}"')
 n.newline()
 
 generate_linux_build(n, sln)
-generate_android_build(n, sln)
 generate_windows_build(n, sln)
-generate_web_build(n, sln)
 
 n.comment("Reconfigure on change")
 n.rule(
@@ -188,9 +161,7 @@ n.build(
         configure_script,
         Path("tools/ninja_syntax.py"),
         *linux_configure_inputs(),
-        *android_configure_inputs(),
         *windows_configure_inputs(),
-        *web_configure_inputs(),
     ],
 )
 n.newline()

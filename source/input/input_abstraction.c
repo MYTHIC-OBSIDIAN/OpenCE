@@ -274,19 +274,6 @@ static void keyboard_controls_update(
 		state->forward_movement = y * length;
 		state->strafe = -x * length;
 	}
-	{
-		/* port: the touch controls' stick (port/linux/src/xinput_sdl.c)
-		moves the player whatever the profile's sticks do, as the keys do */
-		extern int halo_linux_touch_move(short controller_index, real *forward, real *strafe);
-		real forward;
-		real strafe;
-
-		if (halo_linux_touch_move((short)controller_index, &forward, &strafe))
-		{
-			state->forward_movement = forward;
-			state->strafe = strafe;
-		}
-	}
 	return;
 }
 

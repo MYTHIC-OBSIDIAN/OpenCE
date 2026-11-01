@@ -382,8 +382,7 @@ in the id and letters, digits, "_", "." and "-" in the name, 23 and 39 of
 them at most (`p2p_discord_sanitize`), and names it as the player said.
 A joining machine tells the host its hardware id: a keyed hash (HMAC-SHA-256,
 16 bytes as hex) of what its machine is known by (Windows' SMBIOS UUID, else
-its MachineGuid; Linux's `/etc/machine-id`; Android's `ANDROID_ID`, which the
-launcher writes to `hardware_id.txt`: `p2p_hardware_id`), kept by the host
+its MachineGuid; Linux's `/etc/machine-id`: `p2p_hardware_id`), kept by the host
 as hex only. A player dropped for cheating (on its stream's word, as
 above), and one the host bans with the
 console's `ban <player name>` (Tab completes the name; the host's alone), is
@@ -1048,8 +1047,7 @@ shortens the game, to test the next (`host:<map>:<variant>,<variant>...`
 plays the variants in turn, the next once a game is over, as the host's
 button on the scores does). `debug.network_test_public` lists the host's
 game in the server browser, and `browse` joins the one listed there with the
-most players (not co-op, if it can), as the server browser does
-(port/web/tests/internet.mjs plays the native build and browsers so).
+most players (not co-op, if it can), as the server browser does.
 `debug.network_latency` and
 `debug.network_loss` hold back what a machine receives and drop some of its
 datagrams, to test as over the internet. `debug.network_corrupt` damages

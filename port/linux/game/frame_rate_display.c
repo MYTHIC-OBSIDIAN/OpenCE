@@ -13,9 +13,6 @@ keeps it, rather than the player typing `display_framerate 1` into the
 console each time. The setting is read when it changes (config_changes),
 so a menu's change shows in the next frame, and the console can still turn
 the counter on and off by itself in between.
-
-- On Android and the web the counter is the port's easiest measure of what
-  the device manages, the frame rate being what its GPU or browser gives.
 */
 
 #include "cseries.h"

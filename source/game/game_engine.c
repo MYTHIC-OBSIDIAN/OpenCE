@@ -596,7 +596,6 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "units/units.h"
 #include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
 #include "latency_meter.h" /* port: port/linux/game/latency_meter.c */
-#include "touch_postgame.h" /* port: port/linux/game/touch_postgame.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -2979,10 +2978,6 @@ void game_engine_post_rasterize_post_game(
 		draw_string_set_color(&prompt_color);
 
 		server = global_network_game_server_get();
-		/* port: on the touchscreen, buttons for the prompt's A and B
-		(port/linux/game/touch_postgame.c) */
-		if (touch_postgame_draw(font_index, server != NULL, &prompt_color))
-			return;
 		if (server)
 		{
 			bounds.x0 = 380;
@@ -5351,17 +5346,13 @@ void game_engine_update_non_deterministic(
 			if (game_engine_globals.postgame_progress > 1.0f)
 				game_engine_globals.postgame_progress = 1.0f;
 
-			/* port: or the touchscreen's buttons for A and B
-			(port/linux/game/touch_postgame.c) */
-			if (test_any_gamepad_button(0) || test_any_gamepad_button(12) ||
-				touch_postgame_pressed(_gamepad_analog_button_a))
+			if (test_any_gamepad_button(0) || test_any_gamepad_button(12))
 			{
 				if (global_network_game_server_get())
 				network_game_server_reset_to_pregame(
 					global_network_game_server_get());
 			}
-			else if (test_any_gamepad_button(1) || test_any_gamepad_button(13) ||
-				touch_postgame_pressed(_gamepad_analog_button_b))
+			else if (test_any_gamepad_button(1) || test_any_gamepad_button(13))
 			{
 				network_game_abort();
 			}

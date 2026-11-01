@@ -525,7 +525,7 @@ void custom_edition_cache_combine_resource_offsets(
 map as it reads it (tag_validate_custom_edition_note_structure_bsp, set by
 cache_files.c: a protected map's BSP names the groups whose own tags are
 scrambled); NULL for none. Declared here so that its caller and its
-definition agree (the web build's linker refuses a mismatch). */
+definition agree. */
 typedef void (*custom_edition_structure_bsp_proc)(
 	void *tag_cache,
 	unsigned long tag_data_bytes,

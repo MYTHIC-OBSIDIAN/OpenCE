@@ -1,105 +1,23 @@
-# Linux
+# The game and its platform layer
 
-`ninja linux` compiles the game with clang for 32-bit x86 Linux. The result
-is a native executable, `build/linux/halo`. The game shows its graphics with
-OpenGL 4.5. It plays sound through SDL3. It accepts keyboard, mouse and
-gamepad input.
+This guide covers the game as it plays: the controls, the menus, every
+setting, system link, the multiplayer features and how the port operates.
+Its folder, `port/linux`, holds the platform layer that the Windows build
+compiles (`port/windows/README.md`): the name is historical. This fork is
+released for Windows only.
+
+`ninja linux` still compiles the game with clang for 32-bit x86 Linux
+(`build/linux/halo`), as a developer's check of the shared code (and for the
+asset-free tests: `AGENTS.md`, "Testing"). It is never released. It needs
+clang, Python, ninja, the 32-bit glibc development files and the 32-bit
+SDL3.
 
 The game is 32-bit code because its data (tags, cache files, saved games)
 contains 32-bit pointers, as on the Xbox.
 
-## Requirements
-
-You do not need the Xbox SDK. The declarations that the game uses are in
-`port/include/xdk`.
-
-To build:
-
-- Python and ninja.
-- clang. The option `--linux-cc` of `configure.py` selects a different
-  compiler.
-- The 32-bit glibc development files: `lib32-glibc` on Arch Linux,
-  `gcc-multilib` and `libc6-dev-i386` on Debian and Ubuntu.
-- The 32-bit SDL3: `lib32-sdl3` on Arch Linux, `libsdl3-dev:i386` on Debian
-  and Ubuntu. The portable build does not need it: refer to "Portable
-  build".
-
-To start the game:
-
-- glibc 2.29 or later (32-bit), for the builds from GitHub Actions, which
-  are built against glibc 2.31. They start on SteamOS 3 (Steam Deck). They
-  should also start on Debian 11, Ubuntu 20.04, Fedora 32 and later
-  distributions, but this is not tested. A build that you make without
-  `--portable` needs the glibc of the computer that built it, or a later
-  one.
-- The 32-bit OpenGL libraries (`lib32-mesa`).
-- The 32-bit PipeWire or PulseAudio client libraries (`lib32-pipewire` or
-  `lib32-libpulse`).
-- The 32-bit X11 libraries (`lib32-libx11`, `lib32-libxext`, and
-  `lib32-libxi`, with which SDL holds the mouse; without it the game hides
-  the pointer and moves it back to the middle of the window instead). In a
-  Wayland session, the game uses them through XWayland. SDL uses Wayland
-  itself only if the 32-bit Wayland libraries are version 1.20 or later
-  (`lib32-wayland`, `lib32-libxkbcommon`; Debian 11, Ubuntu 20.04 and
-  Fedora 32 have older ones) and the compositor has the fifo-v1 protocol.
-  On GNOME, the window then has borders only with the 32-bit libdecor
-  (`lib32-libdecor`).
-
-SteamOS has all of these. Its system is read-only, and the builds from
-GitHub Actions need no package: they bring their own SDL3
-(`libSDL3.so.0`, next to the executable).
-
-### Portable build
-
-The builds from GitHub Actions are portable builds (`--portable`; refer to
-"Build options" in the main [README](../../README.md#build-options)). The
-portable build starts on more systems than the build machine's:
-
-- It is compiled and linked against the 32-bit glibc 2.31 of Debian 11, the
-  glibc of the Steam Runtime 3 ("sniper"), not against the glibc of the
-  build machine. An executable needs the glibc version that it was built
-  against, or a later one.
-- It brings SDL 3 (`libSDL3.so.0`), built from source against the same
-  glibc. The executable looks for it in its own folder first (a `DT_RPATH`
-  of `$ORIGIN`, which comes before `LD_LIBRARY_PATH`), so that it uses this
-  SDL even when Steam sets `LD_LIBRARY_PATH`. Few distributions have a
-  32-bit SDL 3. This SDL loads X11, Wayland, libdecor, PipeWire, PulseAudio
-  and ALSA when it starts, so it starts with whichever of them the system
-  has. It is linked only to glibc. Its license is `SDL3-LICENSE.txt`.
-
-At the first build, `tools/linux_sysroot.py` downloads the Debian packages
-(about 25 MB) and the source of SDL. Each package comes from
-`archive.debian.org` or `deb.debian.org`, or else from
-`snapshot.debian.org`; the source of SDL comes from GitHub or from
-`libsdl.org`. It checks each download against its SHA-256 sum. The system root is in
-`build/linux/third_party/sysroot`. `tools/linux_sysroot.cmake` builds SDL
-against it.
-
-To make the portable build you need, in addition to the tools above,
-CMake, `pkg-config` (`pkgconf`) and `wayland-scanner` (`wayland` on Arch
-Linux, `libwayland-bin` on Debian and Ubuntu). You do not need the 32-bit
-SDL3. You need the 32-bit glibc only for the tests. Keep the checkout in a
-folder whose path has no spaces: SDL's build takes the system root's
-include folders from `pkg-config`, which splits a path at its spaces, so the
-portable build stops with a message there.
-
-To see the glibc version that a build needs, enter
-`readelf -V build/linux/halo | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1`.
-
-## Build the game
-
-1. Go to the root folder of the repository.
-2. Enter `python configure.py`.
-3. Enter `ninja linux`.
-
 ## Start the game
 
-Enter `build/linux/halo`.
-
-To play on a Steam Deck, unpack `halo-linux-release.zip` into a folder (in
-Desktop Mode), and add `halo` to Steam as a non-Steam game ("Add a Game" in
-the Games menu of Steam). The game then starts in Game Mode as well. Refer
-to "Steam Deck".
+Start `halo.exe`.
 
 The game data is the folder that contains `maps/`, from an Xbox disc image
 of any version of the game. The game looks for this folder in this
@@ -125,61 +43,9 @@ question:
   shows the progress. If the copy from the image found next to the
   executable fails, the next "Yes" opens the file picker.
 
-On Linux, the file picker needs the desktop portal or `zenity`. If neither
-is present, the game says to put the disc image next to the executable (or
-to install `zenity`) and stops. Put the image there and start the game
-again.
-
 The game writes the copy to `maps.partial`. When the copy is complete, the
 game changes the name to `maps`. If the copy stops before it is complete,
 the game asks for the disc image again at the next start.
-
-### Steam Deck
-
-Do the set-up in Desktop Mode: unpack the release, put `maps/` next to
-`halo` (or start the game one time to copy it from a disc image), and add
-`halo` to Steam. Then start the game from the library in Game Mode.
-
-- Screen: the game fills the screen without borders (`display.mode` empty,
-  thus borderless). The 3D view and the HUD have the shape of the screen
-  (16:10) and are drawn at its resolution; the menus are at the center.
-- Controls: Steam Input gives the game a virtual controller, which the game
-  operates as the controller of the Xbox. With the template that Steam selects
-  ("Gamepad With Joystick Trackpad"), the buttons, sticks and triggers have
-  the functions of the same controls on an Xbox controller, the right
-  trackpad operates as the right stick, and the back buttons (L4, L5, R4,
-  R5) do nothing until you assign them in the controller settings of the
-  game in Steam. With a template that makes a trackpad a mouse, the mouse
-  aims in the game and moves the pointer in the menus.
-- Text: names of profiles and gametypes use the keyboard of the game, which
-  the controller operates. The text fields of the menus (the name and the
-  password in Server Setup, and the password of a game in the server
-  browser) open the keyboard of Steam. Type the text, then select Enter on
-  that keyboard.
-- Frame rate: the game shows one frame for each refresh of the display. It
-  follows the refresh rate and the frame limit of Quick Access >
-  Performance (40 to 60 Hz on the LCD model, up to 90 Hz on the OLED model).
-  The world is calculated at 30 Hz at all rates. Keep `display.vsync =
-  true`. Refer to "Frame rate".
-- Sleep: the clocks of the game do not count the time that the Deck sleeps,
-  so the game continues from where it stopped. A network game does not
-  wait: the host drops a machine that it has not heard from for 15 seconds,
-  and while a Deck that hosts sleeps, the other players have no host.
-
-### NVIDIA on Wayland
-
-The game is a 32-bit program. NVIDIA's driver draws OpenGL into a Wayland
-window through its `egl-wayland` library, which most distributions only
-ship 64-bit (Arch and its derivatives have no 32-bit package of it). A
-32-bit OpenGL window on Wayland then falls back to Mesa's `llvmpipe`, which
-draws on the processor: the log shows `OpenGL ... on llvmpipe`, and the
-game is slow or never finishes loading.
-
-So on a Wayland desktop with NVIDIA's driver loaded, the game opens its
-window through XWayland (X11), where the 32-bit driver draws, unless a
-32-bit `egl-wayland` is installed. The log says so ("video: NVIDIA's
-driver ..."). `SDL_VIDEO_DRIVER=wayland` or `SDL_VIDEO_DRIVER=x11` chooses
-the video driver yourself.
 
 ## Files and folders
 
@@ -190,13 +56,12 @@ the video driver yourself.
 | `u:\` | `u/` in the save root. This folder contains the user data. |
 
 The save root is `paths.saves` in `config.toml`. If that setting is empty,
-the save root is `$XDG_DATA_HOME/halo-linux` (usually
-`~/.local/share/halo-linux`).
+the save root is `%APPDATA%\halo`.
 
 The game makes the folders when it needs them. Names of files and folders
 are not case-sensitive, as on the Xbox.
 
-On Windows and Linux the save root also has `shader_cache/`: one file for
+The save root also has `shader_cache/`: one file for
 each graphics driver (named by a hash of its vendor, renderer and version),
 with the GPU programs the game has linked on it (`display.shader_cache`).
 The first time a material or an effect comes into view the driver links its
@@ -209,7 +74,7 @@ These files are in the data root:
 
 | File | Contents |
 | --- | --- |
-| `debug.txt` | The log of the game. At start-up, the game shows the data root in the terminal. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
+| `debug.txt` | The log of the game. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
 | `mods/` | Mods: folders of Halo PC tag files whose sounds, bitmaps, text and models play over the maps' on this machine, in the order of the main menu's Mods (`load_order.toml`). Refer to [docs/mods.md](../../docs/mods.md). |
 
@@ -217,9 +82,8 @@ The settings are in `config.toml` next to the executable. Refer to
 "Settings". Internet play's MQTT brokers are in `brokers.txt` next to it
 (`network.brokers_file`).
 
-If the game stops because of a fatal signal, it writes the address and a
-backtrace to the standard error. To find the function at the address, enter
-`addr2line -e build/linux/halo <address>`.
+A crash's report is described in "Crash reports" in
+[port/windows/README.md](../windows/README.md#crash-reports).
 
 ## Controls
 
@@ -250,7 +114,7 @@ grenades switched with the left bumper (the flashlight moves to X).
 | fire | left mouse button |
 | throw a grenade | right mouse button, G |
 | jump (and skip a cutscene) | space |
-| crouch | left ctrl, C (C alone in the web build) |
+| crouch | left ctrl, C |
 | melee | F, mouse button 4 |
 | reload | R |
 | action (pick up, hold to swap weapons, enter or leave a vehicle; never reloads) | E |
@@ -273,7 +137,7 @@ chat's on-screen keyboard (refer to "Text chat").
 
 Always: \` opens the developer console, F12 releases or captures the mouse,
 F11 changes between fullscreen and window. Screenshot (default F10,
-rebindable under Controls Setup > Actions, below Pause Menu; not on Android) saves a PNG of the completed
+rebindable under Controls Setup > Actions, below Pause Menu) saves a PNG of the completed
 frame to `screenshots/` beside `maps/`, named `YYYY-MM-DD_HH.MM.SS.png` in
 local time, and prints the filename in the console. Captures in the same
 second get a numeric suffix so previous screenshots are preserved.
@@ -399,7 +263,7 @@ problem.
 ## Settings
 
 The settings are in `config.toml` next to the executable
-(`build/linux/config.toml`). At the first start, the game writes the file
+(next to `halo.exe`). At the first start, the game writes the file
 with the default values and a comment for each setting. To get the default
 values again, delete the file.
 
@@ -420,16 +284,16 @@ the setting for one start of the game. It has priority over the file.
 | `display.mode` | `""` | `HALO_DISPLAY_MODE` | `"fullscreen"`: the display, taken at the mode of `display.resolution` (the nearest the display has), or at its desktop mode. `"borderless"`: a window over the whole desktop, whose mode does not change. `"windowed"`: a window of `display.window_size`. Empty: `display.fullscreen` decides (`true`: borderless). F11 changes between the window and the fullscreen mode. Video Setup sets it. |
 | `display.fullscreen` | `true` | `HALO_FULLSCREEN` | `true`: borderless, as `display.mode = "borderless"`. `false`: a window, as `display.mode = "windowed"`. Used when `display.mode` is empty. |
 | `display.resolution` | `"native"` | `HALO_RESOLUTION` | What fullscreen and borderless draw at: `"native"`, the display's own resolution, or `"<width>x<height>"`, such as `"1920x1080"`, 640x480 or more. Fullscreen sets the display to it. Borderless draws at it and scales the picture to the display, where the display has room for it. The picture has 480 lines of the game and the width of the resolution's shape. A window draws at its own size instead. Video Setup's Resolution sets it, from the display's modes; it shows with Fullscreen and Borderless. |
-| `display.resolution_scaling` | `"native"` (Android: `"original"`) | `HALO_RESOLUTION_SCALING` | `"native"`: the game draws at the resolution of the window, or of the display (or `display.resolution`) fullscreen. `"75%"`, `"50%"` or `"25%"`: the game draws at that part of it each way (`"50%"` of 1920x1080 is 960x540) and scales the picture up, for a GPU that cannot keep up with the full resolution. `"original"`: the game draws the 640x480 picture of the Xbox (on Android, 480 lines at the display's shape) and scales it up to the window or the display, whatever `display.mode` is. Video Setup sets it. |
+| `display.resolution_scaling` | `"native"` | `HALO_RESOLUTION_SCALING` | `"native"`: the game draws at the resolution of the window, or of the display (or `display.resolution`) fullscreen. `"75%"`, `"50%"` or `"25%"`: the game draws at that part of it each way (`"50%"` of 1920x1080 is 960x540) and scales the picture up, for a GPU that cannot keep up with the full resolution. `"original"`: the game draws the 640x480 picture of the Xbox and scales it up to the window or the display, whatever `display.mode` is. Video Setup sets it. |
 | `display.window_size` | `""` | `HALO_WINDOW_SIZE` | The size of the window, as `"<width>x<height>"`, such as `"1920x1080"`, 640x480 or more. You can change the size of the window; the game's picture takes its shape. Empty: `display.window_scale` decides. Video Setup's Window Size sets it, from sizes of each shape (4:3, 16:10, 16:9 and 21:9) that fit the desktop; it shows with Windowed. |
 | `display.window_scale` | `2` | `HALO_WINDOW_SCALE` | Used when `display.window_size` is empty: the size of the window, as a multiple of 640x480. |
 | `display.vsync` | `true` | `HALO_NO_VSYNC=1` sets `false` | `true`: each frame waits for the display. |
 | `display.max_fps` | `0` | `HALO_MAX_FPS` | With vsync off, the most frames each second. `0`: twice the display's refresh rate. `-1`: no limit, which can hang some Intel graphics (Raptor Lake), resetting the desktop's graphics too. |
-| `display.frames_in_flight` | `3` | `HALO_FRAMES_IN_FLIGHT` | Windows and Linux: the most frames the GPU has queued, 1 to 8. Each frame waits until the GPU has finished the frame this many before it, so that the frames come evenly when the GPU is slower than the game. `0`: the driver decides, which on a slow GPU can give a long frame every few frames. Refer to "Frame rate". |
-| `display.anti_aliasing` | `"off"` | `HALO_ANTI_ALIASING` | The smoothing of jagged edges, which the Xbox did not have. `"off"`: none, as on the Xbox. `"fxaa"` or `"smaa"`: a pass over the 3D view after the game draws it. The HUD and the menus stay sharp. SMAA is the sharper and costs more. `"ssaa2x"`: the game draws at two times the resolution in each direction (at most the GPU's largest texture), and the picture is scaled down. The GPU does four times the work. Not with `display.resolution_scaling = "original"`. `"msaa2x"`, `"msaa4x"` or `"msaa8x"`: each pixel of the 3D view has that many samples (at most the GPU's). On Android, `"smaa"` gives FXAA and `"ssaa2x"` none. A change applies from the next frame. Refer to "Anti-aliasing" in "What operates". |
+| `display.frames_in_flight` | `3` | `HALO_FRAMES_IN_FLIGHT` | The most frames the GPU has queued, 1 to 8. Each frame waits until the GPU has finished the frame this many before it, so that the frames come evenly when the GPU is slower than the game. `0`: the driver decides, which on a slow GPU can give a long frame every few frames. Refer to "Frame rate". |
+| `display.anti_aliasing` | `"off"` | `HALO_ANTI_ALIASING` | The smoothing of jagged edges, which the Xbox did not have. `"off"`: none, as on the Xbox. `"fxaa"` or `"smaa"`: a pass over the 3D view after the game draws it. The HUD and the menus stay sharp. SMAA is the sharper and costs more. `"ssaa2x"`: the game draws at two times the resolution in each direction (at most the GPU's largest texture), and the picture is scaled down. The GPU does four times the work. Not with `display.resolution_scaling = "original"`. `"msaa2x"`, `"msaa4x"` or `"msaa8x"`: each pixel of the 3D view has that many samples (at most the GPU's). A change applies from the next frame. Refer to "Anti-aliasing" in "What operates". |
 | `debug.gpu_flush_draws` | `-1` | `HALO_GPU_FLUSH_DRAWS` | Flush the GPU's pipeline every this many draws. `-1`: every 3 on Intel graphics with Mesa's driver, which can otherwise hang in the game's long runs of small draws and reset the desktop's graphics too. `0`: never. |
 | `display.interpolation` | `true` | `HALO_INTERPOLATION` | `true`: one frame for each refresh of the display. `false`: 30 frames each second, as on the Xbox. Refer to "Frame rate". |
-| `display.menu_cursor` | `"large"` | `HALO_MENU_CURSOR` | Windows, Linux and the web: the menus' pointer for the mouse, the game's blue arrow, sized to the window as Halo PC's was: `"small"`, `"medium"`, `"large"` or `"extra_large"` (18, 24, 32 or 40 of the menus' 480 lines tall), or `"off"` for the system's pointer. MENU CURSOR in Settings > Mouse writes its choice here. |
+| `display.menu_cursor` | `"large"` | `HALO_MENU_CURSOR` | The menus' pointer for the mouse, the game's blue arrow, sized to the window as Halo PC's was: `"small"`, `"medium"`, `"large"` or `"extra_large"` (18, 24, 32 or 40 of the menus' 480 lines tall), or `"off"` for the system's pointer. MENU CURSOR in Settings > Mouse writes its choice here. |
 | `display.show_fps` | `false` | `HALO_SHOW_FPS=1` sets `true` | `true`: the frame rate at the bottom right of a game, counted over half a second and green from 30 frames each second, red below. The game's own counter, which the Xbox version's `display_framerate` console variable showed. Refer to "Frame rate". |
 | `display.direct_camera` | `true` | `HALO_DIRECT_CAMERA` | `true`: in first person, on foot, the view points where the player aims in each frame, not where the last tick left it. Refer to "Frame rate". |
 | `display.fov` | `0.0` | `HALO_FOV` | The first-person view's field of view on foot, in degrees across at 16:9, from 20 to 150. `0`: the stock view. Refer to "Field of view". |
@@ -462,9 +326,9 @@ the setting for one start of the game. It has priority over the file.
 | `display.scoreboard_team_layout` | `"teams"` | `HALO_SCOREBOARD_TEAM_LAYOUT` | How the multiplayer scoreboard (hold BACK, or tab) lists a team game's players. `"teams"`: a column for each team, red on the left and blue on the right. `"score"`: all the players in order of score. With more players than fit, the mouse wheel and Page Up / Page Down scroll the scoreboard. |
 | `display.scoreboard_background` | `true` | `HALO_SCOREBOARD_BACKGROUND` | `true`: the multiplayer scoreboard (hold BACK, or tab) has a panel behind its text, for clearer text. |
 | `display.scoreboard_background_color` | `"16, 16, 16, 150"` | `HALO_SCOREBOARD_BACKGROUND_COLOR` | The colour of the scoreboard's panel: `"red, green, blue, alpha"`, each from `0` to `255`. Alpha `0` is see-through, `255` is solid. |
-| `display.anisotropic_filtering` | `0` | `HALO_ANISOTROPIC_FILTERING` | Textures seen at a grazing angle (floors, walls, terrain) are sampled along the angle from finer mip levels, so they stay sharp; the Xbox game asks for none. `0` or `1`: as on the Xbox. `2`, `4`, `8` or `16`: at most that many samples (at most the GPU's); `4` keeps most of `16`'s sharpness at less cost on slower GPUs. TEXTURE FILTERING in Video Setup > Graphics. It applies to the textures of the map that have mip levels and are filtered linearly (base, detail, bump and environment maps; lightmaps have no mip levels), not to what the game renders, such as the water's ripples. On Android and the web, only where the GPU has `GL_EXT_texture_filter_anisotropic`. |
+| `display.anisotropic_filtering` | `0` | `HALO_ANISOTROPIC_FILTERING` | Textures seen at a grazing angle (floors, walls, terrain) are sampled along the angle from finer mip levels, so they stay sharp; the Xbox game asks for none. `0` or `1`: as on the Xbox. `2`, `4`, `8` or `16`: at most that many samples (at most the GPU's); `4` keeps most of `16`'s sharpness at less cost on slower GPUs. TEXTURE FILTERING in Video Setup > Graphics. It applies to the textures of the map that have mip levels and are filtered linearly (base, detail, bump and environment maps; lightmaps have no mip levels), not to what the game renders, such as the water's ripples. |
 | `display.latency_meter` | `false` | `HALO_LATENCY_METER` | `true`: in a network game, your round trip to the host in milliseconds at the top right of the screen, "Ping 45 ms" with four bars: green below 80 ms, yellow below 150, red from 150. The host shows "Max ping", its slowest player's. A player's machine that has heard nothing from the host for two seconds shows "Connection problem". The round trip includes each machine's wait for its next tick, so a LAN reads 15 to 35 ms. Not shown in the menus, after the game, in a co-op cutscene or when the host plays alone. The scoreboard's pings take the same colours, and show the round trips this machine times itself (the host: each player's; a player: their own), so they agree with the meter. Nothing more is sent. Only in config.toml, not in the menus. |
-| `display.shader_cache` | `true` | `HALO_SHADER_CACHE` | Windows and Linux: keep the GPU programs that the game links in `shader_cache/` in the save root, and load each from there the next time instead of linking it again, which stops the game for a frame on some drivers. `false`: link each program every time. Refer to "Files and folders". |
+| `display.shader_cache` | `true` | `HALO_SHADER_CACHE` | Keep the GPU programs that the game links in `shader_cache/` in the save root, and load each from there the next time instead of linking it again, which stops the game for a frame on some drivers. `false`: link each program every time. Refer to "Files and folders". |
 | `display.stats_log` | `false` | `HALO_STATS_LOG` | `true`: a line a second in the log with the frame rate, the mode, the map, the renderer and the size of the 3D view (`STATS fps=120.2 mode=Slayer map=bloodgulch gpu="Adreno (TM) 735" res=1068x480`), so a graphics bug's report or two builds compared say which of them was running and at what frame rate. Nothing is drawn and nothing is sent. |
 | `display.per_pixel_lighting` | `false` | `HALO_PER_PIXEL_LIGHTING` | `false`: the models (characters, weapons, vehicles, scenery) are lit at each vertex and the light is blended between them, as on the Xbox. The light across a curved surface then shows facets, and a point light that passes close lights only the vertices it reaches. `true`: the models are lit at each pixel by the same lights (the ambient light, two distant lights and two point lights), which changes their look. |
 | `display.structure_culling` | `31` | `HALO_STRUCTURE_CULLING` | Which tests skip the triangles of the level (its walls, floors and terrain) that the camera cannot see before they are drawn, as bits added together: `1`, triangles outside the view; `2`, groups of triangles that all face away from the camera; `4`, single triangles that face away; `8`, smaller groups, so that more of them are skipped whole; `16`, the rooms nearest the camera first. Each test is conservative: the picture is the same, with fewer triangles drawn. `0`: the original walk, which draws every triangle of each visible room. The console's `structure_culling <bits>` changes it until the game quits, and `debug_structure_culling true` shows what was skipped (red: outside the view, blue: facing away). |
@@ -472,32 +336,30 @@ the setting for one start of the game. It has priority over the file.
 | `display.shield_glow_intensity` | `default` | `HALO_SHIELD_GLOW_INTENSITY` | The shield glow's reach and brightness: `default`, or `light_show` (three times as far, and at full strength from a third of the flare: a light is no brighter than full). The units glowing are those near any local player's camera, so each of a split screen's views has the same. Video Setup's Extra Effects screen sets it. In a network game, the host's `network.shield_effects` decides, unless it is `players` (each player's own) or the game is co-op (always each player's own). |
 | `display.overshield_effect` | `false` | `HALO_OVERSHIELD_EFFECT` | `true`: the overshield's flare rises up the body from the feet as it charges, with a soft edge (2 seconds, the charge's time from a full shield; 3 from a shield that was down; 2 from any other), then stays lit, whole, for as long as the overshield lasts, its energy moving at 30% of its speed, in its own color (the powerup's, 253, 78, 116), whatever shield color its player chose; the shield's own flares are not drawn over it, and its glow (`display.shield_glow`) rises and stays with it. With `display.viewmodel_shield` it comes up on the first-person arms as the rise reaches them. A hit on it plays what the projectile plays on an Elite's shield (its sound, sparks and light), when the map has that effect and it only shows and sounds. `false`: the overshield as the stock game draws it. Only this machine's drawing and sounds change (`overshield_effect.c`; the rise is a fade in the vertex shader, `d3d8_gl_set_height_fade`). Video Setup's Extra Effects screen sets it. In a network game, the host's `network.shield_effects` decides, unless it is `players` (each player's own) or the game is co-op (always each player's own). |
 | `display.portal_clipping` | `false` | `HALO_PORTAL_CLIPPING` | `true`: each room (cluster) of the level that is seen through a portal is drawn within that portal's bounds on the screen, as the Xbox drew it: its triangles' groups, and its objects, are tested against a frustum narrowed to the portals (`structures/structure_visibility.c`). `false`: the rooms seen are found through the portals as before, and each is drawn within the whole view's frustum, so that a room's objects and parts of its level do not drop out for a frame or two as the camera moves (Digsite's M1 Exploration Moonbase, whose terrain is cut into many rooms, showed the sky through its ground). What the frustums leave out is behind walls or off the screen, so the picture is the same, with a few more triangles drawn. |
-| `display.model_detail` | `"stock"` | `HALO_MODEL_DETAIL` | Which level of detail (of up to five) each model is drawn at. The game measures a model by its size in the lines of its 480-line screen, at any resolution, so at 1440 lines a model three times larger than the levels were made for is drawn as the Xbox drew it. `"stock"`: as on the Xbox. `"native"`: measured in the lines of the display (not supersampling's), so more detail is kept at a distance at high resolutions, and small far models that the Xbox left out are drawn. `"highest"`: measured as `"native"` for which models are drawn, and those drawn at their most detailed level. With either, a part that has no geometry at the level chosen draws its most detailed level below that has some, and a level made for a model's inside (one for a size over 1000 pixels, as the top level of a10's cryotubes) is drawn only while the camera is inside the model. Models whose map gives one level (the trees and rocks of b30) do not change. On Android, which draws 480 lines, `"native"` is `"stock"`. |
 | `display.multiplayer_draw_distance` | `true` | `HALO_MULTIPLAYER_DRAW_DISTANCE` | In multiplayer games, players are seen from base to base (`game/view_distance.c`). The Xbox left out a model smaller than its smallest level's cutoff, which for the cyborg is 5 pixels in its 480 lines, a player about 100 world units away (Blood Gulch's bases are 97 apart): a unit is now drawn at any distance, at its smallest level. `false`: as the Xbox. The campaign is always as the Xbox. |
-| `display.reversed_depth` | `true` | `HALO_REVERSED_DEPTH` | Not on Android or in a browser. `true`: the depth buffers hold 32-bit floats, reversed (1 at the near plane, 0 at the far), so that depth is about as precise far away as near. With the Xbox's 24 bits and its near plane of 0.0625 world units, surfaces a few millimetres apart (the light strips on Blood Gulch's base, 0.0016 to 0.013 world units in front of their walls, with no depth bias) are run together past some tens of world units and flicker through each other, which the Xbox's 480 lines hid. The renderer turns the game's depth around (its tests, clears, depth range and polygon offsets), and the vertex programs take the reversed depth from their projection's rows (w's row less z's), not from w - z, which would lose the precision at a distance. `false`: 24 bits, as the Xbox's. Read at start. |
-| `display.hdr` | `false` | `HALO_HDR` | `true`: the back buffer that the 3D view is drawn into holds half floats (`GL_RGBA16F`) in place of 8 bits a channel, so that the light the game adds up (blended lights, glows, fog, particles) is kept past white in place of being clipped. Before the HUD and the menus, a tone mapping pass brings it back into the display's range (`display.hdr_tone_mapping`). The HUD and the menus do not change. On Android, only with a GPU that draws into half floats (OpenGL ES 3.2, `GL_EXT_color_buffer_half_float` or `GL_EXT_color_buffer_float`); otherwise off, with a line in the log. A change applies from the next frame. Video Setup's GRAPHICS screen sets it (HDR) and `display.hdr_output` (HDR DISPLAY). Refer to "HDR" in "What operates". |
+| `display.reversed_depth` | `true` | `HALO_REVERSED_DEPTH` | `true`: the depth buffers hold 32-bit floats, reversed (1 at the near plane, 0 at the far), so that depth is about as precise far away as near. With the Xbox's 24 bits and its near plane of 0.0625 world units, surfaces a few millimetres apart (the light strips on Blood Gulch's base, 0.0016 to 0.013 world units in front of their walls, with no depth bias) are run together past some tens of world units and flicker through each other, which the Xbox's 480 lines hid. The renderer turns the game's depth around (its tests, clears, depth range and polygon offsets), and the vertex programs take the reversed depth from their projection's rows (w's row less z's), not from w - z, which would lose the precision at a distance. `false`: 24 bits, as the Xbox's. Read at start. |
+| `display.hdr` | `false` | `HALO_HDR` | `true`: the back buffer that the 3D view is drawn into holds half floats (`GL_RGBA16F`) in place of 8 bits a channel, so that the light the game adds up (blended lights, glows, fog, particles) is kept past white in place of being clipped. Before the HUD and the menus, a tone mapping pass brings it back into the display's range (`display.hdr_tone_mapping`). The HUD and the menus do not change. A change applies from the next frame. Video Setup's GRAPHICS screen sets it (HDR) and `display.hdr_output` (HDR DISPLAY). Refer to "HDR" in "What operates". |
 | `display.hdr_exposure` | `1.0` | `HALO_HDR_EXPOSURE` | With `display.hdr`, the light of the 3D view is multiplied by this before the tone mapping, from `0.25` to `4.0`. |
 | `display.hdr_tone_mapping` | `"gt7"` | `HALO_HDR_TONE_MAPPING` | With `display.hdr`, the curve that brings the light into the display's range. `"gt7"`: Polyphony Digital's Gran Turismo 7 tone mapping (`port/third_party/gt7_tone_mapping`, MIT), in Rec.2020 at the light's brightness in nits: each channel along its curve to the display's peak, blended with that curve's brightness at the colour's own hue (ICtCp), whose chroma fades out as the light nears the peak, so that the brightest light goes to white, as on film and as the Xbox's 8 bits clipped it, in place of staying saturated. Without an HDR display, as GT7's SDR (white at 250 nits). Video Setup's Extra Effects screen sets it (TONE CURVE), taking effect from the next frame. `"neutral"`: the picture is as without HDR up to 80% of white, and the light past it rolls off to white in place of being clipped. `"aces"`: the ACES filmic curve (Narkowicz's fit), with more contrast and darker shadows. `"reinhard"`: the extended Reinhard curve on luminance, softer and darker. |
-| `display.hdr_output` | `false` | `HALO_HDR_OUTPUT` | Not on Android or in a browser. With `display.hdr`, `true`: the window asks for floating-point pixels (scRGB). On a display that has HDR on (on Windows, "Use HDR"), the tone mapping then goes up to the display's headroom over SDR white, and the light past white is shown brighter than white. Without an HDR display the picture is as with `false`; if the driver has no such window, the game makes an 8-bit one. `display.hdr_paper_white` and `display.hdr_peak_brightness` set how bright white and the brightest light are. Read at start. With NVIDIA's driver on Windows, the NVIDIA Control Panel's "Vulkan/OpenGL present method" must be "Prefer layered on DXGI Swapchain": otherwise a fullscreen or borderless window turns black, then oversaturated. Experimental. |
-| `display.hdr_paper_white` | `0` | `HALO_HDR_PAPER_WHITE` | Not on Android or in a browser. With `display.hdr_output` on an HDR display, how bright white is in nits, 80 to 1000: the HUD, the menus and the 3D view's white (scRGB's 1.0 is 80 nits). `203` is HDR television's reference white for SDR content (ITU-R BT.2408). `0`: Windows' "SDR content brightness", as SDL reports it. Video Setup's GRAPHICS screen sets it (PAPER WHITE), and its HDR CALIBRATION screen by eye, beside a grey scale ("HDR" in "What operates"). |
-| `display.hdr_peak_brightness` | `0` | `HALO_HDR_PEAK_BRIGHTNESS` | Not on Android or in a browser. With `display.hdr_output` on an HDR display, the brightest the display shows in nits, 250 to 10000, which `display.hdr_tone_mapping` fits the brightest light to. `0`: what Windows reports, which its HDR Calibration app sets. Video Setup's GRAPHICS screen sets it (PEAK BRIGHTNESS), and its HDR CALIBRATION screen by eye: raised until a ring at 10000 nits disappears into a square at the value ("HDR" in "What operates"). |
+| `display.hdr_output` | `false` | `HALO_HDR_OUTPUT` | With `display.hdr`, `true`: the window asks for floating-point pixels (scRGB). On a display that has HDR on (on Windows, "Use HDR"), the tone mapping then goes up to the display's headroom over SDR white, and the light past white is shown brighter than white. Without an HDR display the picture is as with `false`; if the driver has no such window, the game makes an 8-bit one. `display.hdr_paper_white` and `display.hdr_peak_brightness` set how bright white and the brightest light are. Read at start. With NVIDIA's driver on Windows, the NVIDIA Control Panel's "Vulkan/OpenGL present method" must be "Prefer layered on DXGI Swapchain": otherwise a fullscreen or borderless window turns black, then oversaturated. Experimental. |
+| `display.hdr_paper_white` | `0` | `HALO_HDR_PAPER_WHITE` | With `display.hdr_output` on an HDR display, how bright white is in nits, 80 to 1000: the HUD, the menus and the 3D view's white (scRGB's 1.0 is 80 nits). `203` is HDR television's reference white for SDR content (ITU-R BT.2408). `0`: Windows' "SDR content brightness", as SDL reports it. Video Setup's GRAPHICS screen sets it (PAPER WHITE), and its HDR CALIBRATION screen by eye, beside a grey scale ("HDR" in "What operates"). |
+| `display.hdr_peak_brightness` | `0` | `HALO_HDR_PEAK_BRIGHTNESS` | With `display.hdr_output` on an HDR display, the brightest the display shows in nits, 250 to 10000, which `display.hdr_tone_mapping` fits the brightest light to. `0`: what Windows reports, which its HDR Calibration app sets. Video Setup's GRAPHICS screen sets it (PEAK BRIGHTNESS), and its HDR CALIBRATION screen by eye: raised until a ring at 10000 nits disappears into a square at the value ("HDR" in "What operates"). |
 | `audio.enabled` | `true` | `HALO_NO_AUDIO=1` sets `false` | `false`: no audio device. The sound continues without output. |
 | `audio.volume` | `1.0` | `HALO_VOLUME` | The master volume. |
 | `audio.music_volume` | `1.0` | `HALO_MUSIC_VOLUME` | The music's volume, of the master volume. |
 | `audio.effects_volume` | `1.0` | `HALO_EFFECTS_VOLUME` | The volume of the other sounds (effects and speech), of the master volume. |
-| `audio.buffer_frames` | `512` | `HALO_AUDIO_BUFFER_FRAMES` | The audio device's buffer, in sample frames at 48 kHz, from `64` to `8192`. Larger rides out stalls that would cut the sound out; smaller has less delay (512 is 11 ms, 2048 is 43 ms). Not on Android or the web. |
-| `audio.channels` | `"stereo"` | `HALO_AUDIO_CHANNELS` | `"stereo"`, or `"5.1"` for surround sound as with Dolby Digital on the Xbox. `"auto"`: 5.1 if the sound device has 6 or more channels. Linux and Windows only. |
+| `audio.buffer_frames` | `512` | `HALO_AUDIO_BUFFER_FRAMES` | The audio device's buffer, in sample frames at 48 kHz, from `64` to `8192`. Larger rides out stalls that would cut the sound out; smaller has less delay (512 is 11 ms, 2048 is 43 ms). |
+| `audio.channels` | `"stereo"` | `HALO_AUDIO_CHANNELS` | `"stereo"`, or `"5.1"` for surround sound as with Dolby Digital on the Xbox. `"auto"`: 5.1 if the sound device has 6 or more channels. |
 | `audio.reverb` | `true` | `HALO_REVERB` | `true`: the sounds of the world reverberate as the place the player is in does: the sound environments of the maps (a corridor, a cave, a large hall, outdoors) set the reverberation, as the I3DL2 reverb of the Xbox did. A sound behind a wall or a door is muffled in it too. `false`: no reverberation (sounds behind a wall are still muffled). |
 | `audio.resampler` | `"sinc"` | `HALO_AUDIO_RESAMPLER` | How the sounds are converted to the output's rate (48 kHz): `"sinc"` with a band-limited low pass, which keeps out the images above the sound's own rate; `"linear"` between neighbouring samples, which lets some of them through and sounds brighter for it. Audio Setup's SOUND PROCESSING screen sets it, with `audio.reverb`. |
 | `audio.voice_chat` | `"push_to_talk"` | `HALO_VOICE_CHAT` | How you talk in voice chat: `"push_to_talk"` (while `controls.push_to_talk` is held; the microphone opens when you first press it), `"open_mic"` (when the microphone hears speech), or `"off"`. You hear the other players in every case. Refer to "Voice chat". |
 | `audio.voice_volume` | `1.0` | `HALO_VOICE_VOLUME` | The volume of the voices of the other players, `0` to `2`. |
-| `audio.output_device`, `audio.input_device` | `"default"` | `HALO_AUDIO_OUTPUT_DEVICE`, `HALO_AUDIO_INPUT_DEVICE` | The speakers and the microphone, by the name that Settings > Audio shows, or `"default"` for the device of the system. If the device is not found, the game uses the device of the system. Not on Android. |
+| `audio.output_device`, `audio.input_device` | `"default"` | `HALO_AUDIO_OUTPUT_DEVICE`, `HALO_AUDIO_INPUT_DEVICE` | The speakers and the microphone, by the name that Settings > Audio shows, or `"default"` for the device of the system. If the device is not found, the game uses the device of the system. |
 | `input.mouse_sensitivity` | `1.0` | `HALO_MOUSE_SENSITIVITY` | The multiplier for the mouse aim. |
 | `input.mouse_vertical_sensitivity` | `0.0` | `HALO_MOUSE_VERTICAL_SENSITIVITY` | The multiplier for the vertical mouse aim. `0`: the same as `input.mouse_sensitivity`. |
-| `input.playstation_kernel_driver` | `false` | `HALO_PLAYSTATION_KERNEL_DRIVER` | Linux: `true` drives a PlayStation controller (DualSense, DualShock 4) through the kernel's driver of it (`hid-playstation` since Linux 5.12, `hid-sony`): its buttons, sticks, triggers and rumble, with no setup, but not its lightbar. `false`: SDL's own driver, which needs access to the controller's `/dev/hidraw` device, as Steam's udev rules give it (`steam-devices`, or Steam installed). Read at start-up. |
 | `input.invert_mouse` | `false` | `HALO_MOUSE_INVERT=1` sets `true` | `true`: the vertical mouse aim is inverted. |
 | `input.mouse_aim_assist` | `false` | `HALO_MOUSE_AIM_ASSIST` | `true`: the magnetism of the controller also operates for the mouse. `false`: when the mouse moved after the right stick, the view is not slowed or dragged by a target. The autoaim of the bullets operates in both cases. |
-| `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`, `screenshot`, `push_to_talk`, `chat`, `team_chat`, `vote_yes`, `vote_no`. Keys by their names on a US keyboard (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`): a key is the one in that place on any keyboard, which Controls Setup shows by its own label (the US name on Android). Buttons: `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
+| `controls.<action>` | (the table in "Controls") | `HALO_KEY_<ACTION>` | The keys and mouse buttons of an action, up to two, separated by a comma: `move_forward`, `move_backward`, `strafe_left`, `strafe_right`, `jump`, `crouch`, `fire`, `throw_grenade`, `melee`, `reload`, `zoom`, `switch_weapon`, `switch_grenade`, `action`, `flashlight`, `scoreboard`, `pause`, `screenshot`, `push_to_talk`, `chat`, `team_chat`, `vote_yes`, `vote_no`. Keys by their names on a US keyboard (`"W"`, `"Space"`, `"Left Ctrl"`, `"F1"`): a key is the one in that place on any keyboard, which Controls Setup shows by its own label. Buttons: `"Mouse Left"`, `"Mouse Right"`, `"Mouse Middle"`, `"Mouse 4"`, `"Mouse 5"`, `"Wheel"` (either way), `"Wheel Up"`, `"Wheel Down"`. |
 | `game.downloaded_maps` | `""` | `HALO_DOWNLOADED_MAPS` | Maps to play as downloaded maps, besides the maps that map sharing downloaded (it names them in `downloaded_maps.txt` in `custom_maps`): their names (`bloodgulch`, `hugeass`), separated by commas, or `"*"` for all the maps. The scripts of a downloaded map cannot change the settings of the player or the games of other players. `debug.txt` names what the game refused. |
 | `game.console_log` | `"none"` | `HALO_CONSOLE_LOG` | What the console shows on the screen. `"none"`: only the asserts that stop the game. `"important"`: bans, players that the host drops for cheating, the reasons that the game refuses a command, and the asserts that stop the game. `"all"`: all the lines. The output of a command always shows. `debug.txt` gets all the lines. |
 | `game.language` | `""` | `HALO_LANGUAGE` | The language of the menus: `ja`, `de`, `fr`, `es` or `it`. Empty: English. |
@@ -547,7 +409,7 @@ the setting for one start of the game. It has priority over the file.
 | `network.coop_team_wipe` | `"auto"` | `HALO_NET_COOP_TEAM_WIPE` | TEAM WIPE in Server Setup > Co-op Options: `"auto"` reverts the checkpoint in a PRIVATE game and only respawns the team in a PUBLIC game (a dedicated server's: `server.public` with internet play). `"revert"` or `"respawn"` overrides visibility; a password does not make a PUBLIC game private. Changed players/machine assignments fall back to position-only respawn with a host diagnostic. A missing checkpoint also uses position-only respawn. Scripted mission failures keep their existing revert behavior. |
 | `network.brokers_file` | `"brokers.txt"` | `HALO_NET_BROKERS_FILE` | The file of the public MQTT brokers that let the machines of an invite find each other, and that carry the listings of the server browser: next to `config.toml`, unless a full path. One `host:port` on each line, up to 4; `#` starts a comment. |
 | `network.stun_servers` | Google and Cloudflare | `HALO_NET_STUN` | The public STUN servers (`host:port`, with commas between them) that give the internet address of a machine. |
-| `network.client_timeout_seconds` | `15` | `HALO_NET_CLIENT_TIMEOUT_SECONDS` | Hosting: the seconds the host waits for a machine it hears nothing from before it drops it (5 to 300; the stock game waits 15). The same seconds are how long each machine's reliable stream waits for its peer to read before it gives up, and how long a host in a game waits for its own network to come back (an address renewed, a wifi drop) before it ends the game; each machine reads its own setting. A longer wait keeps players whose connection stalls (a browser tab in the background), but a machine that is really gone leaves its players frozen for longer. |
+| `network.client_timeout_seconds` | `15` | `HALO_NET_CLIENT_TIMEOUT_SECONDS` | Hosting: the seconds the host waits for a machine it hears nothing from before it drops it (5 to 300; the stock game waits 15). The same seconds are how long each machine's reliable stream waits for its peer to read before it gives up, and how long a host in a game waits for its own network to come back (an address renewed, a wifi drop) before it ends the game; each machine reads its own setting. A longer wait keeps players whose connection stalls, but a machine that is really gone leaves its players frozen for longer. |
 | `network.public_address` | `""` | `HALO_NET_PUBLIC_ADDRESS` | Hosting: the internet address the joiners reach this machine at, `host[:port]` (the port forwarded to `network.tunnel_port`), for a server behind a NAT with one forwarded port. It is offered first, and its name is looked up again every 5 minutes. Empty: what STUN and UPnP find. |
 | `network.listings` | `"both"` | `HALO_NET_LISTINGS` | What the server browser lists. `"both"`: the dedicated servers of the master servers first, then the games players host (from the brokers). `"masters"`: the master servers' only. `"brokers"`: the brokers' only. Refer to "Server browser". |
 | `network.link_share` | `"when_needed"` | `HALO_NET_LINK_SHARE` | When the game shows a server the Discord account linked to it (Settings > Network Setup > Discord Account): `"when_needed"` (a server that asks, to let you in from a VPN), `"always"` or `"never"`. Refer to "Discord account". |
@@ -639,37 +501,6 @@ the setting for one start of the game. It has priority over the file.
 With Mesa drivers, the game sends its GL calls through the GL thread of
 Mesa. To stop this, set the environment variable `mesa_glthread=false`.
 
-## Updates
-
-The builds from GitHub Actions (refer to the main [README](../../README.md#download))
-can update themselves. At start-up, the game asks GitHub for the latest
-release. The game does not wait for the answer. If the latest release is not
-newer, the game does nothing.
-
-If the latest release is newer, the game asks: "Do you want to update?"
-
-- Select "Yes" to update. The game downloads the release for this platform,
-  replaces its files and starts the new version. The old files get the
-  extension `.old`. The new version deletes them.
-- Select "No" to continue. The game asks again at the next start.
-- Select "Do not ask again", then "Yes", to stop the questions. The game
-  writes `auto = false` in the `[update]` section of `config.toml`. To get
-  the questions again, set `auto = true`.
-
-Under gamescope (the Game Mode of the Steam Deck), the game does not ask,
-because a system dialog stops the game there. The game writes the new
-version in the log. To update, start the game from the desktop, or set
-`update_answer = "yes"` in the `[debug]` section of `config.toml`.
-
-The game downloads through HTTPS. It examines the certificate of the server
-against the certificate authorities of the system: on Linux, the bundle of
-the distribution (`src/posix_update.c`, with Mbed TLS); on Windows, the
-certificate store of Windows (WinHTTP). The folder of the executable must
-let the game write to it.
-
-Builds that you make yourself have no build number. They do not look for
-updates.
-
 ## Frame rate
 
 The game calculates its world at 30 Hz, as on the Xbox. On the Xbox, the
@@ -697,7 +528,7 @@ The direction of the view is an exception. The game reads the mouse and the
 sticks in each frame. In first person, on foot, each frame points the view
 where the player aims at that time (`display.direct_camera`). Thus the view
 turns in the frame that the mouse moves. In a vehicle and in cinematics, the
-view mixes as the other things do. On Android, the view mixes as before.
+view mixes as the other things do.
 
 To get 30 frames each second, set `display.interpolation = false`.
 
@@ -715,8 +546,8 @@ To see the frame rate:
 1. Push \` to open the developer console.
 2. Enter `display_framerate true`.
 
-Or set `display.show_fps` (Video Setup > Graphics' SHOW FRAMES, which on Android is
-where the console is not at hand), which turns on the same counter.
+Or set `display.show_fps` (Video Setup > Graphics' SHOW FRAMES), which turns
+on the same counter.
 
 In the game of another host, the console runs only the commands that change
 nothing of the game (such as `display_framerate`), and the game puts back
@@ -791,7 +622,7 @@ These are the differences from the Xbox:
   The other machines are also in the game.
 - In free-for-all games, each player is a team.
 
-Linux, Windows and Android machines can play in the same game. Each machine
+Machines can play in the same game. Each machine
 simulates the players from the same inputs, and the host does not correct
 all of the game. Thus each machine must calculate the same floating-point
 results, and all the ports:
@@ -806,17 +637,16 @@ More than one copy of the game can play on one computer. Each copy must
 have a different loopback address. A copy with an address gets no
 broadcasts. Thus each copy must send its broadcasts to the other copies.
 
-For a host and two clients, enter these commands in three terminals:
+For a host and two clients, enter these commands in three command prompts:
 
-```sh
-HALO_NET_ADDRESS=127.0.0.200 HALO_NET_BROADCAST=127.0.0.201,127.0.0.202 build/linux/halo
-HALO_NET_ADDRESS=127.0.0.201 HALO_NET_BROADCAST=127.0.0.200 build/linux/halo
-HALO_NET_ADDRESS=127.0.0.202 HALO_NET_BROADCAST=127.0.0.200 build/linux/halo
+```bat
+set HALO_NET_ADDRESS=127.0.0.200& set HALO_NET_BROADCAST=127.0.0.201,127.0.0.202& halo.exe
+set HALO_NET_ADDRESS=127.0.0.201& set HALO_NET_BROADCAST=127.0.0.200& halo.exe
+set HALO_NET_ADDRESS=127.0.0.202& set HALO_NET_BROADCAST=127.0.0.200& halo.exe
 ```
 
 Do not give 127.0.0.1 to a copy. Each copy gets to its own address through
-127.0.0.1. Linux and Windows send all of 127.0.0.0/8 to the loopback
-interface.
+127.0.0.1. Windows sends all of 127.0.0.0/8 to the loopback interface.
 
 ## Internet play
 
@@ -834,48 +664,15 @@ To join a game, do one of these steps:
 - Open the link. The game is the handler of `halo://` links. If the game
   already operates, the new copy gives the link to it and stops. A key in a
   file that only the user can read (`halo-ce-universal.key` in
-  `$XDG_RUNTIME_DIR`, else `~/.halo-ce-universal.key`; on Windows in
   `%LOCALAPPDATA%`) encrypts the link, so the programs of other users cannot
   read it.
 - Copy the link (or the 64 digits) and go to the game.
 - Enter `halo <link>`.
 - Accept a Discord invite. Refer to "Discord".
 
-The game also takes the address of the web build's page with an invite
-(`https://halocombatevolved.com/?join=<64 digits>`), as a link.
-
 When the machines connect, the game of the host shows in Multiplayer,
 System Link. Join the game as on a local network. System link on a local
 network does not need an invite.
-
-### Browsers
-
-The web build ([port/web/README.md](../web/README.md)) plays internet games
-with the Linux, Windows and Android builds: it hosts and joins by invite, and
-the server browser lists its public games and theirs. A browser has no UDP
-socket, only WebRTC, so a native build takes a browser's WebRTC on the port
-of its tunnel (`network.tunnel_port`), as little of it as one data channel
-needs (`src/p2p_webrtc.c`):
-
-- ICE: the native build is an ICE-lite agent. It answers the checks of the
-  browser, and the browser chooses the path. The credentials come from the
-  secret of the session, which both machines have. Until the browser
-  connects, the native build sends STUN indications to the addresses of the
-  browser, which open its NAT to the checks of the browser.
-- DTLS 1.2 (`src/posix_dtls.c`, Mbed TLS: `port/third_party/mbedtls`): the
-  native build is the server, with a certificate that it makes when it
-  starts (ECDSA P-256). Each machine sends the SHA-256 of its certificate in
-  its signalling messages, which the token seals and the proof of the
-  session authenticates; the other machine accepts only that certificate.
-- SCTP, over DTLS: the browser opens the association, and one data channel,
-  agreed before (unordered, without retransmissions), carries the packets of
-  the tunnel. They are sealed as on UDP, and KCP makes the streams reliable
-  as on UDP.
-
-Two browsers connect to each other with their own WebRTC. There is no relay:
-as between native builds, two networks that do not let a direct connection
-through (some company and school networks block WebRTC) cannot play
-together.
 
 ### Text chat
 
@@ -889,17 +686,14 @@ maps' too; on foot, only you see it). Enter sends the line, Escape cancels
 it. While you type, your player does not move.
 
 With a controller, D-pad Up opens an on-screen keyboard at the bottom right
-(on Android, at the bottom in the middle) for a line to all the players:
+for a line to all the players:
 the left stick (or D-pad Left and Right) moves between the keys, A types
 the key, X deletes, Y switches capitals, D-pad Up and Down change who the
 line is to (all the players, your team, your vehicle), Start sends the
 line, and B closes the keyboard (the button that closed it does nothing in
 the game until you let it go). Its last row has Aa (capitals), #+= (the
-symbols), space, DEL and SEND. On a touchscreen (Android, and a browser on
-a phone or tablet), the touch controls' D-pad Up opens it, a tap on a key
-types it, and a tap anywhere else closes it: the touch controls hide while
-it is up. While the keyboard is up the controller and the touch controls
-move nothing in the game. The face buttons are the same places on
+symbols), space, DEL and SEND. While the keyboard is up the controller
+moves nothing in the game. The face buttons are the same places on
 other controllers (on a PlayStation controller: Cross types, Square
 deletes, Triangle switches capitals, Circle closes).
 
@@ -911,9 +705,7 @@ host's notices in a pale gold; WHITE in CHAT TEXT in Settings > Network
 Setup > Multiplayer HUD (`display.chat_style`) draws them all white, as
 Custom Edition does. A line to the
 team says "(team)" after the name, one to the vehicle "(vehicle)". The
-lines go after ten seconds; while you type, the last six rows show. Where
-the touch controls are (Android, and a browser whose touch controls you
-use), the lines go at the top left, the newest highest. In split screen,
+lines go after ten seconds; while you type, the last six rows show. In split screen,
 each player's view shows the lines that player hears, and the first player
 types. No line shows, and none can be typed, in a menu, in a cinematic or
 while the HUD is hidden; opening a menu ends the line being typed. A new
@@ -973,8 +765,7 @@ host mutes: a player's `/mute` is not sent.
 Network games have voice chat, on the local network and on the internet.
 Hold V (`controls.push_to_talk`, Settings > Controls Setup) to talk, or set
 VOICE CHAT in Settings > Audio to OPEN MIC. VOICE VOLUME sets the volume of
-the other players. On Android, set VOICE CHAT to OPEN MIC to talk: the game
-then asks for the microphone.
+the other players.
 
 OUTPUT DEVICE and INPUT DEVICE in Settings > Audio select the speakers and
 the microphone (SYSTEM DEFAULT, the default, follows the system). The list
@@ -1155,8 +946,7 @@ addresses. Thus anyone can learn the address of the host of a public game,
 as for any public server.
 
 The brokers are in `brokers.txt` next to the executable (from
-`port/assets/network/brokers.txt`; on Android, the app writes it next to
-`config.toml` at each start), one `host:port` on each line. The game uses
+`port/assets/network/brokers.txt`), one `host:port` on each line. The game uses
 all of them at once (up to 4), so one that works is enough. Without the
 file (a game run from somewhere the builds did not put it), the game uses
 its own copy of the list. An update replaces `brokers.txt`: to use brokers of your own, put them in another
@@ -1480,8 +1270,8 @@ lines), and the game's own log to `debug.txt` as the game does
 - **Updates.** `server.auto_update = "install"` (the default) installs a
   new release as soon as a check finds it (every 30 minutes,
   `server.update_check_minutes`; on a thread of its own: the server goes on
-  meanwhile), and stops with exit code 5, so that what runs it (systemd,
-  Docker, a panel) starts the new build: once it has been empty for 10
+  meanwhile), and stops with exit code 5, so that what runs it (a service
+  or a panel) starts the new build: once it has been empty for 10
   minutes, or, for a release of a new network version, when the game ends
   (a game is ended after `server.update_game_minutes`, 30). An install that
   fails is tried again at the next check.
@@ -1491,15 +1281,10 @@ lines), and the game's own log to `debug.txt` as the game does
   starts a server, whatever the settings say, and writes nothing to
   `config.toml`.
 
-`deploy/` has a systemd unit (`deploy/systemd`), a Docker image and compose
-file (`deploy/docker`), a Pterodactyl and Pelican egg (`deploy/pterodactyl`),
-a Helm chart (`deploy/helm/opence-server`), PufferPanel and MCSManager
-templates (`deploy/pufferpanel`, `deploy/mcsmanager`), example gametype
-files (`deploy/gametypes`, described in `docs/dedicated_server.md`,
-"Gametype files": their rules have their full names, `team_vehicles`, not
-the rotation's short names) and an example `init.txt`
-(`deploy/init.txt.example`). The README of each of the first six folders
-says how to use it. `deploy/release-key.pub` is the public key of the
+`deploy/` has example gametype files (`deploy/gametypes`, described in
+`docs/dedicated_server.md`, "Gametype files": their rules have their full
+names, `team_vehicles`, not the rotation's short names) and an example
+`init.txt` (`deploy/init.txt.example`). `deploy/release-key.pub` is the public key of the
 releases' signed `SHA256SUMS` (`docs/dedicated_server.md`, "Releases").
 
 **Fleets.** For many servers on many machines, beside the panels,
@@ -1601,8 +1386,8 @@ crafted file) is refused, and the level starts over.
 | Graphics | Direct3D 8 on OpenGL 4.5 core through SDL3 (`src/d3d8_gl.c`). The port translates the NV2A vertex shaders and register combiners to GLSL. It decodes all the Xbox texture formats. The vertex and index buffers come from a GL copy of the Xbox memory. |
 | High-res HUD | The HUD is drawn from high-res assets: redraws at 8x the size of the maps' bitmaps (4x for the largest), in `port/assets/hud`. They cover the meters, counters, panels and their outlines, the motion sensor, reticles, waypoints and scopes, but no bitmap with English text. `tools/hud_assets.py` makes them from the SVG redraws (the weapons' reticles from those of the PC HUD sheet that match the Xbox's exactly, the sniper rifle's 2x and 10x set in Overpass), and the build embeds them in the executable. When the game uploads one of those bitmaps, `src/hud_hires.c` gives the high-res texture in its place, if the bitmap's pixels are those of the English maps: another language's maps keep their own. The game sizes and places the HUD from its tags as before. `display.high_res_hud = false` turns this off. |
 | High-res text | The menus' and HUD's text is drawn with Overpass (`port/assets/fonts`, SIL Open Font License) in place of the maps' bitmap fonts, which are Interstate. `src/text_hires.c` rasterizes each glyph with stb_truetype (`port/third_party/stb`) at the resolution the game draws at, into an atlas that a placeholder bitmap of the game stands for. The game lays the text out from its font tags as before: each font is as tall as its tag's capitals, and narrowed where the tag's letters are narrower than the Xbox maps' (the fonts of a Custom Edition `loc.map`), so that its letters do not run into each other. The menus' titles (the screens' headers and the main menu's items) are pictures of text in the maps, so they are drawn as the high-res HUD is: `tools/title_assets.py` sets each one again in OpenCE, Roger White's public-domain Newtown respaced to match the maps' commercial title typeface (`tools/title_font.py`), at 4x the bitmap's size over its own plate or glow, each letter placed where the map's letter is, in `port/assets/titles`. The postgame carnage report's title is set over a hand-made SVG redraw of its panel (`port/assets/titles/svg`) instead. The A, B, X and Y button icons beside the menus' key labels and in their text ("Press A to Join") are drawn from hand-made SVG redraws at 8x the size of the maps' bitmaps (`port/assets/buttons`, made by `tools/button_assets.py`), in the same sizes and places. `display.high_res_text = false` turns it off. |
-| Anti-aliasing | Off unless `display.anti_aliasing` is set (`src/d3d8_gl.c`, `src/xgpu_post.c`). FXAA (written in the port) and SMAA (`port/third_party/smaa`, MIT licensed, at its HIGH preset, compiled as GLSL) are passes over the 3D view of each window, after the lens flares and before the HUD and the menus (`render/render.c`). Their programs are built when the setting is chosen. Supersampling draws the render targets the size of the screen at two times the resolution in each direction, and the display blit scales them down. Multisampling draws the back buffer and its depth buffer into multisampled renderbuffers, and with them any target that is drawn together with one of them (a mirror's view, in the secondary target with the back buffer's depth buffer), so that the attachments of a framebuffer are all multisampled or none is. A target's pixels are resolved into its texture before something reads the texture (as a texture, or at the display blit). Visibility tests count samples, divided by the samples of a pixel. An alpha-tested surface (foliage, grates) covers the samples of a pixel in proportion to its alpha past the reference (`gl_SampleMask`, not on Android). |
-| HDR | Off unless `display.hdr` is set (`src/d3d8_gl.c`, `src/xgpu_post.c`). The back buffer's texture, and its multisampled renderbuffer, is `GL_RGBA16F` (`GL_HALF_FLOAT` on Android), with the same `GL_DEPTH24_STENCIL8` depth buffer. The game's pixel shaders give colours from 0 to 1, as the NV2A's register combiners did, so the light past white comes from blending, which a floating-point target does not clamp. The tone mapping pass is a pass over the 3D view of each window, before the anti-aliasing (`render/render.c`): it takes each pixel from gamma 2.2 to linear light, multiplies it by `display.hdr_exposure`, applies the curve, and returns to gamma 2.2. It writes the colour only, since the game keeps its own data in the alpha. The display blit becomes a draw that clamps to 1, or, in a floating-point window, gives scRGB (linear light, 1 at the display's SDR white, which SDL reports with the headroom). The settings are read between frames; a change of `display.hdr` makes the back buffer again in the other format. Extra Effects' HDR CALIBRATION, there with a floating-point window on an HDR display, sets the peak and paper white by eye (`game/menu_functions.c`'s "port hdr calibration"): while its screen is drawn, the display takes the values its rows show, and after the display blit a program fills rectangles and rings of the window in scRGB, over its menus. For the peak, a square at the peak shown with a ring in it at 10000 nits, which disappears into the square once the square is as bright as the display goes; for paper white, a grey scale up to white, beside a white square with a ring at the peak. OK writes the values, Cancel goes back to the settings' own. |
+| Anti-aliasing | Off unless `display.anti_aliasing` is set (`src/d3d8_gl.c`, `src/xgpu_post.c`). FXAA (written in the port) and SMAA (`port/third_party/smaa`, MIT licensed, at its HIGH preset, compiled as GLSL) are passes over the 3D view of each window, after the lens flares and before the HUD and the menus (`render/render.c`). Their programs are built when the setting is chosen. Supersampling draws the render targets the size of the screen at two times the resolution in each direction, and the display blit scales them down. Multisampling draws the back buffer and its depth buffer into multisampled renderbuffers, and with them any target that is drawn together with one of them (a mirror's view, in the secondary target with the back buffer's depth buffer), so that the attachments of a framebuffer are all multisampled or none is. A target's pixels are resolved into its texture before something reads the texture (as a texture, or at the display blit). Visibility tests count samples, divided by the samples of a pixel. An alpha-tested surface (foliage, grates) covers the samples of a pixel in proportion to its alpha past the reference (`gl_SampleMask`). |
+| HDR | Off unless `display.hdr` is set (`src/d3d8_gl.c`, `src/xgpu_post.c`). The back buffer's texture, and its multisampled renderbuffer, is `GL_RGBA16F`, with the same `GL_DEPTH24_STENCIL8` depth buffer. The game's pixel shaders give colours from 0 to 1, as the NV2A's register combiners did, so the light past white comes from blending, which a floating-point target does not clamp. The tone mapping pass is a pass over the 3D view of each window, before the anti-aliasing (`render/render.c`): it takes each pixel from gamma 2.2 to linear light, multiplies it by `display.hdr_exposure`, applies the curve, and returns to gamma 2.2. It writes the colour only, since the game keeps its own data in the alpha. The display blit becomes a draw that clamps to 1, or, in a floating-point window, gives scRGB (linear light, 1 at the display's SDR white, which SDL reports with the headroom). The settings are read between frames; a change of `display.hdr` makes the back buffer again in the other format. Extra Effects' HDR CALIBRATION, there with a floating-point window on an HDR display, sets the peak and paper white by eye (`game/menu_functions.c`'s "port hdr calibration"): while its screen is drawn, the display takes the values its rows show, and after the display blit a program fills rectangles and rings of the window in scRGB, over its menus. For the peak, a square at the peak shown with a ring in it at 10000 nits, which disappears into the square once the square is as bright as the display goes; for paper white, a grey scale up to white, beside a white square with a ring at the peak. OK writes the values, Cancel goes back to the settings' own. |
 | Sound | Xbox DirectSound on SDL3 audio (`src/dsound_sdl.c`): PCM and Xbox ADPCM, mixed at 48 kHz in stereo or 5.1, with volume, pitch, mix bins, distance, pan, occlusion and obstruction. There is no Doppler effect and no cones. On 5.1 the game gets the AC-3 speaker setting of the Xbox and sends its 2D sounds to the center and back speakers, 3D sounds pan across the five speakers, and the reverb plays from the front and back pairs. The game sends nothing to the LFE channel. |
 | Input | XInput on SDL3 (`src/xinput_sdl.c`): keyboard, mouse, gamepads with rumble, and the debug keyboard for the console. |
 | Files | The Win32 file functions and the MSVC file functions on POSIX, with the translation of Xbox paths. |
@@ -1657,16 +1442,6 @@ definition. Without this check, the linker gives the reference the address
   `d3d_find_flipcount`.
 - The build returns small structures and unions in registers
   (`-freg-struct-return`), as on Win32.
-- The GPU driver cannot open the kernel's `trace_marker`
-  (`src/posix_trace_marker.c`). SteamOS keeps kernel tracing on for its GPU
-  performance captures (`gpu-trace.service`), and its Mesa then writes a
-  marker for each traced driver function: on the Steam Frame, some 480,000
-  writes a second, which took the game from the headset's 72 Hz to about
-  50 frames a second. The Steam Deck runs the same service, but its Mesa
-  (25.3, 32-bit and 64-bit) has no markers to write: there the refusal
-  changes nothing (measured: the same frame times and power either way).
-  `HALO_GPU_TRACE_MARKERS=1` lets the driver write them, to capture with
-  gpuvis.
 
 ### Game source changes
 
@@ -1747,11 +1522,4 @@ can optimize that code for each processor:
 | `bink/bink_playback.c` | `int 3` | `__builtin_trap` |
 
 The x87 control and status words (`_control87`, `_statusfp`, `_clearfp` in
-`src/msvc_crt.c`) use `fenv.h`. On Android, they use the FPCR and FPSR. In
-the web build, the control word is only remembered.
-
-The web build's changes (`HALO_WEB`: the main loop runs one iteration for
-each of the browser's frames, the cache thread starts at a function of
-`CreateThread`'s type, `debug.txt`'s lines go to the page's log) and the
-declarations given their definitions' types, which WebAssembly needs, are
-listed in "Game source changes" in [../web/README.md](../web/README.md).
+`src/msvc_crt.c`) use `fenv.h` on Linux.

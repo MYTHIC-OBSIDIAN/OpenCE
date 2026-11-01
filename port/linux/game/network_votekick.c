@@ -1418,8 +1418,7 @@ void network_votekick_draw(
 	long font_index = hud_get_font_index();
 	rectangle2d window = render.camera.window_bounds;
 	struct font_header *font;
-	boolean touch = halo_chat_touch_layout() != 0;
-	real scale = touch ? 1.0f : VOTE_BOX_TEXT_SCALE;
+	real scale = VOTE_BOX_TEXT_SCALE;
 	short line_height;
 	short window_width;
 	short window_height;
@@ -1444,12 +1443,8 @@ void network_votekick_draw(
 	if (line_height <= 0 || window_width <= 0 || window_height <= 0)
 		return;
 	width = (short)(VOTE_BOX_WIDTH_LINES * line_height);
-	/* (at the left, a third of the way down: with the touch controls, whose
-	stick is at the bottom left and the chat at the top left, at the right) */
-	if (touch)
-		left = (short)(window.x1 - window_width / 50 - width * scale);
-	else
-		left = (short)(window.x0 + window_width / 50);
+	/* (at the left, a third of the way down) */
+	left = (short)(window.x0 + window_width / 50);
 	top = (short)(window.y0 + window_height * 3 / 10);
 	box.x0 = left;
 	box.y0 = top;
@@ -1481,10 +1476,10 @@ void network_votekick_draw(
 	{
 		boolean pad = halo_gamepad_last_used() != 0;
 
-		usprintf(text, pad ? L"D-pad Left   Yes: %d" : touch ? L"!yes   Yes: %d" : L"F1   Yes: %d", status.votes);
+		usprintf(text, pad ? L"D-pad Left   Yes: %d" : L"F1   Yes: %d", status.votes);
 		votekick_draw_row(font_index, left, top, width, line_height, 1, text, status.voted ? 0.5f : 0.45f,
 			status.voted ? 1.0f : 0.85f, 0.45f);
-		usprintf(text, pad ? L"D-pad Right  No: %d" : touch ? L"!no    No: %d" : L"F2   No: %d", status.no_votes);
+		usprintf(text, pad ? L"D-pad Right  No: %d" : L"F2   No: %d", status.no_votes);
 	}
 	votekick_draw_row(font_index, left, top, width, line_height, 2, text, status.voted_no ? 1.0f : 0.9f,
 		status.voted_no ? 0.45f : 0.5f, 0.4f);

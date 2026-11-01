@@ -3503,7 +3503,7 @@ void map_share_update(
 	/* (internet play: a player that shares answers the others, who reach it
 	by its key hash) */
 	p2p_set_answering_players(!map_share_host() && address_internet(host_address) && map_share_sending());
-	/* (none in a build that cannot run Custom Edition maps: the web's) */
+	/* (none in a build that cannot run Custom Edition maps) */
 	if (!game || !halo_custom_edition_tag_cache())
 	{
 		/* (one done or failed is forgotten too: the next game's players are

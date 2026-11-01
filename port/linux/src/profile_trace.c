@@ -235,9 +235,7 @@ static void profile_trace_sample_session(void)
 
 static const char *profile_trace_platform(void)
 {
-#if defined(HALO_ANDROID)
-	return "android";
-#elif defined(_WIN32)
+#if   defined(_WIN32)
 	return "windows";
 #else
 	return "linux";

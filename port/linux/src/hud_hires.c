@@ -30,10 +30,8 @@ zlib (port/third_party/zlib).
 
 #include "zlib_prefixed.h"
 
-#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 #define HUD_HIRES_DECODE_AHEAD
 #include <pthread.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 

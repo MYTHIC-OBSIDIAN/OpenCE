@@ -23,7 +23,7 @@ enum
 };
 
 /* (made once, by the first thread to log an address: 0 none, 1 being made,
-2 made. Not pthread_once, which the Android guest's C library cannot link) */
+2 made) */
 static volatile int salt_state;
 static unsigned char salt[SALT_SIZE];
 

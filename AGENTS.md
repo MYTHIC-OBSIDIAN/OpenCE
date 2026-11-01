@@ -1,11 +1,13 @@
 # Notes for agents
 
 This repository ports the Halo: Combat Evolved decompilation (Xbox build
-01.01.14.2342, `cachebeta.exe`) to Linux, Windows, Android and the web. The game's C
+01.01.14.2342, `cachebeta.exe`) to Windows. The game's C
 sources are the decompilation; the port adds a platform layer that
 implements the Xbox APIs the game calls, and features the Xbox game did not
 have (a new netcode, internet play, the PC version's menus, Custom Edition
-maps, touch controls). The project is published as OpenCE.
+maps). The project is published as OpenCE. This fork releases Windows only:
+the Android and web builds are removed, and the Linux build is kept only as
+a developer's compile check and test bed (`ninja linux`), never released.
 
 Start with [README.md](README.md). The other documents are listed at the
 end.
@@ -15,20 +17,18 @@ end.
 | Path | Contents |
 | --- | --- |
 | `source/` | The game: 466 C files of the decompilation, compiled as they are with few changes (each marked, below) |
-| `port/linux/src/` | The platform layer the three ports share: Direct3D 8 on OpenGL (`d3d8_gl.c`), DirectSound and XInput on SDL3, files, threads, memory, sockets, settings (`port_config.c`), the mods folder (`port_mods.c`), internet play (`p2p*.c`), the dedicated server's platform side (`server_*.c`: the mode, the log, the rotation's grammar, HTTP, RCON, the master servers' publisher) and the master servers' list (`master_list.c`) |
+| `port/linux/src/` | The platform layer (the Windows build's, and the Linux developer build's): Direct3D 8 on OpenGL (`d3d8_gl.c`), DirectSound and XInput on SDL3, files, threads, memory, sockets, settings (`port_config.c`), the mods folder (`port_mods.c`), internet play (`p2p*.c`), the dedicated server's platform side (`server_*.c`: the mode, the log, the rotation's grammar, HTTP, RCON, the master servers' publisher) and the master servers' list (`master_list.c`) |
 | `port/linux/game/` | The port's game-side code, compiled as the game's sources are: the distributed netcode (`network_*.c`), co-op, map sharing (`map_share*.c`), the menus (`menu_tags.c`, `menu_functions.c`), Custom Edition maps (`custom_edition_*.c`, `cache_file_formats.c`), the tag validator (`tag_validate.c`, `tag_schema_*.c`), mods (`mods.c`, `mod_*.c`), the chat filter's matcher (`text_filter_match.c`), the dedicated server's director, commands, gametypes and status (`server_*.c`), touch, FOV and more |
 | `port/linux/include/` | The port's headers: the limits (`halo_port_limits.h`, with `HALO_PORT_NETWORK_VERSION`), capacities (`halo_port_capacity.h`), the prefix header, `halo_linux_source_fixups.h` (port functions the game's sources call) |
 | `port/include/xdk/` | Stand-ins for the Xbox SDK's headers (declarations only) |
 | `port/windows/` | The Windows build's own files (`win32_*.c`, headers) |
-| `port/android/` | The Android app: the guest runtime, the host library (`host/`), the Java app (`app/`), host imports (`host_imports.list`) |
-| `port/web/` | The web build: its runtime (`src/`: entry, sockets inside the page, memory watch), the page and its service worker (`site/`), the SDL port, tests |
 | `port/assets/` | What the builds embed or ship: high-res HUD (`hud/`), fonts, titles, menus (`menus/`), icons, network brokers and master servers, the dedicated server's web page (`server_ui/`) |
 | `port/third_party/` | Vendored libraries, each with a README naming its upstream, version and checksum |
 | `port/tools/` | Stand-alone tools (`cache_file_report.c`) |
-| `tools/` | Build scripts (`linux_build.py`, `windows_build.py`, `android_build.py`, `web_build.py`, `ci_build.py`, `web_serve.py`), generators (`ce_menus.py`, `port_settings.py`, `hud_assets.py`, `title_assets.py`, `embed_assets.py`, `server_ui_embed.py`, `xdk_headers.py`), the dedicated server's protocol simulator and remote console (`server_sim.py`, `opence_rcon.py`), tests, and `stagekit/` (scenarios staged and instrumented on the real engine, no retail assets) |
+| `tools/` | Build scripts (`linux_build.py`, `windows_build.py`, `ci_build.py`), generators (`ce_menus.py`, `port_settings.py`, `hud_assets.py`, `title_assets.py`, `embed_assets.py`, `server_ui_embed.py`, `xdk_headers.py`), the dedicated server's protocol simulator and remote console (`server_sim.py`, `opence_rcon.py`), tests, and `stagekit/` (scenarios staged and instrumented on the real engine, no retail assets) |
 | `docs/` | Longer design notes (`custom_edition_caches.md`, `mods.md`, `dedicated_server.md`, `master_protocol.md`) |
 | `pgo/` | Profile-guided optimisation profiles |
-| `deploy/` | Running a dedicated server: systemd, Docker, Pterodactyl, Helm, PufferPanel, MCSManager, example gametypes |
+| `deploy/` | Example dedicated server gametypes and `init.txt`, and the releases' public key |
 | `assets/` | Game data for local runs (gitignored: `maps/`, `custom_maps/`) |
 | `.github/workflows/` | CI: builds every platform on each push, publishes releases from `main` |
 
@@ -36,12 +36,9 @@ end.
 
 ```sh
 python configure.py            # debug build; add --release, --portable, --profile, --pgo=off, --lto=off
-ninja linux                    # build/linux/halo
-ninja android                  # the Android guest image and native libraries
-ninja android_apk              # the APK (Gradle)
-ninja web                      # build/web/site (Emscripten: port/web/README.md)
 ninja windows                  # on Windows, or on Linux after configure.py --windows-cross
-python tools/ci_build.py linux release   # what CI builds
+ninja linux                    # build/linux/halo: the developer's compile check, never released
+python tools/ci_build.py windows release   # what CI builds
 ```
 
 - `configure.py` writes `build.ninja`; `configure_args` at its top records
@@ -52,25 +49,11 @@ python tools/ci_build.py linux release   # what CI builds
 - Every native build compiles without fused multiply-add and with the
   vendored musl maths (`halo_math.h`), so that every machine of a network
   game computes the same results. Do not call the system's maths functions.
-- Android: the game is an ILP32 AArch64 guest (`arm64_32`) in a 64-bit app.
-  Guest code can call only the host imports declared in
-  `port/android/host_imports.list` and `port/android/guest/runtime/guest_host.h`,
-  and only the SDL functions `guest_sdl.c` bridges. Run `ninja android`
-  after changing anything it compiles: `port/linux/src`, `port/linux/game`,
-  `port/android`, `source/`, the build scripts.
-- Web: the game is `wasm32` (also ILP32), run on a Web Worker; calls must
-  match their callee's type exactly (the link fails on a mismatch), and
-  WebGL 2 is ES 3.0. Run `ninja web` after changing what it compiles (as
-  for Android, and `port/web`). Refer to [port/web/README.md](port/web/README.md).
 
 ### Defines
 
 | Define | Set by | Meaning |
 | --- | --- | --- |
-| `HALO_ANDROID` | Android | The app: its display, input, files and lifecycle |
-| `HALO_GLES` | Android, web | The OpenGL ES renderer |
-| `HALO_ARM64_GUEST` | Android | The guest's ABI (ILP32 AArch64) |
-| `HALO_WEB` | Web | The browser: its frames, storage, sockets and WebGL 2's limits (with `HALO_GLES`, not `HALO_ANDROID`) |
 | `HALO_WINDOWS` | Windows (`halo_windows_prefix.h`) | The Windows build |
 | `HALO_RELEASE` | `--release` | No assertions checked |
 | `HALO_PROFILE` | `--profile` | The profiling build; a normal build must be unchanged by it |
@@ -83,19 +66,15 @@ setting (`game.custom_edition`), checked at run time with
 ## Testing
 
 ```sh
-python -m pytest -q tools/harness tools/test_touch_menu.py   # the engine's functions in a fake world
+python -m pytest -q tools/harness                           # the engine's functions in a fake world
 python -m pytest -q tools/stagekit/tests                    # scenarios on the real engine, no retail assets (Linux)
 python -m pytest -q tools/test_linux_port.py                # the build, the maps' checks (needs assets/maps)
 python -m pytest -q tools/test_mods.py                      # mods played over a map (needs assets/maps)
 python -m pytest -q tools/test_cache_file_formats.py tools/test_bmp_files.py tools/test_profile.py
-python tools/test_touch_layout.py                           # the Android touch layout (JDK 17+)
 python tools/test_light_storage.py
 python tools/test_death_timing.py
-python -m pytest -q tools/test_web_build.py                 # the web build's graph, sockets, menus
-node --test "port/web/tests/*.test.js"                      # the web page's importer and service worker
-node port/web/tests/webrtc_native.mjs chromium firefox      # the native builds' WebRTC with browsers (Playwright)
 python -m pytest -q tools/test_dedicated_server.py          # the dedicated server with clients (needs assets/maps)
-python -m pytest -q tools/test_server_sim.py tools/test_egg.py   # the server's web page and protocol simulator, the egg
+python -m pytest -q tools/test_server_sim.py                # the server's web page and protocol simulator
 python -m pytest -q tools/test_net_compare.py               # net_compare.py's judging of logs, its copies and their processes
 python tools/net_compare.py --a build/linux/halo --b <other build> --data <game data> --swap
                                                             # two builds in one network game, in step (retail maps: local only)
@@ -150,11 +129,6 @@ read `xbox/include`. To add a name, follow `port/include/xdk/README.md`.
   do not play together.
 - Only the host decides; clients predict their own players. Read
   `port/linux/NETCODE.md` before changing the netcode.
-- Internet play is the same code in every build, the web's too: a browser's
-  tunnel is a WebRTC data channel (`port/web/src/web_p2p.c`), which the
-  native builds take on their tunnel's socket (`p2p_webrtc.c`, `posix_dtls.c`).
-  Check a change with both (`port/web/tests/webrtc_native.mjs`, and with the
-  maps `port/web/tests/internet.mjs`).
 - Anything another machine sends is untrusted: check sizes, indices and
   rates, as the existing handlers do. `debug.network_corrupt` tests this.
 
@@ -194,8 +168,7 @@ untrusted input: read them through bounds-checked readers. See
 
 A setting is an entry in `port/linux/src/port_config.c`, with a default, an
 environment variable and a comment that `config.toml` gets. Document it in
-the settings table of `port/linux/README.md` (and the Android README for an
-Android-only one). A departure from the stock game's look or behaviour
+the settings table of `port/linux/README.md`. A departure from the stock game's look or behaviour
 should be a setting, off or stock by default, unless the project decides
 otherwise.
 
@@ -232,8 +205,6 @@ The decompilation's upstream, punpckhdq/halo, is AGPL 3.0 from 17 October
 | [port/linux/README.md](port/linux/README.md) | The Linux build, controls, menus, every setting, updates, frame rate, field of view, system link, internet play, voice chat, the server browser, map sharing, security, map checks, how the port operates, the game source changes |
 | [port/linux/NETCODE.md](port/linux/NETCODE.md) | The distributed netcode, network versions, joining a game in progress, map sharing, transport, testing |
 | [port/windows/README.md](port/windows/README.md) | The Windows build, its headers, inline functions, crash reports |
-| [port/android/README.md](port/android/README.md) | The Android build, the guest and host, touch controls, Android settings, finding problems |
-| [port/web/README.md](port/web/README.md) | The web build, the page, the game data in the browser, limits, how it operates, hosting on GitHub Pages |
 | [port/include/xdk/README.md](port/include/xdk/README.md) | How the SDK declarations were written and are checked |
 | [docs/custom_edition_caches.md](docs/custom_edition_caches.md) | Loading and converting Custom Edition maps, and the evidence for each layout |
 | [docs/dedicated_server.md](docs/dedicated_server.md) | The dedicated server: its command line, exit codes, commands, HTTP API, RCON, events and files |

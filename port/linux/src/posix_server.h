@@ -4,8 +4,7 @@ POSIX_SERVER.H
 What a dedicated server (server_mode.c) needs of the system beyond posix.h:
 its signals, its standard input and output, and what the process uses.
 posix_server.c does it on Linux, port/windows/src/win32_server.c on Windows
-(Ctrl+C and the console's close for the signals). The Android and web builds
-have no dedicated server, and none of these.
+(Ctrl+C and the console's close for the signals).
 
 Only integers and strings cross here (the two sides are compiled with
 different structure layouts), as in posix.h.

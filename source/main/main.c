@@ -390,9 +390,6 @@ symbols in this file:
 #ifdef HALO_PROFILE
 #include "profile_trace.h" /* port: port/linux/src/profile_trace.c */
 #endif
-#ifdef HALO_WEB
-#include <emscripten.h> /* port: the browser runs the main loop (port/web/README.md) */
-#endif
 #include "camera/director.h"
 #include "camera/observer.h"
 #include "cutscene/cinematics.h"
@@ -407,7 +404,7 @@ symbols in this file:
 #include "custom_edition_cache.h" /* port: custom_edition_level_name */
 #include "view_fov.h" /* port: display.fov, before the projection and culling */
 
-#if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__)
+#if defined(HALO_WINDOWS) || defined(__linux__)
 #define HALO_NATIVE_BUILD_INFO 1
 #ifndef HALO_BUILD_NUMBER
 #define HALO_BUILD_NUMBER 0
@@ -1732,9 +1729,7 @@ static void main_native_build_label(char *label, size_t capacity)
 {
 	char const *platform;
 
-	#ifdef HALO_ANDROID
-	platform = "Android";
-	#elif defined(HALO_WINDOWS)
+	#if   defined(HALO_WINDOWS)
 	platform = "Windows";
 	#else
 	platform = "Linux";
@@ -3158,13 +3153,6 @@ void halt_and_catch_fire(
 	char label[96];
 	#endif
 
-#ifdef HALO_WEB
-	/* port: a browser shows only what a frame of its own main loop drew, and
-	this screen never returns to it: the game stops, and the page shows the
-	error from the log, where it already is (port/web/README.md) */
-	emscripten_cancel_main_loop();
-	abort();
-#endif
 	/* port: a dedicated server has no screen to halt on: its error logged,
 	it ends with exit code 1 (port/linux/game/server_director.c) */
 	if (halo_server_mode())
@@ -3421,30 +3409,12 @@ PROFILE_SECTION(main_non_deterministic_update_section, "non_deterministic_update
 PROFILE_SECTION(main_throttle_section, "throttle")
 PROFILE_SECTION(main_present_section, "present")
 
-#ifdef HALO_WEB
-/* port: in a browser, the page's frames call the main loop one iteration at a
-time, and what an iteration drew shows once it returns (port/web/README.md) */
-static boolean main_loop_iteration(void);
-
-static void main_loop_web_frame(
-	void)
-{
-	if (!main_loop_iteration())
-	{
-		emscripten_cancel_main_loop();
-		error(_error_silent, "end of saved film");
-		main_exit();
-	}
-}
-#endif
 
 void main_loop(
 	void)
 {
-#ifndef HALO_WEB
 	boolean render_frame;
 	long connection;
-#endif
 
 	if (!game_in_editor())
 	{
@@ -3463,20 +3433,7 @@ void main_loop(
 	main_setup_connection();
 	main_initialize_time();
 
-#ifdef HALO_WEB
-	emscripten_set_main_loop(main_loop_web_frame, 0, TRUE);
-}
-
-static boolean main_loop_iteration(
-	void)
-{
-	boolean render_frame;
-	long connection;
-
-	do
-#else
 	while (TRUE)
-#endif
 	{
 		if (!game_in_editor())
 		{
@@ -3741,21 +3698,12 @@ static boolean main_loop_iteration(
 			main_reset_time();
 			main_globals.halt_time_scale = TRUE;
 		}
-#ifdef HALO_WEB
-		return TRUE;
-#endif
 	}
-#ifdef HALO_WEB
-	while (FALSE);
-	/* (a film played to its end) */
-	return FALSE;
-#else
 
 	error(_error_silent, "end of saved film");
 	main_exit();
 
 	return;
-#endif
 }
 
 /* ---------- private code */

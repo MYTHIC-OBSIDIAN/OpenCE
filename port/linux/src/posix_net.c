@@ -469,15 +469,6 @@ posix_ulong posix_local_ipv4_address(void)
 	posix_ulong result = 0;
 	int probe;
 
-#ifdef __ANDROID__
-	/* a phone's default route may be its mobile data (on Wi-Fi without the
-	internet, or sharing its connection), which the local network cannot
-	reach: first the local network's interface (Wi-Fi, or the one it
-	shares its connection on), which alone of them has broadcasts */
-	result = interface_address(IFF_BROADCAST);
-	if (result)
-		return result;
-#endif
 	/* the address the default route leaves from: a UDP socket "connected"
 	to an internet address (a documentation one; nothing is sent) has it */
 	probe = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
@@ -590,12 +581,6 @@ posix_ulong posix_resolve_ipv4(const char *host)
 
 int posix_command_line_argument(int index, char *buffer, posix_ulong size)
 {
-#ifdef __ANDROID__
-	(void)index;
-	(void)buffer;
-	(void)size;
-	return 0;
-#else
 	char command_line[4096];
 	ssize_t length;
 	ssize_t offset = 0;
@@ -617,7 +602,6 @@ int posix_command_line_argument(int index, char *buffer, posix_ulong size)
 	}
 	snprintf(buffer, size, "%s", command_line + offset);
 	return 1;
-#endif
 }
 
 posix_ulong posix_process_id(void)
@@ -627,11 +611,6 @@ posix_ulong posix_process_id(void)
 
 int posix_user_secret(unsigned char *secret, int size)
 {
-#ifdef __ANDROID__
-	(void)secret;
-	(void)size;
-	return 0;
-#else
 	/* in the user's runtime directory (theirs alone), else their home */
 	const char *runtime = getenv("XDG_RUNTIME_DIR");
 	const char *home = getenv("HOME");
@@ -683,10 +662,8 @@ int posix_user_secret(unsigned char *secret, int size)
 		return ok;
 	}
 	return 0;
-#endif
 }
 
-#ifndef __ANDROID__
 /* runs a program with its arguments and waits for it; its exit status, or -1 */
 static int run_program(char *const arguments[])
 {
@@ -700,15 +677,9 @@ static int run_program(char *const arguments[])
 		return -1;
 	return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
-#endif
 
 int posix_register_url_scheme(const char *scheme, const char *description)
 {
-#ifdef __ANDROID__
-	(void)scheme;
-	(void)description;
-	return 0;
-#else
 	/* a desktop entry declaring the executable as the scheme's handler, and
 	the scheme's default application set to it (as xdg-open reads it) */
 	char executable[1024], directory[1024], path[1200], name[128], entry[2048], existing[2048];
@@ -761,16 +732,12 @@ int posix_register_url_scheme(const char *scheme, const char *description)
 		run_program(arguments);
 	}
 	return 1;
-#endif
 }
 
 /* ---------- Discord's local socket */
 
 int posix_discord_connect(void)
 {
-#ifdef __ANDROID__
-	return -1;
-#else
 	/* where Discord (and its Flatpak and Snap packages) put discord-ipc-N */
 	static const char *const variables[] = { "XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP" };
 	static const char *const subdirectories[] = { "", "app/com.discordapp.Discord/", "snap.discord/",
@@ -833,7 +800,6 @@ int posix_discord_connect(void)
 		}
 	}
 	return -1;
-#endif
 }
 
 int posix_discord_write(int handle, const void *buffer, int length)

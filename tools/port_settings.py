@@ -52,7 +52,7 @@ PEAK_BRIGHTNESSES = [("AUTO", "0")] + [(str(nits), str(nits)) for nits in
 # menu opens), its header (widget, bitmap), the row spacing, and its rows:
 # (label, setting, [(shown, value)], help, platform[, key]): platform is None
 # for every platform, else the platforms the row is for, separated by spaces
-# ("desktop", "android", "web": the menus' platform attribute,
+# ("desktop": the menus' platform attribute,
 # port/linux/src/menu_files.c); key names the row's widgets where two rows set
 # one setting (one for each platform), else the setting's name does
 SCREENS = {
@@ -69,8 +69,8 @@ SCREENS = {
         "platform_places": True,
         # (rows in the place of the row before them: Window Size in
         # Resolution's, port/linux/game/menu_functions.c showing the one the
-        # display mode chosen uses; Android's anti-aliasing in the desktop's)
-        "same_place": ["display.window_size", "anti_aliasing_android"],
+        # display mode chosen uses)
+        "same_place": ["display.window_size"],
         "rows": [
             ("DISPLAY MODE:", "display.mode",
              [("FULLSCREEN", "fullscreen"), ("BORDERLESS", "borderless"), ("WINDOWED", "windowed")],
@@ -92,15 +92,11 @@ SCREENS = {
             ("FRAME RATE LIMIT:", "display.max_fps",
              [("AUTO", "0"), ("30", "30"), ("60", "60"), ("120", "120"), ("144", "144"), ("165", "165"),
               ("240", "240"), ("NONE", "-1")],
-             "With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate.", "desktop web"),
-            ("FRAME RATE LIMIT:", "display.max_fps",
-             [("AUTO", "0"), ("30", "30"), ("60", "60"), ("120", "120"), ("NONE", "-1")],
-             "With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate.", "android",
-             "max_fps_android"),
+             "With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate.", "desktop"),
             ("SMOOTH MOTION:", "display.interpolation", ON_OFF,
              "Draw a frame for every display refresh, blending\nbetween the game's 30 ticks a second.", None),
             ("INSTANT AIM:", "display.direct_camera", ON_OFF,
-             "In first person, turn the view the moment the\nmouse moves, not up to two ticks later.", "desktop web"),
+             "In first person, turn the view the moment the\nmouse moves, not up to two ticks later.", "desktop"),
             # (Graphics', with the HUD's rows: Video Setup's own has no room
             # left above its help on the desktop. The game's own counter, main.c's main_framerate_render, which
             # display.show_fps turns on: port/linux/game/frame_rate_display.c)
@@ -115,10 +111,6 @@ SCREENS = {
               ("MSAA 4X", "msaa4x"), ("MSAA 8X", "msaa8x")],
              "Smooth jagged edges, which the Xbox did not. FXAA\nand SMAA are cheap; SSAA and MSAA are sharper.",
              "desktop"),
-            ("ANTI-ALIASING:", "display.anti_aliasing",
-             [("OFF", "off"), ("FXAA", "fxaa"), ("MSAA 2X", "msaa2x"), ("MSAA 4X", "msaa4x")],
-             "Smooth jagged edges, which the Xbox did not. FXAA\nis cheap; MSAA is sharper.",
-             "android web", "anti_aliasing_android"),
             ("TEXTURE FILTERING:", "display.anisotropic_filtering",
              [("OFF", "0"), ("2X", "2"), ("4X", "4"), ("8X", "8"), ("16X", "16")],
              "Keep floors and walls sharp at a grazing angle,\nwhich the Xbox did not. Off: as the Xbox.", None),
@@ -130,8 +122,6 @@ SCREENS = {
              "Light models for each pixel, without the facets\nof the Xbox's lighting for each vertex.", None),
             ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
              "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
-            ("MODEL DETAIL:", "display.model_detail", [("STOCK", "stock"), ("NATIVE", "native"), ("HIGHEST", "highest")],
-             "Stock picks models' detail by the Xbox's 480 lines;\nnative by this display's; highest, always the best.", None),
             ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
              "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
             ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
@@ -174,7 +164,7 @@ SCREENS = {
         "screen": "audio_settings_screen",
         "header": ("header_profile_audio_settings", f"{PE}/audio_settings/header_profile_audio_settings"),
         "spacing": 30,
-        # (the devices, desktop only, first: Android's rows from the top)
+        # (the devices first)
         "platform_places": True,
         "rows": [
             # (port/linux/game/menu_tags.c adds the devices SDL finds)
@@ -275,15 +265,13 @@ SCREENS = {
 _video = SCREENS["video_settings"]
 _graphics = {"display.show_fps", "display.high_res_hud",
              "display.high_res_text", "display.anti_aliasing",
-             "display.anisotropic_filtering", "display.shadow_resolution", "display.per_pixel_lighting",
-             "display.model_detail"}
+             "display.anisotropic_filtering", "display.shadow_resolution", "display.per_pixel_lighting"}
 # (the visual modifiers: a screen of their own, Extra Effects)
 _extra_effects = {"display.shield_glow", "display.shield_glow_intensity",
                   "display.overshield_effect", "display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
                   "display.hdr_peak_brightness"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
-    "same_place": ["anti_aliasing_android"],
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }
 SCREENS["video_settings/extra_effects"] = {
@@ -373,7 +361,7 @@ _network["rows"] = [row for row in _network["rows"] if row[1] not in _hud_settin
 _network["categories"] = [
     ("MAP SHARING:", "network_setup/map_sharing",
      "Downloading Custom Edition maps you do not have,\nand helping send them to other players.",
-     "desktop android"),
+     "desktop"),
     ("MULTIPLAYER HUD:", "network_setup/multiplayer_hud",
      "Players' names above their heads, the\nscoreboard, the text chat and the match clock."),
     # (LAN only: no SERVER BROWSER or DISCORD ACCOUNT pages, which are the
@@ -630,7 +618,7 @@ def _setting_screen(folder: str, spec: dict) -> list:
     # (platform_places: each platform's rows in places of their own, with
     # no gap where the others' are; a row in one place for all its
     # platforms, else a child for each place)
-    places = {"desktop": -1, "android": -1, "web": -1}
+    places = {"desktop": -1}
     for index, (label, setting, choices, _, platform, *named) in enumerate(spec["rows"]):
         key = named[0] if named else setting.split(".", 1)[1]
         row = f"{base}/op_{key}"

@@ -1,10 +1,8 @@
 /*
 HALO_UI_POINTER.H
 
-The mouse in the menus of the desktop builds, and the touchscreen in those
-of the Android build. While a menu is up, the mouse is released and its
-pointer shows (port/linux/src/sdl_platform.c), or taps and drags go to the
-menus (port/linux/src/touch_input.c); each frame the menus
+The mouse in the menus. While a menu is up, the mouse is released and its
+pointer shows (port/linux/src/sdl_platform.c); each frame the menus
 (source/interface/ui_widget.c) ask where the pointer is, in their own 640x480
 coordinates (port/linux/src/d3d8_gl.c undoes the letterbox, the scale and the
 widescreen centering), and what it did since.
@@ -41,8 +39,7 @@ int halo_ui_pointer_update(int menus_active, struct halo_ui_pointer *pointer);
 /* the open scoreboard's pointer (game_engine.c), offered (a network game's)
 or not: 1 while a right click has freed it, with where it is and what it
 did since the last call, in the screen's coordinates (the game's drawing,
-not the menus' centered 640); 0 while it is not; -1 where there is none
-(Android) */
+not the menus' centered 640); 0 while it is not; -1 where there is none */
 int halo_scoreboard_pointer_update(int offered, struct halo_ui_pointer *pointer);
 
 #endif

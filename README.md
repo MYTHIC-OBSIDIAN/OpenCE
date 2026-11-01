@@ -1,4 +1,4 @@
-# OpenCE - Halo: Combat Evolved for Linux, Windows, Android and the web
+# OpenCE - Halo: Combat Evolved for Windows
 
 > **This is a LAN-only fork.** Internet play is removed: no invite links,
 > server browser, master servers, Discord, UPnP, STUN or self-updater. The
@@ -18,7 +18,9 @@
 > STANDARD (the Xbox's built-in gametypes) and CUSTOM (those saved); OpenCE's own built-in gametypes are not listed. Its
 > GitHub Actions build Windows only: each push uploads
 > `halo-windows-release`, and a push to `main` or `lan-digsite` publishes
-> it as a release.
+> it as a release. This fork is Windows only: the Android and web builds are
+> removed, and the Linux build (`ninja linux`) is kept only as a developer's
+> compile check, never released.
 
 <p align="center">
   <img src="port/assets/icon/opence-icon.png" alt="OpenCE" width="128">
@@ -27,14 +29,13 @@
 
 <p align="center">
   <a href="https://github.com/OpenCommunityEdition/OpenCE/releases/latest"><img src="https://img.shields.io/github/v/release/OpenCommunityEdition/OpenCE?label=Download&style=for-the-badge" alt="Download"></a>
-  <a href="https://halocombatevolved.com/"><img src="https://img.shields.io/badge/Play-in_browser-blue?style=for-the-badge" alt="Play in browser"></a>
   <a href="https://discord.gg/9gqcHyr5km"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
 **OpenCE** (Open Community Edition) is an open source port of the Halo: Combat Evolved decompilation (Halo CE) based on an early Xbox development build (2342) and forked from
 [bnunu/halo-1](https://github.com/bnunu/halo-1). The project aims to enhance the existing game and adds many features, such as 128-player multiplayer, online campaign co-op, mod packs, field-of-view settings, a server browser, peer-to-peer hosting, automatic map downloads, voice chat, support for Custom Edition maps and much more! 
 
-The game runs natively on **Windows, Linux, Android** and in the **web browser** with nothing to install. A macOS port is in progress. Worth noting that it is not an emulator, **the game's own code is compiled for each platform** with a new layer in place of the Xbox's hardware. Runs on OpenGL (Android is on OpenGL ES and WebGL 2 in the browser). Sound, input, gamepads are all handled through SDL3. The game currently draws a frame every refresh of your display with Smooth Motion enabled, while the simulation runs at 30 ticks just like the original Xbox. 
+The game runs natively on **Windows**. Worth noting that it is not an emulator, **the game's own code is compiled for Windows** with a new layer in place of the Xbox's hardware. Runs on OpenGL. Sound, input, gamepads are all handled through SDL3. The game currently draws a frame every refresh of your display with Smooth Motion enabled, while the simulation runs at 30 ticks just like the original Xbox. 
 
 <img width="1284" height="1007" alt="The game running on Windows" src="https://github.com/user-attachments/assets/0a4412e1-f6d3-48ed-8e17-0a374c2122f1" />
 <p align="center"><em>OpenCE running on Windows (release build)</em></p>
@@ -43,23 +44,17 @@ The game runs natively on **Windows, Linux, Android** and in the **web browser**
 
 OpenCE does not include the game data. You **must provide your own Xbox disc image** (`.xiso` or `.iso`) of Halo: Combat Evolved. Every version of the game works. The maps of the European (PAL) version were made for a slower console - the game changes them to play as the North American (NTSC) maps do, so players of the two versions can play together.
 
-1. Start the game (`halo.exe` on Windows and `halo` on Linux). 
+1. Start the game (`halo.exe`).
 2. At the first start you will get a pop up message asking for the disc image. Select it in the
-   file picker. On Linux and Windows, a disc image (`.iso` or `.xiso`) next
-   to the executable is used without the file picker. Where no file picker
-   can be shown (on Linux, without the desktop portal or `zenity`), the game
-   says to put the disc image next to the executable, and stops.
+   file picker. A disc image (`.iso` or `.xiso`) next to the executable is
+   used without the file picker.
 3. The game extracts the `maps` folder. Then the game starts.
 
 The `maps` folder holds the Xbox maps only. If it holds Halo PC's maps
 instead (a Halo PC or Custom Edition install's `maps` folder), the game says
 so and stops: Custom Edition maps go in `custom_maps` folder, beside `maps` folder.
 
-On Linux and Windows, the game puts `maps` next to the executable. On
-Android, copy the disc image to the phone first. The app puts `maps/` in its
-data folder. Refer to [port/android/README.md](port/android/README.md). On
-the web, the page copies `maps/` out of the disc image into the browser's
-storage for the site - nothing is uploaded ([port/web/README.md](port/web/README.md)).
+The game puts `maps` next to the executable.
 
 ## Download
 
@@ -69,23 +64,15 @@ Builds for latest release:
 
 | Platform | Release | Debug | Guide |
 | --- | --- | --- | --- |
-| Linux | [halo-linux-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-linux-release.zip) | [halo-linux-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-linux-debug.zip) | [Linux](port/linux/README.md) |
 | Windows | [halo-windows-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-windows-release.zip) | [halo-windows-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-windows-debug.zip) | [Windows](port/windows/README.md) |
-| Android | [halo-android-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-android-release.zip) | [halo-android-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-android-debug.zip) | [Android](port/android/README.md) |
-| Web | [halocombatevolved.com](https://halocombatevolved.com/) (or [halo-web-release.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-web-release.zip) for your own server) | [halo-web-debug.zip](https://github.com/OpenCommunityEdition/OpenCE/releases/latest/download/halo-web-debug.zip) | [Web](port/web/README.md) |
 
 
 Release build is recommended for regular play. 
 
 The debug build stops at the first failed check (assertion) and writes it to the log, so use it when you want to find and report problems.
 
-The game updates itself. At start-up it looks for a newer release, and asks
-if you want to install it. Refer to "Updates" in
-[port/linux/README.md](port/linux/README.md#updates). The web site offers
-each new build when it is out.
-
-Each build of the `main` branch that passes on all four platforms is a new
-release, and the web site then plays it. The [Releases](https://github.com/OpenCommunityEdition/OpenCE/releases)
+Each build of the `main` or `lan-digsite` branch that passes is a new
+release. The [Releases](https://github.com/OpenCommunityEdition/OpenCE/releases)
 page keeps the last five releases. If the latest build has a problem, get
 an older build from that page.
 
@@ -95,14 +82,11 @@ key, whose public key is [deploy/release-key.pub](deploy/release-key.pub).
 `sha256sum -c --ignore-missing SHA256SUMS` checks the downloads, and
 `tools/release_sign.sh verify SHA256SUMS` (OpenSSL 3) the signature.
 
-The Linux README also covers the controls, every setting and the multiplayer features. These are almost the same on all platforms. The settings are in `config.toml` next to the game, and many are in the menus too.
-
-The Arch-based distribution release is available on the [AUR](https://aur.archlinux.org/packages/opence-bin).
+[port/linux/README.md](port/linux/README.md) (the shared platform layer's guide, named for its folder) covers the controls, every setting and the multiplayer features; [port/windows/README.md](port/windows/README.md) the Windows build. The settings are in `config.toml` next to the game, and many are in the menus too.
 
 ## Multiplayer 
 
 - **Supports up to 128 players** on up to 128 machines and up to 4 players on each device in split screen.
-- **Every platform plays together:** Windows, Linux, Android and the browser all support cross-play! On a local network, the native builds can play LAN. Browser players can play each other in rooms over WebRTC ([port/web/README.md](port/web/README.md)).
 - **Peer-to-peer internet hosting:** join through the server browser or an invite link. A host lists a game as public in the server browser, or keeps it private for players with the invite link. With the Discord integration, the host can also send the invite through Discord.
 - **Online co-op campaign:** with settings for friendly fire, player collisions and the number of enemies as a multiplier based on per player or static. 
 - **Voice Chat:** push to talk (V) or an open microphone (can be changed in the menu's audio settings)
@@ -197,16 +181,14 @@ To build the game:
 
 | Target | Result |
 | --- | --- |
-| `ninja linux` | `build/linux/halo` |
 | `ninja windows` (on Windows, or on Linux after `configure.py --windows-cross`) | `build/windows/halo.exe` and `SDL3.dll` |
-| `ninja android_apk` | `port/android/app/build/outputs/apk/debug/app-debug.apk` |
-| `ninja web` | `build/web/site/`, the web site (`python tools/web_serve.py` serves it) |
+| `ninja linux` | `build/linux/halo`: a developer's compile check of the shared code on Linux, never released |
 
 If you enter `ninja` without a target, ninja builds the game for the
 computer that you use.
 
 `tools/ci_build.py` makes the same builds as GitHub Actions. For example,
-enter `python tools/ci_build.py linux release`.
+enter `python tools/ci_build.py windows release`.
 
 ### Build options
 
@@ -216,14 +198,13 @@ Give these options to `configure.py`:
 | --- | --- |
 | (none) | A debug build. A failed assertion stops the game. |
 | `--release` | A release build. The game does not examine assertions, as in the retail game. |
-| `--portable` | The Linux and Windows builds operate on all x86-64 processors. The Linux build also operates on older distributions and on SteamOS: refer to "Portable build" in [port/linux/README.md](port/linux/README.md#portable-build). Use this option for builds that you give to other persons. |
+| `--portable` | The build operates on all x86-64 processors. Use this option for builds that you give to other persons. |
 | `--lto=thin`, `--lto=off` | Less link-time optimization. The link is faster. |
 | `--pgo=off` | No profile-guided optimization. |
 | `--pgo=train` | Records a new optimization profile. Refer to "Optimization profiles". |
 | `--profile` | A profiling build. It records CPU times. Refer to "Profiling builds". |
-| `--web-emcc PATH` | The Emscripten `emcc` for `ninja web` (else the one on the PATH, or `~/emsdk`'s). |
 
-Without `--portable`, the Linux and Windows builds use all the instructions
+Without `--portable`, the builds use all the instructions
 of the processor that builds them (`-march=native`). Such a build does not
 always start on a different computer.
 
@@ -255,7 +236,7 @@ value that differ. Refer to "Comparing two builds" in
 
 The builds use profiles of the game to optimize the code:
 
-- `pgo/halo_linux.profdata` for Linux and Android.
+- `pgo/halo_linux.profdata` for the Linux developer build (and Windows, where its own has none of a unit).
 - `pgo/halo_windows.profdata` for Windows.
 
 The profiles need clang 22 or later. With an older clang, the builds do not
@@ -302,9 +283,6 @@ from 4 to 1024). A recording has no length limit:
 the game writes a part each time the memory is full. Refer to "Settings" in
 [port/linux/README.md](port/linux/README.md).
 
-On Android, the files are in `/sdcard/Android/data/com.halo.decomp/files/profiles/`.
-Enter `adb pull` to copy the recording parts to a computer.
-
 A profiling build plays with normal builds. It does not use
 `--pgo=train`.
 
@@ -345,8 +323,8 @@ version (`AGPL-3.0-or-later`). It comes with no warranty. The full text is in
   each release's source is its tag (`build-<n>`).
 - **Third-party code, fonts and art** keep their own licences, which are
   next to them (`port/third_party`, `port/assets/fonts`,
-  `port/assets/icons`, `port/assets/text_filter`). The release downloads and
-  the web site's `licenses.txt` carry their notices.
+  `port/assets/icons`, `port/assets/text_filter`). The release downloads
+  carry their notices.
 - **Halo is not covered.** The licence covers the work of OpenCE's authors.
   It gives no rights in Halo, its maps or anything else that Microsoft owns.
 

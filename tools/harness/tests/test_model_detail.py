@@ -1,4 +1,4 @@
-"""display.model_detail's level for each permutation: the most detailed it has, and a model's inside only from within
+"""The models' level for each permutation: the most detailed it has, and a model's inside only from within
 (port/linux/game/model_detail.c, from eltanschauung's #282)."""
 import sys
 from pathlib import Path

@@ -90,8 +90,7 @@ unsigned int hud_hires_png_texture(const void *png, unsigned long size, unsigned
 /* the HUD's textures for a map's bitmaps (port/linux/game/hud_hires_tags.c),
 decoded from their PNGs as it loads, on a thread of their own, so that they
 are only uploaded when first drawn; and, as it is unloaded, that stopped and
-what was decoded and not drawn let go. The desktop builds' alone: Android
-and the web decode each when it is first drawn */
+what was decoded and not drawn let go */
 void hud_hires_map_loaded(const long *assets, long count);
 void hud_hires_map_unloaded(void);
 /* whether its green is its coverage (d3d8_gl.c, nv2a_psh.c: coverage_alpha) */

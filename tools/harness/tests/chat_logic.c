@@ -520,19 +520,5 @@ int main(int argc, char **argv)
 		CHECK(column == 0, "right round a row: %d", column);
 	}
 
-	/* a tap: the key under it, a wide key's first column; none outside */
-	CASE("keyboard-tap")
-	{
-		short row = -1;
-		short column = -1;
-
-		CHECK(chat_keyboard_key_at(0.05f, 0.05f, &row, &column) && row == 0 && column == 0, "%d %d", row, column);
-		CHECK(chat_keyboard_key_at(0.95f, 0.3f, &row, &column) && row == 1 && column == 9, "%d %d", row, column);
-		CHECK(chat_keyboard_key_at(0.55f, 0.9f, &row, &column) && row == CHAT_KEYBOARD_ROWS - 1 && column == 4,
-			"the space key: %d %d", row, column);
-		CHECK(!chat_keyboard_key_at(-0.01f, 0.5f, &row, &column) && !chat_keyboard_key_at(0.5f, 1.0f, &row, &column),
-			"a tap outside taken");
-	}
-
 	return 0;
 }

@@ -9,8 +9,7 @@ Each file is checked first against what the page's Content-Security-Policy
 (default-src 'self') would block, or the project forbids: inline scripts and
 styles, style= and on*= attributes, string evaluation, external requests
 (tools/server_sim.py's csp_problems). A file that breaks one stops the build.
-The Linux and Windows builds generate it; the Android and web builds have no
-dedicated server.
+The Linux and Windows builds generate it.
 """
 
 import hashlib

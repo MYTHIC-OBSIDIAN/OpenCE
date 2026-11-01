@@ -700,28 +700,16 @@ int posix_hardware_id_source(char *text, int size);
 #endif
 
 /* what this machine is known by, as text (none: 0): Windows' SMBIOS UUID or
-MachineGuid (win32_p2p.c); Linux's /etc/machine-id; Android's ANDROID_ID,
-which only the app's Java can read and puts in hardware_id.txt
-(LauncherActivity.java) */
+MachineGuid (win32_p2p.c); Linux's /etc/machine-id */
 static int hardware_id_source(char *text, int size)
 {
 #ifdef _WIN32
 	return posix_hardware_id_source(text, size);
 #else
-	static const char *const linux_paths[] = { "/etc/machine-id", "/var/lib/dbus/machine-id" };
-	char android_path[1024];
-	const char *paths[2];
-	int path_count = 0;
+	static const char *const paths[] = { "/etc/machine-id", "/var/lib/dbus/machine-id" };
+	int path_count = 2;
 	int index;
 
-#ifdef HALO_ANDROID
-	snprintf(android_path, sizeof(android_path), "%s/hardware_id.txt", platform_data_root());
-	paths[path_count++] = android_path;
-#else
-	(void)android_path;
-	paths[path_count++] = linux_paths[0];
-	paths[path_count++] = linux_paths[1];
-#endif
 	for (index = 0; index < path_count; index++)
 	{
 		FILE *file = fopen(paths[index], "rb");
@@ -1317,10 +1305,6 @@ static void stun_setup(void)
 {
 	const char *text = config_string("network.stun_servers");
 
-#ifdef HALO_WEB
-	/* (a page's addresses are its WebRTC connections' own: web_p2p.c) */
-	text = "";
-#endif
 	while (*text && p2p.stun_count < MAXIMUM_STUN_SERVERS)
 	{
 		const char *end = text + strcspn(text, ",");
@@ -2626,10 +2610,6 @@ static void probe_end(int index)
 
 int p2p_probe_start(const unsigned char *host_hash, const unsigned char *token)
 {
-#ifdef HALO_WEB
-	/* (a browser reaches a host only by a WebRTC connection of its own) */
-	return 0;
-#else
 	unsigned char host[P2P_IDENTIFIER_SIZE];
 	struct peer *peer;
 	int free_index = -1;
@@ -2667,7 +2647,6 @@ int p2p_probe_start(const unsigned char *host_hash, const unsigned char *token)
 	memcpy(p2p.probes[free_index].identifier, host, P2P_IDENTIFIER_SIZE);
 	p2p.probes[free_index].time = p2p_now();
 	return 1;
-#endif
 }
 
 /* the probes timed (PROBE_PINGS answered) end, as do those not reached in
@@ -3474,10 +3453,6 @@ static void update_upnp(void)
 
 	if (allowed < 0)
 		allowed = config_boolean("network.allow_upnp") ? 1 : 0;
-#ifdef HALO_WEB
-	/* (a page cannot reach the router) */
-	allowed = 0;
-#endif
 	if (!allowed || p2p.upnp_working || p2p.upnp_released)
 		return;
 	if (p2p.upnp_forwarded)
@@ -3563,9 +3538,6 @@ static void handoff_answer(const unsigned char *key, const unsigned char *messag
 
 int p2p_hand_off_invite(void)
 {
-#ifdef HALO_ANDROID
-	return 0;
-#else
 	char invite[256];
 	unsigned char key[P2P_SHA256_SIZE];
 	unsigned char message[12 + sizeof(invite) + P2P_SEAL_OVERHEAD];
@@ -3603,7 +3575,6 @@ int p2p_hand_off_invite(void)
 	if (result)
 		platform_log("Internet play: passed the invite to the copy of the game already running");
 	return result;
-#endif
 }
 
 static void handoff_readable(void)
@@ -3627,36 +3598,6 @@ static void handoff_readable(void)
 	p2p_invite_received(invite);
 }
 
-#ifdef HALO_ANDROID
-/* the app's activity writes a link it was opened with here */
-static void poll_invite_file(void)
-{
-	static unsigned long checked_time;
-	char path[512];
-	char taken[512];
-	char text[256];
-	FILE *file;
-	size_t size;
-
-	if (!elapsed(checked_time, 1000))
-		return;
-	checked_time = p2p_now();
-	snprintf(path, sizeof(path), "%s/join_link.txt", platform_data_root());
-	snprintf(taken, sizeof(taken), "%s/join_link.taken", platform_data_root());
-	/* (taken first: a link the launcher writes while this reads is left for
-	the next look, not removed unread) */
-	if (rename(path, taken) != 0)
-		return;
-	file = fopen(taken, "rb");
-	if (!file)
-		return;
-	size = fread(text, 1, sizeof(text) - 1, file);
-	fclose(file);
-	remove(taken);
-	text[size] = 0;
-	p2p_invite_received(text);
-}
-#endif
 
 /* ---------- the thread */
 
@@ -3691,10 +3632,8 @@ static void *p2p_thread(void *unused)
 	p2p_profile_names.streams = profile_trace_name("p2p.streams");
 #endif
 	pthread_mutex_lock(&p2p_lock);
-#ifndef HALO_ANDROID
 	/* (here: it may wait for a program) */
 	p2p_register_url_scheme("halo", "Halo: Combat Evolved invite");
-#endif
 	for (;;)
 	{
 		int read_count = 0, write_count = 0, error_count = 0;
@@ -3898,9 +3837,6 @@ static void *p2p_thread(void *unused)
 		update_reaching();
 		update_upnp();
 		p2p_discord_update();
-#ifdef HALO_ANDROID
-		poll_invite_file();
-#endif
 #ifdef HALO_PROFILE
 		profile_trace_end(p2p_profile_names.pass);
 #endif
@@ -3947,13 +3883,11 @@ void p2p_initialize(unsigned long local_address)
 		posix_socket_setsockopt(p2p.tunnel_socket, SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
 		posix_socket_setsockopt(p2p.tunnel_socket, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
 	}
-#ifndef HALO_ANDROID
 	/* the first copy of the game takes the invites later ones are opened
 	with */
 	p2p.has_handoff_key = handoff_key(p2p.handoff_key);
 	if (p2p.has_handoff_key)
 		p2p.handoff_socket = open_socket(SOCK_DGRAM, network_long(0x7F000001), network_short(HANDOFF_PORT), NULL);
-#endif
 	stun_setup();
 	if (pthread_create(&thread, NULL, p2p_thread, NULL) != 0)
 	{

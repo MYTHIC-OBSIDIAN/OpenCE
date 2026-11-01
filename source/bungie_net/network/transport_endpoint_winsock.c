@@ -1760,7 +1760,7 @@ static SOCKET create_socket(
 		}
 
 #ifndef HALO_WINDOWS
-		/* Linux (and Android) grow a stream socket's buffers as far as the
+		/* Linux grows a stream socket's buffers as far as the
 		connection needs, to several megabytes; setting a size would fix them,
 		at no more than the system's limit (about 416 KB by default) */
 		if (socket_type != SOCK_STREAM)

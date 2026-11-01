@@ -99,29 +99,6 @@ static long file_add(const char *path, const unsigned char *data, unsigned long 
 
 static unsigned char *file_read(const char *path, unsigned long *size)
 {
-#ifdef HALO_ARM64_GUEST
-	FILE *file = fopen(path, "rb");
-	unsigned char *data = NULL;
-	long length;
-
-	if (!file)
-		return NULL;
-	if (fseek(file, 0, SEEK_END) == 0 && (length = ftell(file)) >= 0 && fseek(file, 0, SEEK_SET) == 0)
-	{
-		data = malloc((size_t)length + 1);
-		if (data && fread(data, 1, (size_t)length, file) == (size_t)length)
-		{
-			*size = (unsigned long)length;
-		}
-		else
-		{
-			free(data);
-			data = NULL;
-		}
-	}
-	fclose(file);
-	return data;
-#else
 	size_t length = 0;
 	void *loaded = SDL_LoadFile(path, &length);
 	unsigned char *data;
@@ -134,7 +111,6 @@ static unsigned char *file_read(const char *path, unsigned long *size)
 	SDL_free(loaded);
 	*size = (unsigned long)length;
 	return data;
-#endif
 }
 
 /* the embedded files, then those of the menus folder: one of the same name
@@ -165,7 +141,6 @@ static void files_gather(void)
 			file_add(embedded->path, (const unsigned char *)embedded->data, embedded->size, 0);
 		}
 	}
-#ifndef HALO_ANDROID
 	{
 		/* (the folder's own and its folders': SDL's * does not cross a /) */
 		static const char *const patterns[] = { "*.xml", "*/*.xml" };
@@ -195,7 +170,6 @@ static void files_gather(void)
 		SDL_free(names);
 		}
 	}
-#endif
 }
 
 /* whether a bitmap's path stays inside the menus folder: relative, with no
@@ -388,13 +362,7 @@ static long current_line(struct reader *reader)
 }
 
 /* this build's platform, as the platform attribute names it */
-#ifdef HALO_ANDROID
-#define MENU_PLATFORM "android"
-#elif defined(HALO_WEB)
-#define MENU_PLATFORM "web"
-#else
 #define MENU_PLATFORM "desktop"
-#endif
 
 /* whether the element is for this platform (its platform attribute: the
 platforms it is for, separated by spaces) */
@@ -415,10 +383,9 @@ static int for_this_platform(struct reader *reader, const XML_Char **attributes)
 
 				if (length)
 				{
-					if ((length != 7 || strncmp(name, "desktop", 7)) && (length != 7 || strncmp(name, "android", 7)) &&
-						(length != 3 || strncmp(name, "web", 3)))
+					if (length != 7 || strncmp(name, "desktop", 7))
 					{
-						reader_error(reader, "platform=\"%s\" names one that is not desktop, android or web",
+						reader_error(reader, "platform=\"%s\" names one that is not desktop",
 							attributes[index + 1]);
 						return 1;
 					}

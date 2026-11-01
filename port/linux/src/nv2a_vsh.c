@@ -330,13 +330,7 @@ BOOL nv2a_vertex_shader_lighting(const DWORD *instructions, unsigned long instru
 /* ---------- translation */
 
 static const char shader_prologue[] =
-#ifdef HALO_GLES
-	/* the #version line comes first, from the context's capabilities */
-	"precision highp float;\n"
-	"precision highp int;\n"
-#else
 	"#version 450 core\n"
-#endif
 	"uniform vec4 c[192];\n"
 	"uniform vec4 viewport_scale;\n"
 	"uniform vec4 viewport_offset;\n"
@@ -474,9 +468,6 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 	rows.z_row = rows.w_row = -1;
 	rows.other = FALSE;
 
-#ifdef HALO_GLES
-	xgpu_text_append(&text, "#version %s\n", xgpu_capabilities.shading_language);
-#endif
 	xgpu_text_append(&text, "%s", shader_prologue);
 	/* (the pixel shader's model_lighting; the normal's length in w) */
 	if (lighting)
@@ -686,12 +677,6 @@ char *nv2a_vertex_shader_to_glsl(const DWORD *instructions, unsigned long instru
 		"\tif (!(abs(position.w) > 0.0))\n"
 		"\t\tposition = vec4(0.0, 0.0, 0.0, -1.0);\n"
 		"\tgl_Position = position;\n"
-#ifdef HALO_GLES
-		/* what glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE) does on desktop
-		GL: rows from the top, depth 0..1 */
-		"\tgl_Position.y = -gl_Position.y;\n"
-		"\tgl_Position.z = 2.0 * gl_Position.z - gl_Position.w;\n"
-#endif
 		"\tgl_PointSize = oPts.x;\n"
 		"\txD0 = clamp(oD0, 0.0, 1.0);\n"
 		"\txD1 = clamp(oD1, 0.0, 1.0);\n"
@@ -717,19 +702,12 @@ char *nv2a_fixed_function_glsl(void)
 	struct xgpu_text text = { 0 };
 	unsigned long index;
 
-#ifdef HALO_GLES
-	xgpu_text_append(&text, "#version %s\n", xgpu_capabilities.shading_language);
-#endif
 	xgpu_text_append(&text, "%s", shader_prologue);
 	for (index = 0; index < XGPU_VERTEX_ATTRIBUTE_COUNT; index++)
 		xgpu_text_append(&text, "layout(location = %lu) in vec4 v%lu_in;\n", index, index);
 	xgpu_text_append(&text,
 		"void main()\n{\n"
 		"\tgl_Position = v0_in;\n"
-#ifdef HALO_GLES
-		"\tgl_Position.y = -gl_Position.y;\n"
-		"\tgl_Position.z = 2.0 * gl_Position.z - gl_Position.w;\n"
-#endif
 		"%s"
 		"\tgl_PointSize = 1.0;\n"
 		"\txD0 = clamp(v3_in, 0.0, 1.0);\n"

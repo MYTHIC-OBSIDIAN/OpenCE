@@ -14,9 +14,8 @@ made only of 32-bit members so both sides agree on the layout.
 #ifndef __HALO_LINUX_POSIX_H
 #define __HALO_LINUX_POSIX_H
 
-/* 32-bit on both sides of the boundary. The Android port compiles these
-files into its 64-bit host, where long is 64-bit, and calls them from its
-ILP32 guest (port/android/README.md). */
+/* 32-bit on both sides of the boundary, where long is 64-bit in a 64-bit
+build of these files. */
 #ifdef __LP64__
 typedef int posix_long;
 typedef unsigned int posix_ulong;
@@ -116,8 +115,7 @@ in the order given, and its count updated */
 int posix_socket_select(int *read, int *read_count, int *write, int *write_count,
 	int *error, int *error_count, posix_long timeout_seconds, posix_long timeout_microseconds, int infinite);
 /* this machine's IPv4 address on its local network (network byte order):
-the one its default route leaves from (on Android, first that of an
-interface with broadcasts: Wi-Fi, not mobile data), else the first of an
+the one its default route leaves from, else the first of an
 interface that is up and not loopback; or 0 */
 posix_ulong posix_local_ipv4_address(void);
 /* the broadcast address of each local network this machine is on (each
@@ -181,20 +179,20 @@ void posix_hmac_sha1(const void *key, int key_size, const void *data, int size, 
 /* ---------- the process and the desktop (internet play, p2p.c) */
 
 /* copies the command line argument at index (0 is the program) into buffer;
-returns 0 if there is none (always, on Android) */
+returns 0 if there is none */
 int posix_command_line_argument(int index, char *buffer, posix_ulong size);
 posix_ulong posix_process_id(void);
 /* registers this executable as the desktop's handler of links with this
-scheme (scheme://...); returns 0 where there is no such thing (Android,
-whose app declares its links in its manifest). May wait for a program */
+scheme (scheme://...); returns 0 where there is no such thing. May wait
+for a program */
 int posix_register_url_scheme(const char *scheme, const char *description);
 /* a random secret of this user's, the same for all their processes, from a
 file that only they can read (made the first time); 1 on success, 0 where
-there is none (always, on Android) */
+there is none */
 int posix_user_secret(unsigned char *secret, int size);
 
 /* a connection to the Discord desktop client's local socket or pipe, or -1
-if none is running (always, on Android) */
+if none is running */
 int posix_discord_connect(void);
 /* writes what it can of buffer without waiting; returns the bytes written
 (0 if none could be now), or -1 if the connection failed */

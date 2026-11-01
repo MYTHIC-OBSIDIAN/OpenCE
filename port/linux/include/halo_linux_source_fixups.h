@@ -78,11 +78,12 @@ long halo_screen_commit(void);
 two (display.shadow_resolution) */
 long halo_shadow_map_scale(void);
 /* how many times a model's size in the 480-line screen's pixels to measure
-it at (display.model_detail, source/models/models.c): level nonzero, to
-choose its level of detail, otherwise whether it is drawn */
+it at (source/models/models.c: always the most detailed level): level
+nonzero, to choose its level of detail, otherwise whether it is drawn */
 float halo_model_detail_scale(int level);
-/* whether display.model_detail is "stock" (port/linux/src/d3d8_gl.c), for
-each permutation's level (port/linux/game/model_detail.c) */
+/* whether the models are drawn at the stock game's levels (never: the most
+detailed always, port/linux/src/d3d8_gl.c), for each permutation's level
+(port/linux/game/model_detail.c) */
 int halo_model_detail_stock(void);
 /* while TRUE, drawing shifts right to center 640-column layouts */
 void halo_screen_ui_offset(unsigned char centered);

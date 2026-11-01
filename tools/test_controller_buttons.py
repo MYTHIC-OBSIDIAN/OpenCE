@@ -15,8 +15,7 @@ def without_includes(source):
     return '\n'.join(line for line in source.splitlines() if not line.startswith('#include'))
 
 
-@pytest.mark.parametrize('android', [False, True])
-def test_identity_preferences_disconnect_and_unknown(tmp_path, android):
+def test_identity_preferences_disconnect_and_unknown(tmp_path):
     code = r'''
 #include <assert.h>
 #include <string.h>
@@ -42,17 +41,13 @@ static char const *config_string(char const *s){
  assert(!strcmp(s,"display.hud_button_style_switch"));return sw;
 }
 '''
-    if android:
-        code += '#define HALO_ARM64_GUEST 1\n'
     code += HEADER + without_includes((ROOT / 'port/linux/src/controller_buttons.c').read_text()) + r'''
 int main(void){
  SDL_Gamepad a={SDL_GAMEPAD_TYPE_PS5,7},b={SDL_GAMEPAD_TYPE_XBOXONE,9},c={SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO,11};
  struct controller_device info;int type;
  controller_device_update(0,&a);controller_device_update(1,&b);controller_device_update(2,&c);
  controller_device_get(0,&info);assert(info.family==CONTROLLER_PLAYSTATION && info.type==SDL_GAMEPAD_TYPE_PS5);
-#ifndef HALO_ARM64_GUEST
  assert(info.instance==7 && info.vendor==123 && info.product==456 && !strcmp(info.name,"Test controller"));
-#endif
  assert(controller_button_style_for_port(0)==7 && controller_button_style_for_port(1)==7);
  automatic=1;
  assert(controller_button_style_for_port(0)==5 && controller_button_style_for_port(1)==2 && controller_button_style_for_port(2)==10);

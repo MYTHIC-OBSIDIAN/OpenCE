@@ -16,14 +16,14 @@ CASES = ["text-printable", "text-control-characters", "text-pipe", "text-bounds"
          "rate-refill", "rate-wrap", "hears", "hears-vehicle", "flags", "alpha", "command-mute", "command-unmute",
          "command-not", "command-usage", "name-match", "name-bounds", "mute-time", "mute-wrap", "mute-again",
          "mute-full", "link-found", "link-written-out", "link-spaced", "link-word-domains", "link-not", "refused", "listing", "filter", "keyboard-character",
-         "keyboard-move", "keyboard-tap"]
+         "keyboard-move"]
 FUNCTIONS = ("chat_text_clean", "chat_text_append", "chat_rate_take", "chat_hears", "chat_channel_from_flags",
              "chat_channel_flags", "chat_line_alpha", "chat_lower", "chat_command_word", "chat_command_parse",
              "chat_name_match", "chat_names_equal", "chat_mute_minutes_left", "chat_mute_find", "chat_mute_set", "chat_minutes_plural",
              "chat_alphanumeric", "chat_link_domain", "chat_text_has_link", "chat_refused", "chat_listing_allows",
              "chat_filter_mode", "chat_filter_level", "chat_filter_star",
              "chat_keyboard_character",
-             "chat_keyboard_move", "chat_keyboard_key_at")
+             "chat_keyboard_move")
 
 # a fault in network_chat.c, the function it is in, and the case that must catch it
 NEGATIVE_CONTROLS = {
@@ -108,10 +108,6 @@ NEGATIVE_CONTROLS = {
                      "chat_keyboard_move", "keyboard-move"),
     "wide-not-snapped": (("*column = (short)(*column - *column % width);", ""), "chat_keyboard_move",
                          "keyboard-move"),
-    "tap-outside-taken": (("if (x < 0.0f || x >= 1.0f || y < 0.0f || y >= 1.0f)", "if (0)"),
-                          "chat_keyboard_key_at", "keyboard-tap"),
-    "tap-wide-not-snapped": (("*column = (short)(*column - *column % CHAT_KEYBOARD_WIDE_COLUMNS);", ";"),
-                             "chat_keyboard_key_at", "keyboard-tap"),
 }
 
 

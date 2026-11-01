@@ -16,8 +16,7 @@ edge from the luma around a pixel, the edge's ends found by stepping along
 it, and the pixel blended across it by where it lies between them, or by how
 much it stands out from its neighbours. SMAA is port/third_party/smaa's,
 compiled as GLSL at its HIGH preset: edges from luma, blending weights from
-its lookup textures, then the blend. Android has FXAA only (d3d8_gl.c's
-anti_aliasing_values).
+its lookup textures, then the blend.
 
 display.hdr's passes are here too: the tone mapping of a window's 3D view in
 the GL_RGBA16F back buffer, in place as the anti-aliasing is (and before
@@ -39,7 +38,6 @@ one colour each, in scRGB, which may be far brighter than the menus' white.
 
 #include <stdlib.h>
 
-#ifndef HALO_GLES
 #include "zlib_prefixed.h"
 
 /* port/third_party/smaa, embedded by tools/embed_assets.py: the shader's
@@ -51,7 +49,6 @@ extern const unsigned int xgpu_smaa_area_texture[];
 extern const unsigned long xgpu_smaa_area_texture_size;
 extern const unsigned int xgpu_smaa_search_texture[];
 extern const unsigned long xgpu_smaa_search_texture_size;
-#endif
 
 enum
 {
@@ -107,16 +104,7 @@ static struct
 
 static void shader_header(struct xgpu_text *text)
 {
-#ifdef HALO_GLES
-	xgpu_text_append(text,
-		"#version %s\n"
-		"precision highp float;\n"
-		"precision highp int;\n"
-		"precision highp sampler2D;\n",
-		xgpu_capabilities.shading_language);
-#else
 	xgpu_text_append(text, "#version 450 core\n");
-#endif
 }
 
 /* one triangle over the whole viewport */
@@ -407,7 +395,6 @@ static const char fill_source[] =
 	"\tresult = vec4(color.rgb, 1.0);\n"
 	"}\n";
 
-#ifndef HALO_GLES
 /* the main functions of SMAA's passes, after SMAA.hlsl; its vertex
 functions' offsets are found for each pixel */
 static const char *const smaa_mains[] =
@@ -451,7 +438,6 @@ static const char *const smaa_mains[] =
 	"\tresult = SMAANeighborhoodBlendingPS(texcoord, offset, color_texture, weights_texture);\n"
 	"}\n",
 };
-#endif
 
 /* a program, its samplers given their texture units; 0 if it does not
 build */
@@ -499,7 +485,6 @@ static GLuint program_build(int which)
 	{
 		xgpu_text_append(&text, "%s", fill_source);
 	}
-#ifndef HALO_GLES
 	else if (xgpu_smaa_shader_size)
 	{
 		xgpu_text_append(&text,
@@ -510,7 +495,6 @@ static GLuint program_build(int which)
 			"%s\n%s",
 			(const char *)xgpu_smaa_shader, smaa_mains[which - _post_program_smaa_edges]);
 	}
-#endif
 	else
 	{
 		platform_log("anti-aliasing: the build has no SMAA");
@@ -604,7 +588,6 @@ static void textures_fit(BOOL smaa, GLenum format, unsigned long width, unsigned
 	}
 }
 
-#ifndef HALO_GLES
 /* a lookup texture of SMAA's from its zlib stream; 0 if it does not
 inflate */
 static GLuint lookup_texture(const unsigned int *stream, unsigned long stream_size, GLenum format,
@@ -628,7 +611,6 @@ static GLuint lookup_texture(const unsigned int *stream, unsigned long stream_si
 	free(texels);
 	return texture;
 }
-#endif
 
 /* ---------- the passes */
 
@@ -710,9 +692,7 @@ static void pass_state(void)
 	glDisable(GL_BLEND);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_POLYGON_OFFSET_FILL);
-#ifndef HALO_GLES
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#endif
 	glBindVertexArray(post.vertex_array);
 }
 
@@ -734,7 +714,6 @@ BOOL xgpu_post_prepare(BOOL smaa)
 	{
 		return FALSE;
 	}
-#ifndef HALO_GLES
 	if (smaa && !post.area)
 	{
 		post.area = lookup_texture(xgpu_smaa_area_texture, xgpu_smaa_area_texture_size, GL_RG8, GL_RG,
@@ -748,7 +727,6 @@ BOOL xgpu_post_prepare(BOOL smaa)
 			return FALSE;
 		}
 	}
-#endif
 	return TRUE;
 }
 

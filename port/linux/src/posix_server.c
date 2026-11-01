@@ -2,13 +2,11 @@
 POSIX_SERVER.C
 
 A dedicated server's signals, standard input and output, and the process's
-use of memory and processor (posix_server.h), on Linux. None on Android and
-the web, which have no dedicated server.
+use of memory and processor (posix_server.h), on Linux.
 */
 
 #include "posix_server.h"
 
-#if !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
 
 #include <errno.h>
 #include <fcntl.h>
@@ -235,4 +233,3 @@ void posix_server_local_text(unsigned long seconds, char *text, int size)
 		snprintf(text, (size_t)size, "%lu", seconds);
 }
 
-#endif

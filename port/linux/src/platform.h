@@ -34,9 +34,7 @@ the SDK headers are read, exactly as game code sees them. */
 /* prints "halo-linux: <message>" to stderr */
 void platform_log(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-/* opens the url in the system's browser (a Discord link's page: player_link.c);
-in the web build, the page offers it to be opened (a page may open a tab only
-when it is clicked) */
+/* opens the url in the system's browser (a Discord link's page: player_link.c) */
 void platform_open_url(const char *url);
 
 /* reports an SDK entry point the Linux port does not implement, once per
@@ -135,7 +133,7 @@ struct platform_maps_folder
 };
 void platform_maps_folder_check(struct platform_maps_folder *maps);
 /* asks the player, in a box of its own that waits for the answer (before
-the window opens, or between frames), with `count` buttons (3 at most: Android's),
+the window opens, or between frames), with `count` buttons (3 at most),
 `default_index` Enter's and Escape's: the index of the one chosen, or -1
 when it cannot ask */
 int platform_ask(const char *title, const char *text, const char *const *labels, int count, int default_index);
@@ -148,18 +146,11 @@ that window at start-up and hands out page-granular blocks from it, so the
 physical/virtual arithmetic the game and Direct3D rely on keeps working. */
 
 #define PLATFORM_CONTIGUOUS_BASE 0x80000000UL
-#if defined(HALO_ARM64_GUEST) || defined(HALO_WEB)
-/* 128 MB, a development kit's: Android's guest image is linked just above
-the window (port/android/include/halo_android_abi.h), and the web build's
-WebAssembly memory ends with it (tools/web_build.py) */
-#define PLATFORM_CONTIGUOUS_SIZE 0x08000000UL
-#else
 /* 512 MB on the desktop builds, whose caches outgrow the Xbox's (Custom
 Edition maps' textures and geometry: halo_port_capacity.h). Its pages are
 backed as they are used. port/windows/src/win32_memory_watch.c has the
 same size. */
 #define PLATFORM_CONTIGUOUS_SIZE 0x20000000UL
-#endif
 #define PLATFORM_ANY_PHYSICAL_ADDRESS 0xffffffffUL
 
 /* returns NULL on failure; physical_address places the block exactly */
@@ -198,8 +189,8 @@ void memory_watch_prepare_write(void *address, unsigned long size);
 /* the range was remapped or reprotected: treat it as written and unwatched */
 void memory_watch_forget(void *address, unsigned long size);
 /* a new frame starts (Present): tracking that compares page contents
-(Android under ARM translation, host_watch_hash.h) hashes a page at most
-once a frame, so it sees a write in the next frame, not at once */
+hashes a page at most once a frame, so it sees a write in the next frame,
+not at once */
 void memory_watch_begin_frame(void);
 
 /* ---------- time */
