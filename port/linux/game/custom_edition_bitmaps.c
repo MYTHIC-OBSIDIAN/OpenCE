@@ -50,6 +50,9 @@ in the loaded map's tags, once the mods' bitmaps are in them.
 enum
 {
 	SHADER_MODEL_GROUP_TAG = 'soso',
+	/* (a model shader's flags: its multipurpose map is in the Xbox's
+	channel order, multipurpose_map_in_xbox_order) */
+	SHADER_MODEL_XBOX_MULTIPURPOSE_CHANNEL_ORDER_BIT = 6,
 	WEAPON_HUD_INTERFACE_GROUP_TAG = 'wphi',
 };
 
@@ -127,7 +130,8 @@ nothing. */
 struct shader_model_maps
 {
 	struct shader shader;
-	byte reserved28[0x24];
+	word model_flags;
+	byte reserved2A[0x22];
 	short change_color_source;
 	byte reserved4E[0x56];
 	struct tag_reference base_map;
@@ -139,8 +143,8 @@ struct shader_model_maps
 	struct tag_reference reflection_cube_map;
 };
 
-typedef char verify_shader_model_maps_change_color_source_offset[
-	offsetof(struct shader_model_maps, change_color_source) == 0x4C ? 1 : -1];
+typedef char verify_shader_model_maps_model_flags_offset[
+	offsetof(struct shader_model_maps, model_flags) == 0x28 ? 1 : -1];
 typedef char verify_shader_model_maps_base_map_index_offset[
 	offsetof(struct shader_model_maps, base_map.index) == 0xB0 ? 1 : -1];
 typedef char verify_shader_model_maps_multipurpose_map_index_offset[
@@ -630,34 +634,20 @@ static void weapon_hud_statics_note(
 	return;
 }
 
-/* Whether a model shader's multipurpose map is in the Xbox's channel order
-as Halo PC ships it. Halo PC keeps a multipurpose map's color change mask in
-alpha, and Gearbox left many of the Xbox's maps as they were, compressed as
-DXT1, which has no alpha: Halo PC draws such a shader's change color over the
-whole of it, and its specular mask from the wrong channel (the Elites',
-Grunts', Jackals' and the Covenant crates' armor and metal). A map of a
-shader that changes color, all of whose bitmaps are DXT1, is drawn as the
-Xbox draws it, its channels as they are. */
+/* Whether a model shader's multipurpose map is in the Xbox's channel order:
+Custom Edition's "use xbox multipurpose channel order" flag (bit 6 of its
+flags; Invader's shader_model.json). Halo PC's own maps have it on most of
+their model shaders, whose maps Gearbox left as the Xbox's: the Spartans',
+the Elites', Grunts' and Jackals', the Covenant crates'. Taken in Halo PC's
+order those lost their specular mask (no reflection: a black visor, flat
+armor) and drew their change color from the wrong channel. */
 static boolean multipurpose_map_in_xbox_order(
 	struct tag_view const *view,
 	struct shader_model_maps const *shader)
 {
-	struct bitmap_group *group;
-	long index;
-
-	if (shader->change_color_source <= 0 || shader->multipurpose_map.index == NONE)
-		return FALSE;
-	group = view_tag_get(view, shader->multipurpose_map.index, BITMAP_GROUP_TAG, sizeof(struct bitmap_group));
-	if (!group || group->bitmaps.count <= 0)
-		return FALSE;
-	for (index = 0; index < group->bitmaps.count; index++)
-	{
-		struct bitmap_data *bitmap = view_block_element(view, &group->bitmaps, index, sizeof(*bitmap));
-
-		if (!bitmap || bitmap->format != _bitmap_format_dxt1)
-			return FALSE;
-	}
-	return TRUE;
+	(void)view;
+	return shader->multipurpose_map.index != NONE &&
+		TEST_FLAG(shader->model_flags, SHADER_MODEL_XBOX_MULTIPURPOSE_CHANNEL_ORDER_BIT);
 }
 
 /* the bitmaps of the tags `view` reads whose channels Halo PC keeps
@@ -776,7 +766,7 @@ static boolean reordered_bitmaps_find(
 	{
 		error(
 			_error_silent,
-			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not; %ld model shaders' change-colored DXT1 multipurpose maps are the Xbox's already)",
+			"custom edition: %ld multipurpose maps and %ld HUD meters are drawn with their channels in this build's order (%ld drawn otherwise too are not; %ld model shaders' multipurpose maps are in the Xbox's order already)",
 			multipurpose_count,
 			meter_count,
 			kept_count,
