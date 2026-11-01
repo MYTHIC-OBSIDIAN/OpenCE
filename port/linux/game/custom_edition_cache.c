@@ -263,17 +263,17 @@ static boolean maps_folder_hashed_name(
 	return count == 1;
 }
 
-/* A map's own folder, looked in before the others: the game's maps folder
-for Halo PC's six (Gearbox's: the only maps of that folder this looks at),
-digsite_maps for the Digsite maps (custom_edition_maps_home). */
+/* A map's own folder, looked in before the others: pc_maps for any map it
+has (Halo PC's: those of a name there play from there), digsite_maps for
+the Digsite maps (custom_edition_maps_home). */
 static boolean custom_edition_map_home_has(
 	char const *name,
 	char *path)
 {
+	if (maps_folder_has(CUSTOM_EDITION_PC_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path))
+		return TRUE;
 	switch (custom_edition_maps_home(name))
 	{
-	case _custom_edition_maps_home_stock:
-		return maps_folder_has(CUSTOM_EDITION_GEARBOX_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path);
 	case _custom_edition_maps_home_digsite:
 		return maps_folder_has(CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path);
 	default:
@@ -381,13 +381,12 @@ static boolean custom_edition_map_path(
 	return custom_edition_map_named(map_name, path);
 }
 
-/* A cache's resource map of `type`, bitmaps.map and so on: the one beside
-the cache first (map_path's folder), then the first maps folder's that has
-it; the game's when none does, for the message. A Halo PC cache (version 7,
-one of Gearbox's six in the maps folder) has only Halo PC's own, beside it:
-Custom Edition's hold other data at other offsets. A Custom Edition cache
-never has the maps folder's, which are Halo PC's (the Custom Edition copy of
-one of the six put there instead). */
+/* A cache's resource map of `type`, bitmaps.map and so on. A Halo PC cache
+(version 7) has only Halo PC's own: pc_maps' first, then the one beside it
+(Custom Edition's hold other data at other offsets: a Halo PC map in
+custom_maps, beside Custom Edition's, plays with pc_maps'). A Custom Edition
+cache has the one beside it first, then the first maps folder's that has it,
+never pc_maps' (Halo PC's); the game's when none does, for the message. */
 static boolean custom_edition_resource_map_path(
 	enum resource_map_type type,
 	char const *map_path,
@@ -399,19 +398,23 @@ static boolean custom_edition_resource_map_path(
 	char const *end = strrchr(map_path, '\\');
 	short folder;
 
+	if (halo_pc && maps_folder_has(CUSTOM_EDITION_PC_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path))
+	{
+		return TRUE;
+	}
 	if (end && (size_t)(end + 1 - map_path) < sizeof(folder_path))
 	{
 		memcpy(folder_path, map_path, (size_t)(end + 1 - map_path));
 		folder_path[end + 1 - map_path] = 0;
-		if ((halo_pc || _stricmp(folder_path, CUSTOM_EDITION_GEARBOX_MAP_DIRECTORY)) &&
+		if ((halo_pc || _stricmp(folder_path, CUSTOM_EDITION_PC_MAP_DIRECTORY)) &&
 			maps_folder_has(folder_path, name, MAP_FILE_EXTENSION, path))
 		{
 			return TRUE;
 		}
-		if (halo_pc)
-		{
-			return FALSE;
-		}
+	}
+	if (halo_pc)
+	{
+		return FALSE;
 	}
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{
@@ -1123,7 +1126,8 @@ boolean custom_edition_cache_present(
 		return FALSE;
 	}
 	/* (a Halo PC cache keeps its bitmaps' and sounds' data in Halo PC's own
-	bitmaps.map and sounds.map, beside it: custom_edition_resource_map_path) */
+	bitmaps.map and sounds.map, pc_maps' or beside it:
+	custom_edition_resource_map_path) */
 	if (identity.version == CACHE_FILE_VERSION_HALO_PC)
 	{
 		for (type = _resource_map_bitmaps; type <= _resource_map_sounds; type++)
@@ -1134,10 +1138,10 @@ boolean custom_edition_cache_present(
 			if (!custom_edition_resource_map_path((enum resource_map_type)type, path, TRUE, resource_path) ||
 				!file_path_exists(resource_path))
 			{
-				error(_error_silent, "custom edition: the Halo PC map '%s' needs Halo PC's %s.map beside it",
+				error(_error_silent, "custom edition: the Halo PC map '%s' needs Halo PC's %s.map in pc_maps",
 					path, resource_name);
 				snprintf(message, message_size,
-					"The map %.64s needs Halo PC's %s.map in the same folder (copy it from your Halo PC maps folder).",
+					"The map %.64s needs Halo PC's %s.map in the pc_maps folder (copy it from your Halo PC maps folder).",
 					name, resource_name);
 				return FALSE;
 			}

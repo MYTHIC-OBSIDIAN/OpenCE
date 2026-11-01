@@ -2,15 +2,15 @@
 """Writes pictures from the player's own Halo PC or Halo Custom Edition
 install for this LAN build, which ships none of them:
 
-    python tools/pc_map_pictures.py <install>/maps <game>/maps
+    python tools/pc_map_pictures.py <install>/maps <game>/pc_maps
 
 reads <install>/maps/ui.map (and its bitmaps.map, where the pictures' pixels
 or tags are kept there) and writes the pictures of Halo PC's own multiplayer
 maps (Gearbox's six: Danger Canyon, Death Island, Gephyrophobia, Ice Fields,
 Infinity and Timberland) as the <name>.bmp files the map lists show beside
 each map (port/linux/game/custom_edition_maps.c): icefields.bmp,
-deathisland.bmp and so on, into the folder the maps are in (the game's maps
-folder).
+deathisland.bmp and so on, into the folder the maps are in (the game's
+pc_maps folder).
 
     python tools/pc_map_pictures.py <install>/maps --menus <game>
 

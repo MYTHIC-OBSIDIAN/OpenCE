@@ -19,9 +19,10 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 	0x6000 + n     CE campaign map (played alone or as co-op)
 	0x6800 + n     Digsite map n (the DIGSITE list's), installed or not
 
-The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 and
-Halo PC's own six (those found) as MULTIPLAYER, the Digsite maps as
-DIGSITE, and the other CE multiplayer maps as CUSTOM EDITION.
+The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 as
+MULTIPLAYER, the Halo PC maps of the pc_maps folder (Gearbox's six, and Halo
+PC's versions of the Xbox's) as PC MULTIPLAYER, the Digsite maps as DIGSITE,
+and the other CE multiplayer maps as CUSTOM EDITION.
 */
 
 #ifndef __CUSTOM_EDITION_MAPS_H
@@ -37,18 +38,16 @@ indices fit before the campaigns' (custom_edition_maps.c) */
 /* the map lists' parts a CE map can be in (custom_edition_maps_entry) */
 enum
 {
-	_custom_edition_maps_kind_stock,
+	_custom_edition_maps_kind_pc,
 	_custom_edition_maps_kind_digsite,
 	_custom_edition_maps_kind_listed,
 };
 
-/* the folder a map is looked for in first, by its name
+/* the folder a map is looked for in first, by its name, after pc_maps
 (custom_edition_maps_home) */
 enum
 {
 	_custom_edition_maps_home_none,
-	/* one of Halo PC's six: the game's own maps folder */
-	_custom_edition_maps_home_stock,
 	/* a Digsite map: digsite_maps */
 	_custom_edition_maps_home_digsite,
 };
@@ -97,20 +96,20 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). The multiplayer maps are CUSTOM EDITION's: neither Halo PC's own
-nor the Digsite maps. Scans for maps the first time. */
+them). The multiplayer maps are CUSTOM EDITION's: neither pc_maps' nor the
+Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
 short custom_edition_maps_display_index_of(
 	boolean campaign,
 	short index);
 
-/* Halo PC's own multiplayer maps found (Gearbox's six, in Halo PC's menu
-order), which MULTIPLAYER lists after the Xbox's: how many, and each one's
-display index (NONE past them) */
-short custom_edition_maps_stock_count(
+/* the Halo PC multiplayer maps of the pc_maps folder, which PC
+MULTIPLAYER lists (by their names, as Halo PC's list): how many, and each
+one's display index (NONE past them) */
+short custom_edition_maps_pc_count(
 	void);
-short custom_edition_maps_stock_display_index(
+short custom_edition_maps_pc_display_index(
 	short index);
 
 /* the Digsite maps (DIGSITE's, all of them, found or not): how many, and
@@ -137,7 +136,7 @@ short custom_edition_maps_entry(
 	short *kind);
 
 /* the folder the map of a file name (without .map, a hash it ends in
-aside) is looked for in first: an _custom_edition_maps_home_* */
+aside) is looked for in first, after pc_maps: an _custom_edition_maps_home_* */
 short custom_edition_maps_home(
 	char const *name);
 
@@ -145,9 +144,9 @@ short custom_edition_maps_home(
 char const *custom_edition_maps_level_name(
 	short display_index);
 
-/* whether the display index is one of Halo PC's own multiplayer maps (Ice
-Fields, Death Island and so on), which are listed as VANILLA */
-boolean custom_edition_maps_stock(
+/* whether the display index is one of the pc_maps folder's (PC
+MULTIPLAYER's) */
+boolean custom_edition_maps_pc(
 	short display_index);
 
 /* name and description for a display index, or NULL (text_group.c) */
