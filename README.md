@@ -15,7 +15,7 @@
 > on a Bink decoder adapted from FFmpeg's, LGPL 2.1 or later). The map lists show Halo PC's maps (the multi_maps folder's) in
 > MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
-> STANDARD alone (OpenCE's own gametypes are in it; saved gametypes are not listed). Its
+> STANDARD (the Xbox's built-in gametypes) and CUSTOM (those saved); OpenCE's own built-in gametypes are not listed. Its
 > GitHub Actions build Windows only: each push uploads
 > `halo-windows-release`, and a push to `main` or `lan-digsite` publishes
 > it as a release.

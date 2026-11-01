@@ -1003,8 +1003,7 @@ STRING_OVERRIDES.update({
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
     # (and the port's OPENCE: OpenCE's gametypes, port/linux/game/game_modes.c)
-    # (no CUSTOM: this LAN build lists the built-in gametypes alone)
-    "main_menu/gametype_select/var_gametype_banks": ["STANDARD"],
+    "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],
     # (the PC's weapon sets, then the Xbox's NO GRENADES: menu_functions.c's
     # gametype_options maps them to the engine's)
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": ["INFINITE GRENADES:", "WEAPON SET:", "VEHICLE SET:", "STARTING EQUIPMENT:",
@@ -1052,7 +1051,7 @@ OVERRIDE_ORIGINALS = {
     f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
     f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
-    "main_menu/gametype_select/var_gametype_banks": [0],
+    "main_menu/gametype_select/var_gametype_banks": [0, 2],
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
     # (the first's note that infinite grenades work only with 4 players or
     # fewer is left out: not so here)

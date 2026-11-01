@@ -3600,23 +3600,32 @@ static void gametype_setup_end(void);
 static boolean gametype_setup_apply(void);
 static void gametype_setup_type(wchar_t *text);
 
-/* ---- the gametype list: its spinner's bank (STANDARD: the built-in ones,
-the Xbox's and OpenCE's own, game_modes.c) in its first row, then the bank's
-gametypes. (This LAN build has no OPENCE bank, OpenCE's built-in gametypes
-being listed in STANDARD, and no CUSTOM bank: the gametypes saved are not
-listed.) */
+/* ---- the gametype list: its spinner's bank (STANDARD: the Xbox's built-in
+ones, CUSTOM: those saved) in its first row, then the bank's gametypes. (This
+LAN build has no OPENCE bank, and lists none of OpenCE's built-in gametypes,
+game_modes.c: SWAT, Infection, Gun Game and the Hardcore ones.) */
 
 enum
 {
 	GAMETYPE_BANK_STANDARD = 0,
+	GAMETYPE_BANK_CUSTOM,
 	NUMBER_OF_GAMETYPE_BANKS
 };
 
-/* a gametype's bank, NONE for one saved (not listed) */
+/* a gametype's bank, NONE for one of OpenCE's built-in gametypes (not
+listed) */
 static short gametype_bank(long profile_index)
 {
+	struct game_variant variant;
+	struct game_variant_options options;
+
 	if (!((unsigned long)profile_index & PLAYLIST_READ_ONLY_BIT))
+		return GAMETYPE_BANK_CUSTOM;
+	if (playlist_profile_get(profile_index, &variant) && playlist_profile_get_options(profile_index, &options) &&
+		game_modes_variant_is_opence(&variant, &options))
+	{
 		return NONE;
+	}
 	return GAMETYPE_BANK_STANDARD;
 }
 
@@ -3677,7 +3686,8 @@ static boolean gametype_list_initialize(struct widget_instance *list)
 	short last, index;
 
 	multiplayer.gametype_count = ui_widget_port_gametypes(multiplayer.gametypes, MAXIMUM_GAMETYPES, &last);
-	gametype_bank_read(GAMETYPE_BANK_STANDARD);
+	gametype_bank_read(multiplayer.gametype_count && gametype_bank(multiplayer.gametypes[last]) != NONE ?
+		gametype_bank(multiplayer.gametypes[last]) : GAMETYPE_BANK_STANDARD);
 	for (index = 0; index < multiplayer.bank_count; index++)
 	{
 		if (multiplayer.bank[index] == last)
