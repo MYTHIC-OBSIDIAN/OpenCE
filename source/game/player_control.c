@@ -389,6 +389,12 @@ static struct profile_section player_control_update_section = {"player_control_u
 static struct player_control_globals_data *player_control_globals;
 short debug_input_target = 0;
 real player_look_yaw_rate[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {0};
+/* port: the tick each local player's first unit of the map was given (NONE
+before it, and after its first moments: player_control_new_unit) */
+static long player_control_first_unit_tick[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {NONE, NONE, NONE, NONE};
+static boolean player_control_first_unit_given[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {FALSE};
+/* port: how long after it a jump pressed is the press that started the game */
+#define PLAYER_CONTROL_FIRST_UNIT_JUMP_TICKS 15
 real player_look_pitch_rate[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS] = {0};
 boolean controls_enable_crouch = FALSE;
 boolean controls_enable_doubled_spin = FALSE;
@@ -1071,6 +1077,12 @@ void player_control_new_unit(
 	control->pitch_minimum = -DEGREES_TO_RADIANS(85.5f);
 	control->inhibited_button_bit_vector = inhibited & reset_when_released;
 	control->reset_button_when_released_bit_vector = reset_when_released;
+	/* port: (the map's first unit: a jump in its first moments held back) */
+	if (unit_index != NONE && !player_control_first_unit_given[local_player_index])
+	{
+		player_control_first_unit_given[local_player_index] = TRUE;
+		player_control_first_unit_tick[local_player_index] = game_time_get();
+	}
 
 	if (unit_index != NONE)
 	{
@@ -1380,6 +1392,26 @@ static void get_local_player_input_blob(
 				{
 					input->facing_delta.yaw = 0.f;
 					input->facing_delta.pitch = 0.f;
+				}
+			}
+
+			/* port: the A that started the game reaches the game as a press
+			a tick after each player's first unit spawns (debug.txt: down for
+			one tick at the spawn's tick and one after, never held back as the
+			menus closed), and made every player jump as the game began: a
+			jump down in the first unit's first half second is held back until
+			released */
+			if (player_control_first_unit_tick[local_player_index] != NONE)
+			{
+				if (game_time_get() - player_control_first_unit_tick[local_player_index] >
+					PLAYER_CONTROL_FIRST_UNIT_JUMP_TICKS)
+				{
+					player_control_first_unit_tick[local_player_index] = NONE;
+				}
+				else if (input_state->buttons[_button_jump])
+				{
+					control->inhibited_button_bit_vector |= FLAG(_button_jump);
+					control->reset_button_when_released_bit_vector |= FLAG(_button_jump);
 				}
 			}
 
@@ -1957,6 +1989,9 @@ void player_control_initialize_for_new_map(
 			0,
 			struct game_globals_player_control);
 
+		/* port: (no first unit yet on this map: player_control_new_unit) */
+		player_control_first_unit_given[local_player_index] = FALSE;
+		player_control_first_unit_tick[local_player_index] = NONE;
 		player_control_new_unit(local_player_index, NONE);
 		if (player_look_pitch_rate[local_player_index] == 0.f)
 		{

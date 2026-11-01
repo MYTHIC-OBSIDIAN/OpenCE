@@ -2878,6 +2878,9 @@ static void bots_bot_update(struct bots_bot *bot, long bot_index, struct player_
 		bot->stuck_position = tick.position;
 		bot->stuck_tick = tick.now;
 		bot->stuck_count = 0;
+		/* (and no sidestep from before: a tick of a game before, past the
+		new game's clock, held it to one and to its jump) */
+		bot->unstick_until_tick = 0;
 		bot->goal_kind = _bots_goal_none;
 		bot->next_look_tick = tick.now + (bot_index % 3);
 		bot->climb_until_tick = 0;
