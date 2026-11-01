@@ -4,9 +4,10 @@
 result is a native executable, `build/windows/halo.exe`, with `SDL3.dll`
 next to it. You must build on Windows.
 
-The Windows build uses the platform layer of the Linux build
-(`port/linux/src`). The graphics, the sound, the input, the settings and
-the multiplayer functions are the same as on Linux. Refer to
+The Windows build uses the shared platform layer in `port/linux/src`
+(the folder keeps its name; the Linux build is only a developer's compile
+check). The graphics, the sound, the input, the settings and the
+multiplayer functions are described in
 [port/linux/README.md](../linux/README.md).
 
 ## Requirements
@@ -62,7 +63,7 @@ LLVM for Windows supplies this runtime only for x86-64.
 
 Enter `build\windows\halo.exe`.
 
-The game finds the game data as on Linux. Refer to "Start the game" in
+The game finds the game data as described in "Start the game" in
 [port/linux/README.md](../linux/README.md#start-the-game).
 
 | Item | Location |
@@ -75,10 +76,10 @@ The game finds the game data as on Linux. Refer to "Start the game" in
 
 ## How the port operates
 
-The game is 32-bit code, as on Linux, because its data contains 32-bit
+The game is 32-bit code because its data contains 32-bit
 pointers. The clang target `i686-pc-windows-msvc` gives the ABI of MSVC:
 the structure layout, the 16-bit `wchar_t` and the calling conventions.
-Thus the Windows build needs fewer changes than the Linux build.
+Thus the game's sources need few changes on Windows.
 
 The executable is large-address-aware, because the platform layer reserves
 the Xbox memory at `0x80000000`.
