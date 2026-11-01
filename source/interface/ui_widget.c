@@ -3974,6 +3974,18 @@ short ui_widget_port_list_index(
 	return index;
 }
 
+/* port: how many strings a text box's string list has (0 for none), for
+an extended description that has none for a list's item */
+short ui_widget_port_text_box_string_count(
+	struct widget_instance *text_box)
+{
+	struct ui_widget_definition *definition = ui_widget_definition_get(text_box->definition_tag_index);
+
+	if (definition->text_label_string_list.index == NONE)
+		return 0;
+	return (short)unicode_string_list_definition_get(definition->text_label_string_list.index)->strings.count;
+}
+
 /* port: back to the screen before, for the menus' functions */
 void ui_widget_port_go_back(
 	struct widget_instance *widget)

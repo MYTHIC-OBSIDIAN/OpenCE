@@ -666,6 +666,8 @@ static void dim_if_no_system_link_cable(
 /* port: ui_widget.c's and port/linux/game/menu_tags.c's */
 short ui_widget_port_list_index(
 	struct widget_instance *list_widget);
+short ui_widget_port_text_box_string_count(
+	struct widget_instance *text_box);
 boolean pc_menu_tag(
 	long tag_index);
 
@@ -868,6 +870,19 @@ static void multiplayer_type_menu_update_extended_description(
 	/* port: in the PC version's lists (port/assets/menus), the item's number
 	among those that take events, as its game counts them (past its labels) */
 	index = ui_widget_port_list_index(list_widget);
+
+	/* port: an item past the descriptions (the PC version's button bar, below
+	EDIT GAMETYPES) shows none, not "<missing string>", and leaves the
+	picture as it was */
+	if (index != NONE && pc_menu_tag(list_widget->definition_tag_index))
+	{
+		struct widget_instance *description_text = list_widget->parameters.list.extended_description->child->next;
+		boolean described = index < ui_widget_port_text_box_string_count(description_text);
+
+		description_text->visible = described;
+		if (!described)
+			index = NONE;
+	}
 
 	if (index != NONE)
 	{
