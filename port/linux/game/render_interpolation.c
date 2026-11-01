@@ -41,6 +41,7 @@ tick, such as a nav marker, is moved as far as the object is drawn from there
 #include "camera/director.h"
 #include "camera/observer.h"
 #include "cutscene/cinematics.h"
+#include "network_coop.h"
 #include "game/players.h"
 #include "render/render_cameras.h"
 #include "units/units.h"
@@ -814,6 +815,11 @@ static struct observer_result const *render_interpolation_blended_camera(
 	{
 		long relative_object_index = scripted_camera_object_relative_to();
 		real_matrix4x3 const *drawn;
+
+		/* (a network co-op client's cutscene camera, placed from the host's
+		relative to its copy of the object: network_coop.c) */
+		if (relative_object_index == NONE)
+			relative_object_index = network_coop_client_camera_object();
 
 		if (relative_object_index != NONE &&
 			!scripted_camera_object_is_first_person_camera(relative_object_index) &&

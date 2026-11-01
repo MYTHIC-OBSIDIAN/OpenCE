@@ -87,17 +87,16 @@ int main(int argc,char **argv)
 {
  char const *case_name=argc>1?argv[1]:"";setup();
  CASE("policy") {
-  struct {char const *mode;int public_game;int want;} cases[]={
-   {"auto",0,1},{"auto",1,0},{"revert",1,1},{"respawn",0,0},{"invalid",0,1},{"invalid",1,0}};
-  for(unsigned i=0;i<sizeof(cases)/sizeof(cases[0]);i++)for(int locked=0;locked<2;locked++)for(int transport=0;transport<2;transport++){
-   setup();policy=cases[i].mode;lobby.public=cases[i].public_game;lobby.has_password=locked;lobby.listed=transport;wipe();
-   CHECK(reverts==cases[i].want&&respawns==1-cases[i].want,"policy %s/public%d/password%d/transport%d",policy,lobby.public,locked,transport);
+  /* (locked: a team wiped reverts, as split screen's does, whatever
+  network.coop_team_wipe says and however the game is listed) */
+  char const *modes[]={"auto","revert","respawn","invalid"};
+  for(unsigned i=0;i<sizeof(modes)/sizeof(modes[0]);i++)for(int public_game=0;public_game<2;public_game++)
+   for(int locked=0;locked<2;locked++)for(int transport=0;transport<2;transport++){
+   setup();policy=modes[i];lobby.public=public_game;lobby.has_password=locked;lobby.listed=transport;wipe();
+   CHECK(reverts==1&&!respawns,"policy %s/public%d/password%d/transport%d",policy,lobby.public,locked,transport);
   }
-  setup();lobby.public=TRUE;browser_enabled=FALSE;wipe();CHECK(reverts==1&&!respawns,"disabled public browser counted as listed");
-  /* a dedicated server is public by server.public with internet play, whatever its lobby says */
-  setup();dedicated=1;lobby.public=FALSE;wipe();CHECK(!reverts&&respawns==1,"public dedicated server reverted on auto");
-  setup();dedicated=1;dedicated_online=FALSE;wipe();CHECK(reverts==1&&!respawns,"LAN-only dedicated server counted as public");
-  dedicated=0;dedicated_online=TRUE;
+  setup();dedicated=1;lobby.public=FALSE;wipe();CHECK(reverts==1&&!respawns,"public dedicated server did not revert");
+  dedicated=0;
  } else CASE("authority") {
   policy="revert";connection=_game_connection_network_client;CHECK(!network_coop_wipe_reverts(),"client decides wipe");
   connection=_game_connection_network_server;active=FALSE;CHECK(!network_coop_wipe_reverts(),"multiplayer decides co-op wipe");

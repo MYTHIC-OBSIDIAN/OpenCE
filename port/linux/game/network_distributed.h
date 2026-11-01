@@ -83,8 +83,8 @@ enum
 	_distributed_message_coop_device_groups,
 	/* co-op: which named objects exist on the host (network_coop.c) */
 	_distributed_message_coop_object_names,
-	/* co-op: a client's vote to skip the cutscene, to the host: no longer sent,
-	and ignored (only the host skips: network_coop.c); its number kept */
+	/* co-op: a client's pause menu request (REVERT TO SAVED, RESTART LEVEL), to
+	the host (network_coop.c; once the skip vote, its number kept) */
 	_distributed_message_coop_skip_vote,
 	/* co-op: what the host's scripts did once: sounds, titles, HUD text,
 	animations (network_coop.c) */

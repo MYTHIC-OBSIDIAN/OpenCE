@@ -260,7 +260,10 @@ cutscene (SPACE or A, as alone; "PRESS SPACE OR A TO SKIP" shows it when it
 can); the other player's skip key does nothing.
 
 An online co-op game's pause menu has the split screen co-op's options (its
-rows, in its order: no SETTINGS). Its players spawn and respawn as split
+rows, in its order: no SETTINGS). REVERT TO SAVED and RESTART LEVEL, from
+either player, are done by the host for both: the revert to the last
+checkpoint, as split screen's, and the restart a return to the lobby with
+the same level, which starts again at once. Its players spawn and respawn as split
 screen's do: both at the level's start, and a dead player beside the other
 once nothing is dangerous (watching them meanwhile, with no text on the
 screen); only one who joins a level in progress spawns beside a teammate.

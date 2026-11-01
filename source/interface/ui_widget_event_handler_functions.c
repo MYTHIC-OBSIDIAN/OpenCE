@@ -1993,9 +1993,10 @@ static boolean pause_game_restart_at_checkpoint(
 	struct event_record *event,
 	boolean *widget_deleted)
 {
-	/* port: in co-op this would revert only this machine */
+	/* port: in network co-op the host reverts every machine (a client asks
+	it to: network_coop.c), as split screen's revert does both players */
 	if (network_coop_active())
-		return FALSE;
+		return network_coop_pause_request(_coop_pause_request_revert);
 	main_revert_map();
 	return TRUE;
 }
@@ -2005,9 +2006,10 @@ static boolean pause_game_restart_level(
 	struct event_record *event,
 	boolean *widget_deleted)
 {
-	/* port: in co-op this would restart only this machine */
+	/* port: in network co-op the host restarts the level for every machine
+	(a client asks it to: network_coop.c) */
 	if (network_coop_active())
-		return FALSE;
+		return network_coop_pause_request(_coop_pause_request_restart);
 	main_reset_map();
 	return TRUE;
 }

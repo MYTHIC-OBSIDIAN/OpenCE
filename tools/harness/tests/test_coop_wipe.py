@@ -1,4 +1,4 @@
-"""Host visibility policy and checkpoint membership through actual save/death code."""
+"""The team wipe's revert (locked: whatever the policy) and checkpoint membership through actual save/death code."""
 import sys
 from pathlib import Path
 

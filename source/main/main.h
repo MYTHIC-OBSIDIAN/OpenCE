@@ -194,6 +194,9 @@ void main_roll_credits(
 	void);
 
 void main_reset_map(void);
+/* port: a network co-op host restarts the level for every machine
+(network_coop.c's, from the pause menu's RESTART LEVEL) */
+void main_coop_restart_level(void);
 
 void main_stop_time(void);
 void main_start_time(void);

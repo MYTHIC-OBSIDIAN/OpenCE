@@ -437,11 +437,15 @@ struct distributed_coop_object_looks_message
 	struct distributed_coop_object_look looks[MAXIMUM_OBJECT_LOOKS_PER_MESSAGE];
 };
 
-/* a client's vote to skip the cinematic, sent every tick while it stands */
+/* a client's pause menu request (once its skip vote: the message's number
+is kept), REVERT TO SAVED or RESTART LEVEL for the host to do: sent in
+PAUSE_REQUEST_REPEAT_TICKS ticks' messages in case one is lost, numbered so
+that the host does each once */
 struct distributed_coop_skip_vote
 {
-	byte voted;
-	byte pad[3];
+	byte request;
+	byte sequence;
+	byte pad[2];
 };
 
 struct distributed_coop_skip_vote_message
@@ -462,6 +466,9 @@ static struct
 	/* the eased view behind the host, used while there is nothing else to
 	watch (watching_host_valid is FALSE until it is first set) */
 	boolean watching_host_valid;
+	/* the object the host's cutscene camera is placed relative to, here
+	(NONE: none), which the camera is drawn moving with between ticks */
+	long camera_object_index;
 	real_point3d watching_host_position;
 	real_vector3d watching_host_forward;
 	long heard_time;
@@ -583,6 +590,18 @@ static struct
 	written (a skip reverts to it) */
 	boolean skip_save_written;
 } skip_vote;
+
+/* the pause menu's requests: a client's to send (its last, and the ticks
+left to send it in), and the host's record of the last done of each machine */
+enum { PAUSE_REQUEST_REPEAT_TICKS = 3 };
+static struct
+{
+	byte request;
+	byte sequence;
+	short ticks_left;
+	byte done_sequences[HALO_PORT_MAXIMUM_NETWORK_MACHINES];
+	boolean done_any[HALO_PORT_MAXIMUM_NETWORK_MACHINES];
+} pause_requests;
 
 /* ---------- prototypes */
 
@@ -2026,6 +2045,7 @@ void network_coop_new_game(
 	void)
 {
 	csmemset(&coop_presentation, 0, sizeof(coop_presentation));
+	coop_presentation.camera_object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
@@ -2048,6 +2068,10 @@ void network_coop_new_game(
 	skip_vote.offered = FALSE;
 	skip_vote.voters = 0;
 	skip_vote.cooldown_until = 0;
+	/* (no request left over from the last level; each machine's numbers
+	start again) */
+	pause_requests.ticks_left = 0;
+	csmemset(pause_requests.done_any, 0, sizeof(pause_requests.done_any));
 	skip_vote.skip_save_written = FALSE;
 	coop_enemies_new_game();
 	coop_pickups_new_game();
@@ -2928,6 +2952,53 @@ void network_coop_note_object_effect(
 	event->value = marker_index;
 }
 
+/* host: a pause menu request done for every machine: the revert or the
+level's restart at the end of the frame (main.c) */
+static void host_pause_request(
+	short request,
+	long machine_index)
+{
+	if (request == _coop_pause_request_revert)
+	{
+		error(_error_silent, "co-op: REVERT TO SAVED (machine %ld)", machine_index);
+		main_revert_map();
+	}
+	else if (request == _coop_pause_request_restart)
+	{
+		error(_error_silent, "co-op: RESTART LEVEL (machine %ld)", machine_index);
+		main_coop_restart_level();
+	}
+}
+
+/* (render_interpolation.c) a client's cutscene camera's object, which it
+is drawn moving with between ticks as the host's camera point relative to
+it is, or NONE */
+long network_coop_client_camera_object(
+	void)
+{
+	if (!coop_client() || !coop_presentation.host_camera || !coop_presentation.cinematic_started)
+		return NONE;
+	return coop_presentation.camera_object_index;
+}
+
+boolean network_coop_pause_request(
+	short request)
+{
+	if (request <= _coop_pause_request_none || request >= NUMBER_OF_COOP_PAUSE_REQUESTS)
+		return FALSE;
+	if (coop_host())
+	{
+		host_pause_request(request, NONE);
+		return TRUE;
+	}
+	if (!coop_client())
+		return FALSE;
+	pause_requests.request = (byte)request;
+	pause_requests.sequence++;
+	pause_requests.ticks_left = PAUSE_REQUEST_REPEAT_TICKS;
+	return TRUE;
+}
+
 /* (a client's skip key does nothing: only the host skips) */
 boolean network_coop_skip_offered(
 	void)
@@ -3051,6 +3122,17 @@ void network_coop_client_tick(
 	}
 	/* (a client sends no skip vote: only the host skips) */
 	skip_vote.voted = FALSE;
+	/* its pause menu's request, to the host */
+	if (pause_requests.ticks_left > 0)
+	{
+		struct distributed_coop_skip_vote_message message;
+
+		csmemset(&message.vote, 0, sizeof(message.vote));
+		message.vote.request = pause_requests.request;
+		message.vote.sequence = pause_requests.sequence;
+		distributed_send(&message, _distributed_message_coop_skip_vote, 1, (word)sizeof(message), _distributed_to_host);
+		pause_requests.ticks_left--;
+	}
 }
 
 word network_coop_presentation_entry_size(
@@ -3219,14 +3301,24 @@ word network_coop_skip_vote_entry_size(
 	return sizeof(struct distributed_coop_skip_vote);
 }
 
-/* host: a client's skip vote, which an older client may still send: not
-counted (only the host skips) */
+/* host: a client's pause menu request, done once (its number not the last
+done of that machine) */
 void network_coop_handle_skip_vote(
 	long machine_index,
 	void const *entries)
 {
-	(void)machine_index;
-	(void)entries;
+	struct distributed_coop_skip_vote const *vote = entries;
+
+	if (!coop_host() || machine_index < 0 || machine_index >= HALO_PORT_MAXIMUM_NETWORK_MACHINES ||
+		vote->request <= _coop_pause_request_none || vote->request >= NUMBER_OF_COOP_PAUSE_REQUESTS)
+	{
+		return;
+	}
+	if (pause_requests.done_any[machine_index] && pause_requests.done_sequences[machine_index] == vote->sequence)
+		return;
+	pause_requests.done_any[machine_index] = TRUE;
+	pause_requests.done_sequences[machine_index] = vote->sequence;
+	host_pause_request(vote->request, machine_index);
 }
 
 void network_coop_handle_device_groups(
@@ -3408,13 +3500,19 @@ static void client_presentation_apply(
 			object_try_and_get(presentation->camera_object_index) : NULL;
 
 		/* place the camera relative to this machine's copy of the filmed
-		object, which may be a tick behind the host's */
+		object, which may be a tick behind the host's, and have it drawn
+		moving with the object between ticks, as the host's camera point
+		relative to it is (render_interpolation.c:
+		network_coop_client_camera_object) */
+		coop_presentation.camera_object_index = NONE;
 		if (filmed && distributed_real_valid(presentation->camera_object_offset.i) &&
 			distributed_real_valid(presentation->camera_object_offset.j) &&
 			distributed_real_valid(presentation->camera_object_offset.k) &&
 			magnitude_squared3d(&presentation->camera_object_offset) < CAMERA_OBJECT_DISTANCE * CAMERA_OBJECT_DISTANCE * 4.0f)
 		{
 			point_from_line3d(&filmed->object.position, &presentation->camera_object_offset, 1.0f, &position);
+			if (coop_presentation.cinematic_started && presentation->camera_scripted)
+				coop_presentation.camera_object_index = presentation->camera_object_index;
 		}
 		/* (where and how widely an observer can look: observer.c's
 		match_assert_valid_observer_command) */
@@ -3433,6 +3531,7 @@ static void client_presentation_apply(
 	else
 	{
 		coop_presentation.watching_host_valid = FALSE;
+		coop_presentation.camera_object_index = NONE;
 	}
 
 	/* start each new fade, backdated to when the host started it */

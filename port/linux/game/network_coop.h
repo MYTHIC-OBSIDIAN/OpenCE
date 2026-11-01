@@ -140,6 +140,21 @@ network_coop_vote_skip returns FALSE outside network co-op, where the
 cinematic is skipped as usual; in it only the host's press skips. */
 boolean network_coop_skip_offered(void);
 boolean network_coop_vote_skip(void);
+/* the pause menu's REVERT TO SAVED and RESTART LEVEL in network co-op
+(ui_widget_event_handler_functions.c): the host's are done for every machine
+(main_revert_map, main_coop_restart_level), a client's sent to the host to
+do. TRUE if sent or done. */
+enum
+{
+	_coop_pause_request_none,
+	_coop_pause_request_revert,
+	_coop_pause_request_restart,
+	NUMBER_OF_COOP_PAUSE_REQUESTS
+};
+boolean network_coop_pause_request(short request);
+/* render_interpolation.c: the object a client's cutscene camera moves with
+between ticks (the host's camera point's relative to it), or NONE */
+long network_coop_client_camera_object(void);
 /* main.c: after a co-op host reverts to its last saved state (to skip a
 cinematic, or because the mission failed); now is the game time before the
 revert */
