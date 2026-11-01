@@ -837,7 +837,11 @@ static boolean meter_pixels_in_xbox_order(
 		full_alpha += texel[3] >= 250;
 	}
 
-	return full_alpha > 4 * full_color;
+	/* (only the last element of a meter has its fill order full, its shape
+	every element: a sniper rifle's five rounds, the Xbox's, have alpha
+	full three times as often as color, Halo PC's stock sheet color 77
+	times as often as alpha) */
+	return 4 * full_alpha > 5 * full_color;
 }
 
 /* ---------- public code */
