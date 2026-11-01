@@ -112,6 +112,7 @@ symbols in this file:
 #include "saved games/game_state.h"
 #include "rasterizer/rasterizer_console_vars.h"
 #include "rasterizer/rasterizer_model_types.h"
+#include "view_distance.h" /* port: port/linux/game/view_distance.c */
 
 /* ---------- constants */
 
@@ -641,9 +642,12 @@ static void render_object_list(
 						}
 					}
 
+					/* port: a multiplayer game's players drawn at any
+					distance (display.multiplayer_draw_distance) */
 					render_model(
 						definition->object.model.index,
-						level_of_detail_pixels,
+						view_distance_object_pixels(object_index, definition->object.model.index,
+							level_of_detail_pixels),
 						node_matrices,
 						object->object.region_permutations,
 						object->object.outgoing_change_colors,

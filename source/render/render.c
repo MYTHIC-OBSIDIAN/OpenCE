@@ -90,6 +90,7 @@ symbols in this file:
 /* port: static transparent part links for the newly loaded model tags. */
 #include "models/models.h"
 #include "structure_culling.h" /* port: port/linux/game/structure_culling.c */
+#include "view_distance.h" /* port: port/linux/game/view_distance.c */
 
 /* ---------- constants */
 
@@ -472,6 +473,9 @@ static void render_player_frame(
 		(word)render.visible_sky_index,
 		&camera->position,
 		&render.fog);
+	/* port: a multiplayer game's fog further off
+	(display.multiplayer_draw_distance) */
+	view_distance_fog(&render.fog);
 	structure_get_planar_fog((short)render.cluster_index, &render.fog);
 
 	if (render.fog.atmospheric_maximum_distance != 0.0f &&
