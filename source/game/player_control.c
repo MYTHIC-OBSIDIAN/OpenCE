@@ -212,6 +212,7 @@ symbols in this file:
 #include "real_math.h"
 #include "passenger_camera.h" /* port: port/linux/game/passenger_camera.c; after the limit2d alias above */
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "cseries/errors.h" /* port: (error, for the jump input log) */
 
 /* ---------- constants */
 
@@ -1495,6 +1496,21 @@ static void get_local_player_input_blob(
 					input->unit_control_flags,
 					_unit_control_jump_bit,
 					effective_buttons[_button_jump]);
+				/* port: (a jump in a unit's first seconds logged, the first few
+				dozen, to find what makes a player jump as he spawns) */
+				{
+					static long logged = 0;
+
+					if (logged < 48 && player->unit_index != NONE &&
+						(effective_buttons[_button_jump] || input_state->buttons[_button_jump]) &&
+						game_time_get() < 30 * 10)
+					{
+						logged++;
+						error(_error_silent, "jump input: local player %d at tick %ld: button %d, effective %d, held back %04x",
+							local_player_index, game_time_get(), (int)input_state->buttons[_button_jump],
+							(int)effective_buttons[_button_jump], (unsigned)control->inhibited_button_bit_vector);
+					}
+				}
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_use_equipment_bit,

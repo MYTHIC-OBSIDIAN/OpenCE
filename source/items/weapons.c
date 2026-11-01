@@ -1059,9 +1059,12 @@ void weapon_export_function_values(
 				break;
 
 			/* port: Halo PC's firing on (weapon_export_function_mode.h): 1 from
-			a shot until the next is due, and while the trigger spews. Halo PC's
-			flamethrower plays its fire loop by it: read as nothing, the loop
-			restarted with each shot, its first tenth of a second over and over */
+			the weapon's last shot until the next is due (game_time_last_fired:
+			a trigger that fires again from idle has no recovery that would
+			count its idle ticks from the shot), and while the trigger spews.
+			Halo PC's flamethrower plays its fire loop by it: read as nothing,
+			the loop restarted with each shot, its first tenth of a second over
+			and over */
 			case _weapon_function_primary_firing_on:
 			case _weapon_function_secondary_firing_on:
 				{
@@ -1076,9 +1079,27 @@ void weapon_export_function_values(
 						long ticks_between_shots= rate>0.0f ? (long)(TICKS_PER_SECOND/rate)+1 : 1;
 
 						if (trigger &&
-							(trigger->state==_trigger_spewing || (long)trigger->idle_ticks<=ticks_between_shots+1))
+							(trigger->state==_trigger_spewing ||
+								game_time_get()-weapon->weapon.game_time_last_fired<=ticks_between_shots+1))
 						{
 							function_value= 1.0f;
+						}
+						/* port: (its changes logged, the first few dozen, to find
+						what the fire loop follows) */
+						{
+							static long logged= 0;
+							static long last_weapon= NONE;
+							static real last_value= -1.0f;
+
+							if (logged<64 && (weapon_index!=last_weapon || function_value!=last_value))
+							{
+								logged++;
+								error(_error_silent, "weapon firing on: %s %.0f at tick %ld (trigger state %d, last fired %ld, %ld ticks a shot)",
+									tag_get_name(weapon->definition_index), function_value, game_time_get(),
+									trigger ? (long)trigger->state : -1L, weapon->weapon.game_time_last_fired, ticks_between_shots);
+								last_weapon= weapon_index;
+								last_value= function_value;
+							}
 						}
 					}
 				}
