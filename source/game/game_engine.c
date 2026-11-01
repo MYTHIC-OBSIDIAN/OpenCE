@@ -7793,15 +7793,41 @@ static short game_engine_variant_vehicle_type(
 	return NONE;
 }
 
-/* the team whose spawn points are nearest the point (red's if none) */
-static short game_engine_nearest_team(
-	real_point3d const *point)
+/* port: the team whose base a vehicle placement is at: a Custom Edition or
+Halo PC map's placement's own team, else the nearer team's flag (an Xbox
+map's placements have none: Blood Gulch's scorpions are each nearer a spawn
+point of the other team's), else the team of the nearest spawn point (red's
+if none) */
+static short game_engine_vehicle_placement_team(
+	struct scenario_object_datum const *placement)
 {
 	struct scenario *scenario = global_scenario_get();
+	real_point3d const *point = &placement->position;
 	real best = -1.0f;
-	short team = 0;
+	short team = custom_edition_vehicle_placement_team(placement);
 	long index;
 
+	if (team != NONE)
+		return team;
+	team = 0;
+	for (index = 0; index < scenario->netgame_flags.count; index++)
+	{
+		struct scenario_netgame_flag *flag =
+			TAG_BLOCK_GET_ELEMENT(&scenario->netgame_flags, index, struct scenario_netgame_flag);
+		real dx = flag->position.x - point->x;
+		real dy = flag->position.y - point->y;
+		real dz = flag->position.z - point->z;
+		real distance = dx * dx + dy * dy + dz * dz;
+
+		if (flag->type == _netgame_flag_ctf_flag && VALID_INDEX(flag->team_index, 2) &&
+			(best < 0.0f || distance < best))
+		{
+			best = distance;
+			team = flag->team_index;
+		}
+	}
+	if (best >= 0.0f)
+		return team;
 	for (index = 0; index < scenario->players.count; index++)
 	{
 		struct player_starting_location *location =
@@ -7830,7 +7856,9 @@ boolean game_engine_vehicle_placement_allowed(
 
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
-	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
+	/* (each base's team's, a free-for-all's too, as Halo PC's: its vehicle
+	options have a red and a blue side whatever the game type) */
+	side = game_engine_vehicle_placement_team(placement);
 	set = options->vehicle_set[side];
 	/* (a Custom Edition or Halo PC map: its placements' spawn flags say
 	where, its default ones for the map's own vehicles, its allowed ones for

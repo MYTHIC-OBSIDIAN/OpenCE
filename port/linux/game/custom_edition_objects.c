@@ -125,3 +125,15 @@ boolean custom_edition_vehicle_placement_allowed(
 	return !custom_edition_vehicles_by_placement() ||
 		TEST_FLAG(vehicle->multiplayer_spawn_flags, default_spawn_flag_bit() + (by_set ? 8 : 0));
 }
+
+short custom_edition_vehicle_placement_team(
+	struct scenario_object_datum const *placement)
+{
+	struct custom_edition_vehicle_placement const *vehicle = (struct custom_edition_vehicle_placement const *)placement;
+
+	/* (Halo PC's maps give each a base's team: death island's farthest
+	scorpions are nearer the other team's spawn points than their own's) */
+	if (!custom_edition_cache_tags_loaded() || !VALID_INDEX(vehicle->multiplayer_team_index, 2))
+		return NONE;
+	return vehicle->multiplayer_team_index;
+}

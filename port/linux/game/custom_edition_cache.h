@@ -327,6 +327,11 @@ set chosen in the gametype), where the game type allows one. */
 boolean custom_edition_vehicle_placement_allowed(
 	struct scenario_object_datum const *placement,
 	boolean by_set);
+/* The team (0 red, 1 blue) a Custom Edition or Halo PC map's vehicle placement
+`placement` belongs to, its multiplayer team index; NONE on another map, or
+for another index. */
+short custom_edition_vehicle_placement_team(
+	struct scenario_object_datum const *placement);
 
 /* ---------- prototypes/CUSTOM_EDITION_GEOMETRY.C */
 
