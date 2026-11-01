@@ -1870,7 +1870,7 @@ static void player_control_action_test_check_reset_input_blob(
 
 	if (input->accept && (cinematic_can_be_skipped() || network_coop_skip_offered()))
 	{
-		/* port: in network co-op the players vote to skip (network_coop.c) */
+		/* port: in network co-op only the host skips (network_coop.c) */
 		if (!network_coop_vote_skip())
 			main_skip_cinematic();
 	}

@@ -34,7 +34,8 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   level's scripts and spawns players. `network_coop.c` sends the clients
   everything the scripts do that they would otherwise miss:
   - every tick: the cinematic, camera, screen fade, the HUD settings the
-    scripts control (what is shown, the mission timer), the skip vote, and
+    scripts control (what is shown, the mission timer), whether the
+    cutscene can be skipped, and
     which teams are allies and friends (the scripts' allegiances, so the
     marines are the players' allies on every machine);
   - once each, numbered so nothing is applied twice: script sounds,
@@ -78,8 +79,10 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   won ends the round as in multiplayer, and the next round is the
   campaign's next level.
 
-  Cutscenes are skipped by vote: more than half the machines must press
-  skip. The host then reverts as single player does, but keeps its clock
+  A co-op game holds two players at most
+  (`HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS`), each the campaign's Master
+  Chief. Only the host skips a cutscene: its skip key does, a client's
+  does nothing (there is no vote). The host then reverts as single player does, but keeps its clock
   moving forward (the netcode depends on that) and moves the script
   threads' wake times along with it. The object, device and name syncs
   bring the clients up to date.

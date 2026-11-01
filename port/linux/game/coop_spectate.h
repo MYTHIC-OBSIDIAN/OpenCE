@@ -1,8 +1,8 @@
 /*
 COOP_SPECTATE.H
 
-Spectating in network co-op, and the cutscene skip vote's line
-(coop_spectate.c).
+Spectating in network co-op, and the host's line that it can skip the
+cutscene (coop_spectate.c).
 */
 
 #ifndef __COOP_SPECTATE_H
@@ -32,7 +32,7 @@ void coop_spectate_camera(
 void coop_spectate_draw(
 	short local_player_index);
 
-/* during a skippable cutscene in network co-op, the vote count and how to vote */
+/* during a skippable cutscene in network co-op, on the host: how to skip it */
 void coop_skip_vote_draw(
 	short local_player_index);
 

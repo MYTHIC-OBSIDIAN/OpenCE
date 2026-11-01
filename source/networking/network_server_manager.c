@@ -4424,6 +4424,10 @@ static struct
 {
 	wchar_t name[NETWORK_GAME_NAME_LENGTH];
 	long maximum_players;
+	/* the game hosted is campaign co-op (network_game_server_port_set_
+	cooperative, until a game is set up again): at most
+	HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS players */
+	boolean cooperative;
 } network_game_server_port_settings;
 
 static void network_game_server_port_settings_apply(
@@ -4438,6 +4442,11 @@ static void network_game_server_port_settings_apply(
 	{
 		server->game.maximum_players = (byte)PIN(network_game_server_port_settings.maximum_players, 2,
 			MAXIMUM_NETWORK_PLAYER_COUNT);
+	}
+	if (network_game_server_port_settings.cooperative)
+	{
+		server->game.maximum_players = (byte)MIN(server->game.maximum_players,
+			HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS);
 	}
 }
 
@@ -4497,6 +4506,9 @@ static void network_game_server_cooperative_round(
 	server->game.map.version = (long)cache_files_map_version(server->game.map.name);
 	main_set_multiplayer_map_name(server->game.map.name);
 	server->game.maximum_teams = 1;
+	/* (still co-op, of two players at most: the set up cleared it) */
+	network_game_server_port_settings.cooperative = TRUE;
+	server->game.maximum_players = (byte)MIN(server->game.maximum_players, HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS);
 	network_game_server_cooperative_next_map[0] = 0;
 }
 
@@ -4507,9 +4519,10 @@ void network_game_server_port_set_cooperative(
 	if (!server || server->state != _network_game_server_state_pregame)
 		return;
 	server->game.difficulty = difficulty;
-	/* (Server Setup's default for co-op, menu_functions.c's
-	COOPERATIVE_DEFAULT_PLAYERS, until it sets its own) */
-	server->game.maximum_players = MIN(16, MAXIMUM_NETWORK_PLAYER_COUNT);
+	/* (co-op holds two players at most, whatever Server Setup or
+	server.max_players asks: network_game_server_port_settings_apply) */
+	network_game_server_port_settings.cooperative = TRUE;
+	server->game.maximum_players = HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS;
 	if (!network_game_server_send_game_data_pregame(server))
 		network_event("network_game_server_port_set_cooperative() failed to send updated game settings to clients");
 
@@ -4694,6 +4707,8 @@ static boolean network_game_server_setup_game_from_playlist(
 	match_assert(NETWORK_SERVER_MANAGER_FILE, 0x961, server);
 
 	network_event("setting up a net game");
+	/* port: (not co-op until it is set so) */
+	network_game_server_port_settings.cooperative = FALSE;
 	if (game_engine_get_current_stage(&server->game.variant, server->game.map.name))
 	{
 		wchar_t machine_name[MAXIMUM_MACHINE_NAME_LENGTH] = L"<unknown>";

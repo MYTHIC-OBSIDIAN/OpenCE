@@ -247,6 +247,13 @@ while the game stays paused, with only Controls, Gamepads, Mouse, Audio and
 Video Setup; Gamepads' OK saves the profile at once. In co-op the settings
 have Network Setup too, with its in-game pages as in a multiplayer game.
 
+An online co-op game holds two players at most (the host's Server Setup
+shows MAX PLAYERS 2, and the host refuses a third, whatever
+`server.max_players` says), and every player is the campaign's Master
+Chief in its own colours, as in a solo game. Only the host skips a
+cutscene (SPACE or A, as alone; "PRESS SPACE OR A TO SKIP" shows it when it
+can); the other player's skip key does nothing.
+
 In an online co-op game, the pause menu also has FRIENDLY FIRE ON or
 FRIENDLY FIRE OFF, after SETTINGS, in a box drawn taller for it: whether this
 computer's players hurt, and are hurt by, the other players

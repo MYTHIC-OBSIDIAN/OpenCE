@@ -19,6 +19,9 @@ a finishing place in 7 bits.
 /* ---------- session limits */
 
 #define HALO_PORT_MAXIMUM_NETWORK_PLAYERS 128
+/* ... and of a campaign co-op game: two, as the Xbox's split screen co-op
+(network_server_manager.c holds a co-op game's most players to it) */
+#define HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS 2
 #define HALO_PORT_MAXIMUM_NETWORK_MACHINES 128
 
 /* a host polls its listening socket and one socket per machine; the Xbox's
@@ -66,7 +69,7 @@ is newer (network_client_manager.c). A host advertises it, with its netcode,
 in its game's advertisement's reserved bytes (network_server_message_handler.c),
 which hosts built before there was a version send as zeros: version 0.
 Raise it with any change to what the machines send each other. */
-#define HALO_PORT_NETWORK_VERSION 43
+#define HALO_PORT_NETWORK_VERSION 44
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

@@ -1329,31 +1329,6 @@ long find_best_starting_location_index(
 	return best_starting_location_index;
 }
 
-/* port: paints a network co-op player's unit in their profile colour. The
-campaign Spartan is always green because its tag fixes that colour, which
-overrides the colour the unit is created with; this replaces fixed colours. */
-static void players_coop_color_unit(
-	long unit_index,
-	real_rgb_color const *color)
-{
-	struct object_datum *object = object_get(unit_index);
-	struct object_definition *definition = object_definition_get(object->definition_index);
-	short index;
-
-	for (index = 0; index < definition->object.change_colors.count && index < NUMBER_OF_OBJECT_CHANGE_COLORS; index++)
-	{
-		struct object_change_color_definition *change_color = TAG_BLOCK_GET_ELEMENT(
-			&definition->object.change_colors, index, struct object_change_color_definition);
-
-		/* skip colours driven by a function, like the shield glow */
-		if (change_color->permutations.count > 0 && !change_color->scaled_by && !change_color->darken_by)
-		{
-			object->object.base_change_colors[index] = *color;
-			object->object.outgoing_change_colors[index] = *color;
-		}
-	}
-}
-
 static void player_spawn(
 	long player_index)
 {
@@ -1467,9 +1442,9 @@ static void player_spawn(
 				placement_data_set_change_color(
 					&placement_data,
 					&change_color);
+				/* port: a network co-op player is the campaign's Master Chief, in
+				its tag's own colours, as in a solo game (not their profile's) */
 				unit_index = object_new(&placement_data);
-				if (unit_index != NONE && network_coop_active())
-					players_coop_color_unit(unit_index, &change_color);
 				if (unit_index != NONE)
 				{
 					unit = unit_try_and_get(unit_index);

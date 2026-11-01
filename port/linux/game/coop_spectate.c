@@ -7,8 +7,8 @@ safe). The campaign's dead camera would watch the body; instead this
 follows a teammate from behind, and A (jump on the keyboard) switches to
 the next one. director.c and hud.c call in here.
 
-It also draws the line telling players about the vote to skip a cutscene
-(network_coop.c counts the votes).
+It also draws the line telling the host's player how to skip a cutscene
+(network_coop.c skips it; only the host can).
 */
 
 #include "cseries.h"
@@ -255,10 +255,10 @@ void coop_skip_vote_draw(
 	/* once, for the first local player */
 	if (local_player_index != local_player_get_next(NONE) || !network_coop_skip_vote_status(&votes, &voters, &voted))
 		return;
+	/* (the host's player alone skips: no vote) */
 	if (voted)
-		usnprintf(text, NUMBEROF(text) - 1, L"VOTED TO SKIP   %d OF %d", votes, voters);
-	else
-		usnprintf(text, NUMBEROF(text) - 1, L"PRESS SPACE OR A TO VOTE TO SKIP   %d OF %d", votes, voters);
+		return;
+	usnprintf(text, NUMBEROF(text) - 1, L"PRESS SPACE OR A TO SKIP");
 	text[NUMBEROF(text) - 1] = 0;
 	draw_bottom_text(text);
 }

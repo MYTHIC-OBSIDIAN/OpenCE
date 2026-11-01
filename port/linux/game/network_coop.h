@@ -137,16 +137,17 @@ void network_coop_note_scenery_animation(long object_index, long animation_graph
 
 /* player_control.c: whether the skip key should do anything, and the press.
 network_coop_vote_skip returns FALSE outside network co-op, where the
-cinematic is skipped as usual. */
+cinematic is skipped as usual; in it only the host's press skips. */
 boolean network_coop_skip_offered(void);
 boolean network_coop_vote_skip(void);
 /* main.c: after a co-op host reverts to its last saved state (to skip a
 cinematic, or because the mission failed); now is the game time before the
 revert */
 void network_coop_reverted(long now);
-/* main.c: the skip vote is over once the skip has reverted */
+/* main.c: the skip is over once it has reverted */
 void network_coop_skip_done(void);
-/* the vote count to show, if a skippable cinematic is playing */
+/* the host's: whether to show that its player can skip (a skippable
+cinematic playing); votes and voters are its press and itself */
 boolean network_coop_skip_vote_status(short *votes, short *voters, boolean *voted);
 
 #endif

@@ -3799,8 +3799,10 @@ static char const *const server_settings_gametype_rows[] =
 	"op_team_options",
 };
 
-/* the most players a co-op game hosted starts with (maximum_players') */
-#define COOPERATIVE_DEFAULT_PLAYERS 16
+/* the most players a co-op game hosted has, which it keeps (maximum_players';
+the host holds it to HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS whatever this
+says: network_server_manager.c) */
+#define COOPERATIVE_DEFAULT_PLAYERS HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS
 /* Server Setup's help for co-op's options' rows (CO-OP OPTIONS, VOICE AND
 VOTING), PASSWORD's and MAP SHARING's (its help_strings, tools/port_settings.py) */
 #define COOPERATIVE_OPTIONS_HELP 12
@@ -3924,6 +3926,19 @@ static void server_settings_update(struct widget_instance *list)
 	if (spinner)
 		*server_settings_maximum_players_index() = (short)PIN(spinner->parameters.list.selected_index, 0,
 			NUMBEROF(maximum_players) - 1);
+	/* (co-op: two players, which MAX PLAYERS shows and keeps) */
+	if (hosting_cooperative())
+	{
+		short index;
+
+		for (index = 0; index < NUMBEROF(maximum_players) - 1 && maximum_players[index] < COOPERATIVE_DEFAULT_PLAYERS;
+			index++)
+		{
+		}
+		*server_settings_maximum_players_index() = index;
+		if (spinner)
+			spinner->parameters.list.selected_index = index;
+	}
 	wide_to_text(multiplayer.game_name, text, sizeof(text));
 	text_field_show(named(list, "server_name_value", 0), text, text_field_editing(row));
 	if (multiplayer.mode != _multiplayer_mode_host_internet)

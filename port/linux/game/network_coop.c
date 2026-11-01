@@ -9,8 +9,8 @@ that clients need to see is sent from this file:
 
 - Presentation, every tick: whether a cinematic is playing, the letterbox,
   the camera, the screen fade, the HUD settings the scripts control (what
-  is shown, the mission timer), the players' maximum vitality, and the
-  cutscene skip vote. A client plays them one a tick by the host's clock, a
+  is shown, the mission timer), the players' maximum vitality, and
+  whether the cutscene can be skipped. A client plays them one a tick by the host's clock, a
   couple of ticks behind the newest, so the camera keeps an even pace. It
   starts and stops its own cinematic to match, and looks through the host's
   camera meanwhile. If the host goes quiet for two seconds, the client ends
@@ -55,10 +55,9 @@ says its choice, and the host, which alone deals damage, keeps everyone's.
 A player away from the controls for over 70 seconds is hurt by every
 player, whatever either chose, until their next input.
 
-Skipping a cutscene is a vote. Pressing the skip key during a skippable
-cutscene votes (a client sends its vote to the host every tick), and the
-host skips once more than half the machines have voted. The skip itself is
-the campaign's: the host reverts to the state saved when the cutscene began
+Only the host skips a cutscene, as the one player of a solo game does:
+its skip key during a skippable cutscene skips it (a client's does
+nothing; there is no vote). The skip itself is the campaign's: the host reverts to the state saved when the cutscene began
 and the script carries on past it. Clients catch up through the object,
 device and name syncs. The host keeps its clock running through the revert,
 because the netcode needs it to only go forward (network_coop_reverted).
@@ -564,9 +563,10 @@ static struct
 /* client: the object names that differed from the host's last time */
 static byte client_names_differing[OBJECT_NAME_BYTES];
 
-/* The cutscene skip vote. The host records when it last heard from each
-client that is showing the cutscene, and when that client last voted. A
-client keeps the host's latest tally for display. */
+/* The cutscene skip: the host's press (voted), and whether a skip is
+offered. (votes and voters, which the presentation still carries, are the
+host's press and the host alone; the clients' times are kept unused, as an
+older client's vote is no longer counted.) */
 static struct
 {
 	boolean voted;
@@ -1355,30 +1355,26 @@ static void skip_vote_clear(
 	}
 }
 
-/* host: counts the votes to skip the cinematic, and skips when more than
-half the machines showing it have voted (one still loading, or joined since
-it began, has no say until it shows it) */
+/* host: skips the cinematic when its player pressed the skip key while a
+skip is offered (the clients have no say) */
 static void host_count_skip_votes(
 	void)
 {
-	long machine_indices[HALO_PORT_MAXIMUM_NETWORK_MACHINES];
-	short machine_count = distributed_client_machines(machine_indices, HALO_PORT_MAXIMUM_NETWORK_MACHINES);
 	long now = game_time_get();
 	boolean skippable = cinematic_in_progress() && cinematic_can_be_skipped();
 	boolean was_offered = skip_vote.offered;
-	short index;
 
 	/* Wait until the save the script makes when the cutscene becomes
 	skippable has been written; reverting earlier would go back to the save
 	before it. A save requested later in the cutscene doesn't hold up the
-	vote, since the skip cancels it, as in a solo game. */
+	skip, since the skip cancels it, as in a solo game. */
 	if (!skippable)
 		skip_vote.skip_save_written = FALSE;
 	else if (!main_saving_map())
 		skip_vote.skip_save_written = TRUE;
 	skip_vote.offered = skippable && skip_vote.skip_save_written && now >= skip_vote.cooldown_until;
 	if (skip_vote.offered && !was_offered)
-		error(_error_silent, "co-op: the cutscene can be skipped");
+		error(_error_silent, "co-op: the cutscene can be skipped (by the host)");
 	if (!skip_vote.offered)
 	{
 		skip_vote_clear();
@@ -1389,23 +1385,11 @@ static void host_count_skip_votes(
 	/* already requested: main.c skips at the end of this frame */
 	if (skip_vote.requested)
 		return;
-	/* the host votes too, unless it is a dedicated server with no player */
-	skip_vote.voters = local_player_get_next(NONE) != NONE ? 1 : 0;
+	skip_vote.voters = 1;
 	skip_vote.votes = skip_vote.voted ? 1 : 0;
-	for (index = 0; index < machine_count; index++)
+	if (skip_vote.voted)
 	{
-		long heard_time = skip_vote.client_heard_times[machine_indices[index]];
-		long vote_time = skip_vote.client_vote_times[machine_indices[index]];
-
-		if (heard_time == NONE || now - heard_time > SKIP_VOTE_HELD_TICKS)
-			continue;
-		skip_vote.voters++;
-		if (vote_time != NONE && now - vote_time <= SKIP_VOTE_HELD_TICKS)
-			skip_vote.votes++;
-	}
-	if (skip_vote.votes * 2 > skip_vote.voters)
-	{
-		error(_error_silent, "co-op: skipping the cutscene (%d of %d voted)", skip_vote.votes, skip_vote.voters);
+		error(_error_silent, "co-op: the host skips the cutscene");
 		skip_vote.requested = TRUE;
 		main_skip_cinematic();
 	}
@@ -2945,18 +2929,22 @@ void network_coop_note_object_effect(
 	event->value = marker_index;
 }
 
+/* (a client's skip key does nothing: only the host skips) */
 boolean network_coop_skip_offered(
 	void)
 {
-	return coop_client() && skip_vote.offered && coop_presentation.cinematic_started;
+	return FALSE;
 }
 
+/* the skip key pressed: the host's skips (host_count_skip_votes), a
+client's is ignored */
 boolean network_coop_vote_skip(
 	void)
 {
 	if (!coop_host() && !coop_client())
 		return FALSE;
-	skip_vote.voted = TRUE;
+	if (coop_host())
+		skip_vote.voted = TRUE;
 	return TRUE;
 }
 
@@ -3005,7 +2993,8 @@ boolean network_coop_skip_vote_status(
 	short *voters,
 	boolean *voted)
 {
-	boolean offered = coop_host() ? skip_vote.offered : network_coop_skip_offered();
+	/* (the host's player alone: a client is shown nothing) */
+	boolean offered = coop_host() && skip_vote.offered;
 
 	if (!offered || skip_vote.voters <= 0)
 		return FALSE;
@@ -3061,18 +3050,8 @@ void network_coop_client_tick(
 		client_host_camera_set(FALSE);
 		player_input_enable(TRUE);
 	}
-	/* sent every tick while a skip is offered, voted or not, because the
-	host only counts machines it hears from */
-	if (!network_coop_skip_offered())
-		skip_vote.voted = FALSE;
-	else
-	{
-		struct distributed_coop_skip_vote_message message;
-
-		csmemset(&message.vote, 0, sizeof(message.vote));
-		message.vote.voted = skip_vote.voted;
-		distributed_send(&message, _distributed_message_coop_skip_vote, 1, (word)sizeof(message), _distributed_to_host);
-	}
+	/* (a client sends no skip vote: only the host skips) */
+	skip_vote.voted = FALSE;
 }
 
 word network_coop_presentation_entry_size(
@@ -3241,17 +3220,14 @@ word network_coop_skip_vote_entry_size(
 	return sizeof(struct distributed_coop_skip_vote);
 }
 
-/* host: a client's skip vote */
+/* host: a client's skip vote, which an older client may still send: not
+counted (only the host skips) */
 void network_coop_handle_skip_vote(
 	long machine_index,
 	void const *entries)
 {
-	struct distributed_coop_skip_vote const *vote = entries;
-
-	if (!coop_host() || machine_index < 0 || machine_index >= HALO_PORT_MAXIMUM_NETWORK_MACHINES)
-		return;
-	skip_vote.client_heard_times[machine_index] = game_time_get();
-	skip_vote.client_vote_times[machine_index] = vote->voted ? game_time_get() : NONE;
+	(void)machine_index;
+	(void)entries;
 }
 
 void network_coop_handle_device_groups(
