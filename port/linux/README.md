@@ -259,10 +259,11 @@ Server Setup has its listing, password and invite, without CO-OP OPTIONS. Only t
 cutscene (SPACE or A, as alone; "PRESS SPACE OR A TO SKIP" shows it when it
 can); the other player's skip key does nothing.
 
-In an online co-op game, the pause menu also has FRIENDLY FIRE ON or
-FRIENDLY FIRE OFF, after SETTINGS, in a box drawn taller for it: whether this
-computer's players hurt, and are hurt by, the other players
-(`network.coop_own_friendly_fire`). A or enter changes it, from that moment.
+An online co-op game's pause menu has the split screen co-op's options (its
+rows, in its order: no SETTINGS). Its players spawn and respawn as split
+screen's do: both at the level's start, and a dead player beside the other
+once nothing is dangerous (watching them meanwhile, with no text on the
+screen); only one who joins a level in progress spawns beside a teammate.
 
 The menus are XML files in `port/assets/menus` (`tools/ce_menus.py` writes
 them from the PC version's tags), which the game contains. To change them,

@@ -2394,11 +2394,9 @@ boolean players_respawn_coop(
 	boolean result;
 	boolean dangerous;
 
-	/* port: network co-op checks safety around each teammate instead
-	(players_respawn_network_coop) */
-	if (game_connection() == _game_connection_network_server && network_coop_active())
-		return players_respawn_network_coop(FALSE);
-
+	/* port: network co-op respawns as split screen's does, here: once
+	nothing is dangerous, beside a teammate on the ground (the host spawns
+	its clients' players too) */
 	players_globals->respawn_failure = 0;
 	result = FALSE;
 	if (!players_globals->respawn_failed)
@@ -4915,15 +4913,19 @@ void players_update_before_game(
 				{
 					if (player->statistics.deaths == 0)
 					{
-						/* port: in network co-op the first player spawns at the map's
-						start; everyone else, late joiners included, spawns beside a
-						player already in the game once nothing holds them back
-						(players_coop_may_spawn). A large game whose teammates are
-						not spawnable (a fight, or standing where the BSP has no
-						cluster) waits out COOP_RESPAWN_FALLBACK_TICKS and then
-						uses that group, the same rule as a death */
-						if (game_connection() != _game_connection_network_server)
+						/* port: in network co-op the players spawn at the map's
+						start as the level begins, as split screen's do; one who
+						joins later spawns beside a player already in the game once
+						nothing holds them back (players_coop_may_spawn). A large
+						game whose teammates are not spawnable (a fight, or standing
+						where the BSP has no cluster) waits out
+						COOP_RESPAWN_FALLBACK_TICKS and then uses that group, the
+						same rule as a death */
+						if (game_connection() != _game_connection_network_server ||
+							game_time_get() < COOP_LEVEL_START_TICKS)
+						{
 							player_spawn(iterator.datum_index);
+						}
 						else if (players_coop_may_spawn())
 						{
 							player_spawn(iterator.datum_index);

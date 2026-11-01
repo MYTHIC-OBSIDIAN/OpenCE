@@ -83,6 +83,9 @@ adds to */
 #define MULTIPLAYER_COLLECTION "ui\\shell\\multiplayer"
 /* the campaign's full screen pause screen, which pause_campaign_patch adds to */
 #define CAMPAIGN_PAUSE_SCREEN "ui\\shell\\solo_game\\pause_game\\pause_game"
+/* (the campaign's split screen co-op's, whose rows network co-op's takes:
+pause_coop_rows) */
+#define SPLIT_SCREEN_PAUSE_SCREEN "ui\\shell\\solo_game\\pause_game\\pause_game_split_screen"
 /* the tags pause_patch or pause_campaign_patch adds: two buttons and their
 texts (SETTINGS, and END GAME or FRIENDLY FIRE) */
 #define PAUSE_PATCH_TAGS 4
@@ -2105,7 +2108,8 @@ static void pause_patch(struct cache_file_tag_instance *instances)
 /* ---------- the campaign's pause menu
 
 Its list gets the same SETTINGS (pause_list_patch) before REVERT TO SAVED, a
-copy of it (network co-op too: its friendly fire is the campaign's). The rows use
+copy of it; network co-op's instead takes the split screen co-op pause menu's
+rows (pause_coop_rows), the same options as split screen's. The rows use
 the PC version's pause menu's pitch, so a highlight sits clear of the next
 label. The prompts (B and A) stay that same gap under the last row, and the
 box beside the mission objectives grows with them. Settings there has only
@@ -2351,6 +2355,50 @@ static void pause_settings_patch(void)
 	}
 }
 
+/* network co-op's pause menu: the full-screen list's rows made the split
+screen co-op pause menu's (the same options, in its order, from its own
+widgets, at the full-screen list's place: no SETTINGS); TRUE if done */
+static boolean pause_coop_rows(struct ui_widget_definition *list)
+{
+	long screen = tag_loaded(UI_WIDGET_DEFINITION_TAG, SPLIT_SCREEN_PAUSE_SCREEN);
+	struct ui_widget_definition const *definition;
+	struct ui_widget_child_reference const *children;
+	struct ui_widget_child_reference const *rows = list->child_widgets.address;
+	long child;
+
+	if (screen == NONE || list->child_widgets.count <= 0)
+		return FALSE;
+	definition = tag_get(UI_WIDGET_DEFINITION_TAG, screen);
+	children = definition->child_widgets.address;
+	for (child = 0; child < definition->child_widgets.count; child++)
+	{
+		struct ui_widget_definition const *split;
+		struct ui_widget_child_reference const *split_rows;
+		struct ui_widget_child_reference *placed;
+		long row;
+
+		if (children[child].widget_tag.index == NONE)
+			continue;
+		split = tag_get(UI_WIDGET_DEFINITION_TAG, children[child].widget_tag.index);
+		if (split->type != _widget_type_column_list || split->child_widgets.count < 1)
+			continue;
+		split_rows = split->child_widgets.address;
+		placed = allocate(split->child_widgets.count * sizeof(struct ui_widget_child_reference));
+		if (!placed)
+			return FALSE;
+		for (row = 0; row < split->child_widgets.count; row++)
+		{
+			placed[row] = split_rows[row];
+			placed[row].horizontal_offset = rows[0].horizontal_offset;
+			placed[row].vertical_offset = rows[0].vertical_offset;
+		}
+		list->child_widgets.address = placed;
+		list->child_widgets.count = split->child_widgets.count;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 {
 	long screen = tag_loaded(UI_WIDGET_DEFINITION_TAG, CAMPAIGN_PAUSE_SCREEN);
@@ -2387,7 +2435,8 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 		span = (short)(rows[list->child_widgets.count - 1].vertical_offset - rows[0].vertical_offset);
 		top = rows[0].vertical_offset;
 		bottom = list->bounds.y1;
-		if (pause_list_patch(instances, list, revert, FALSE, &grow))
+		/* (network co-op: the split screen co-op's rows, not SETTINGS) */
+		if (build.coop ? pause_coop_rows(list) : pause_list_patch(instances, list, revert, FALSE, &grow) != 0)
 		{
 			struct ui_widget_child_reference *placed = list->child_widgets.address;
 			struct ui_widget_definition const *button =
@@ -2420,8 +2469,15 @@ static void pause_campaign_patch(struct cache_file_tag_instance *instances)
 				pause_campaign_shift_prompts(definition, need);
 				pause_campaign_grow_box(definition, need);
 			}
-			pause_settings_patch();
-			platform_log("menus: the pause menu has SETTINGS");
+			if (build.coop)
+			{
+				platform_log("menus: the co-op pause menu has the split screen's %ld options", (long)count);
+			}
+			else
+			{
+				pause_settings_patch();
+				platform_log("menus: the pause menu has SETTINGS");
+			}
 		}
 		return;
 	}

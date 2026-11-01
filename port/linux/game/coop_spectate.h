@@ -28,10 +28,6 @@ boolean coop_spectate_nothing_to_watch(
 void coop_spectate_camera(
 	struct dead_camera *camera);
 
-/* the HUD line saying who a dead local player is watching */
-void coop_spectate_draw(
-	short local_player_index);
-
 /* during a skippable cutscene in network co-op, on the host: how to skip it */
 void coop_skip_vote_draw(
 	short local_player_index);

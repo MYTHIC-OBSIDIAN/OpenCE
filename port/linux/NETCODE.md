@@ -64,15 +64,13 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   none of the host's players are alive, anyone's crossing does); a client
   standing on a loading zone is told it waits for the host. A player
   outside the loaded BSP and falling for two seconds is brought back beside
-  the host, else a teammate. A dead
-  player watches a living teammate (`coop_spectate.c`) and comes back
-  beside one once it is safe. With everyone dead, TEAM WIPE in Co-op
-  Options (`network.coop_team_wipe`) defaults to AUTO: private games revert
-  the checkpoint; public games respawn at checkpoint positions without
-  reverting the world. REVERT CHECKPOINT and RESPAWN ONLY override the
-  visibility choice, including public games with passwords. Reverting
-  requires a saved checkpoint with the same players and machine
-  assignments; otherwise the host logs the fallback and respawns them.
+  the host, else a teammate. The players spawn at the level's start, as
+  split screen's do, and a dead player watches a living teammate
+  (`coop_spectate.c`) and comes back beside one by the campaign's own test
+  (`players_respawn_coop`: nothing dangerous, the teammate on the ground).
+  With everyone dead, the host reverts to the last checkpoint, as split
+  screen does; one saved with other players or machines is not reverted
+  to, and the host logs the fallback and respawns them.
   A mission the scripts fail
   with players still alive reverts to the last checkpoint on the host, as a
   skipped cutscene does (below); a client never reverts on its own. A level
