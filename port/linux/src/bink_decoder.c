@@ -1444,7 +1444,8 @@ static int audio_init(struct bink_decoder *c)
 	c->audio_first = 1;
 	c->audio_out = calloc((size_t)c->audio_frame_len * 2, sizeof(float));
 	c->audio_coeffs = calloc((size_t)c->audio_frame_len + 4, sizeof(float));
-	c->audio_work = calloc((size_t)c->audio_frame_len * 2, sizeof(float));
+	/* (the RDFT's half-length FFT, or the DCT's double-length one) */
+	c->audio_work = calloc((size_t)c->audio_frame_len * 4, sizeof(float));
 	c->audio_twiddles = calloc((size_t)c->audio_frame_len, sizeof(float));
 	if (!c->audio_out || !c->audio_coeffs || !c->audio_work || !c->audio_twiddles)
 		return -1;
@@ -1458,20 +1459,30 @@ static int audio_init(struct bink_decoder *c)
 	return 0;
 }
 
-/* the DCT kind's transform: a DCT-III of half the frame's length, by its
-definition (slow, and rare: none of the Xbox's movies has it) */
-static void inverse_dct(float *output, float const *input, int length, float scale)
+/* The DCT kind's transform, a DCT-III of the frame's length n:
+output[m] = scale * (input[0] / 2 + the sum over k of input[k] cos(pi k (2m + 1) / 2n)),
+the real part of a 2n-point inverse DFT of input[k] e^(i pi k / 2n) (by one
+FFT: the inverse transform's real part is the forward transform's of the
+conjugate) */
+static void inverse_dct(struct bink_decoder *c, float *output, float const *input, int length, float scale)
 {
-	int n, k;
+	float *re = c->audio_work;
+	float *im = c->audio_work + 2 * length;
+	int k;
 
-	for (n = 0; n < length; n++)
+	for (k = 0; k < length; k++)
 	{
-		double sum = input[0] * 0.5;
+		double angle = M_PI * k / (2.0 * length);
+		double weight = k ? input[k] : input[0] * 0.5;
 
-		for (k = 1; k < length; k++)
-			sum += input[k] * cos(M_PI * k * (n + 0.5) / length);
-		output[n] = (float)(sum * scale * 2.0);
+		re[k] = (float)(weight * cos(angle));
+		im[k] = (float)(-weight * sin(angle));
+		re[k + length] = 0.0f;
+		im[k + length] = 0.0f;
 	}
+	fft(re, im, 2 * length);
+	for (k = 0; k < length; k++)
+		output[k] = re[k] * scale;
 }
 
 static int audio_decode_block(struct bink_decoder *c, struct bits *gb, float *out)
@@ -1545,7 +1556,9 @@ static int audio_decode_block(struct bink_decoder *c, struct bits *gb, float *ou
 		if (c->audio_use_dct)
 		{
 			coeffs[0] /= 0.5f;
-			inverse_dct(channel_out, coeffs, c->audio_frame_len / 2, 1.f / c->audio_frame_len);
+			/* (FFmpeg's av_tx DCT-III of half the length, scaled by one
+			over the length: matched sample for sample) */
+			inverse_dct(c, channel_out, coeffs, c->audio_frame_len, 2.0f / c->audio_frame_len);
 		}
 		else
 		{
@@ -1604,10 +1617,10 @@ static void audio_decode_packet(struct bink_decoder *c, uint8_t const *data, uin
 			float interleaved[AUDIO_MAX_FRAME_LENGTH * 2];
 			int i, ch;
 
-			for (i = 0; i < samples_per_channel / 2 && i < AUDIO_MAX_FRAME_LENGTH; i++)
-				for (ch = 0; ch < c->audio_channels; ch++)
+			for (i = 0; i < samples_per_channel && i < AUDIO_MAX_FRAME_LENGTH; i++)
+				for (ch = 0; ch < c->audio_channels && ch < 2; ch++)
 					interleaved[i * c->audio_channels + ch] = c->audio_out[ch * c->audio_frame_len + i];
-			audio(context, interleaved, (samples_per_channel / 2) * c->audio_channels);
+			audio(context, interleaved, samples_per_channel * c->audio_channels);
 		}
 	}
 }
