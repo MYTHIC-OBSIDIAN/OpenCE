@@ -785,6 +785,39 @@ static boolean reordered_bitmaps_find(
 	return TRUE;
 }
 
+/* Whether a HUD meter's pixels, as they arrive (laid out as the tag lays
+them out), are in the Xbox's order: the shape in alpha and the fill order in
+color, where Halo PC's has the shape in color and the fill order in alpha.
+Digsite's own meters (spasm.map's digsite\ui\hud\bitmaps\...) are the
+Xbox's, the stock ones Halo PC's. Inside a meter's shape the shape channel is
+all but full where the fill order runs through every value, so the one of
+them full the more often is the shape (only an uncompressed 32-bit meter is
+looked at: Halo PC's own are 16-bit, and drawn from redraws) */
+static boolean meter_pixels_in_xbox_order(
+	struct bitmap_data const *bitmap,
+	void const *pixels)
+{
+	byte const *texel = pixels;
+	long count = (long)bitmap->width * (long)bitmap->height;
+	long full_color = 0;
+	long full_alpha = 0;
+	long index;
+
+	if (bitmap->format != _bitmap_format_a8r8g8b8 || bitmap->type != _bitmap_type_2d ||
+		bitmap->width <= 0 || bitmap->height <= 0 || bitmap->pixels_size < count * 4)
+	{
+		return FALSE;
+	}
+	/* (b, g, r, a) */
+	for (index = 0; index < count; index++, texel += 4)
+	{
+		full_color += texel[2] >= 250;
+		full_alpha += texel[3] >= 250;
+	}
+
+	return full_alpha > 4 * full_color;
+}
+
 /* ---------- public code */
 
 boolean custom_edition_bitmaps_verify(
@@ -916,14 +949,18 @@ void custom_edition_bitmap_pixels_arrived(
 		if (xbox_pointer(bitmap->base_address) == pixels && bitmap->pixels_offset == offset)
 		{
 			long reordered_index = reordered_bitmap_index(tag_index, bitmap_index);
+			short channel_order = reordered_index != NONE ?
+				custom_edition_bitmaps_globals.reordered_bitmaps[reordered_index].channel_order :
+				_custom_edition_channels_xbox;
 
+			if (channel_order == _custom_edition_channels_hud_meter && meter_pixels_in_xbox_order(bitmap, pixels))
+			{
+				channel_order = _custom_edition_channels_hud_meter_xbox;
+				custom_edition_bitmaps_globals.reordered_bitmaps[reordered_index].channel_order = (byte)channel_order;
+			}
 			/* the texture cache reuses its memory for other bitmaps, so the
 			renderer is told of every bitmap arriving */
-			halo_custom_edition_texels_channels(
-				pixels,
-				reordered_index != NONE ?
-					custom_edition_bitmaps_globals.reordered_bitmaps[reordered_index].channel_order :
-					_custom_edition_channels_xbox);
+			halo_custom_edition_texels_channels(pixels, (unsigned char)channel_order);
 			/* on failure it logs, and the texture shows the pixels as read */
 			rasterizer_xbox_bitmap_rebuild_hardware_format(bitmap);
 			return;
