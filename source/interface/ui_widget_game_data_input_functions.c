@@ -3740,13 +3740,16 @@ static void player_profile_3wide_list_update(
 				short highest_level;
 				short highest_difficulty;
 
-				player_profile_get_highest_completed_solo_level(
+				/* port: the level reached on the highest difficulty a level
+				was finished on (the Xbox's: after the last level finished on
+				any difficulty, with the hardest it was finished on) */
+				player_profile_get_current_solo_level(
 					profile,
 					&highest_level,
 					&highest_difficulty);
-				highest_level = (short)MIN(highest_level + 1, 9);
 				current_level_text->parameters.text_box.string_list_index = highest_level;
-				current_skill_text->parameters.text_box.string_list_index = highest_difficulty;
+				current_skill_text->parameters.text_box.string_list_index =
+					highest_difficulty != NONE ? highest_difficulty : _game_difficulty_level_normal;
 				controls_text->parameters.text_box.string_list_index =
 					profile->controller_settings.invert_look == TRUE;
 			}

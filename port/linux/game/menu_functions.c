@@ -2168,15 +2168,14 @@ static void profile_list_update(struct widget_instance *list)
 
 		if ((widget = named(description, "qtr_screen_profile_color_pic", 0)) != NULL)
 			widget->animation.current_frame_index = (short)PIN(chosen->primary_color_index, 0, COLOR_COUNT - 1);
+		/* (the level reached on the highest difficulty a level was finished
+		on, and that difficulty: not the level played last) */
+		player_profile_get_current_solo_level(chosen, &level, &difficulty);
 		if ((widget = named(description, "current_level", 0)) != NULL)
-		{
-			widget->parameters.text_box.string_list_index =
-				(short)PIN(chosen->last_single_player_map_played, 0, NUMBER_OF_SINGLE_PLAYER_LEVELS - 1);
-		}
+			widget->parameters.text_box.string_list_index = level;
 		if ((widget = named(description, "joystick_controls", 0)) != NULL)
 			widget->parameters.text_box.string_list_index = chosen->controller_settings.invert_look ? 1 : 0;
-		player_profile_get_highest_completed_solo_level(chosen, &level, &difficulty);
-		if (level != NONE && (widget = named(description, "skill_level", 0)) != NULL)
+		if (difficulty != NONE && (widget = named(description, "skill_level", 0)) != NULL)
 		{
 			widget->parameters.text_box.string_list_index = difficulty;
 			widget->visible = TRUE;

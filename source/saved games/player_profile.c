@@ -384,6 +384,39 @@ void player_profile_get_highest_completed_solo_level(
 	return;
 }
 
+/* port: the campaign level the profile has reached on the highest
+difficulty it has finished a level on: the level after the last it finished
+on that difficulty (the last level if it finished that), and that
+difficulty; the first level, and no difficulty (NONE), for a profile that
+has finished none. A profile's "current level" (whatever it played last,
+on whatever difficulty) */
+void player_profile_get_current_solo_level(
+	struct player_profile *profile,
+	short *level,
+	short *difficulty)
+{
+	short level_index;
+	short difficulty_index;
+
+	*level = 0;
+	*difficulty = NONE;
+	for (difficulty_index = NUMBER_OF_GAME_DIFFICULTY_LEVELS - 1; difficulty_index >= 0 && *difficulty == NONE;
+		difficulty_index--)
+	{
+		for (level_index = NUMBER_OF_SINGLE_PLAYER_LEVELS - 1; level_index >= 0; level_index--)
+		{
+			if (TEST_FLAG(profile->single_player_map_flags[level_index], difficulty_index))
+			{
+				*level = (short)MIN(level_index + 1, NUMBER_OF_SINGLE_PLAYER_LEVELS - 1);
+				*difficulty = difficulty_index;
+				break;
+			}
+		}
+	}
+
+	return;
+}
+
 boolean player_profile_get_enclosing_directory_path(
 	long profile,
 	char *full_path)

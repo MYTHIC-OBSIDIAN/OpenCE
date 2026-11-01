@@ -107,6 +107,12 @@ void player_profile_get_highest_completed_solo_level(
 	struct player_profile *profile,
 	short *level,
 	short *difficulty);
+/* port: the level reached on the highest difficulty a level was finished on
+(player_profile.c) */
+void player_profile_get_current_solo_level(
+	struct player_profile *profile,
+	short *level,
+	short *difficulty);
 word player_profile_number_of_available_primary_colors(
 	void);
 real_rgb_color player_profile_get_rgb_color(
