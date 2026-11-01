@@ -1069,8 +1069,8 @@ FRAME_ORDER = {
     f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
 }
 
-# the map lists' first row: SINGLEPLAYER, MULTIPLAYER, PC MULTIPLAYER,
-# DIGSITE or CUSTOM MULTIPLAYER maps (_map_kind)
+# the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
+# MULTIPLAYER maps (_map_kind)
 MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
 
 # changes to the PC version's widgets (by our names): attributes set, all
@@ -2264,7 +2264,7 @@ def _map_kind() -> list:
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 238 19 244")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "PC MULTIPLAYER", "DIGSITE", "CUSTOM EDITION"])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION"])
     return lines
 
 

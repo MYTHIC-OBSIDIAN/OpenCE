@@ -31,15 +31,15 @@ Each map can have, beside it in its folder:
 - <name>.txt, its description, line by line (the Xbox descriptions use
   lines of about 20 characters).
 
-This LAN build lists the multiplayer maps of the pc_maps folder (Halo PC's:
+This LAN build lists the multiplayer maps of the multi_maps folder (Halo PC's:
 its own six, Gearbox's Danger Canyon, Death Island, Gephyrophobia, Ice
 Fields, Infinity and Timberland, and its versions of the Xbox's, with Halo
-PC's bitmaps.map and sounds.map beside them) in the map lists' PC
-MULTIPLAYER, by their names, and a fixed list of the Digsite maps
+PC's bitmaps.map and sounds.map beside them) first in the map lists'
+MULTIPLAYER, by their names (the Xbox maps they are versions of left out), and a fixed list of the Digsite maps
 (digsite_maps) in their DIGSITE; CUSTOM EDITION leaves them out. A map of
-pc_maps plays from there whatever other folder has one of its name; the
+multi_maps plays from there whatever other folder has one of its name; the
 Digsite maps are looked for first in digsite_maps, then in the folders of
-every other CE map. One of Halo PC's maps of pc_maps is named as Halo PC's
+every other CE map. One of Halo PC's maps of multi_maps is named as Halo PC's
 list names it, its description, without a <name>.txt, is the PC menus' own
 (their map_data strings), and its picture, without a <name>.bmp, the Xbox
 level's for one of the Xbox's, else the unknown level's:
@@ -159,7 +159,7 @@ struct custom_edition_map
 	wchar_t description[MAXIMUM_DESCRIPTION_LENGTH + 1];
 	/* (whether description is its <name>.txt's, not the default) */
 	boolean description_read;
-	/* (found in pc_maps: PC MULTIPLAYER's) */
+	/* (found in multi_maps: MULTIPLAYER's) */
 	boolean pc;
 	boolean picture_read;
 	struct bitmap_data *picture;
@@ -176,8 +176,8 @@ struct custom_edition_maps_globals
 	/* the latest level list: the Xbox levels, then the CE maps */
 	short xbox_level_count;
 	char *levels[MAXIMUM_XBOX_LEVELS + CUSTOM_EDITION_MAPS_MAXIMUM];
-	/* the multiplayer maps the CUSTOM EDITION list shows (neither pc_maps'
-	nor Digsite's), and pc_maps' (by their menu names), by their index in
+	/* the multiplayer maps the CUSTOM EDITION list shows (neither multi_maps'
+	nor Digsite's), and multi_maps' (by their menu names), by their index in
 	maps */
 	short listed_count;
 	short listed[CUSTOM_EDITION_MAPS_MAXIMUM];
@@ -339,7 +339,7 @@ static short digsite_map_index(
 }
 
 /* A map's menu name: Halo PC's name for its own maps (and for its versions
-of the Xbox's, in pc_maps), otherwise the file
+of the Xbox's, in multi_maps), otherwise the file
 name (without a hash it ends in) with underscores as spaces and words
 capitalized ("the_bay_of_pigs" becomes "The Bay Of Pigs"). */
 static void display_name_make(
@@ -356,7 +356,7 @@ static void display_name_make(
 		ustrcpy(display_name, stock_maps[index].name);
 		return;
 	}
-	/* (Halo PC's version of an Xbox map, in pc_maps) */
+	/* (Halo PC's version of an Xbox map, in multi_maps) */
 	if (pc && (index = xbox_map_index(name)) != NONE)
 	{
 		ustrcpy(display_name, xbox_maps[index].name);
@@ -618,7 +618,7 @@ static boolean display_name_after(
 	}
 }
 
-/* The map lists' parts: pc_maps' (by their menu names, as Halo PC's list
+/* The map lists' parts: multi_maps' (by their menu names, as Halo PC's list
 has them), the Digsite maps (the first of each name, multiplayer or
 campaign), and the rest. */
 static void custom_edition_maps_sort_into_lists(
@@ -680,7 +680,7 @@ static void custom_edition_maps_look_for(
 	void)
 {
 	struct custom_edition_maps_globals *globals = &custom_edition_maps_globals;
-	/* (each map's own folder first, so its copy there wins: pc_maps' Halo
+	/* (each map's own folder first, so its copy there wins: multi_maps' Halo
 	PC maps (all of them), digsite_maps' Digsite maps (those alone)) */
 	char const *folders[] = { CUSTOM_EDITION_PC_MAP_DIRECTORY, CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY,
 		CUSTOM_EDITION_MAP_DIRECTORY, CUSTOM_EDITION_INSTALL_MAP_DIRECTORY };
@@ -1048,6 +1048,29 @@ short custom_edition_maps_pc_display_index(
 		FIRST_DISPLAY_INDEX + custom_edition_maps_globals.pc[index];
 }
 
+boolean custom_edition_maps_pc_named(
+	short display_index,
+	char const *name)
+{
+	struct custom_edition_map *map = display_index >= FIRST_DISPLAY_INDEX ? custom_edition_map_get(display_index) : NULL;
+	short length = map ? map_share_name_base_length(map->name) : 0;
+
+	return map && map->pc && (short)csstrlen(name) == length && !_strnicmp(map->name, name, length);
+}
+
+boolean custom_edition_maps_pc_has(
+	char const *name)
+{
+	short index;
+
+	for (index = 0; index < custom_edition_maps_pc_count(); index++)
+	{
+		if (custom_edition_maps_pc_named(custom_edition_maps_pc_display_index(index), name))
+			return TRUE;
+	}
+	return FALSE;
+}
+
 short custom_edition_maps_digsite_count(
 	void)
 {
@@ -1174,7 +1197,7 @@ wchar_t *custom_edition_maps_description(
 			custom_edition_map_campaign(map) ? digsite_campaign_description : digsite_multiplayer_description);
 	}
 	/* (one of Halo PC's own without a <name>.txt, or of its versions of the
-	Xbox's in pc_maps: the PC menus' words for it, its own following the
+	Xbox's in multi_maps: the PC menus' words for it, its own following the
 	Xbox maps' there; never past their end, which would ask this function
 	again: text_group.c's fallback_string) */
 	if (!map->description_read &&

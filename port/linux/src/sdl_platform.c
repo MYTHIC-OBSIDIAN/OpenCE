@@ -137,7 +137,7 @@ extern const unsigned long platform_menu_cursor_size;
 When it holds Halo PC's instead, or no ui.map, the player is told where each
 kind goes and the game quits, rather than failing to load Halo PC's ui.map
 as the Xbox's (game_load). Halo PC maps in maps/ itself, which play only from
-pc_maps (Halo PC's) or custom_maps (Custom Edition's), are warned of */
+multi_maps (Halo PC's) or custom_maps (Custom Edition's), are warned of */
 static void data_check_videos(void);
 
 static void data_check_maps(void)
@@ -151,7 +151,7 @@ static void data_check_maps(void)
 	platform_maps_folder_check(&maps);
 	snprintf(where, sizeof(where),
 		"Put the Xbox maps from your Halo: Combat Evolved disc image in %s/maps. Halo PC's maps go in "
-		"a pc_maps folder beside it, with Halo PC's bitmaps.map and sounds.map, and Halo Custom "
+		"a multi_maps folder beside it, with Halo PC's bitmaps.map and sounds.map, and Halo Custom "
 		"Edition maps in a custom_maps folder.",
 		maps.root);
 	switch (maps.state)
@@ -160,7 +160,7 @@ static void data_check_maps(void)
 		if (!maps.stray_pc_maps)
 			return;
 		snprintf(message, sizeof(message),
-			"These maps in the maps folder are Halo PC maps, which play only from pc_maps: %s%s.\n\n%s",
+			"These maps in the maps folder are Halo PC maps, which play only from multi_maps: %s%s.\n\n%s",
 			maps.stray_names, maps.stray_pc_maps > PLATFORM_MAPS_FOLDER_NAMED ? " and more" : "", where);
 		platform_log("maps folder: %ld Halo PC maps in %s/maps (%s)", maps.stray_pc_maps, maps.root,
 			maps.stray_names);

@@ -515,8 +515,9 @@ static const struct config_setting config_settings[] =
 		"Load and run Halo Custom Edition maps (not those that need OpenSauce):\n"
 		"put them and Custom Edition's bitmaps.map, sounds.map and loc.map in\n"
 		"the custom_maps folder beside the maps folder; the map lists show Halo\n"
-		"PC's maps (the pc_maps folder's) in PC MULTIPLAYER, the Digsite maps in\n"
-		"DIGSITE and the rest in CUSTOM EDITION. Their tags are checked\n"
+		"PC's maps (the multi_maps folder's) in MULTIPLAYER, in place of the Xbox's\n"
+		"of their names, the Digsite maps in DIGSITE and the rest in CUSTOM\n"
+		"EDITION. Their tags are checked\n"
 		"as the game's own maps' are before they run; false refuses them\n"
 		"(docs/custom_edition_caches.md)." },
 	{ "bots.count", _config_integer, "0", "HALO_BOTS", _environment_value, _platform_all,

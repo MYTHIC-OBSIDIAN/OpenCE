@@ -263,7 +263,7 @@ static boolean maps_folder_hashed_name(
 	return count == 1;
 }
 
-/* A map's own folder, looked in before the others: pc_maps for any map it
+/* A map's own folder, looked in before the others: multi_maps for any map it
 has (Halo PC's: those of a name there play from there), digsite_maps for
 the Digsite maps (custom_edition_maps_home). */
 static boolean custom_edition_map_home_has(
@@ -382,11 +382,11 @@ static boolean custom_edition_map_path(
 }
 
 /* A cache's resource map of `type`, bitmaps.map and so on. A Halo PC cache
-(version 7) has only Halo PC's own: pc_maps' first, then the one beside it
+(version 7) has only Halo PC's own: multi_maps' first, then the one beside it
 (Custom Edition's hold other data at other offsets: a Halo PC map in
-custom_maps, beside Custom Edition's, plays with pc_maps'). A Custom Edition
+custom_maps, beside Custom Edition's, plays with multi_maps'). A Custom Edition
 cache has the one beside it first, then the first maps folder's that has it,
-never pc_maps' (Halo PC's); the game's when none does, for the message. */
+never multi_maps' (Halo PC's); the game's when none does, for the message. */
 static boolean custom_edition_resource_map_path(
 	enum resource_map_type type,
 	char const *map_path,
@@ -1126,7 +1126,7 @@ boolean custom_edition_cache_present(
 		return FALSE;
 	}
 	/* (a Halo PC cache keeps its bitmaps' and sounds' data in Halo PC's own
-	bitmaps.map and sounds.map, pc_maps' or beside it:
+	bitmaps.map and sounds.map, multi_maps' or beside it:
 	custom_edition_resource_map_path) */
 	if (identity.version == CACHE_FILE_VERSION_HALO_PC)
 	{
@@ -1138,10 +1138,10 @@ boolean custom_edition_cache_present(
 			if (!custom_edition_resource_map_path((enum resource_map_type)type, path, TRUE, resource_path) ||
 				!file_path_exists(resource_path))
 			{
-				error(_error_silent, "custom edition: the Halo PC map '%s' needs Halo PC's %s.map in pc_maps",
+				error(_error_silent, "custom edition: the Halo PC map '%s' needs Halo PC's %s.map in multi_maps",
 					path, resource_name);
 				snprintf(message, message_size,
-					"The map %.64s needs Halo PC's %s.map in the pc_maps folder (copy it from your Halo PC maps folder).",
+					"The map %.64s needs Halo PC's %s.map in the multi_maps folder (copy it from your Halo PC maps folder).",
 					name, resource_name);
 				return FALSE;
 			}

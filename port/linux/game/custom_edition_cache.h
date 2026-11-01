@@ -32,11 +32,11 @@ custom_maps folder, then a Halo Custom Edition install's maps folder (the
 platform's h:\ drive, when paths.custom_edition names one). */
 #define CUSTOM_EDITION_MAP_DIRECTORY "d:\\custom_maps\\"
 #define CUSTOM_EDITION_INSTALL_MAP_DIRECTORY "h:\\maps\\"
-/* this LAN build's other folders, beside the maps folder: pc_maps, for Halo
+/* this LAN build's other folders, beside the maps folder: multi_maps, for Halo
 PC's multiplayer maps (its own six, Gearbox's, and its versions of the
 Xbox's), with Halo PC's bitmaps.map and sounds.map; and digsite_maps, for
 the Digsite maps (custom_edition_maps.c) */
-#define CUSTOM_EDITION_PC_MAP_DIRECTORY "d:\\pc_maps\\"
+#define CUSTOM_EDITION_PC_MAP_DIRECTORY "d:\\multi_maps\\"
 #define CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY "d:\\digsite_maps\\"
 
 /* A Custom Edition map's level name is this and its file's name

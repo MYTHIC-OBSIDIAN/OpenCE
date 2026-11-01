@@ -377,7 +377,7 @@ static BOOL name_ends_with(const char *name, const char *ending)
 	return TRUE;
 }
 
-/* the Halo PC maps in the maps folder, which play only from pc_maps (and
+/* the Halo PC maps in the maps folder, which play only from multi_maps (and
 custom_maps): how many, and the first PLATFORM_MAPS_FOLDER_NAMED's names */
 static long pc_maps_in_maps(char *names, unsigned long names_size)
 {

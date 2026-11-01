@@ -20,8 +20,9 @@ ui_widget.c ask this file for their names, descriptions and pictures.
 	0x6800 + n     Digsite map n (the DIGSITE list's), installed or not
 
 The map lists (port/linux/game/menu_functions.c) show the Xbox's 13 as
-MULTIPLAYER, the Halo PC maps of the pc_maps folder (Gearbox's six, and Halo
-PC's versions of the Xbox's) as PC MULTIPLAYER, the Digsite maps as DIGSITE,
+MULTIPLAYER after the Halo PC maps of the multi_maps folder (Gearbox's six,
+and Halo PC's versions of the Xbox's, which take the place of those they are
+versions of), the Digsite maps as DIGSITE,
 and the other CE multiplayer maps as CUSTOM EDITION.
 */
 
@@ -43,7 +44,7 @@ enum
 	_custom_edition_maps_kind_listed,
 };
 
-/* the folder a map is looked for in first, by its name, after pc_maps
+/* the folder a map is looked for in first, by its name, after multi_maps
 (custom_edition_maps_home) */
 enum
 {
@@ -96,7 +97,7 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). The multiplayer maps are CUSTOM EDITION's: neither pc_maps' nor the
+them). The multiplayer maps are CUSTOM EDITION's: neither multi_maps' nor the
 Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
@@ -104,13 +105,21 @@ short custom_edition_maps_display_index_of(
 	boolean campaign,
 	short index);
 
-/* the Halo PC multiplayer maps of the pc_maps folder, which PC
-MULTIPLAYER lists (by their names, as Halo PC's list): how many, and each
+/* the Halo PC multiplayer maps of the multi_maps folder, which
+MULTIPLAYER lists first (by their names, as Halo PC's list): how many, and each
 one's display index (NONE past them) */
 short custom_edition_maps_pc_count(
 	void);
 short custom_edition_maps_pc_display_index(
 	short index);
+/* whether one of the multi_maps folder's maps is named `name` (a file's
+name without .map: bloodgulch for Halo PC's version of the Xbox's), and
+whether the one of a display index is */
+boolean custom_edition_maps_pc_has(
+	char const *name);
+boolean custom_edition_maps_pc_named(
+	short display_index,
+	char const *name);
 
 /* the Digsite maps (DIGSITE's, all of them, found or not): how many, and
 each one's display index (NONE past them) */
@@ -136,7 +145,7 @@ short custom_edition_maps_entry(
 	short *kind);
 
 /* the folder the map of a file name (without .map, a hash it ends in
-aside) is looked for in first, after pc_maps: an _custom_edition_maps_home_* */
+aside) is looked for in first, after multi_maps: an _custom_edition_maps_home_* */
 short custom_edition_maps_home(
 	char const *name);
 
@@ -144,8 +153,8 @@ short custom_edition_maps_home(
 char const *custom_edition_maps_level_name(
 	short display_index);
 
-/* whether the display index is one of the pc_maps folder's (PC
-MULTIPLAYER's) */
+/* whether the display index is one of the multi_maps folder's (listed in
+MULTIPLAYER) */
 boolean custom_edition_maps_pc(
 	short display_index);
 
