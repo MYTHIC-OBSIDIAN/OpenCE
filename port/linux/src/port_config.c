@@ -291,9 +291,8 @@ static const struct config_setting config_settings[] =
 	{ "display.multiplayer_draw_distance", _config_boolean, "true", "HALO_MULTIPLAYER_DRAW_DISTANCE",
 		_environment_value, _platform_all,
 		"In multiplayer games, draw players at any distance (the Xbox left a\n"
-		"player out past about 100 world units, the far end of Blood Gulch) and\n"
-		"push the sky's fog out to twice its distance, so the other base is\n"
-		"seen clearly. false: as the Xbox. The campaign is always as the Xbox." },
+		"player out past about 100 world units, the far end of Blood Gulch).\n"
+		"false: as the Xbox. The campaign is always as the Xbox." },
 	{ "display.reversed_depth", _config_boolean, "true", "HALO_REVERSED_DEPTH", _environment_value, _platform_desktop,
 		"Keep depth in 32-bit floats, reversed (1 near, 0 far), as precise far\n"
 		"away as near: surfaces a few millimetres apart (the lights on Blood\n"
