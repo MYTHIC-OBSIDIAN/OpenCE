@@ -1221,15 +1221,13 @@ void object_types_place_all(
 							scenario_datum_index,
 							element_size);
 
-					/* port: a Halo Custom Edition map's vehicles are those its
-					placements' multiplayer spawn flags name for the game type, as
-					retail Halo's are (port/linux/game/custom_edition_objects.c);
-					then the gametype's vehicles of each team (game_variant_options:
-					every machine places the same), asked last as it counts those it
-					places */
+					/* port: the gametype's vehicles of each team
+					(game_variant_options: every machine places the same), and on a
+					Halo Custom Edition map where its placements' multiplayer spawn
+					flags place them, as retail Halo's are
+					(port/linux/game/custom_edition_objects.c) */
 					if (object_type == _object_type_vehicle &&
-						(!custom_edition_vehicle_placement_allowed(scenario_object) ||
-						!game_engine_vehicle_placement_allowed(scenario_object, scenario_palette)))
+						!game_engine_vehicle_placement_allowed(scenario_object, scenario_palette))
 					{
 						continue;
 					}

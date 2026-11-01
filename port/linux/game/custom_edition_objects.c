@@ -15,8 +15,10 @@ the map to night when a biped under it dies; placed in a slayer game, the
 jet is recreated on the biped and the map turns to night at once. So for a
 Custom Edition map the native builds place the vehicles whose spawn flags
 name the game type by default, and let a script create any vehicle, unless
-the variant has no vehicles. Race has no spawn flag, and keeps this build's
-rule.
+the variant has no vehicles. A team's vehicle set chosen in the gametype
+(a type, or counts) places those vehicles where their placements allow the
+game type, and its default the map's own (game_engine_vehicle_placement_
+allowed). Race has no spawn flag, and keeps this build's rule.
 */
 
 /* ---------- headers */
@@ -111,10 +113,15 @@ boolean custom_edition_vehicles_by_placement(
 }
 
 boolean custom_edition_vehicle_placement_allowed(
-	struct scenario_object_datum const *placement)
+	struct scenario_object_datum const *placement,
+	boolean by_set)
 {
 	struct custom_edition_vehicle_placement const *vehicle = (struct custom_edition_vehicle_placement const *)placement;
 
+	/* (a placement's allowed bits follow its default ones, a byte on:
+	hugeass.map's 0x0303 places a vehicle by default in slayer and ctf, and
+	allows it there; a vehicle set, or a team's counts, place the vehicles
+	they name where the game type allows them, as Halo PC does) */
 	return !custom_edition_vehicles_by_placement() ||
-		TEST_FLAG(vehicle->multiplayer_spawn_flags, default_spawn_flag_bit());
+		TEST_FLAG(vehicle->multiplayer_spawn_flags, default_spawn_flag_bit() + (by_set ? 8 : 0));
 }

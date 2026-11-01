@@ -723,6 +723,10 @@ enum
 	_weapon_list_flag,
 	_weapon_list_frag_grenade,
 	_weapon_list_plasma_grenade,
+	/* port: Halo PC's (and Custom Edition's) globals list two more: the
+	fuel rod gun and the multiplayer needler, which its maps place */
+	_weapon_list_plasma_cannon,
+	_weapon_list_mp_needler,
 };
 
 /* ---------- macros */
@@ -7828,14 +7832,23 @@ boolean game_engine_vehicle_placement_allowed(
 		return TRUE;
 	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
 	set = options->vehicle_set[side];
+	/* (a Custom Edition or Halo PC map: its placements' spawn flags say
+	where, its default ones for the map's own vehicles, its allowed ones for
+	a set's: port/linux/game/custom_edition_objects.c) */
+	if (!custom_edition_vehicle_placement_allowed(placement,
+			set != _game_engine_vehicles_default && set != VARIANT_VEHICLE_SET_PC))
+	{
+		return FALSE;
+	}
 	if (set == VARIANT_VEHICLE_SET_PC)
 		return TRUE;
 	type = game_engine_variant_vehicle_type(TAG_BLOCK_GET_ELEMENT(palette, placement->palette_entry_index,
 		struct scenario_object_palette_entry)->reference.index);
 	/* (the map's own: the multiplayer ones of the globals, as the Xbox
-	game's remap allows) */
+	game's remap allows; a Custom Edition or Halo PC map's, every one its
+	placements place by default, its banshees and turrets too) */
 	if (set == _game_engine_vehicles_default)
-		return type == NONE || type <= _variant_vehicle_scorpion;
+		return type == NONE || type <= _variant_vehicle_scorpion || custom_edition_vehicles_by_placement();
 	if (type == NONE)
 		return set != _game_engine_vehicles_none;
 	if (set == VARIANT_VEHICLE_SET_CUSTOM)
@@ -7995,6 +8008,20 @@ long game_engine_remap_vehicle(
 	return result;
 }
 
+/* port: the weapon of the list's index, the needler being Halo PC's
+multiplayer needler where its globals list one (its maps place that one:
+item collections\single weapons\needler) */
+static long game_engine_weapon_list_definition(
+	long weapon_list_index)
+{
+	if (weapon_list_index == _weapon_list_needler &&
+		list_index_to_weapon_definition_index(_weapon_list_mp_needler) != NONE)
+	{
+		weapon_list_index = _weapon_list_mp_needler;
+	}
+	return list_index_to_weapon_definition_index(weapon_list_index);
+}
+
 long game_engine_remap_weapon(
 	long weapon_definition_index)
 {
@@ -8021,9 +8048,14 @@ long game_engine_remap_weapon(
 		weapon_list_index = _weapon_list_rocket_launcher;
 	}
 
+	/* port: Halo PC's multiplayer needler is its needler (as a set takes it
+	and gives it back: game_engine_weapon_list_definition) */
+	if (weapon_list_index == _weapon_list_mp_needler)
+		weapon_list_index = _weapon_list_needler;
+
 	/* port: a custom loadout (game_variant_options) has no weapon set */
 	if (game_variant_options_get()->loadout == _loadout_custom)
-		return list_index_to_weapon_definition_index(weapon_list_index);
+		return game_engine_weapon_list_definition(weapon_list_index);
 
 	switch (global_variant.universal_variant.weapon_set)
 	{
@@ -8034,6 +8066,7 @@ long game_engine_remap_weapon(
 		case _weapon_list_pistol:
 		case _weapon_list_plasma_rifle:
 		case _weapon_list_rocket_launcher:
+		case _weapon_list_plasma_cannon:
 			weapon_list_index = _weapon_list_plasma_pistol;
 			break;
 
@@ -8051,6 +8084,7 @@ long game_engine_remap_weapon(
 		case _weapon_list_pistol:
 		case _weapon_list_plasma_rifle:
 		case _weapon_list_rocket_launcher:
+		case _weapon_list_plasma_cannon:
 			weapon_list_index = _weapon_list_plasma_rifle;
 			break;
 
@@ -8064,7 +8098,7 @@ long game_engine_remap_weapon(
 	case _game_engine_weapons_plasma_weapons:
 		if (weapon_list_index >= _weapon_list_needler && weapon_list_index <= _weapon_list_plasma_pistol)
 			weapon_list_index = _weapon_list_plasma_pistol;
-		else
+		else if (weapon_list_index != _weapon_list_plasma_cannon)
 			weapon_list_index = _weapon_list_plasma_rifle;
 		break;
 
@@ -8117,6 +8151,10 @@ long game_engine_remap_weapon(
 		case _weapon_list_plasma_pistol:
 			weapon_list_index = _weapon_list_pistol;
 			break;
+
+		case _weapon_list_plasma_cannon:
+			weapon_list_index = _weapon_list_rocket_launcher;
+			break;
 		}
 		break;
 
@@ -8139,23 +8177,32 @@ long game_engine_remap_weapon(
 			break;
 
 		case _weapon_list_rocket_launcher:
-			weapon_list_index = _weapon_list_needler;
+			/* (Halo PC's maps' fuel rod gun) */
+			weapon_list_index = list_index_to_weapon_definition_index(_weapon_list_plasma_cannon) != NONE ?
+				_weapon_list_plasma_cannon : _weapon_list_needler;
+			break;
+
+		case _weapon_list_flamethrower:
+			weapon_list_index = _weapon_list_plasma_rifle;
 			break;
 		}
 		break;
 
 	/* classic: the Xbox game's weapons (the flamethrower and the gravity
-	rifle are already rocket launchers) */
+	rifle are already rocket launchers; the fuel rod gun is one) */
 	case _game_engine_weapons_classic:
+		if (weapon_list_index == _weapon_list_plasma_cannon)
+			weapon_list_index = _weapon_list_rocket_launcher;
 		break;
 
-	/* heavy weapons: rocket launchers */
+	/* heavy weapons: rocket launchers (and Halo PC's fuel rod guns) */
 	case _game_engine_weapons_heavy:
-		weapon_list_index = _weapon_list_rocket_launcher;
+		if (weapon_list_index != _weapon_list_plasma_cannon)
+			weapon_list_index = _weapon_list_rocket_launcher;
 		break;
 	}
 
-	return list_index_to_weapon_definition_index(weapon_list_index);
+	return game_engine_weapon_list_definition(weapon_list_index);
 }
 
 long game_engine_remap_object_definition(

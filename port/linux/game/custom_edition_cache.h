@@ -322,9 +322,11 @@ halo_linux_source_fixups.h). */
 boolean custom_edition_vehicles_by_placement(
 	void);
 /* Whether the vehicle placement `placement` is placed at the start of the
-running game. */
+running game: by default for the game type, or, `by_set` (a team's vehicle
+set chosen in the gametype), where the game type allows one. */
 boolean custom_edition_vehicle_placement_allowed(
-	struct scenario_object_datum const *placement);
+	struct scenario_object_datum const *placement,
+	boolean by_set);
 
 /* ---------- prototypes/CUSTOM_EDITION_GEOMETRY.C */
 

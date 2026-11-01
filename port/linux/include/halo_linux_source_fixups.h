@@ -61,7 +61,7 @@ placement is placed in the running game
 (port/linux/game/custom_edition_objects.c) */
 struct scenario_object_datum;
 unsigned char custom_edition_vehicles_by_placement(void);
-unsigned char custom_edition_vehicle_placement_allowed(struct scenario_object_datum const *placement);
+unsigned char custom_edition_vehicle_placement_allowed(struct scenario_object_datum const *placement, unsigned char by_set);
 
 /* the width of the screen the game draws, 480 lines tall: the device's or
 the display's shape, or 640 (port/linux/src/d3d8_gl.c) */
