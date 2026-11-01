@@ -1304,7 +1304,7 @@ static GLuint texture_entry_result(struct texture_entry *entry, GLenum *target,
 				unsigned long *pixels = malloc(entry->description.width * entry->description.height * 4);
 
 				if (pixels && decode_level(&entry->description, 0, (const unsigned char *)entry->address, NULL, pixels))
-					entry->hud_upscale = hud_hires_upscale_texture((const unsigned char *)pixels,
+					entry->hud_upscale = hud_hires_upscale_texture(entry->address, (const unsigned char *)pixels,
 						entry->description.width, entry->description.height, kind, &entry->hud_upscale_levels);
 				free(pixels);
 			}

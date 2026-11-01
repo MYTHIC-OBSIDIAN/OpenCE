@@ -107,7 +107,7 @@ int hud_hires_override_point_threshold(long asset);
 /* Original HUD sheets lacking redraws, with their tag coordinates unchanged.
  * The cache owns the upscaled texture and invalidates it with the source. */
 long hud_hires_upscale_at(unsigned long address, long width, long height);
-unsigned int hud_hires_upscale_texture(const unsigned char *bgra, unsigned long width,
+unsigned int hud_hires_upscale_texture(unsigned long address, const unsigned char *bgra, unsigned long width,
 	unsigned long height, long kind, unsigned long *levels);
 
 #endif

@@ -41,6 +41,7 @@ zlib (port/third_party/zlib).
 long hud_hires_asset_at(unsigned long address, long width, long height);
 long hud_hires_asset_stock_custom_edition(unsigned long address, long width, long height, long asset);
 int hud_hires_map_halo_pc(void);
+void hud_pc_icons_paint(unsigned long address, long width, long height, unsigned char *pixels);
 
 /* Include every embedded HUD and button style, including stick frames. */
 #define MAXIMUM_TEXTURES 256
@@ -465,7 +466,7 @@ static void upscale_outline(unsigned char *pixels, const unsigned char *bgra,
 	}
 }
 
-unsigned int hud_hires_upscale_texture(const unsigned char *bgra, unsigned long width,
+unsigned int hud_hires_upscale_texture(unsigned long address, const unsigned char *bgra, unsigned long width,
 	unsigned long height, long kind, unsigned long *levels)
 {
 	unsigned char *pixels;
@@ -478,6 +479,8 @@ unsigned int hud_hires_upscale_texture(const unsigned char *bgra, unsigned long 
 	if (!pixels)
 		return 0;
 	upscale_outline(pixels, bgra, width, height, kind);
+	/* (the Xbox's weapon pickup icons: Halo PC's, port/linux/game/hud_pc_icons.c) */
+	hud_pc_icons_paint(address, (long)width, (long)height, pixels);
 	*levels = 1;
 	for (largest = (width > height ? width : height) * 4; largest > 1; largest >>= 1)
 		(*levels)++;

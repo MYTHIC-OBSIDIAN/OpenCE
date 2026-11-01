@@ -77,6 +77,8 @@ boolean custom_edition_cache_tags_loaded(void);
 boolean custom_edition_cache_halo_pc(void);
 
 void hud_hires_map_loaded(const long *assets, long count);
+/* (hud_pc_icons.c) */
+void hud_pc_icons_map_loaded(void);
 void hud_hires_map_unloaded(void);
 void hud_hires_tags_loaded(long scenario_index);
 void hud_hires_tags_unloaded(void);
@@ -231,6 +233,9 @@ void hud_hires_tags_loaded(
 			}
 		}
 	}
+	/* (the weapon pickup icons of the Xbox's maps, the campaign's too: Halo
+	PC's, painted over the message icons' upscaled sheet) */
+	hud_pc_icons_map_loaded();
 	for (asset = 0; asset < asset_count && hires_bitmap_count < MAXIMUM_HIRES_BITMAPS; asset++)
 	{
 		long group_index = tag_loaded(BITMAP_GROUP_TAG, hud_hires_asset_tag(asset));
