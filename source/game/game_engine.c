@@ -574,6 +574,7 @@ symbols in this file:
 #include "network_votekick.h" /* port: port/linux/game/network_votekick.c */
 #include "network_voice.h" /* port: port/linux/game/network_voice.c */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
+#include "custom_edition_maps.h" /* port: port/linux/game/custom_edition_maps.c */
 /* (network_server_manager_internal.h's: the host's game record) */
 struct network_game *network_game_server_get_game(struct network_game_server *server);
 #include "objects.h"
@@ -5692,6 +5693,17 @@ void game_engine_playlist_next(
 	struct game_variant variant;
 
 	csstrcpy(global_stage.map_name, "levels\\test\\carousel\\carousel");
+	/* port: this LAN build's first multiplayer map, the multi_maps folder's
+	first (custom_edition_maps.c): the Xbox's multiplayer maps may be gone
+	from the maps folder, and precaching carousel then told of a damaged
+	disc */
+	if (custom_edition_maps_pc_count() > 0 &&
+		custom_edition_maps_level_name(custom_edition_maps_pc_display_index(0)))
+	{
+		csstrncpy(global_stage.map_name, custom_edition_maps_level_name(custom_edition_maps_pc_display_index(0)),
+			sizeof(global_stage.map_name) - 1);
+		global_stage.map_name[sizeof(global_stage.map_name) - 1] = 0;
+	}
 	/* port: a dedicated server's rotation's next map, not carousel, which it
 	may not have (port/linux/game/server_director.c) */
 	if (halo_server_mode() && server_director_first_level())
