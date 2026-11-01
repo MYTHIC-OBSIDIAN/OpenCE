@@ -1058,6 +1058,32 @@ void weapon_export_function_values(
 				}
 				break;
 
+			/* port: Halo PC's firing on (weapon_export_function_mode.h): 1 from
+			a shot until the next is due, and while the trigger spews. Halo PC's
+			flamethrower plays its fire loop by it: read as nothing, the loop
+			restarted with each shot, its first tenth of a second over and over */
+			case _weapon_function_primary_firing_on:
+			case _weapon_function_secondary_firing_on:
+				{
+					short trigger_index= (short)(*function_modes-_weapon_function_primary_firing_on);
+
+					if (trigger_index<weapon_definition->weapon.triggers.count &&
+						trigger_index<weapon_trigger_count(weapon_definition))
+					{
+						struct weapon_trigger_definition *trigger_definition= TAG_BLOCK_GET_ELEMENT(&weapon_definition->weapon.triggers, trigger_index, struct weapon_trigger_definition);
+						struct weapon_trigger *trigger= weapon_trigger_get(weapon, trigger_index);
+						real rate= MIN(trigger_definition->initial_rate_of_fire, trigger_definition->final_rate_of_fire);
+						long ticks_between_shots= rate>0.0f ? (long)(TICKS_PER_SECOND/rate)+1 : 1;
+
+						if (trigger &&
+							(trigger->state==_trigger_spewing || (long)trigger->idle_ticks<=ticks_between_shots+1))
+						{
+							function_value= 1.0f;
+						}
+					}
+				}
+				break;
+
 			case _weapon_function_primary_charged:
 			case _weapon_function_secondary_charged:
 				{

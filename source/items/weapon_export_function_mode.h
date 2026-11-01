@@ -27,6 +27,10 @@ enum weapon_export_function_mode
 	_weapon_function_integrated_light,
 	_weapon_function_primary_firing,
 	_weapon_function_secondary_firing,
+	/* port: Halo PC's (a Custom Edition map's weapon may name them): 1 while
+	the trigger is firing, between its shots too (weapons.c) */
+	_weapon_function_primary_firing_on,
+	_weapon_function_secondary_firing_on,
 	NUMBER_OF_WEAPON_FUNCTION_MODES,
 };
 
