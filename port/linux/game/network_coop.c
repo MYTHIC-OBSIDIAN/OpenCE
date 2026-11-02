@@ -3458,9 +3458,9 @@ void network_coop_handle_presentation(
 
 /* client: the host's own view of this tick played, kept as the latest (the
 one before it the previous), and whether it is drawn instead of this
-machine's: from a cutscene's start until the players are given control
-(the host's cinematic, or its players' input off), as split screen shows
-one view for both through a cutscene */
+machine's: while the host's cutscene plays, as split screen co-op draws one
+view, player 1's (the host's), while a cutscene plays (main.c's
+single_window) and splits as it ends */
 static void client_view_record(
 	struct distributed_coop_presentation const *presentation)
 {
@@ -3491,8 +3491,7 @@ static void client_view_record(
 	coop_presentation.view_previous_valid = coop_presentation.view_active && valid;
 	coop_presentation.view_previous = coop_presentation.view_latest;
 	coop_presentation.view_latest = view;
-	coop_presentation.view_active = valid &&
-		(TEST_FLAG(presentation->flags, _presentation_cinematic_bit) || presentation->input_disabled);
+	coop_presentation.view_active = valid && TEST_FLAG(presentation->flags, _presentation_cinematic_bit);
 }
 
 static void client_presentation_apply(

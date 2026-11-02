@@ -807,8 +807,8 @@ static struct observer_result const *render_interpolation_blended_camera(
 	if (!observer)
 		return observer;
 	camera = &interpolated_cameras[local_player_index];
-	/* a network co-op client from a cutscene's start until the players are
-	given control: the host's own view, as the host drew it (between its last
+	/* a network co-op client while the host's cutscene plays (split screen
+	co-op's one view, splitting as it ends): the host's own view, as the host drew it (between its last
 	two ticks, a cut a cut; moving with a filmed object as it is drawn), not
 	this machine's observer easing toward it (network_coop.c) */
 	{
