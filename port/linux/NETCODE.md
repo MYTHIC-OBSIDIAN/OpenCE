@@ -28,9 +28,11 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   tick and others less often; a client drives each unit with the latest
   it has, as it drives a remote player's, until it hears nothing of it for
   two seconds (`port/linux/game/network_actors.c`).
-- **Co-op.** A network game on a campaign level with no game engine
-  (Create Game's Map screen, its SINGLEPLAYER maps, over LAN and the
-  internet) is co-op. Only the host runs the
+- **Co-op.** A network game on a campaign level with no game engine is
+  co-op. Nothing hosts one any more (version 48): Create Game's Map screen
+  lists no SINGLEPLAYER maps and refuses a campaign map, and a dedicated
+  server's rotation refuses campaign levels and `<level>:coop` entries; co-op
+  is split screen's. The code below stays, unused. Only the host runs the
   level's scripts and spawns players. `network_coop.c` sends the clients
   everything the scripts do that they would otherwise miss:
   - every tick: the cinematic, camera, screen fade, the HUD settings the
@@ -333,6 +335,10 @@ their 0x2C bytes, but the ten from `mode` on are reserved (zero), Slayer's
 state is always Slayer's own (no `struct distributed_infection_state`), and
 the game's kind is no longer sent: the advertisement's fourth reserved byte
 and the listing's stamp are zero.
+
+Then version 48 sends nothing new, but no menu or dedicated server hosts
+network co-op any more (Co-op, above), so that a build of 48 never joins an
+older build's co-op game.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

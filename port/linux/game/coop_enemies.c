@@ -52,10 +52,6 @@ Only the host runs the AI, so all of this is the host's.
 #include <math.h>
 #include <string.h>
 
-/* port_config.c's */
-long config_integer(char const *name);
-char const *config_string(char const *name);
-
 /* ---------- constants */
 
 enum

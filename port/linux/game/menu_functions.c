@@ -986,8 +986,8 @@ maps, a fixed list, each played as its file's scenario type says) or
 CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
 custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
 then the kind's rows, scrolling as list_scroll scrolls. A campaign map is
-played as the campaign is (alone, or hosted as network co-op), a
-multiplayer map as multiplayer maps are. */
+played as the campaign is (alone, or split screen co-op; New Game's list
+alone has SINGLEPLAYER), a multiplayer map as multiplayer maps are. */
 
 enum
 {
@@ -3151,7 +3151,6 @@ typedef char verify_advertised_game_open_offset[offsetof(struct advertised_game,
 /* the engine's (port) */
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
 boolean ui_widget_port_multiplayer_map_choose(short level_index);
-boolean ui_widget_port_cooperative_level_choose(char const *map_name, short difficulty);
 short ui_widget_port_gametypes(long *indices, short maximum, short *last_used);
 boolean ui_widget_port_gametype_choose(long profile_index);
 boolean ui_widget_port_host(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
@@ -3166,9 +3165,6 @@ boolean ui_widget_port_multiplayer_player(short controller_index, long profile_i
 boolean ui_widget_port_unjoin_player(struct widget_instance *widget, struct event_record *event,
 	boolean *widget_deleted);
 void network_game_server_port_set_settings(wchar_t const *name, long maximum_players);
-void network_game_server_port_set_cooperative_friendly_fire(short friendly_fire);
-void network_game_server_port_set_cooperative_player_collisions(boolean player_collisions);
-void network_game_server_port_set_cooperative_ally_friendly_fire(boolean ally_friendly_fire);
 void *global_network_game_client_get(void);
 void *global_network_game_server_get(void);
 boolean network_game_is_splitscreen_local(void);
@@ -3213,15 +3209,6 @@ static struct
 	/* the server settings */
 	wchar_t game_name[16];
 	short maximum_players_index;
-	/* (co-op's own, so it leaves multiplayer's as it was: each game hosted
-	starts with COOPERATIVE_DEFAULT_PLAYERS players at most) */
-	short cooperative_maximum_players_index;
-	boolean cooperative_maximum_players_set;
-	/* the co-op game's FRIENDLY FIRE, and its PLAYER COLLISIONS OFF, as it
-	starts (CO-OP OPTIONS': network.coop_friendly_fire's and
-	network.coop_player_collisions': server_start) */
-	short cooperative_friendly_fire;
-	boolean cooperative_no_player_collisions;
 	/* the browser's games */
 	struct advertised_game *games[MAXIMUM_ADVERTISED_GAMES];
 	short game_count, game_chosen;
@@ -3403,67 +3390,36 @@ static boolean multiplayer_host(struct widget_instance *widget, struct event_rec
 	new game starts with as network.host_public says) */
 	multiplayer.game_private = !config_boolean("network.host_public");
 	p2p_set_hosting_public(multiplayer.mode == _multiplayer_mode_host_internet && !multiplayer.game_private);
-	multiplayer.cooperative_maximum_players_set = FALSE;
 	return ui_widget_port_host(widget, event, widget_deleted);
 }
 
-/* ---- the map list (the Map screen's): its chooser's SINGLEPLAYER levels,
-MULTIPLAYER maps, DIGSITE or CUSTOM EDITION maps (the map lists',
-above). A level or Custom Edition campaign map chosen lists the
-difficulties (B goes back to the map) and is hosted as a network co-op game,
-which goes to Server Setup; a multiplayer map goes on to the gametypes.
-Split screen hosts only multiplayer maps, its chooser kept to the
-multiplayer kinds. */
-
-enum
-{
-	MAP_STEP_MAPS,
-	MAP_STEP_DIFFICULTIES,
-};
+/* ---- the map list (the Map screen's): its chooser's MULTIPLAYER maps,
+DIGSITE or CUSTOM EDITION maps (the map lists', above), kept to the
+multiplayer kinds (campaign levels are played from New Game, or split screen's
+co-op, not hosted). A multiplayer map goes on to the gametypes. */
 
 static struct
 {
-	short kind, step;
-	/* hosting over the network, which co-op needs */
-	boolean hosting;
+	short kind;
 	/* the multiplayer maps (ui_widget_port_multiplayer_maps): the Xbox's,
 	then the Custom Edition ones */
 	short map_count;
 	short first, chosen;
-	/* the level or Custom Edition campaign map (the kind's entry) whose
-	difficulties are listed */
-	short level;
 } map_list;
 
-#define SERVER_SETUP_NAME "pc\\main_menu\\multiplayer_type_select\\server_settings\\server_settings_screen"
-
-static short map_step_count(void)
+static short map_list_count(void)
 {
-	if (map_list.step == MAP_STEP_DIFFICULTIES)
-		return NUMBER_OF_GAME_DIFFICULTY_LEVELS;
 	return map_kind_count(map_list.kind, map_list.map_count);
 }
 
-/* opens a step at the entry given */
-static void map_step_open(struct widget_instance *list, short step, short entry)
+/* opens the list at the entry given */
+static void map_list_open(struct widget_instance *list, short entry)
 {
-	short count;
+	short count = map_list_count();
 
-	map_list.step = step;
-	count = map_step_count();
 	map_list.chosen = (short)PIN(entry, 0, MAX(count - 1, 0));
 	map_list.first = map_kind_first(map_list.chosen, count);
 	map_kind_focus(list, map_list.first, map_list.chosen);
-}
-
-static void map_level_text(short level, wchar_t *text)
-{
-	string_get("pc\\main_menu\\map_list", level, text);
-}
-
-static void map_difficulty_text(short difficulty, wchar_t *text)
-{
-	string_get("pc\\main_menu\\player_profiles_select\\difficulty_names", difficulty, text);
 }
 
 /* "mp level list initialize": on the multiplayer map used last */
@@ -3472,87 +3428,50 @@ static boolean map_list_initialize(struct widget_instance *list)
 	char const *const *names;
 	short last_used = 0;
 
-	map_list.hosting = global_network_game_server_get() != NULL && !network_game_is_splitscreen_local();
 	/* (the maps folders looked for again as the list opens) */
 	custom_edition_maps_look_again();
 	map_list.map_count = ui_widget_port_multiplayer_maps(&names, &last_used);
 	/* (a Custom Edition map's kind, when it was one) */
 	last_used = map_kind_of_level_index(last_used, &map_list.kind);
 	map_kind_set(list, map_list.kind);
-	map_step_open(list, MAP_STEP_MAPS, last_used);
+	map_list_open(list, last_used);
 	return TRUE;
 }
 
-/* "mp map list update": the chooser's kind, the step's rows, and beside
-them the level or map chosen: its picture, name and words */
+/* "mp map list update": the chooser's kind, its rows, and beside them the
+map chosen: its picture, name and words */
 static void map_list_update(struct widget_instance *list)
 {
 	struct widget_instance *description = list->parameters.list.extended_description;
-	short kind = map_kind_shown(list, map_list.hosting, map_list.kind), count, entry;
-	short shown;
+	short kind = map_kind_shown(list, FALSE, map_list.kind), count, entry;
 
 	if (kind != map_list.kind)
 	{
 		map_list.kind = kind;
-		map_list.step = MAP_STEP_MAPS;
 		map_list.first = map_list.chosen = 0;
 	}
-	count = map_step_count();
-	entry = map_kind_rows_update(list, &map_list.first, count, map_list.step == MAP_STEP_DIFFICULTIES ?
-		map_difficulty_text : kind == MAP_KIND_SINGLEPLAYER ? map_level_text : map_kind_text(kind));
+	count = map_list_count();
+	entry = map_kind_rows_update(list, &map_list.first, count, map_kind_text(kind));
 	if (entry != NONE)
 		map_list.chosen = entry;
 	visible_set(named(description, "mp_map_right_item", 0), map_list.chosen < count);
-	/* (the map whose difficulties are listed, else the one chosen) */
-	shown = map_list.step == MAP_STEP_DIFFICULTIES ? map_list.level : map_list.chosen;
-	if (kind == MAP_KIND_SINGLEPLAYER)
-	{
-		map_description_show(description, shown, NONE);
-		level_description(description, "replay_level", shown, FALSE, NULL, NONE);
-	}
-	else
-	{
-		map_description_show(description, NONE,
-			map_list.step == MAP_STEP_DIFFICULTIES || map_list.chosen < count ? map_kind_display_index(kind, shown) :
-			NONE);
-	}
+	map_description_show(description, NONE,
+		map_list.chosen < count ? map_kind_display_index(kind, map_list.chosen) : NONE);
 	profile_name_show(description);
 }
 
-/* (below: a LAN co-op game's settings, without Server Setup) */
-static void cooperative_lan_start(void);
-
-/* "mp level select" (the list's OK): the map chosen, or a level's
-difficulties, or the level at the difficulty chosen. FALSE stays on the Map
-screen (the gametypes open on TRUE). */
+/* "mp level select" (the list's OK): the map chosen. FALSE stays on the
+Map screen (the gametypes open on TRUE). */
 static boolean map_list_choose(struct widget_instance *list, boolean *widget_deleted)
 {
 	short chosen;
 
+	(void)widget_deleted;
 	map_list_update(list);
 	chosen = map_list.chosen;
 
-	if (chosen >= map_step_count())
+	if (chosen >= map_list_count())
 		return campaign_fail();
-	if (map_list.step == MAP_STEP_DIFFICULTIES)
-	{
-		char const *map_name = map_list.kind == MAP_KIND_SINGLEPLAYER ? main_get_solo_level_name(map_list.level) :
-			custom_map_level_name(map_list.kind, map_list.level);
-
-		if (!map_ready(map_name))
-			return FALSE;
-		/* the co-op game set up, then (on the LAN) the lobby, its settings
-		the campaign's split screen's, or (on the internet) Server Setup in
-		the gametypes' place, for its listing, password and invite */
-		if (!ui_widget_port_cooperative_level_choose(map_name, chosen))
-			return campaign_fail();
-		if (multiplayer.mode == _multiplayer_mode_host_lan)
-		{
-			cooperative_lan_start();
-			return ui_widget_port_open(list, LOBBY_NAME, widget_deleted);
-		}
-		return ui_widget_port_open(list, SERVER_SETUP_NAME, widget_deleted);
-	}
 	/* (a Digsite map not installed) */
 	if (map_list.kind == MAP_KIND_DIGSITE &&
 		!custom_edition_maps_installed(map_kind_display_index(map_list.kind, chosen)))
@@ -3570,25 +3489,14 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 			return FALSE;
 		return ui_widget_port_multiplayer_map_choose(level_index);
 	}
-	/* (a campaign map: hosted as network co-op, which split screen is not) */
-	if (!map_list.hosting)
-		return campaign_fail();
-	ui_play_audio_feedback_sound(SOUND_FORWARD);
-	map_list.level = chosen;
-	map_step_open(list, MAP_STEP_DIFFICULTIES, (short)PIN(main_get_difficulty(), 0, NUMBER_OF_GAME_DIFFICULTY_LEVELS - 1));
-	return FALSE;
+	/* (a campaign map: played from New Game, not hosted) */
+	return campaign_fail();
 }
 
-/* "port map list back" (B on the list): from the difficulties back to the
-level, else out of the Map screen */
+/* "port map list back" (B on the list): out of the Map screen */
 static boolean map_list_back(struct widget_instance *list, boolean *widget_deleted)
 {
 	ui_play_audio_feedback_sound(SOUND_BACK);
-	if (map_list.step == MAP_STEP_DIFFICULTIES)
-	{
-		map_step_open(list, MAP_STEP_MAPS, map_list.level);
-		return TRUE;
-	}
 	ui_widget_port_go_back(list);
 	*widget_deleted = TRUE;
 	return TRUE;
@@ -3782,98 +3690,15 @@ static void game_name_done(char const *text)
 	multiplayer.game_name[index] = 0;
 }
 
-/* Whether a network game is co-op: a campaign level or a Custom Edition
-campaign map, with no game engine (set up by
-ui_widget_port_cooperative_level_choose). A Custom Edition map this machine
-has not is taken to be one: co-op is the only game with no game engine. */
-static boolean game_cooperative(struct network_game const *game)
-{
-	return game && !game->variant.game_engine_index &&
-		(custom_edition_maps_level_campaign(game->map.name) ||
-		(custom_edition_level_name(game->map.name) && custom_edition_maps_display_index(game->map.name) == NONE));
-}
-
-/* the same, for the game this machine is hosting */
-static boolean hosting_cooperative(void)
-{
-	void *server = global_network_game_server_get();
-
-	return server && game_cooperative(network_game_server_get_game(server));
-}
-
-/* Server Setup's gametype rows, which co-op hides */
-static char const *const server_settings_gametype_rows[] =
-{
-	"op_game_type", "op_player_options", "op_item_options", "op_vehicle_options", "op_indicator_options",
-	"op_team_options",
-};
-
-/* the most players a co-op game hosted has, which it keeps (maximum_players';
-the host holds it to HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS whatever this
-says: network_server_manager.c) */
-#define COOPERATIVE_DEFAULT_PLAYERS HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS
-/* Server Setup's help for co-op's options' rows (CO-OP OPTIONS, VOICE AND
-VOTING), PASSWORD's and MAP SHARING's (its help_strings, tools/port_settings.py) */
-#define COOPERATIVE_OPTIONS_HELP 12
-#define COOPERATIVE_VOICE_OPTIONS_HELP 13
-#define SERVER_PASSWORD_HELP 14
-#define MAP_SHARE_OPTIONS_HELP 15
+/* Server Setup's help for PASSWORD's and MAP SHARING's rows (its
+help_strings, tools/port_settings.py) */
+#define SERVER_PASSWORD_HELP 12
+#define MAP_SHARE_OPTIONS_HELP 13
 /* (LISTING's PUBLIC on a machine with a publisher key: server_master.c) */
-#define SERVER_LISTING_PUBLISHER_HELP 16
+#define SERVER_LISTING_PUBLISHER_HELP 14
 
 /* whether this machine has a publisher key (read as Server Setup opens) */
 static boolean server_settings_publisher;
-
-/* co-op's EXTRA ENEMIES' choices (network.coop_enemies_mode's values, as
-gametype_options' coop_extra_enemies_spinner has them, in this order): its
-amount's row is the choice's */
-enum
-{
-	_cooperative_enemies_per_player,
-	_cooperative_enemies_multiplier,
-	_cooperative_enemies_none,
-	NUMBER_OF_COOPERATIVE_ENEMIES_MODES
-};
-
-/* the most players Server Setup shows and sets: the multiplayer game's, or
-the co-op game's (COOPERATIVE_DEFAULT_PLAYERS the first time in each game
-hosted: multiplayer_host) */
-static short *server_settings_maximum_players_index(void)
-{
-	short index;
-
-	if (!hosting_cooperative())
-		return &multiplayer.maximum_players_index;
-	if (!multiplayer.cooperative_maximum_players_set)
-	{
-		multiplayer.cooperative_maximum_players_index = NUMBEROF(maximum_players) - 1;
-		for (index = 0; index < NUMBEROF(maximum_players); index++)
-		{
-			if (maximum_players[index] == COOPERATIVE_DEFAULT_PLAYERS)
-				multiplayer.cooperative_maximum_players_index = index;
-		}
-		multiplayer.cooperative_maximum_players_set = TRUE;
-	}
-	return &multiplayer.cooperative_maximum_players_index;
-}
-
-/* Server Setup's LISTING, PRIVATE: the multiplayer game's (as
-network.host_public started it), or co-op's, saved in network.coop_public */
-static boolean server_settings_private(void)
-{
-	return hosting_cooperative() ? !config_boolean("network.coop_public") : multiplayer.game_private;
-}
-
-static void server_settings_private_set(boolean private_game)
-{
-	if (!hosting_cooperative())
-		multiplayer.game_private = private_game;
-	else if (private_game != server_settings_private() &&
-		!config_write("network.coop_public", private_game ? "false" : "true"))
-	{
-		platform_log("menus: could not write network.coop_public to config.toml");
-	}
-}
 
 /* "server settings init": the game's name (player 1's, else the one given
 last), the most players, the gametype's copy (once: the screen is made
@@ -3882,9 +3707,7 @@ static boolean server_settings_initialize(struct widget_instance *list)
 {
 	struct widget_instance *spinner = named(list, "max_players_spinner", 0);
 
-	/* (co-op has no gametype to edit) */
-	if (!hosting_cooperative())
-		gametype_setup_begin();
+	gametype_setup_begin();
 	if (!multiplayer.game_name[0] && player_ui_get_active_player_profile_index(0) != NONE)
 	{
 		struct player_profile profile;
@@ -3893,12 +3716,12 @@ static boolean server_settings_initialize(struct widget_instance *list)
 		ustrncpy(multiplayer.game_name, profile.player_name, NUMBEROF(multiplayer.game_name) - 1);
 	}
 	if (spinner)
-		spinner->parameters.list.selected_index = *server_settings_maximum_players_index();
+		spinner->parameters.list.selected_index = multiplayer.maximum_players_index;
 	/* (PUBLIC or PRIVATE: this game's; the screen is made again on coming
 	back from an option's screen) */
 	if ((spinner = named(list, "listing_spinner", 0)) != NULL)
-		spinner->parameters.list.selected_index = server_settings_private() ? 1 : 0;
-	p2p_set_hosting_public(multiplayer.mode == _multiplayer_mode_host_internet && !server_settings_private());
+		spinner->parameters.list.selected_index = multiplayer.game_private ? 1 : 0;
+	p2p_set_hosting_public(multiplayer.mode == _multiplayer_mode_host_internet && !multiplayer.game_private);
 	{
 		unsigned char public_key[SERVER_MASTER_PUBLIC_KEY_SIZE];
 		char key_id[2 * SERVER_MASTER_KEY_ID_SIZE + 1];
@@ -3925,21 +3748,8 @@ static void server_settings_update(struct widget_instance *list)
 	char text[TEXT_FIELD_LENGTH];
 
 	if (spinner)
-		*server_settings_maximum_players_index() = (short)PIN(spinner->parameters.list.selected_index, 0,
+		multiplayer.maximum_players_index = (short)PIN(spinner->parameters.list.selected_index, 0,
 			NUMBEROF(maximum_players) - 1);
-	/* (co-op: two players, which MAX PLAYERS shows and keeps) */
-	if (hosting_cooperative())
-	{
-		short index;
-
-		for (index = 0; index < NUMBEROF(maximum_players) - 1 && maximum_players[index] < COOPERATIVE_DEFAULT_PLAYERS;
-			index++)
-		{
-		}
-		*server_settings_maximum_players_index() = index;
-		if (spinner)
-			spinner->parameters.list.selected_index = index;
-	}
 	wide_to_text(multiplayer.game_name, text, sizeof(text));
 	text_field_show(named(list, "server_name_value", 0), text, text_field_editing(row));
 	if (multiplayer.mode != _multiplayer_mode_host_internet)
@@ -3956,28 +3766,12 @@ static void server_settings_update(struct widget_instance *list)
 		text_set(named(list, "game_type_value", 0), type);
 	}
 	settings_help(list);
+	/* (MAP SHARING's help, any game's: map_share.c) */
 	{
-		boolean cooperative = hosting_cooperative();
-		short row;
+		struct widget_instance *help = list->parameters.list.extended_description;
 
-		for (row = 0; row < NUMBEROF(server_settings_gametype_rows); row++)
-			visible_set(named(list, server_settings_gametype_rows[row], 0), !cooperative);
-		/* co-op's options in their place, rows opening their screens
-		(tools/port_settings.py's COOP_SETUP_SCREENS), each its help */
-		{
-			struct widget_instance *help = list->parameters.list.extended_description;
-
-			/* (not CO-OP OPTIONS: co-op's settings are the campaign's) */
-			visible_set(named(list, "op_coop_options", 0), FALSE);
-			visible_set(named(list, "op_voice_options", 0), cooperative);
-			if (help && list->focused_child == named(list, "op_coop_options", 0))
-				help->parameters.text_box.string_list_index = COOPERATIVE_OPTIONS_HELP;
-			else if (help && list->focused_child == named(list, "op_voice_options", 0))
-				help->parameters.text_box.string_list_index = COOPERATIVE_VOICE_OPTIONS_HELP;
-			/* (MAP SHARING's, any game's: map_share.c) */
-			else if (help && list->focused_child == named(list, "op_map_share_options", 0))
-				help->parameters.text_box.string_list_index = MAP_SHARE_OPTIONS_HELP;
-		}
+		if (help && list->focused_child == named(list, "op_map_share_options", 0))
+			help->parameters.text_box.string_list_index = MAP_SHARE_OPTIONS_HELP;
 	}
 	/* LISTING (an internet game's): PUBLIC, listed in everyone's server
 	browser, or PRIVATE, for this game. Its help is its choice's */
@@ -3989,7 +3783,7 @@ static void server_settings_update(struct widget_instance *list)
 		boolean public = spinner->parameters.list.selected_index == 0;
 		struct widget_instance *help = list->parameters.list.extended_description;
 
-		server_settings_private_set(!public);
+		multiplayer.game_private = !public;
 		p2p_set_hosting_public(public);
 		/* (PUBLIC: through the brokers, and the master servers too with a
 		publisher key) */
@@ -4002,7 +3796,7 @@ static void server_settings_update(struct widget_instance *list)
 	/* PASSWORD (a PUBLIC internet game's): its stars, NONE if it has none */
 	row = named(list, "op_password", 0);
 	visible_set(row, named(list, "op_listing", 0) && named(list, "op_listing", 0)->visible &&
-		!server_settings_private());
+		!multiplayer.game_private);
 	if (row && !row->visible && text_field_editing(row))
 		text_field_end(FALSE);
 	if (row && row->visible)
@@ -4063,58 +3857,18 @@ static boolean invite_copy(void)
 	return TRUE;
 }
 
-/* the co-op game's settings, the campaign's split screen co-op's (CO-OP
-OPTIONS' choices in config.toml are not read), given the game's server:
-Server Setup's START, a LAN co-op game's level chosen (cooperative_lan_start)
-and a dedicated server's co-op entry (server_director.c's
-server_apply_entry) */
-void ui_widget_port_cooperative_settings_apply(void)
-{
-	/* (locked to the campaign's split screen co-op, whatever CO-OP OPTIONS
-	left in config.toml: the players hurt each other and the allies, and
-	bump into each other) */
-	multiplayer.cooperative_friendly_fire = _friendly_fire_on;
-	multiplayer.cooperative_no_player_collisions = FALSE;
-	network_game_server_port_set_cooperative_friendly_fire(multiplayer.cooperative_friendly_fire);
-	network_game_server_port_set_cooperative_player_collisions(TRUE);
-	network_game_server_port_set_cooperative_ally_friendly_fire(TRUE);
-}
-
-/* a LAN co-op game, which has no Server Setup: its name player 1's, two
-players, no password, its settings the campaign's (as split screen's) */
-static void cooperative_lan_start(void)
-{
-	if (player_ui_get_active_player_profile_index(0) != NONE)
-	{
-		struct player_profile profile;
-
-		player_ui_get_active_player_profile(0, &profile);
-		ustrncpy(multiplayer.game_name, profile.player_name, NUMBEROF(multiplayer.game_name) - 1);
-		multiplayer.game_name[NUMBEROF(multiplayer.game_name) - 1] = 0;
-	}
-	network_game_server_port_set_settings(multiplayer.game_name, HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS);
-	p2p_set_hosting_password(NULL);
-	ui_widget_port_cooperative_settings_apply();
-}
-
 /* "ss start game": the settings given the server, then the lobby */
 static boolean server_start(void)
 {
 	if (text_field_editing(NULL))
 		text_field_end(TRUE);
 	network_game_server_port_set_settings(multiplayer.game_name,
-		maximum_players[PIN(*server_settings_maximum_players_index(), 0, NUMBEROF(maximum_players) - 1)]);
+		maximum_players[PIN(multiplayer.maximum_players_index, 0, NUMBEROF(maximum_players) - 1)]);
 	/* (its listing's password: a PUBLIC internet game's, else none) */
-	p2p_set_hosting_password(multiplayer.mode == _multiplayer_mode_host_internet && !server_settings_private() ?
+	p2p_set_hosting_password(multiplayer.mode == _multiplayer_mode_host_internet && !multiplayer.game_private ?
 		multiplayer.game_password : NULL);
-	/* the gametype as Server Setup's options left it (co-op keeps its own,
-	and its FRIENDLY FIRE) */
-	if (hosting_cooperative())
-	{
-		gametype_setup_end();
-		ui_widget_port_cooperative_settings_apply();
-	}
-	else if (!gametype_setup_apply())
+	/* the gametype as Server Setup's options left it */
+	if (!gametype_setup_apply())
 		return campaign_fail();
 	return global_network_game_server_get() != NULL;
 }
@@ -4372,7 +4126,7 @@ static short campaign_level_of(char const *map_name)
 }
 
 /* a game's type as the browsers and lobby show it: its engine's name, or
-CO-OP for one with none (network co-op: ui_widget_port_cooperative_level_choose) */
+CO-OP for one with none (a network co-op game's) */
 static wchar_t const *game_type_name(long engine_type)
 {
 	return engine_type == 0 ? L"CO-OP" : engine_names[PIN(engine_type, 0, 5)];
@@ -5831,24 +5585,6 @@ static boolean pause_end_game(void)
 	return TRUE;
 }
 
-/* "port coop friendly fire" (network co-op's pause menu's FRIENDLY FIRE,
-menu_tags.c): switches this machine's own friendly fire, from now on */
-static boolean coop_friendly_fire_change(void)
-{
-	char const *choice = config_boolean("network.coop_own_friendly_fire") ? "false" : "true";
-
-	if (!config_write("network.coop_own_friendly_fire", choice))
-		platform_log("menus: could not write network.coop_own_friendly_fire to config.toml");
-	ui_play_audio_feedback_sound(SOUND_FORWARD);
-	return TRUE;
-}
-
-/* "port coop friendly fire text": the button's text, ON or OFF */
-static void coop_friendly_fire_text(struct widget_instance *button)
-{
-	button->parameters.text_box.string_list_index = config_boolean("network.coop_own_friendly_fire") ? 0 : 1;
-}
-
 /* ---- the lobby: the game's players (up to the port's 128), its map and
 gametype, the countdown */
 
@@ -7040,26 +6776,6 @@ static struct gametype_option const gametype_options[] =
 	/* (the shield effects every machine draws: network_shield_effects.c) */
 	{ "shield_effects_spinner", _option_setting, 0, 0, 7, { 0 }, "network.shield_effects",
 		{ "stock", "glow", "light_show", "overshield", "glow_overshield", "light_show_overshield", "players" } },
-	/* co-op's options (Server Setup's CO-OP OPTIONS: tools/port_settings.py's
-	COOP_SETUP_SCREENS; coop_enemies.c) */
-	{ "coop_friendly_fire_spinner", _option_setting, 0, 0, 4, { 0 }, "network.coop_friendly_fire",
-		{ "off", "on", "shields_only", "explosives_only" } },
-	{ "coop_team_wipe_spinner", _option_setting, 0, 0, 3, { 0 }, "network.coop_team_wipe",
-		{ "auto", "revert", "respawn" } },
-	{ "coop_extra_enemies_spinner", _option_setting, 0, 0, 3, { 0 }, "network.coop_enemies_mode",
-		{ "per_player", "multiplier", "none" } },
-	{ "coop_extra_pickups_spinner", _option_setting, 0, 0, 3, { 0 }, "network.coop_pickups",
-		{ "per_player", "multiplier", "none" } },
-	{ "coop_extra_vehicles_spinner", _option_setting, 0, 0, 3, { 0 }, "network.coop_vehicles",
-		{ "per_player", "multiplier", "none" } },
-	{ "coop_enemies_per_player_spinner", _option_setting, 0, 0, 5, { 0 }, "network.coop_enemies",
-		{ "25", "50", "100", "150", "200" } },
-	{ "coop_enemies_multiplier_spinner", _option_setting, 0, 0, 5, { 0 }, "network.coop_enemies_multiplier",
-		{ "2", "4", "8", "16", "32" } },
-	{ "coop_player_collisions_spinner", _option_setting, 0, 0, 2, { 0 }, "network.coop_player_collisions",
-		{ "true", "false" } },
-	{ "coop_ally_friendly_fire_spinner", _option_setting, 0, 0, 2, { 0 }, "network.coop_ally_friendly_fire",
-		{ "true", "false" } },
 	/* map sharing's (Server Setup's MAP SHARING: tools/port_settings.py's
 	MAP_SHARE_SETUP; map_share.c) */
 	{ "map_share_spinner", _option_setting, 0, 0, 2, { 0 }, "network.map_share", { "true", "false" } },
@@ -7243,7 +6959,7 @@ static void gametype_options_each(struct widget_instance *list, boolean save)
 }
 
 /* each of a screen's rows of the host's own settings (_option_setting:
-co-op's options' screens, tools/port_settings.py's _setup_option_screen),
+MAP SHARING's screen, tools/port_settings.py's _setup_option_screen),
 shown, or (save) set */
 static void setting_options_each(struct widget_instance *list, boolean save)
 {
@@ -7608,38 +7324,6 @@ static void gametype_option_help(struct widget_instance *list)
 	/* (TEXT CHAT held at OFF while the game is listed: text_chat_locked) */
 	if (named(list, TEXT_CHAT_SPINNER, 0) && p2p_hosting_listed())
 		named(list, TEXT_CHAT_SPINNER, 0)->parameters.list.selected_index = TEXT_CHAT_OFF;
-	/* CO-OP OPTIONS: enemies, pickups and vehicles share the amount rows.
-	Mixed modes may need both rows at once. */
-	if (named(list, "coop_extra_enemies_spinner", 0))
-	{
-		short mode = named(list, "coop_extra_enemies_spinner", 0)->parameters.list.selected_index;
-
-		struct widget_instance *pickups = named(list, "coop_extra_pickups_spinner", 0);
-		struct widget_instance *vehicles = named(list, "coop_extra_vehicles_spinner", 0);
-		boolean per_player = mode == _cooperative_enemies_per_player ||
-			(pickups && pickups->parameters.list.selected_index == _cooperative_enemies_per_player) ||
-			(vehicles && vehicles->parameters.list.selected_index == _cooperative_enemies_per_player);
-		boolean multiplier = mode == _cooperative_enemies_multiplier ||
-			(pickups && pickups->parameters.list.selected_index == _cooperative_enemies_multiplier) ||
-			(vehicles && vehicles->parameters.list.selected_index == _cooperative_enemies_multiplier);
-
-		visible_set(named(list, "op_coop_enemies_per_player", 0), per_player);
-		visible_set(named(list, "op_coop_enemies_multiplier", 0), multiplier);
-
-		/* Hidden amounts must not reserve a blank row. Offsets are relative
-		to the parent: moving only the row carries its labels and spinners
-		with it when widget_instance_render_recursive draws and notes targets. */
-		{
-			short y = 73;
-
-			for (row = list->child; row; row = row->next)
-				if (row->visible && !strncmp(row->name, "op_coop_", 8))
-				{
-					row->vertical_offset = y;
-					y += 30;
-				}
-		}
-	}
 	/* (the server browser's filters, hidden: their helps are fewer than
 	their values, filters_help) */
 	if (!description || !list->focused_child || !strncmp(list->name, "filters", 7))
@@ -7829,7 +7513,7 @@ boolean pc_menu_event_function_invoke(
 		{
 			return gametype_setup_edit();
 		}
-		/* (co-op's options' screens: their settings shown, and OK's) */
+		/* (MAP SHARING's screen: its settings shown, and OK's) */
 		else if (!strcmp(name, "port setup options init"))
 		{
 			setting_options_each(widget, FALSE);
@@ -7886,10 +7570,6 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port pause end game"))
 		{
 			return pause_end_game();
-		}
-		else if (!strcmp(name, "port coop friendly fire"))
-		{
-			return coop_friendly_fire_change();
 		}
 		else if (!strcmp(name, "player profile save changes"))
 		{
@@ -8261,6 +7941,4 @@ void pc_menu_game_data_function_invoke(
 		saved_game_list_update(widget);
 	else if (!strcmp(name, "port gamepad layout preview"))
 		profile_gamepad_layout(widget);
-	else if (!strcmp(name, "port coop friendly fire text"))
-		coop_friendly_fire_text(widget);
 }

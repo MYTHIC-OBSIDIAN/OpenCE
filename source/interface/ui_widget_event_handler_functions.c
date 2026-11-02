@@ -6041,32 +6041,6 @@ short ui_widget_port_gametypes(
 	return (short)count;
 }
 
-/* port: sets up the server for co-op (port/linux/game/menu_functions.c):
-the campaign level, the difficulty, and a gametype with no game engine,
-which is what makes a network game co-op (game.c, players.c). Returns FALSE
-without a server or a campaign level. */
-boolean ui_widget_port_cooperative_level_choose(
-	char const *map_name,
-	short difficulty)
-{
-	struct network_game_server *server = global_network_game_server_get();
-	struct game_variant variant;
-
-	/* (a campaign level, or a Custom Edition campaign map's:
-	port/linux/game/custom_edition_maps.c) */
-	if (!server || !map_name || !custom_edition_maps_level_campaign(map_name))
-		return FALSE;
-	csmemset(&variant, 0, sizeof(variant));
-	ustrncpy(variant.human_readable_game_description, L"Co-op",
-		NUMBEROF(variant.human_readable_game_description) - 1);
-	main_set_difficulty(difficulty);
-	main_set_multiplayer_map_name(map_name);
-	network_game_server_port_set_cooperative(server, difficulty);
-	network_game_server_change_map_name(server, map_name);
-	network_game_server_change_game_variant(server, &variant);
-	return TRUE;
-}
-
 /* the gametype chosen (as multiplayer_profile_set_for_game), the server's
 if there is one */
 boolean ui_widget_port_gametype_choose(

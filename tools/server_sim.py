@@ -329,15 +329,6 @@ def default_settings():
                  "Edition map the map.", "HALO_NET_MAP_SHARE"),
         _setting("network.map_share_upload", "integer", 1024, "Hosting: the most kilobytes a second the host sends "
                  "of maps (16 to 20480).", "HALO_NET_MAP_SHARE_UPLOAD", low=16, high=20480),
-        _setting("network.coop_friendly_fire", "string", "on", "Whether the players of an online co-op game hurt "
-                 "each other.", "HALO_NET_COOP_FRIENDLY_FIRE", choices=["off", "on", "shields_only", "explosives_only"]),
-        _setting("network.coop_ally_friendly_fire", "boolean", True, "Whether the players of an online co-op game "
-                 "hurt their AI allies.", "HALO_NET_COOP_ALLY_FRIENDLY_FIRE"),
-        _setting("network.coop_team_wipe", "string", "auto", "When every co-op player dies: \"auto\" reverts the "
-                 "checkpoint in a private game and only respawns in a public one; \"revert\" or \"respawn\".",
-                 "HALO_NET_COOP_TEAM_WIPE", choices=["auto", "revert", "respawn"]),
-        _setting("network.coop_player_collisions", "boolean", True, "Whether the players of an online co-op game bump "
-                 "into each other.", "HALO_NET_COOP_PLAYER_COLLISIONS"),
         _setting("network.public_address", "string", "", "Hosting: the internet address joiners reach this machine "
                  "at, as host[:port].", "HALO_NET_PUBLIC_ADDRESS"),
         _setting("server.name", "string", "OpenCE Server", "The game's name in the lobby and the server browser: 15 "
@@ -383,8 +374,6 @@ def default_settings():
         _setting("server.auto_update", "string", "install", "\"off\"; \"check\" logs a newer release; \"install\" "
                  "installs it at once and restarts when empty (a new network version: after the game).",
                  "HALO_SERVER_AUTO_UPDATE", choices=["off", "check", "install"]),
-        _setting("server.coop_difficulty", "string", "normal", "Co-op rotation entries' (<level>:coop) difficulty.",
-                 "HALO_SERVER_COOP_DIFFICULTY", choices=["easy", "normal", "hard", "impossible"]),
         _setting("server.master_publish", "boolean", True, "Publish a public server to the official master servers.",
                  "HALO_SERVER_MASTER_PUBLISH"),
         _setting("server.region", "string", "", "A region shown in the server browser (eu, na-east...): 16 "
@@ -426,11 +415,6 @@ def default_settings():
                  "HALO_SERVER_AFK_KICK_WHEN_FULL"),
         _setting("server.afk_kick_full_minutes", "integer", 3, "With server.afk_kick_when_full, the minutes away "
                  "before a kick.", "HALO_SERVER_AFK_KICK_FULL_MINUTES", low=2, high=60),
-        _setting("server.coop_bsp_switch", "string", "majority", "A co-op loading zone switches once most living "
-                 "players cross (\"majority\"), or at the first (\"anyone\").", "HALO_SERVER_COOP_BSP_SWITCH",
-                 choices=["majority", "anyone"]),
-        _setting("server.coop_bsp_switch_cooldown_seconds", "integer", 15, "The seconds after a loading zone's "
-                 "switch before another may.", "HALO_SERVER_COOP_BSP_SWITCH_COOLDOWN_SECONDS", low=0, high=300),
         _setting("server.map_vote", "boolean", False, "The players vote for the next game in the lobby.",
                  "HALO_SERVER_MAP_VOTE"),
         _setting("server.map_vote_choices", "integer", 4, "The entries a map vote offers.",

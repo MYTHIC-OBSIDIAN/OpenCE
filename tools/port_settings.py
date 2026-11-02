@@ -1055,9 +1055,9 @@ WIDGET_PATCHES = {
                  f"{MT}/multiplayer_type_create_lan_item": (None, 243)},
     },
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
-    # maps, the first row's chooser's (_map_kind); B on the Map screen goes
-    # from a co-op level's difficulties back to the level, else out of the
-    # screen: menu_functions.c's map list)
+    # maps, the first row's chooser's (_map_kind; the Map screen's kept to the
+    # multiplayer kinds); B on the Map screen goes out of the screen:
+    # menu_functions.c's map list)
     f"{MT}/mp_map_select/mp_map_select_list_2": {"swap": {"main_menu/new_select/list_item_0": MAP_KIND_CHOOSER},
                                                  "handlers": [
         '<on event="created" run="mp level list initialize"/>',
@@ -1450,10 +1450,9 @@ def _server_settings() -> list:
     rows.append((f"{base}/op_listing", None))
     # PASSWORD (a public internet game's: menu_functions.c's server_settings_update),
     # which players from the server browser must type
-    extra += _value_row(base, "password", 10 + len(COOP_SETUP_SCREENS), "ss edit server password")
+    extra += _value_row(base, "password", 10, "ss edit server password")
     rows.append((f"{base}/op_password", None))
-    # MAP SHARING (map_share.c), a screen of its own as co-op's options are,
-    # for any game: SETUP_OPTIONS_PLACE below it
+    # MAP SHARING (map_share.c), a screen of its own, for any game: SETUP_OPTIONS_PLACE below it
     key, _, _, _ = MAP_SHARE_SETUP
     target = f"{base}/{key}/{key}_screen"
     extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
@@ -1464,27 +1463,10 @@ def _server_settings() -> list:
                       f'<child widget="{base}/{key}_label"/>'])
     extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
                                              ("string_list", f"{base}/labels"),
-                                             ("string_index", 11 + len(COOP_SETUP_SCREENS)),
+                                             ("string_index", 11),
                                              ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                                              ("text_y", 4)], [])
     rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE - 1))
-    # co-op's options, in the place of the gametype's rows, which co-op hides
-    # as multiplayer hides co-op's (menu_functions.c's server_settings_update):
-    # rows opening their screens, as the gametype's options' do
-    # (_setup_option_screen; COOP_SETUP_SCREENS)
-    for index, (key, title, _, _) in enumerate(COOP_SETUP_SCREENS):
-        target = f"{base}/{key}/{key}_screen"
-        extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
-                                             ("flags", "pass_unhandled_to_focused_child"),
-                                             ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
-                         [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
-                          '<on event="left_mouse" run="mouse emit accept event"/>',
-                          f'<child widget="{base}/{key}_label"/>'])
-        extra += _widget(f"{base}/{key}_label", [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
-                                                 ("string_list", f"{base}/labels"), ("string_index", 10 + index),
-                                                 ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
-                                                 ("text_y", 4)], [])
-        rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
     # the gametype's options for this game (the gametype editor's screens,
     # editing a copy of the gametype chosen: "port setup edit")
     for index, (key, screen) in enumerate(SETUP_OPTION_SCREENS):
@@ -1514,8 +1496,7 @@ def _server_settings() -> list:
                       '<on event="left_mouse" run="mouse emit accept event"/>'])
     extra += _strings(f"{base}/labels", ["GAME NAME:", "MAXIMUM PLAYERS:", "INVITE LINK:", "GAME TYPE:",
                                          "PLAYER OPTIONS:", "ITEM OPTIONS:", "VEHICLE OPTIONS:", "INDICATOR OPTIONS:",
-                                         "TEAMPLAY OPTIONS:", "LISTING:",
-                                         *(f"{title}:" for _, title, _, _ in COOP_SETUP_SCREENS), "PASSWORD:",
+                                         "TEAMPLAY OPTIONS:", "LISTING:", "PASSWORD:",
                                          f"{MAP_SHARE_SETUP[1]}:"])
     extra += _strings(f"{base}/help_strings", [
         "",
@@ -1531,8 +1512,6 @@ def _server_settings() -> list:
         # (LISTING's, by its choice; PUBLIC's with a publisher key is last)
         "Anyone can see and join your game: it is listed\\nfor everyone through the brokers.",
         "Only players with your invite link can join.",
-        # (co-op's options' rows: COOP_SETUP_SCREENS)
-        *(help_text for _, _, help_text, _ in COOP_SETUP_SCREENS),
         # (PASSWORD's)
         "Players from the Server Browser must type it to\\njoin (an invite link needs none). Enter sets it.",
         # (MAP SHARING's)
@@ -1543,9 +1522,9 @@ def _server_settings() -> list:
     ])
     lines = _screen(base, spec, rows, ["server settings update"],
                     ['<on event="created" run="server settings init"/>'], extra)
-    # (co-op's options' screens, and map sharing's)
-    for key, title, _, screen_rows in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]:
-        lines += _setup_option_screen(f"{base}/{key}", key, screen_rows, fit=True)
+    # (map sharing's screen)
+    key, title, _, screen_rows = MAP_SHARE_SETUP
+    lines += _setup_option_screen(f"{base}/{key}", key, screen_rows, fit=True)
     # (no Defaults: the bar is START and CANCEL; B cancels the name's edit
     # first)
     lines = [line.replace(f'<child widget="{base}/button_defaults" y="1"/>', "") for line in lines]
@@ -1555,66 +1534,10 @@ def _server_settings() -> list:
 
 
 MAXIMUM_PLAYERS = [2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128]
-# CO-OP OPTIONS' amounts of PER PLAYER (network.coop_enemies, percentages)
-# and STATIC MULTIPLIER (network.coop_enemies_multiplier), as menu_functions.c's
-# gametype_options have their values
-COOP_ENEMIES_PERCENTAGES = [25, 50, 100, 150, 200]
-COOP_ENEMIES_MULTIPLIERS = [2, 4, 8, 16, 32]
-# co-op's Server Setup options, in screens of their own as the gametype's
-# are (its rows: _server_settings), each its key, its title, its row's help
-# and its rows (as TEAMPLAY_ROWS: each spinner's key, label, words and the
-# help of each of them; menu_functions.c's gametype_options give their
-# settings' values)
-COOP_SETUP_SCREENS = [
-    ("coop_options", "CO-OP OPTIONS", "Team wipes, friendly fire, enemies and collisions,\\nfor this game.", [
-        ("coop_friendly_fire", "FRIENDLY FIRE:", ["OFF", "ON", "SHIELD ONLY", "EXPLOSIVES ONLY"], [
-            "Players can not be hurt by weapons and explosives\\nfired by the other players.",
-            "Players can be hurt by weapons or explosives\\nfired by the other players.",
-            "Damage from the other players will only reduce\\nshields. Health will be unaffected.",
-            "Players can be hurt by damage from explosives\\nfired by the other players.",
-        ]),
-        ("coop_extra_enemies", "EXTRA ENEMIES:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
-            "Enemy squads grow with the players: by the value of\\n'Per Player' for each player past the first.",
-            "Enemy squads use 'Multiplier', however many players\\nthere are.",
-            "Enemy squads are as the campaign has them.",
-        ]),
-        ("coop_extra_pickups", "EXTRA PICKUPS:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
-            "Pickups grow with the players: by the value of\\n'Per Player' for each player past the first.",
-            "Pickups use 'Multiplier', up to eight times as many,\\nhowever many players there are.",
-            "Pickups are as the campaign has them.",
-        ]),
-        ("coop_extra_vehicles", "EXTRA VEHICLES:", ["PER PLAYER", "STATIC MULTIPLIER", "NONE"], [
-            "Vehicles respawn after being driven a short distance\\nbased on the number of players: by two thirds the value of\\n'Per Player' for each player past the first.",
-            "Vehicles respawn after being driven a short distance,\\nwith extra copies equal to ('Multiplier' - 1) * 2/3,\\nrounded down, however many players there are.",
-            "Vehicles are as the campaign has them.",
-        ]),
-        ("coop_enemies_multiplier", "MULTIPLIER:", [f"{value}X" for value in COOP_ENEMIES_MULTIPLIERS],
-         ["Static amounts for the options set to this mode.\\nPickups are capped at eight times as many."] * len(COOP_ENEMIES_MULTIPLIERS)),
-        ("coop_enemies_per_player", "PER PLAYER:", [f"{value}%" for value in COOP_ENEMIES_PERCENTAGES],
-         ["For each player past the first, options set to Per\\nPlayer get this much more (100%: as many again)."] *
-         len(COOP_ENEMIES_PERCENTAGES)),
-        ("coop_player_collisions", "PLAYER COLLISIONS:", ["ON", "OFF"], [
-            "Players bump into each other, as in the campaign.",
-            "Players walk through each other, so that no one\\nblocks a doorway. The AI's characters still block.",
-        ]),
-        # (network.coop_ally_friendly_fire: game_engine.c's
-        # game_engine_friendly_damage)
-        ("coop_ally_friendly_fire", "ALLY FRIENDLY FIRE:", ["ON", "OFF"], [
-            "Players can hurt and kill their AI allies, as in\\nthe campaign.",
-            "Players can not hurt their AI allies, so that no\\none can kill Keyes or the Marines a level needs.",
-        ]),
-        ("coop_team_wipe", "TEAM WIPE:", ["AUTO", "REVERT CHECKPOINT", "RESPAWN ONLY"], [
-            "Private games revert the checkpoint; public games\\nonly respawn. A changed team or missing save\\nalways uses respawn only.",
-            "Revert the checkpoint after everyone dies. A changed\\nteam or missing save uses respawn only.",
-            "Respawn at checkpoint positions after everyone dies.\\nThe world keeps its progress.",
-        ]),
-    ]),
-    ("voice_options", "VOICE AND VOTING", "Voice chat, text chat and votes to kick a player,\\nfor this game.",
-     TEAMPLAY_ROWS),
-]
 # Server Setup's map sharing (port/linux/game/map_share.c), for any game,
-# laid out as co-op's options are (its key, its title, its row's help and
-# its rows: menu_functions.c's gametype_options give their settings' values)
+# laid out as the gametype's options are (its key, its title, its row's help
+# and its rows: each spinner's key, label, words and the help of each of them,
+# as TEAMPLAY_ROWS: menu_functions.c's gametype_options give their settings' values)
 MAP_SHARE_UPLOADS = (256, 512, 1024, 2048, 4096, 8192, 16384, 20480)
 MAP_SHARE_SETUP = ("map_share_options", "MAP SHARING",
                    "Sending players who join without the game's\\nCustom Edition map the map, and how fast.", [
@@ -1626,15 +1549,10 @@ MAP_SHARE_SETUP = ("map_share_options", "MAP SHARING",
                                            for kb in MAP_SHARE_UPLOADS],
      ["The most you send of maps, so that the game\\nkeeps the rest of your upload."] * len(MAP_SHARE_UPLOADS)),
 ])
-# (Server Setup's place of its options' rows, co-op's or the gametype's: after
-# MAP SHARING's)
+# (Server Setup's place of the gametype's options' rows: after MAP SHARING's)
 SETUP_OPTIONS_PLACE = 6
 # (their screens' titles)
-TITLES.update({f"{MT}/server_settings/{key}/header_{key}": title
-               for key, title, _, _ in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]})
-# (the rows of a co-op options screen in one place, the one shown: PER
-# PLAYER's and MULTIPLIER's, by EXTRA ENEMIES')
-SETUP_OPTION_SAME_PLACE = set()
+TITLES.update({f"{MT}/server_settings/{MAP_SHARE_SETUP[0]}/header_{MAP_SHARE_SETUP[0]}": MAP_SHARE_SETUP[1]})
 
 
 def _setup_option_screen(base: str, key: str, rows: list, fit: bool = False) -> list:
@@ -1655,12 +1573,11 @@ def _setup_option_screen(base: str, key: str, rows: list, fit: bool = False) -> 
                 '<on event="created" run="port setup options init"/>']
     # (30 apart; with fit, closer for more rows than eight, the last 28 tall
     # clear of the help at 341: Server Setup's, whose rows are all shown)
-    places = len([row_key for row_key, *_ in rows if row_key not in SETUP_OPTION_SAME_PLACE])
+    places = len(rows)
     spacing = min(30, (341 - 1 - 73 - 28) // max(1, places - 1)) if fit else 30
     place = -1
     for row_key, *_ in rows:
-        if row_key not in SETUP_OPTION_SAME_PLACE:
-            place += 1
+        place += 1
         children.append(f'<child widget="{base}/op_{row_key}" x="54" y="{73 + spacing * place}"/>')
     children.append(f'<child widget="{base}/{key}_button_bar" y="414"/>')
     lines += _widget(f"{base}/{key}_menu", [("type", "column_list"), ("width", 640), ("height", 480),

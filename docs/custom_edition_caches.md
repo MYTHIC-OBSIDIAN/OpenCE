@@ -68,10 +68,10 @@ multiplayer). A map is played as its kind says
   levels are, at the difficulty chosen next (alone, or with split screen
   co-op's two players); a CUSTOM MULTIPLAYER map is walked around alone, as
   MULTIPLAYER's are.
-- **The Map screen**: a CUSTOM SINGLEPLAYER map lists the difficulties and
-  is hosted as a network co-op game (Server Setup, then the lobby), as the
-  campaign's levels are; a CUSTOM MULTIPLAYER map goes on to the gametypes,
-  as MULTIPLAYER's do. Split screen hosts only the multiplayer kinds.
+- **The Map screen**: only the multiplayer kinds (no SINGLEPLAYER, and a
+  campaign map chosen there is refused: the campaign is not hosted over the
+  network); a CUSTOM MULTIPLAYER map goes on to the gametypes, as
+  MULTIPLAYER's do.
 
 The Xbox menus' multiplayer level list offers the Custom Edition multiplayer
 maps after the thirteen Xbox levels. The pregame lobby shows a Custom

@@ -647,20 +647,21 @@ int main(int argc, char **argv)
 		}
 		return 0;
 	}
-	/* a campaign level only as co-op, a multiplayer map never so, the main
-	menu's not at all */
+	/* a multiplayer map only: no campaign level, no co-op (a dedicated server
+	hosts none), not the main menu's */
 	CASE("check-kind")
 	{
 		CHECK(parse("bloodgulch:ctf"), "nothing read");
 		server_rotation_check_kind(&entry, 1, 5);
 		CHECK(!entry.rejected[0], "a multiplayer map was rejected: %s", entry.rejected);
 		server_rotation_check_kind(&entry, 0, 5);
-		CHECK(strstr(entry.rejected, "bloodgulch is a campaign level (as co-op: bloodgulch:coop)"), "%s", entry.rejected);
+		CHECK(strstr(entry.rejected, "bloodgulch is a campaign level, not a multiplayer map"), "%s", entry.rejected);
 		parse("levels\\a10\\a10:coop");
 		server_rotation_check_kind(&entry, 0, 5);
-		CHECK(!entry.rejected[0], "a campaign level as co-op was rejected: %s", entry.rejected);
+		CHECK(strstr(entry.rejected, "hosts no co-op"), "a campaign level as co-op: %s", entry.rejected);
+		parse("levels\\a10\\a10:coop");
 		server_rotation_check_kind(&entry, 1, 5);
-		CHECK(strstr(entry.rejected, "is not a campaign level"), "a multiplayer map as co-op: %s", entry.rejected);
+		CHECK(strstr(entry.rejected, "hosts no co-op"), "a multiplayer map as co-op: %s", entry.rejected);
 		parse("menu");
 		server_rotation_check_kind(&entry, 2, 5);
 		CHECK(strstr(entry.rejected, "main menu"), "the main menu's map: %s", entry.rejected);
@@ -723,11 +724,12 @@ int main(int argc, char **argv)
 		CHECK(!resolved("broken") && entry.map_missing, "a file too short for a header: %s", entry.rejected);
 		CHECK(!resolved("a10") && !entry.map_missing && strstr(entry.rejected, "campaign level"), "a10: %s",
 			entry.rejected);
-		CHECK(resolved("a10:coop"), "a10 as co-op: %s", entry.rejected);
-		CHECK(resolved("levels\\a10\\a10:coop"), "a10's level as co-op: %s", entry.rejected);
+		CHECK(!resolved("a10:coop") && strstr(entry.rejected, "hosts no co-op"), "a10 as co-op: %s", entry.rejected);
+		CHECK(!resolved("levels\\a10\\a10:coop") && strstr(entry.rejected, "hosts no co-op"),
+			"a10's level as co-op: %s", entry.rejected);
 		CHECK(!resolved("custom_maps\\c_campaign:slayer") && strstr(entry.rejected, "campaign level"),
 			"a Custom Edition campaign level: %s", entry.rejected);
-		CHECK(!resolved("bloodgulch:coop") && strstr(entry.rejected, "not a campaign level"), "bloodgulch:coop: %s",
+		CHECK(!resolved("bloodgulch:coop") && strstr(entry.rejected, "hosts no co-op"), "bloodgulch:coop: %s",
 			entry.rejected);
 		/* (an entry already rejected stays as it is) */
 		CHECK(!resolved("nowhere+x") && !entry.map_missing && strstr(entry.rejected, "is not a map's name"),

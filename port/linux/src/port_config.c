@@ -650,73 +650,6 @@ static const struct config_setting config_settings[] =
 		"download it (and the resource maps it needs) from the game's players\n"
 		"into custom_maps, if its host shares it (network.map_share); false\n"
 		"leaves the game, saying which map is missing." },
-	{ "network.coop_public", _config_boolean, "false", "HALO_NET_COOP_PUBLIC", _environment_value, _platform_all,
-		"Whether an online co-op game (Create Game > Internet, a SINGLEPLAYER\n"
-		"map) starts as PUBLIC or, false, PRIVATE: Server Setup's LISTING in\n"
-		"co-op, which writes its choice here." },
-	{ "network.coop_team_wipe", _config_string, "\"auto\"", "HALO_NET_COOP_TEAM_WIPE", _environment_value,
-		_platform_all,
-		"When every co-op player dies: \"auto\" reverts the checkpoint in a\n"
-		"PRIVATE game and only respawns in a PUBLIC game; \"revert\" or\n"
-		"\"respawn\" overrides that choice. A password does not make a PUBLIC\n"
-		"game private. Reverting requires a saved checkpoint with the current\n"
-		"players and machines; otherwise they respawn without a world reset.\n"
-		"TEAM WIPE in Server Setup > Co-op Options writes its choice here." },
-	{ "network.coop_friendly_fire", _config_string, "\"on\"", "HALO_NET_COOP_FRIENDLY_FIRE", _environment_value,
-		_platform_all,
-		"Whether the players of an online co-op game hurt each other: \"off\",\n"
-		"\"on\", \"shields_only\" or \"explosives_only\" (FRIENDLY FIRE in\n"
-		"co-op's Server Setup > Co-op Options writes its choice here). Their AI\n"
-		"allies they hurt as network.coop_ally_friendly_fire says." },
-	{ "network.coop_ally_friendly_fire", _config_boolean, "true", "HALO_NET_COOP_ALLY_FRIENDLY_FIRE",
-		_environment_value, _platform_all,
-		"Whether the players of an online co-op game hurt their AI allies (the\n"
-		"Marines, Captain Keyes, the Sentinels while they are allies), as in the\n"
-		"campaign; false, the players' weapons, grenades and vehicles do them\n"
-		"no harm. ALLY FRIENDLY FIRE in co-op's Server Setup > Co-op Options\n"
-		"writes its choice here." },
-	{ "network.coop_own_friendly_fire", _config_boolean, "true", "HALO_NET_COOP_OWN_FRIENDLY_FIRE",
-		_environment_value, _platform_all,
-		"Whether this machine's players hurt, and are hurt by, the other players\n"
-		"of an online co-op game: two players hurt each other only if both have\n"
-		"it true. FRIENDLY FIRE in that game's pause menu writes its choice\n"
-		"here. A player away from the controls for over 70 seconds is hurt by\n"
-		"every player, whatever either chose." },
-	{ "network.coop_player_collisions", _config_boolean, "true", "HALO_NET_COOP_PLAYER_COLLISIONS", _environment_value,
-		_platform_all,
-		"Whether the players of an online co-op game bump into each other;\n"
-		"false, they walk through each other (the AI's characters they still\n"
-		"bump into). PLAYER COLLISIONS in co-op's Server Setup > Co-op Options\n"
-		"writes its choice here." },
-	{ "network.coop_enemies_mode", _config_string, "\"per_player\"", "HALO_NET_COOP_ENEMIES_MODE", _environment_value,
-		_platform_all,
-		"Online co-op's extra enemies: \"none\", \"per_player\" (each squad of\n"
-		"enemies grows by coop_enemies for each player past the first) or\n"
-		"\"multiplier\" (each is coop_enemies_multiplier times as large, for any\n"
-		"number of players). EXTRA ENEMIES in co-op's Server Setup > Co-op\n"
-		"Options writes its choice here." },
-	{ "network.coop_pickups", _config_string, "\"none\"", "HALO_NET_COOP_PICKUPS", _environment_value, _platform_all,
-		"Extra campaign weapons, grenades, health kits, overshields and camouflage.\n"
-		"Modes: \"none\", \"per_player\" (coop_enemies percent per extra player),\n"
-		"or \"multiplier\" (coop_enemies_multiplier times as many), up to 8 times\n"
-		"the original pickups. Only safe nearby places receive copies." },
-	{ "network.coop_vehicles", _config_string, "\"none\"", "HALO_NET_COOP_VEHICLES", _environment_value, _platform_all,
-		"Extra campaign vehicles: \"none\", \"per_player\" or \"multiplier\".\n"
-		"After a player clears its unloaded starting place by both bounding\n"
-		"radii plus 15 percent, make one more there, up to\n"
-		"floor((players - 1) * coop_enemies * 2 / 300) extras, or floor((coop_enemies_multiplier - 1) * 2 / 3) in static mode.\n"
-		"The host alone creates them, and waits while the starting place is blocked." },
-	{ "network.coop_enemies", _config_integer, "50", "HALO_NET_COOP_ENEMIES", _environment_value, _platform_all,
-		"Online co-op's extra enemies per player, a percentage: for each player\n"
-		"past the first, each squad of enemies a level places gets this much of\n"
-		"itself more (100: as many again; 25 to 200). PER PLAYER in co-op's\n"
-		"Server Setup > Co-op Options writes its choice here." },
-	{ "network.coop_enemies_multiplier", _config_integer, "2", "HALO_NET_COOP_ENEMIES_MULTIPLIER", _environment_value,
-		_platform_all,
-		"Online co-op's shared static multiplier (2 to 32). Pickups are capped\n"
-		"at 8 times their original count; extra vehicle growth uses two thirds\n"
-		"of (multiplier - 1), rounded down. MULTIPLIER in\n"
-		"co-op's Server Setup > Co-op Options writes its choice here." },
 	{ "network.brokers_file", _config_string, "\"brokers.txt\"",
 		"HALO_NET_BROKERS_FILE", _environment_value, _platform_all,
 		"The file of the public MQTT brokers through which the machines of an\n"
@@ -912,10 +845,6 @@ static const struct config_setting config_settings[] =
 	{ "server.upnp", _config_boolean, "false", "HALO_SERVER_UPNP", _environment_value, _platform_server,
 		"Ask the router (UPnP) to forward the tunnel's port (network.allow_upnp,\n"
 		"for a server at home)." },
-	{ "server.coop_difficulty", _config_string, "\"normal\"", "HALO_SERVER_COOP_DIFFICULTY", _environment_value,
-		_platform_server,
-		"Co-op rotation entries' (<level>:coop) difficulty: \"easy\", \"normal\",\n"
-		"\"hard\" or \"impossible\"." },
 	{ "server.list_on_brokers", _config_boolean, "false", "HALO_SERVER_LIST_ON_BROKERS", _environment_value,
 		_platform_server,
 		"Also list the server among the games players host (through the\n"
@@ -1002,17 +931,6 @@ static const struct config_setting config_settings[] =
 		_platform_server,
 		"With server.afk_kick_when_full, the minutes a player may stand idle while\n"
 		"the server is full (told a minute before)." },
-	{ "server.coop_bsp_switch", _config_string, "\"majority\"", "HALO_SERVER_COOP_BSP_SWITCH", _environment_value,
-		_platform_server,
-		"A co-op game's loading zones: \"majority\", a zone switches the level's\n"
-		"part only once more than half of the living players who are not idle\n"
-		"stand in zones to the same part (the others are told how many more it\n"
-		"needs); \"anyone\", any player's crossing brings everyone. The\n"
-		"mission's own switches are never held." },
-	{ "server.coop_bsp_switch_cooldown_seconds", _config_integer, "15", "HALO_SERVER_COOP_BSP_SWITCH_COOLDOWN_SECONDS",
-		_environment_value, _platform_server,
-		"Seconds after a co-op loading zone switched the level's part before\n"
-		"another may (0 to 300)." },
 	{ "server.map_vote", _config_boolean, "false", "HALO_SERVER_MAP_VOTE", _environment_value, _platform_server,
 		"As the lobby opens after a game, the players vote for the next among\n"
 		"server.map_vote_choices entries of the rotation picked at random (not\n"
@@ -1916,15 +1834,11 @@ static const struct
 	{ "server.vpn_policy", { "link", "block", "off", NULL }, NULL },
 	{ "server.vpn_fail", { "open", "closed", NULL }, NULL },
 	{ "network.votekick_threshold", { "dynamic", "static", NULL }, NULL },
-	{ "server.coop_bsp_switch", { "majority", "anyone", NULL }, NULL },
 	{ "network.link_share", { "when_needed", "always", "never", NULL }, NULL },
 	{ "network.voice_mode", { "off", "team_proximity", "team_enemy_proximity", "team_global",
 		"team_global_enemy_proximity", NULL }, NULL },
-	{ "network.coop_team_wipe", { "auto", "revert", "respawn", NULL }, NULL },
-	{ "network.coop_friendly_fire", { "off", "on", "shields_only", "explosives_only", NULL }, NULL },
 	{ "network.shield_effects", { "stock", "glow", "light_show", "overshield", "glow_overshield",
 		"light_show_overshield", "players", NULL }, NULL },
-	{ "network.coop_enemies_mode", { "none", "per_player", "multiplier", NULL }, NULL },
 	{ "crash_reports.upload", { "ask", "yes", "no", NULL }, NULL },
 };
 
@@ -2665,7 +2579,7 @@ untouched. */
 static const char *const lan_only_off_booleans[] =
 {
 	"network.online", "network.join_from_clipboard", "network.allow_upnp", "network.public_lobby",
-	"network.host_public", "network.coop_public", "update.auto", "server.public", "server.master_publish",
+	"network.host_public", "update.auto", "server.public", "server.master_publish",
 	"server.master_publish_address",
 };
 

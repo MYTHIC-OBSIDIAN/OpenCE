@@ -319,7 +319,10 @@ def test_menu_settings_exist():
             assert setting in known | profile | actions, f"{path.name}: {setting}"
     controls = set(re.findall(r'"(controls\.[a-z_]+)"', (root / "port/linux/src/xinput_sdl.c").read_text()))
     assert controls == {name for name in known if name.startswith("controls.")}
-    assert controls == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
+    # (VOTE YES and VOTE NO keep their keys in config.toml, off the Controls
+    # Setup screen: menu_functions.c)
+    assert controls - {"controls.vote_yes", "controls.vote_no"} == set(
+        re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
 
 
 def test_default_brokers_are_brokers_txt():

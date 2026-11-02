@@ -616,8 +616,6 @@ static void client_play_presentation(void);
 void unit_scripting_set_current_vitality_of(long unit_index, real body_vitality, real shield_vitality);
 /* port_config.c */
 int config_boolean(char const *name);
-long config_integer(char const *name);
-char const *config_string(char const *name);
 int halo_server_mode(void);
 /* p2p_lobby.c: chosen visibility, independent of listing transport state */
 int p2p_hosting_listed(void);
@@ -2282,21 +2280,19 @@ boolean network_coop_host_dedicated(
 	return TEST_FLAG(game->cooperative_flags, _network_game_cooperative_dedicated_bit);
 }
 
+/* (a dedicated server's co-op held loading zones for most of the players,
+and between switches; a dedicated server no longer hosts co-op, and a
+player's host lets anyone's crossing switch at once, as split screen's) */
 boolean network_coop_bsp_switch_majority(
 	void)
 {
-	return coop_host() && halo_server_mode() && strcmp(config_string("server.coop_bsp_switch"), "anyone") != 0;
+	return FALSE;
 }
 
 long network_coop_bsp_switch_cooldown_ticks(
 	void)
 {
-	long seconds;
-
-	if (!coop_host() || !halo_server_mode())
-		return 0;
-	seconds = config_integer("server.coop_bsp_switch_cooldown_seconds");
-	return seconds < 0 ? 0 : MIN(seconds, 300) * TICKS_PER_SECOND;
+	return 0;
 }
 
 /* how often a player waiting at a loading zone is told so */

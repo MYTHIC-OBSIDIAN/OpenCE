@@ -37,8 +37,6 @@ No safe position means no copy; the level's originals are never moved.
 
 #include <math.h>
 
-char const *config_string(char const *name);
-long config_integer(char const *name);
 /* collisions.c's: TRUE outside the BSP or when the sphere touches it */
 boolean collision_test_sphere(real_point3d const *center, real radius, long ignore_object_index);
 

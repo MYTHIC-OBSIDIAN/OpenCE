@@ -43,7 +43,8 @@ NEGATIVE_CONTROLS = {
     "empty-segments-truncate": (("if (server_rotation_parse_entry(text + start, end - start, &ignored))\n\t\t\t\t"
                                  "rotation->truncated = 1;", "rotation->truncated = 1;"), "rotation-limits"),
     "entries-run-together": (('index ? ", " : ""', 'index ? " " : ""'), "round-trip"),
-    "campaign-as-multiplayer": (("else if (type == 0 && !coop)", "else if (0)"), "check-kind"),
+    "campaign-as-multiplayer": (("else if (type == 0)", "else if (0)"), "check-kind"),
+    "coop-hosted": (("else if (!strcmp(entry->gametype, \"coop\"))", "else if (0)"), "check-kind"),
     "foot-unchecked": (('|| memcmp(header + 0x7FC, "toof", 4)', ""), "map-header"),
     "type-unsigned": (("(long)(short)(header[0x60]", "(long)(unsigned short)(header[0x60]"), "map-header"),
     "custom-level-kept": (('entry->map_kind = _server_map_custom;\n\t\t\tsnprintf(entry->level, sizeof(entry->level), '

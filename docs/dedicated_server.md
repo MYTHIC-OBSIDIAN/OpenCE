@@ -163,7 +163,7 @@ the game's console commands of those names.
 | `sv_vpn_check <address>` | moderator | Whether an IPv4 address is refused as a VPN's, and by what (`netlist`, `vpn_block.txt`, `vpn_allow.txt`) |
 | `sv_vpn_fetch` | admin | Fetches the masters' netlists now |
 | `mute <player> [<minutes>]`, `unmute <player>` | moderator | The host's mute of a player's chat and voice for everyone |
-| `sv_map <map> [<gametype>]`, `sv_map <entry>` | moderator | Plays that game (or a rotation entry, `map:gametype+rule=value`; a co-op one too), below |
+| `sv_map <map> [<gametype>]`, `sv_map <entry>` | moderator | Plays that game (or a rotation entry, `map:gametype+rule=value`), below |
 | `sv_map_next` (`sv_next`) | moderator | Ends the game without its scores and plays the rotation's next |
 | `sv_end_game` | moderator | Ends the game: its scores, then the next |
 | `sv_rotation_set <entries>`, `sv_rotation_add <entry>`, `sv_rotation_del <n>`, `sv_rotation_begin [<n>]` (`sv_mapcycle_add`, `_del`, `_begin`) | admin | Changes the rotation (written to `server.rotation`, 4096 characters at most) |
@@ -198,11 +198,6 @@ players. A `drain` event says each (`after`: `now`, `game`, `empty` or
 `cancel`), and the stop that ends a drain has the `shutdown` reason
 `drained`. `/api/status`'s `drain` is the drain waiting, or `null`.
 
-A co-op entry (`<level>:coop`) is ended as a game is: by `sv_end_game`,
-`sv_map_next`, `sv_map`, `server.empty_seconds` and `server.idle_minutes`.
-It has no scores: the server goes back to the lobby at once (no postgame),
-and a level won ends it with `game_ended`'s reason `score`.
-
 `sv_set` (and the settings of the web page, `PUT /api/settings`) changes
 these settings, which `sv_settings` and `GET /api/settings` list:
 `server.name`, `server.max_players`, `server.min_players`,
@@ -212,7 +207,7 @@ these settings, which `sv_settings` and `GET /api/settings` list:
 `server.frame_rate`, `server.web_password`,
 `server.web_moderator_password`, `server.log_format`,
 `server.log_addresses`, `server.status_file`, `server.auto_update`,
-`server.coop_difficulty`, `server.region`, `server.master_publish`,
+`server.region`, `server.master_publish`,
 `server.chat_filter`, `server.chat_filter_slurs`, `server.chat_filter_swearing`,
 `server.chat_filter_insults`,
 `server.master_publish_address`, `server.metrics`, `server.vpn_policy`,
@@ -220,17 +215,14 @@ these settings, which `sv_settings` and `GET /api/settings` list:
 `server.link_one_seat`, `server.update_check_minutes`,
 `server.update_game_minutes`, `server.max_machines_per_address`,
 `server.afk_kick_minutes`, `server.afk_kick_when_full`,
-`server.afk_kick_full_minutes`, `server.coop_bsp_switch`,
-`server.coop_bsp_switch_cooldown_seconds`, `server.map_vote`,
+`server.afk_kick_full_minutes`, `server.map_vote`,
 `server.map_vote_choices`, `server.map_vote_seconds`, and
 `network.text_chat`,
 `network.voice_lobby`, `network.voice_mode`, `network.voice_kbps`,
 `network.votekick`, `network.vote_end_game`, `network.votekick_threshold`,
 `network.votekick_percent`, `network.votekick_minutes`,
 `network.votekick_ban_minutes`, `network.map_share`,
-`network.map_share_upload`, `network.public_address`,
-`network.coop_friendly_fire`, `network.coop_player_collisions`,
-`network.coop_ally_friendly_fire`, `network.coop_team_wipe`, `network.shield_effects` and
+`network.map_share_upload`, `network.public_address`, `network.shield_effects` and
 `network.fire_origins`. Of them,
 `server.status_file`, `server.auto_update` and `server.log_addresses` need
 the owner role: from the web's admin, `sv_set` of one of them (`POST
@@ -254,7 +246,6 @@ in either case, and is kept as the table spells it:
 | `server.team_start` | `one`, `both`, `skip` |
 | `server.log_format` | `text`, `json` |
 | `server.auto_update` | `off`, `check`, `install` |
-| `server.coop_difficulty` | `easy`, `normal`, `hard`, `impossible` |
 | `network.text_chat` | `on`, `links`, `off` |
 | `server.chat_filter` | `off`, `censor`, `block` |
 | `server.vpn_policy` | `off`, `link`, `block` |
@@ -265,8 +256,6 @@ in either case, and is kept as the table spells it:
 | `server.max_machines_per_address` | 0 to 128 |
 | `server.afk_kick_minutes` | 0 to 60 |
 | `server.afk_kick_full_minutes` | 2 to 60 |
-| `server.coop_bsp_switch` | `majority`, `anyone` |
-| `server.coop_bsp_switch_cooldown_seconds` | 0 to 300 |
 | `server.map_vote_choices` | 2 to 8 |
 | `server.map_vote_seconds` | 5 to 120 |
 | `server.chat_filter_slurs`, `server.chat_filter_swearing`, `server.chat_filter_insults` | `off`, `severe`, `strong`, `mild` |
@@ -277,8 +266,6 @@ in either case, and is kept as the table spells it:
 | `network.votekick_minutes` | 0 to 60 |
 | `network.votekick_ban_minutes` | 1 to 1440 |
 | `network.map_share_upload` | 16 to 20480 |
-| `network.coop_friendly_fire` | `off`, `on`, `shields_only`, `explosives_only` |
-| `network.coop_team_wipe` | `auto`, `revert`, `respawn` (`auto`: a public server, `server.public` with internet play, only respawns the team) |
 | `network.shield_effects` | `stock`, `glow`, `light_show`, `overshield`, `glow_overshield`, `light_show_overshield`, `players` |
 
 A dedicated server may also keep words out of its chat and its players'
@@ -334,15 +321,6 @@ full, after `server.afk_kick_full_minutes` (3).
 address (an internet play peer's real one) has that many in the game
 already (`join_refused`'s reason `address_full`); an updated game shows
 "The host refused: too many players from your address".
-
-In a co-op game a loading zone (a trigger that moves the team to another
-part of the level) switches only once more than half of the living players
-who are not away stand in zones to the same part (`server.coop_bsp_switch`
-`majority`, the default; `anyone`: the first player in one). The others see
-"Waiting for N more players to cross"; a mission script's switch is not
-held. After a switch the zones wait `server.coop_bsp_switch_cooldown_seconds`
-(15) before another, the players told when they open; each switch is told
-to everyone, logged and a `coop_bsp_switch` event names who crossed.
 
 ### Updates
 
@@ -755,8 +733,7 @@ Players in events are as in `/api/players` for the viewer role (no
 addresses), but for `player_joined` and `player_left`, which carry the
 player's address and hardware id (`""` when not known) to the owner, and to
 every role when `server.log_addresses` is on (`/api/players`' rule), in the
-RCON's events, their replay and `GET /api/events` alike. `variant` is the gametype's name as the game shows it (`Co-op`
-in a co-op entry).
+RCON's events, their replay and `GET /api/events` alike. `variant` is the gametype's name as the game shows it.
 
 ## Bans
 
@@ -792,7 +769,8 @@ a rotation that long is saved whole and read back after a restart.
   `maps/<name>.map`, else a Custom Edition map of `custom_maps`),
   `custom_maps\<name>` (a Custom Edition map; `/` is taken for `\`), or a
   level's path (`levels\test\bloodgulch\bloodgulch`). A campaign level is
-  played as co-op only: `<level>:coop`, at `server.coop_difficulty`.
+  refused, and so is a co-op entry (`<level>:coop`): a dedicated server
+  hosts no co-op.
 - The gametype (`slayer` when there is none) is a built-in's name
   (`slayer`, `team_slayer`, `slayer_pro`, `elimination`, `phantoms`,
   `endurance`, `rockets`, `snipers`, `stalker`, `ctf`, `ironctf`,

@@ -31,8 +31,6 @@ it must not manufacture homes or budgets from coop_vehicle_homes in an unknown s
 #include "network_coop.h"
 #include "coop_vehicles.h"
 
-char const *config_string(char const *name);
-long config_integer(char const *name);
 boolean collision_test_sphere(real_point3d const *center, real radius, long ignore_object_index);
 
 /* vehicles.c's tag layout; the public header deliberately leaves it opaque. */

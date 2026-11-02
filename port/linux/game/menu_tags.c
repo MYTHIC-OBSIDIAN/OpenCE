@@ -369,7 +369,7 @@ static char const *const port_function_names[] =
 	"port setup edit",
 	"port setup options init", "port setup options save",
 	"port map list back",
-	"port pause end game", "port coop friendly fire",
+	"port pause end game",
 	"port coop begin", "port coop player 2 list initialize", "port coop player 2",
 	"port lobby open", "port lobby add player", "port lobby join", "port lobby leave",
 	"port join4 open", "port join4 back", "port join4 done", "port join4 playing", "port join4 opener",
@@ -429,8 +429,6 @@ static char const *const port_game_data_input_names[] =
 	"port gamepad layout preview",
 	/* (the main menu's Mods) */
 	"port mods update",
-	/* (network co-op's pause menu's FRIENDLY FIRE: its text, ON or OFF) */
-	"port coop friendly fire text",
 	"port controller update",
 	/* (a dedicated server's map vote's screen) */
 	"port map vote update",

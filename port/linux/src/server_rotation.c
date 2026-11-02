@@ -598,12 +598,12 @@ static int map_file(const char *folder, const char *name, char *path, int size)
 	return server_map_header(path, &version, &type);
 }
 
-/* a campaign level plays only as co-op, a multiplayer map never so, and
-the main menu's not at all (the scenario's type in its header); the maps
-folder's an Xbox cache file, custom_maps' a Custom Edition one (version) */
+/* a multiplayer map only: a campaign level is not hosted (a dedicated
+server hosts no co-op), nor is the main menu's (the scenario's type in its
+header); the maps folder's an Xbox cache file, custom_maps' a Custom Edition
+one (version) */
 static void server_rotation_check_kind(struct server_entry *entry, long type, long version)
 {
-	int coop = !strcmp(entry->gametype, "coop");
 	long wanted = entry->map_kind == _server_map_custom ? 609 : 5;
 
 	if (version != wanted)
@@ -611,11 +611,12 @@ static void server_rotation_check_kind(struct server_entry *entry, long type, lo
 			entry->map_name, wanted == 5 ? "an Xbox" : "a Custom Edition", version, wanted);
 	else if (type == 2)
 		snprintf(entry->rejected, sizeof(entry->rejected), "%s is the main menu's map", entry->map_name);
-	else if (type == 0 && !coop)
-		snprintf(entry->rejected, sizeof(entry->rejected), "%s is a campaign level (as co-op: %s:coop)",
-			entry->map_name, entry->map);
-	else if (type != 0 && coop)
-		snprintf(entry->rejected, sizeof(entry->rejected), "%s is not a campaign level, for co-op", entry->map_name);
+	else if (!strcmp(entry->gametype, "coop"))
+		snprintf(entry->rejected, sizeof(entry->rejected), "%s:coop: a dedicated server hosts no co-op",
+			entry->map_name);
+	else if (type == 0)
+		snprintf(entry->rejected, sizeof(entry->rejected), "%s is a campaign level, not a multiplayer map",
+			entry->map_name);
 }
 
 /* the custom_maps folder, as the game finds it */

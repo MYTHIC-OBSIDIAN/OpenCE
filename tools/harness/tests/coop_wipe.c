@@ -60,13 +60,15 @@ static void main_start_time(void){}
 static boolean game_state_write_to_file(void){return save_succeeds;}
 static void game_state_note_event(char const *note){(void)note;}
 /* The unrelated state reset by the actual new-game lifecycle entry point. */
-static int coop_presentation,coop_events,host_devices,client_devices,client_names_differing[1];
+static struct {long camera_object_index;struct {long object_index;} view_latest,view_previous;} coop_presentation;
+static int coop_events,host_devices,client_devices,client_names_differing[1];
 static int host_sent_transforms[1],host_sent_looks[1],host_sent_devices[1],host_player_structure_bsps[1],host_friendly_fire[1];
 static int host_sent_screen_effect,host_resend,players_vitality,host_attachment_count,host_looping_sound_count;
 static struct {int definition_indices[4];} client_script_sounds;
 static struct {int objective,nav_point_count;} host_hud_state;
 static struct {boolean offered,skip_save_written;int voters,cooldown_until;} skip_vote;
 static void skip_vote_clear(void){}
+static struct {int ticks_left;boolean done_any[HALO_PORT_MAXIMUM_NETWORK_MACHINES];} pause_requests;
 static void coop_enemies_new_game(void){}
 static void coop_pickups_new_game(void){}
 static void coop_vehicles_new_game(void){}
