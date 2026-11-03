@@ -150,6 +150,120 @@ static void make_directories(const char *path)
 		posix_make_directory(partial);
 }
 
+#ifdef _WIN32
+/* copies the file, unless to is there already */
+static void copy_file(const char *from, const char *to)
+{
+	char buffer[16384];
+	FILE *in, *out;
+	size_t count;
+
+	if (directory_exists(to) || !(in = fopen(from, "rb")))
+		return;
+	if ((out = fopen(to, "wb")) != NULL)
+	{
+		while ((count = fread(buffer, 1, sizeof(buffer), in)) > 0)
+		{
+			if (fwrite(buffer, 1, count, out) != count)
+				break;
+		}
+		fclose(out);
+	}
+	fclose(in);
+}
+
+/* copies the folder from, and what is in it, to to (the files not there
+already) */
+static void copy_folder(const char *from, const char *to, int depth)
+{
+	void *directory;
+	char name[MAX_PATH];
+
+	if (depth > 8 || !directory_exists(from))
+		return;
+	make_directories(to);
+	if (!(directory = posix_directory_open(from)))
+		return;
+	while (posix_directory_next(directory, name, sizeof(name)))
+	{
+		char from_path[MAX_PATH], to_path[MAX_PATH];
+		struct posix_file_information information;
+
+		if (snprintf(from_path, sizeof(from_path), "%s/%s", from, name) >= (int)sizeof(from_path) ||
+			snprintf(to_path, sizeof(to_path), "%s/%s", to, name) >= (int)sizeof(to_path) ||
+			posix_stat(from_path, &information) != 0)
+		{
+			continue;
+		}
+		if (information.flags & _posix_file_is_directory)
+			copy_folder(from_path, to_path, depth + 1);
+		else
+			copy_file(from_path, to_path);
+	}
+	posix_directory_close(directory);
+}
+
+/* whether a file can be made in the folder (a folder an administrator's
+run made may be read-only to this account) */
+static int folder_writable(const char *folder)
+{
+	char path[MAX_PATH];
+	FILE *file;
+
+	if (snprintf(path, sizeof(path), "%s/.write_test", folder) >= (int)sizeof(path) || !(file = fopen(path, "wb")))
+		return 0;
+	fclose(file);
+	remove(path);
+	return 1;
+}
+
+/* The Windows build's save root: a savegame folder next to halo.exe,
+holding the profiles and gametypes (u/) and the saved games (z/saved). The
+first time it is made, those of %APPDATA%\halo (the save root of builds
+before) are copied into it; the originals stay. FALSE if it cannot be
+made (a folder this account cannot write): %APPDATA%\halo then. */
+static int save_root_beside_executable(char *root, unsigned long size)
+{
+	char executable[MAX_PATH];
+	ssize_t length = readlink("/proc/self/exe", executable, sizeof(executable) - 1);
+	char *slash;
+	int made;
+
+	if (length <= 0)
+		return 0;
+	executable[length] = '\0';
+	if (!(slash = strrchr(executable, '/')))
+		return 0;
+	*slash = '\0';
+	if (snprintf(root, size, "%s/savegame", executable) >= (int)size)
+		return 0;
+	made = !directory_exists(root);
+	make_directories(root);
+	if (!directory_exists(root) || !folder_writable(root))
+	{
+		platform_log("save root: %s cannot be made; saving in %%APPDATA%%\\halo", root);
+		return 0;
+	}
+	if (made && getenv("APPDATA") && *getenv("APPDATA"))
+	{
+		char old_root[MAX_PATH], from[MAX_PATH], to[MAX_PATH];
+
+		snprintf(old_root, sizeof(old_root), "%s/halo", getenv("APPDATA"));
+		if (directory_exists(old_root))
+		{
+			snprintf(from, sizeof(from), "%s/u", old_root);
+			snprintf(to, sizeof(to), "%s/u", root);
+			copy_folder(from, to, 0);
+			snprintf(from, sizeof(from), "%s/z/saved", old_root);
+			snprintf(to, sizeof(to), "%s/z/saved", root);
+			copy_folder(from, to, 0);
+			platform_log("save root: the profiles and saved games of %s copied to %s", old_root, root);
+		}
+	}
+	return 1;
+}
+#endif
+
 const char *platform_save_root(void)
 {
 	static char root[MAX_PATH];
@@ -163,8 +277,12 @@ const char *platform_save_root(void)
 		if (*environment)
 			snprintf(root, sizeof(root), "%s", environment);
 #ifdef _WIN32
-		/* the Windows build (port/windows) keeps saves in the roaming
-		application data folder */
+		/* the Windows build (port/windows) keeps saves and profiles in a
+		savegame folder next to halo.exe, else in the roaming application
+		data folder */
+		else if (save_root_beside_executable(root, sizeof(root)))
+		{
+		}
 		else if (getenv("APPDATA") && *getenv("APPDATA"))
 			snprintf(root, sizeof(root), "%s/halo", getenv("APPDATA"));
 #endif

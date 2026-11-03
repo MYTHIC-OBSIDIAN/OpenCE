@@ -56,7 +56,12 @@ the game asks for the disc image again at the next start.
 | `u:\` | `u/` in the save root. This folder contains the user data. |
 
 The save root is `paths.saves` in `config.toml`. If that setting is empty,
-the save root is `%APPDATA%\halo`.
+the save root is a `savegame` folder next to `halo.exe`, which holds the
+player profiles and gametypes (`u\`) and the saved games (`z\saved\`).
+The first time the game makes it, it copies into it the profiles and saved
+games of `%APPDATA%\halo` (the save root of earlier builds), which stay
+where they were. If the game cannot write next to `halo.exe`, the save root
+is `%APPDATA%\halo`.
 
 The game makes the folders when it needs them. Names of files and folders
 are not case-sensitive, as on the Xbox.

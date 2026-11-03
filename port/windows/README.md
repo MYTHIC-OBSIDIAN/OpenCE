@@ -69,7 +69,7 @@ The game finds the game data as described in "Start the game" in
 | Item | Location |
 | --- | --- |
 | Settings | `config.toml` next to `halo.exe` |
-| Saved games | `%APPDATA%\halo`, or `paths.saves` in `config.toml` |
+| Saved games and player profiles | `savegame\` next to `halo.exe` (else `%APPDATA%\halo`, if the game cannot write there), or `paths.saves` in `config.toml` |
 | Log | `debug.txt` in the data root (the folder that contains `maps\`) |
 | Log of the port | The console. The release build has no console: `halo.log` next to `halo.exe` |
 | Crash reports | `crashes\` next to `halo.exe`, until the game sends them |
