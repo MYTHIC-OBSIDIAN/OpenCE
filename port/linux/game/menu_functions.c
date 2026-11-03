@@ -1609,7 +1609,11 @@ static struct widget_instance *screen_of(struct widget_instance *widget)
 	return widget;
 }
 
-/* "port settings save" (OK): those changed written, and applied */
+/* "port settings save" (OK): those changed written, and applied; a setting
+that could not be written (config.toml beside halo.exe not writable) said,
+once for the screen, as it is not kept past this run */
+static boolean settings_save_failed;
+
 static boolean setting_changed_save(struct widget_instance *spinner, struct pc_menu_setting *setting)
 {
 	short index = spinner->parameters.list.selected_index;
@@ -1618,7 +1622,8 @@ static boolean setting_changed_save(struct widget_instance *spinner, struct pc_m
 		return TRUE;
 	if (!setting_write(setting->setting, setting->values[index]))
 	{
-		platform_log("menus: could not set %s", setting->setting);
+		platform_log("menus: could not set %s (config.toml cannot be written)", setting->setting);
+		settings_save_failed = TRUE;
 		return FALSE;
 	}
 	platform_log("menus: %s = %s", setting->setting, setting->values[index]);
@@ -7810,8 +7815,14 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "port settings save"))
 		{
+			settings_save_failed = FALSE;
 			settings_each(screen_of(widget), setting_changed_save);
 			platform_display_apply();
+			if (settings_save_failed)
+			{
+				display_error_text_deferred(L"The settings could not be\r\nsaved: config.toml beside\r\n"
+					L"halo.exe cannot be written.", NONE);
+			}
 		}
 		else if (!strcmp(name, "port settings defaults"))
 		{

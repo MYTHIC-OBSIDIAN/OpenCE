@@ -137,13 +137,13 @@ SCREENS = {
              "With HDR Display, how bright white is, in nits.\nAuto: Windows' SDR content brightness.", "desktop"),
             ("PEAK BRIGHTNESS:", "display.hdr_peak_brightness", PEAK_BRIGHTNESSES,
              "With HDR Display, your display's brightest, in\nnits. Auto: Windows' HDR calibration.", "desktop"),
-            # (the main menu's CREDITS: menu_functions.c's credits_play)
-            ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
-             "Choose what version of the credits play in the\nmain menu", None),
             # (attract_mode.c's attract_mode_get_localized_movie_path)
             ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
              "Choose what intro video plays on launch.",
              None),
+            # (the main menu's CREDITS: menu_functions.c's credits_play)
+            ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
+             "Choose what version of the credits play in the\nmain menu", None),
         ],
     },
     "mouse_settings": {
