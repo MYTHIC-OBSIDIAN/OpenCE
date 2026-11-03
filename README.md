@@ -6,11 +6,11 @@
 > `port/linux/src/port_config.c` (`lan_only_off_booleans`) whatever
 > `config.toml` says; the Multiplayer menu's INTERNET items do as LAN does.
 > The main menu has CREDITS in MODS' place, which plays the credits chosen
-> in Video Setup > Extra Effects (CREDITS): the Xbox's credits movie in the
-> game (`bink\credits.bik` beside `halo.exe`, in the data root), or Halo PC's
-> credits scrolling over the main menu as Halo PC does (yellow headers, blue
-> names, round and round until A, B or Escape); the same credits play after
-> The Maw. INTRO there picks the movie before the main menu:
+> in Video Setup > Extra Effects (CREDITS: XBOX or PC): the Xbox's credits
+> movie in the game (`bink\credits.bik` beside `halo.exe`, in the data root),
+> or Halo PC's credits scrolling over the main menu as Halo PC does (yellow
+> headers, blue names, round and round until A, B or Escape); after The Maw
+> the Xbox's movie always plays. INTRO there (XBOX or PC) picks the movie before the main menu:
 > `bink\intro_xbox.bik` (else the Xbox's `intro.bik`) or `bink\intro_pc.bik`.
 > Every mod in the `mods` folder is played. The Xbox's videos (the disc's `bink` folder, extracted
 > with the maps) play in the game as on the Xbox: the opening titles before

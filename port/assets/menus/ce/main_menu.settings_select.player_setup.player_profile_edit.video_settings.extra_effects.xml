@@ -105,11 +105,11 @@
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/op_credits" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_label"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_spinner" x="286" y="1"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_spinner" x="320" y="1"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/labels" string_index="8" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_spinner" type="spinner" top="2" width="206" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ORIGINAL CREDITS|PC PORT CREDITS" setting="display.credits" values="original|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -13 19 -7" footer_bounds="7 208 19 214">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/credits_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|PC" setting="display.credits" values="original|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/extra_effects/op_intro" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -162,8 +162,8 @@
 		<string text="GT7: bright light turns white, as on film. Neutral:\nas drawn. ACES: more contrast. Reinhard: softer."/>
 		<string text="With HDR Display, how bright white is, in nits.\nAuto: Windows' SDR content brightness."/>
 		<string text="With HDR Display, your display's brightest, in\nnits. Auto: Windows' HDR calibration."/>
-		<string text="The credits on the main menu and after The Maw:\nthe Xbox's movie, or Halo PC's scrolling text."/>
-		<string text="The movie before the main menu, from the next\nstart: bink's intro_xbox.bik or intro_pc.bik."/>
+		<string text="Choose what version of the credits play in the\nmain menu"/>
+		<string text="Choose what intro video plays on launch."/>
 		<string text="Set Peak Brightness and Paper White by eye,\nwith patterns brighter than white."/>
 	</strings>
 </menus>

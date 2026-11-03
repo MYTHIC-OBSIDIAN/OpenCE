@@ -434,9 +434,8 @@ static char const *const port_game_data_input_names[] =
 	"port map vote update",
 	/* (HDR Calibration's patterns, drawn by the renderer) */
 	"port hdr calibration",
-	/* (the credits screen's lines, drawn as it is; and the main menu's, Halo
-	PC's credits after The Maw) */
-	"port credits update", "port credits after game",
+	/* (the credits screen's lines, drawn as it is) */
+	"port credits update",
 };
 
 static struct

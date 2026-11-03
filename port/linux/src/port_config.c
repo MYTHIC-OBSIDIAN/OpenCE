@@ -499,16 +499,17 @@ static const struct config_setting config_settings[] =
 		"In a network game, the host's network.shield_effects decides, unless\n"
 		"it is \"players\" (each player's own) or the game is co-op." },
 	{ "display.credits", _config_string, "\"original\"", "HALO_CREDITS", _environment_value, _platform_all,
-		"The credits, the main menu's CREDITS and those after The Maw:\n"
-		"\"original\", the Xbox's credits movie (bink\\credits.bik in the data\n"
-		"root, extracted with the maps; none without it), or \"pc\", Halo PC's\n"
-		"credits, scrolling over the main menu. CREDITS in Video Setup > Extra\n"
-		"Effects writes its choice here." },
+		"The credits the main menu's CREDITS plays: \"original\", the Xbox's\n"
+		"credits movie (bink\\credits.bik in the data root, extracted with the\n"
+		"maps; none without it), or \"pc\", Halo PC's credits, scrolling over\n"
+		"the main menu. After The Maw the Xbox's movie always plays. CREDITS\n"
+		"in Video Setup > Extra Effects (XBOX or PC) writes its choice here." },
 	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
 		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
 		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
 		"bink\\intro_pc.bik (none without it). INTRO in Video Setup > Extra\n"
-		"Effects writes its choice here; it plays from the next start." },
+		"Effects (XBOX or PC) writes its choice here; it plays from the next\n"
+		"start." },
 	{ "display.shield_color", _config_string, "\"default\"", "HALO_SHIELD_COLOR", _environment_value, _platform_all,
 		"Your energy shield's color, as this machine draws it: \"default\" (the\n"
 		"shield's own) or a multiplayer armor color: white, black, red, blue,\n"

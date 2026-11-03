@@ -137,13 +137,12 @@ SCREENS = {
              "With HDR Display, how bright white is, in nits.\nAuto: Windows' SDR content brightness.", "desktop"),
             ("PEAK BRIGHTNESS:", "display.hdr_peak_brightness", PEAK_BRIGHTNESSES,
              "With HDR Display, your display's brightest, in\nnits. Auto: Windows' HDR calibration.", "desktop"),
-            # (menu_functions.c's credits_play and ui_widget_port_roll_credits)
-            ("CREDITS:", "display.credits", [("ORIGINAL CREDITS", "original"), ("PC PORT CREDITS", "pc")],
-             "The credits on the main menu and after The Maw:\nthe Xbox's movie, or Halo PC's scrolling text.",
-             None),
+            # (the main menu's CREDITS: menu_functions.c's credits_play)
+            ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
+             "Choose what version of the credits play in the\nmain menu", None),
             # (attract_mode.c's attract_mode_get_localized_movie_path)
             ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
-             "The movie before the main menu, from the next\nstart: bink's intro_xbox.bik or intro_pc.bik.",
+             "Choose what intro video plays on launch.",
              None),
         ],
     },
@@ -483,7 +482,7 @@ CONTROL_ROWS = 7
 
 # the settings whose rows have the wider spinner (a device's name)
 WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "network.listings", "network.browser_maps",
-                 "network.browser_sort", "display.credits"}
+                 "network.browser_sort"}
 
 # Teamplay Options' rows of the port's (_teamplay_options_extras): the
 # gametype's FORCE TEAM SPAWNS, then the host's voice chat and vote kicks;
@@ -1017,9 +1016,7 @@ WIDGET_PATCHES = {
         "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
     }},
     # (no build number on the main menu in this LAN build)
-    # (Halo PC's credits after The Maw, when chosen: menu_functions.c's
-    # credits_after_game)
-    "main_menu/main_menu": {"remove": ["main_menu/build_number"], "inputs": ["port credits after game"]},
+    "main_menu/main_menu": {"remove": ["main_menu/build_number"]},
     # (the main menu's CREDITS, before Quit, in MODS' place in this LAN
     # build: _credits_item; the mods are all played, with no screen to
     # turn them off)
