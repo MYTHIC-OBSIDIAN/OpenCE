@@ -687,6 +687,9 @@ def main() -> None:
         for key in ("background bitmap", "list header bitmap", "list footer bitmap"):
             if widget[key] and widget[key] not in XBOX_BITMAPS:
                 bitmaps.add(widget[key])
+    # (and Halo PC's credits, which the port's credits screen scrolls:
+    # port_settings._credits_item, menu_functions.c's credits_update)
+    string_lists.add("ui\\shell\\main_menu\\credits")
     for folder, members in sorted(folders.items()):
         lines = ['<?xml version="1.0" encoding="UTF-8"?>',
                  f"<!-- The PC version's menus: ui\\shell\\{folder.replace('/', chr(92))} (tools/ce_menus.py) -->"]

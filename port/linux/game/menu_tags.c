@@ -398,7 +398,7 @@ static char const *const port_function_names[] =
 	"new campaign decision",
 	/* (the main menu's Credits, in this LAN build in Mods' place:
 	menu_functions.c) */
-	"port credits",
+	"port credits", "port credits begin",
 	/* (the main menu's Mods: menu_functions.c) */
 	"port mods init", "port mods close", "port mods toggle", "port mods move up", "port mods move down",
 	"port mods save",
@@ -434,6 +434,8 @@ static char const *const port_game_data_input_names[] =
 	"port map vote update",
 	/* (HDR Calibration's patterns, drawn by the renderer) */
 	"port hdr calibration",
+	/* (the credits screen's lines, drawn as it is) */
+	"port credits update",
 };
 
 static struct

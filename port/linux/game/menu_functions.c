@@ -2840,10 +2840,9 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 
 /* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
 build): a video named credits that the player put beside the game, in the
-system's video player (sdl_platform.c's platform_play_credits_video), else
-the Xbox's credits movie (bink\credits.bik, extracted with the maps), in the
-game as after The Maw (attract_mode.c's game_end_credits_start, which
-stops the menu's music: started again when the movie cannot be played) */
+system's video player (sdl_platform.c's platform_play_credits_video), and
+FALSE (the main menu stays); else TRUE, and its handler opens the credits
+screen: Halo PC's credits, scrolling (below) */
 int platform_play_credits_video(void);
 
 static boolean credits_play(void)
@@ -2851,15 +2850,160 @@ static boolean credits_play(void)
 	if (platform_play_credits_video())
 	{
 		ui_play_audio_feedback_sound(SOUND_FORWARD);
-		return TRUE;
-	}
-	game_end_credits_start();
-	if (!bink_playback_active())
-	{
-		ui_start_main_menu_music();
-		return campaign_fail();
+		return FALSE;
 	}
 	return TRUE;
+}
+
+/* ---- the credits screen: Halo PC's credits (its string list
+ui\shell\main_menu\credits, strings.xml's main_menu/credits), scrolled up
+over the main menu's scene as Halo PC's credits screen scrolls them (its
+post_render): each string a line 16 units tall, centred across the 640x480
+screen in small_ui, shown between y 50 and 430, coming in at the bottom and
+going out at the top at 80 units a second. A string beginning \h is a
+header, in yellow (the rest of it); the others are in blue; \s<n> is a gap
+of n lines; an empty string is none. After the last string the first comes
+again, until the screen is closed. */
+
+#define CREDITS_STRINGS "pc\\main_menu\\credits"
+#define CREDITS_TOP 50
+#define CREDITS_BOTTOM 430
+#define CREDITS_WIDTH 640
+#define CREDITS_LINE_HEIGHT 16
+#define CREDITS_UNITS_PER_MILLISECOND 0.08f
+#define MAXIMUM_CREDITS_LINES 64
+
+static struct
+{
+	unsigned long scrolled_time;
+	short next;
+	short count;
+	struct credits_line
+	{
+		short string;
+		/* (where its text begins: past \h; NONE for a gap) */
+		short text_offset;
+		boolean header;
+		long top, bottom;
+	} lines[MAXIMUM_CREDITS_LINES];
+} credits;
+
+/* "port credits begin" (the screen's created): from the first string, at the
+bottom */
+static boolean credits_begin(void)
+{
+	credits.count = 0;
+	credits.next = 0;
+	credits.scrolled_time = system_milliseconds();
+	return TRUE;
+}
+
+/* the string's line, its top at top: how tall it is (0, and no line, for an
+empty string) */
+static long credits_line_add(long tag_index, short string, long top)
+{
+	wchar_t const *text = unicode_string_list_get_string(tag_index, string);
+	struct credits_line *line;
+	long height = CREDITS_LINE_HEIGHT;
+
+	if (!text || !text[0] || credits.count >= MAXIMUM_CREDITS_LINES)
+		return 0;
+	line = &credits.lines[credits.count++];
+	line->string = string;
+	line->text_offset = 0;
+	line->header = FALSE;
+	if (text[0] == '\\')
+	{
+		line->text_offset = 1;
+		if (text[1] == 's')
+		{
+			long lines = 0;
+			short index;
+
+			for (index = 2; text[index] >= '0' && text[index] <= '9' && lines < 100; index++)
+				lines = lines * 10 + (text[index] - '0');
+			line->text_offset = NONE;
+			height = lines * CREDITS_LINE_HEIGHT;
+		}
+		else if (text[1] == 'h')
+		{
+			line->text_offset = 2;
+			line->header = TRUE;
+		}
+	}
+	line->top = top;
+	line->bottom = top + height;
+	return height;
+}
+
+/* "port credits update" (the screen's, as it is drawn): the lines moved up
+by the time since they last moved, those gone above the top dropped and new
+ones added below, and drawn */
+static void credits_update(struct widget_instance *widget)
+{
+	static real_argb_color const header_color = { 1.0f, 1.0f, 1.0f, 0.0f };
+	static real_argb_color const name_color = { 1.0f, 0.39f, 0.58f, 0.93f };
+	long tag_index = tag_loaded(UNICODE_STRING_LIST_TAG, CREDITS_STRINGS);
+	struct string_list *list = tag_index != NONE ? unicode_string_list_definition_get(tag_index) : NULL;
+	long font_index = tag_loaded('font', "ui\\small_ui");
+	unsigned long now = system_milliseconds();
+	long scrolled = (long)(MIN(now - credits.scrolled_time, 60000UL) * CREDITS_UNITS_PER_MILLISECOND);
+	long bottom = CREDITS_BOTTOM;
+	short index;
+	rectangle2d clip;
+
+	if (!list || list->strings.count <= 0 || font_index == NONE)
+		return;
+	/* (no whole unit yet: the time is kept, as Halo PC keeps it) */
+	if (scrolled > 0)
+	{
+		credits.scrolled_time = now;
+		for (index = 0; index < credits.count;)
+		{
+			struct credits_line *line = &credits.lines[index];
+
+			line->top -= scrolled;
+			line->bottom -= scrolled;
+			if (line->bottom < CREDITS_TOP)
+			{
+				memmove(line, line + 1, (size_t)(credits.count - index - 1) * sizeof(*line));
+				credits.count--;
+			}
+			else
+			{
+				index++;
+			}
+		}
+	}
+	if (credits.count)
+		bottom = credits.lines[credits.count - 1].bottom;
+	/* (each string at most once a frame: a list of empty strings adds none) */
+	for (index = 0; bottom <= CREDITS_BOTTOM && index < list->strings.count &&
+		credits.count < MAXIMUM_CREDITS_LINES; index++)
+	{
+		if (credits.next >= list->strings.count)
+			credits.next = 0;
+		bottom += credits_line_add(tag_index, credits.next++, bottom);
+	}
+	clip.x0 = widget->horizontal_offset;
+	clip.x1 = (short)(widget->horizontal_offset + CREDITS_WIDTH);
+	clip.y0 = (short)(widget->vertical_offset + CREDITS_TOP);
+	clip.y1 = (short)(widget->vertical_offset + CREDITS_BOTTOM);
+	for (index = 0; index < credits.count; index++)
+	{
+		struct credits_line const *line = &credits.lines[index];
+		wchar_t const *text = unicode_string_list_get_string(tag_index, line->string);
+		rectangle2d bounds;
+
+		if (!text || line->text_offset == NONE)
+			continue;
+		bounds.x0 = clip.x0;
+		bounds.x1 = clip.x1;
+		bounds.y0 = (short)(widget->vertical_offset + line->top);
+		bounds.y1 = (short)(widget->vertical_offset + line->bottom);
+		draw_string_set_draw_mode(font_index, NONE, 2, 0, line->header ? &header_color : &name_color);
+		rasterizer_draw_unicode_string(&bounds, &clip, NULL, 0, text + line->text_offset);
+	}
 }
 
 /* "port mods init" (the list's created), and "port mods close" (its
@@ -7662,6 +7806,10 @@ boolean pc_menu_event_function_invoke(
 		{
 			return credits_play();
 		}
+		else if (!strcmp(name, "port credits begin"))
+		{
+			return credits_begin();
+		}
 		else if (!strcmp(name, "port mods init") || !strcmp(name, "port mods close"))
 		{
 			return mods_screen_reset();
@@ -7925,6 +8073,8 @@ void pc_menu_game_data_function_invoke(
 		hdr_calibration_row_show(widget);
 		settings_help(widget);
 	}
+	else if (!strcmp(name, "port credits update"))
+		credits_update(widget);
 	else if (!strcmp(name, "port hdr calibration"))
 		hdr_calibration_update(widget);
 	else if (!strcmp(name, "controls update menu"))

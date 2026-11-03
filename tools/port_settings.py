@@ -2195,12 +2195,21 @@ def _text_button(name: str, text: str, handlers: list) -> list:
 
 
 def _credits_item() -> list:
-    """the main menu's CREDITS (in MODS' place): the Xbox version's credits
-    movie (menu_functions.c's credits_play)"""
+    """the main menu's CREDITS (in MODS' place), and its screen: Halo PC's
+    credits, scrolling over the main menu's scene as Halo PC's credits screen
+    has them (menu_functions.c's credits_update: the PC version's string list
+    ui\\shell\\main_menu\\credits, strings.xml's main_menu/credits), or a
+    video named credits beside the game (credits_play, which then fails: the
+    screen is not opened). Any of A, B, Start or Back closes the screen."""
+    screen = "main_menu/credits_screen"
     return _widget("main_menu/main_menu_item_credits",
                    [("type", "text"), ("width", 256), ("height", 33), ("bitmap", "main_menu/menu_credits")],
-                   ['<on event="a" run="port credits"/>', '<on event="start" run="port credits"/>',
-                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+                   [f'<on event="a" run="port credits" open="{screen}"/>',
+                    f'<on event="start" run="port credits" open="{screen}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>']) + _widget(
+        screen, [("width", 640), ("height", 480)],
+        ['<data input="port credits update"/>', '<on event="created" run="port credits begin"/>',
+         '<on event="a b start back" back="true"/>'])
 
 
 def _mods() -> list:

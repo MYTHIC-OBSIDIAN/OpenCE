@@ -204,6 +204,557 @@
 		<string text="OOPS!" map="6"/>
 		<string text="ALERT!" map="7"/>
 	</strings>
+	<strings name="main_menu/credits" map="ui\shell\main_menu\credits">
+		<string text="\hHalo for the PC" map="0"/>
+		<string text="\s1" map="1"/>
+		<string text="\hGearbox Software" map="2"/>
+		<string text="\hExecutive Producer" map="3"/>
+		<string text="Randy Pitchford" map="4"/>
+		<string text="\s1" map="5"/>
+		<string text="\hProducer" map="6"/>
+		<string text="Marc Tardif" map="7"/>
+		<string text="\s1" map="8"/>
+		<string text="\hLead Programming" map="9"/>
+		<string text="Shawn Green" map="10"/>
+		<string text="\s1" map="11"/>
+		<string text="\hGraphics Programming" map="12"/>
+		<string text="Sean Cavanaugh" map="13"/>
+		<string text="Shawn Green" map="14"/>
+		<string text="\s1" map="15"/>
+		<string text="\hNetwork Programming" map="16"/>
+		<string text="Steve Jones" map="17"/>
+		<string text="Evan Nguyen" map="18"/>
+		<string text="Sean Reardon" map="19"/>
+		<string text="Jimmy Sieben" map="20"/>
+		<string text="\s1" map="21"/>
+		<string text="\hUser Interface and Input" map="22"/>
+		<string text="Charles Kostick" map="23"/>
+		<string text="Eli Luna" map="24"/>
+		<string text="Jimmy Sieben" map="25"/>
+		<string text="\s1" map="26"/>
+		<string text="\hAudio Programming" map="27"/>
+		<string text="Scott Velasquez" map="28"/>
+		<string text="\s1" map="29"/>
+		<string text="\hGame Programming" map="30"/>
+		<string text="Shawn Green" map="31"/>
+		<string text="Steve Jones" map="32"/>
+		<string text="Charles Kostick" map="33"/>
+		<string text="Sean Reardon" map="34"/>
+		<string text="Jimmy Sieben" map="35"/>
+		<string text="Scott Velasquez" map="36"/>
+		<string text="\s1" map="37"/>
+		<string text="\hLead Art" map="38"/>
+		<string text="Stephen Bahl" map="39"/>
+		<string text="\s1" map="40"/>
+		<string text="\hArt" map="41"/>
+		<string text="Matt Armstrong" map="42"/>
+		<string text="Stephen Bahl" map="43"/>
+		<string text="Jennifer Burris" map="44"/>
+		<string text="Eli Luna" map="45"/>
+		<string text="David Mertz" map="46"/>
+		<string text="\s1" map="47"/>
+		<string text="\hMultiplayer Game Design" map="48"/>
+		<string text="Matt Armstrong" map="49"/>
+		<string text="Stephen Bahl" map="50"/>
+		<string text="" map="51"/>
+		<string text="David Mertz" map="52"/>
+		<string text="\s1" map="53"/>
+		<string text="\hLead Level Design" map="54"/>
+		<string text="David Mertz" map="55"/>
+		<string text="\s1" map="56"/>
+		<string text="\hLevel Design" map="57"/>
+		<string text="Matt Armstrong" map="58"/>
+		<string text="Stephen Bahl" map="59"/>
+		<string text="Jennifer Burris" map="60"/>
+		<string text="Eli Luna" map="61"/>
+		<string text="David Mertz" map="62"/>
+		<string text="Marc Tardif" map="63"/>
+		<string text="\s1" map="64"/>
+		<string text="\hNetwork Administration, Support and Source Control" map="65"/>
+		<string text="Charles Kostick" map="66"/>
+		<string text="David McGarry" map="67"/>
+		<string text="Stephen Palmer" map="68"/>
+		<string text="\s1" map="69"/>
+		<string text="\hBusiness Administration and Support" map="70"/>
+		<string text="Stephen Bahl" map="71"/>
+		<string text="Landon Montgomery" map="72"/>
+		<string text="\s1" map="73"/>
+		<string text="\hTesting Lead" map="74"/>
+		<string text="David McGarry" map="75"/>
+		<string text="\s1" map="76"/>
+		<string text="\hGearbox is" map="77"/>
+		<string text="John Antal" map="78"/>
+		<string text="Matt Armstrong" map="79"/>
+		<string text="Stephen Bahl" map="80"/>
+		<string text="Jeff Broome" map="81"/>
+		<string text="Jennifer Burris" map="82"/>
+		<string text="Sean Cavanaugh" map="83"/>
+		<string text="Jeramy Cooke" map="84"/>
+		<string text="Patrick Deupree" map="85"/>
+		<string text="Erik Doescher" map="86"/>
+		<string text="Shawn Green" map="87"/>
+		<string text="Brian Hess" map="88"/>
+		<string text="Josh Jeffcoat" map="89"/>
+		<string text="Neil Johnson" map="90"/>
+		<string text="Steve Jones" map="91"/>
+		<string text="Charles Kostick" map="92"/>
+		<string text="Eli Luna" map="93"/>
+		<string text="Brian Martel" map="94"/>
+		<string text="David McGarry" map="95"/>
+		<string text="David Mertz" map="96"/>
+		<string text="Landon Montgomery" map="97"/>
+		<string text="Michael Neumann" map="98"/>
+		<string text="Stephen Palmer" map="99"/>
+		<string text="Randy Pitchford" map="100"/>
+		<string text="Sean Reardon" map="101"/>
+		<string text="Josh Rearick" map="102"/>
+		<string text="Nathan Reinhardt" map="103"/>
+		<string text="Jimmy Sieben" map="104"/>
+		<string text="Marc Tardif" map="105"/>
+		<string text="Matthew VanDolen" map="106"/>
+		<string text="Scott Velasquez" map="107"/>
+		<string text="Mike Wardwell" map="108"/>
+		<string text="Jeff Wofford" map="109"/>
+		<string text="\s1" map="110"/>
+		<string text="\hSpecial Thanks to" map="111"/>
+		<string text="Creative Labs" map="112"/>
+		<string text="Logitech" map="113"/>
+		<string text="ATI" map="114"/>
+		<string text="nVidia" map="115"/>
+		<string text="Kristy Junio" map="116"/>
+		<string text="Chef David Michael" map="117"/>
+		<string text="Joe Kreiner" map="118"/>
+		<string text="Christopher Montgomery " map="119"/>
+		<string text="\s1" map="120"/>
+		<string text="\hGearbox Play Testers" map="121"/>
+		<string text="Khamsone Anoulak" map="122"/>
+		<string text="Alex Barajas" map="123"/>
+		<string text="Aaron Bishop" map="124"/>
+		<string text="Trigg Clark  " map="125"/>
+		<string text="Chris Corlae " map="126"/>
+		<string text="James Crosby " map="127"/>
+		<string text="Colby Cutler " map="128"/>
+		<string text="Mike DeGroot" map="129"/>
+		<string text="Chris DuBois" map="130"/>
+		<string text="Nosan Edokpayi" map="131"/>
+		<string text="Don Eubanks" map="132"/>
+		<string text="Erica Feurt" map="133"/>
+		<string text="Ryan Fields" map="134"/>
+		<string text="Jesse Flanagan" map="135"/>
+		<string text="Andy Goin" map="136"/>
+		<string text="Jon Harris" map="137"/>
+		<string text="Damien Ilmonen" map="138"/>
+		<string text="Brad Jannsen" map="139"/>
+		<string text="Kreiner Joseph" map="140"/>
+		<string text="Raymond Kam" map="141"/>
+		<string text="Chuck Landry" map="142"/>
+		<string text="Scott Ledbetter" map="143"/>
+		<string text="Marly Majin" map="144"/>
+		<string text="Gregory Manning" map="145"/>
+		<string text="Bret McNeill" map="146"/>
+		<string text="David Mitchell" map="147"/>
+		<string text="Glenn Montgomery" map="148"/>
+		<string text="Bobby Moyini" map="149"/>
+		<string text="Brad Nelson" map="150"/>
+		<string text="Frank Nuccio" map="151"/>
+		<string text="Gautam Penumetcha" map="152"/>
+		<string text="Robert Redman" map="153"/>
+		<string text="Josh Sudbury" map="154"/>
+		<string text="Kyle Shields" map="155"/>
+		<string text="Shane Simon" map="156"/>
+		<string text="Garrett Smith" map="157"/>
+		<string text="Todd Smith" map="158"/>
+		<string text="Andrew Stasthy" map="159"/>
+		<string text="Mitch Watson" map="160"/>
+		<string text="Jason Widmer" map="161"/>
+		<string text="\s1" map="162"/>
+		<string text="\hBungie Studios" map="163"/>
+		<string text="\hProducer" map="164"/>
+		<string text="Michel Bastien" map="165"/>
+		<string text="\s1" map="166"/>
+		<string text="\hDevelopment Manager" map="167"/>
+		<string text="Andy Glaister" map="168"/>
+		<string text="(Honorary Bungie)" map="169"/>
+		<string text="with Michael Evans" map="170"/>
+		<string text="\s1" map="171"/>
+		<string text="\hPrint Artist" map="172"/>
+		<string text="Lorraine McLees" map="173"/>
+		<string text="\s1" map="174"/>
+		<string text="\hCommunity Manager" map="175"/>
+		<string text="Brian Jarrard" map="176"/>
+		<string text="\s1" map="177"/>
+		<string text="\hTest Lead" map="178"/>
+		<string text="Roger Wolfson" map="179"/>
+		<string text="\s1" map="180"/>
+		<string text="\hMultiplayer Test Leads" map="181"/>
+		<string text="Ryan Hylland" map="182"/>
+		<string text="James Polak" map="183"/>
+		<string text="\s1" map="184"/>
+		<string text="\hSingle Player Test Leads" map="185"/>
+		<string text="Mike Cody" map="186"/>
+		<string text="Curtis Creamer" map="187"/>
+		<string text="\s1" map="188"/>
+		<string text="\hTesters" map="189"/>
+		<string text="Doug Boyce" map="190"/>
+		<string text="Luke Timmins" map="191"/>
+		<string text="\s1" map="192"/>
+		<string text="\hTest Manager" map="193"/>
+		<string text="Zach Russel" map="194"/>
+		<string text="\s1" map="195"/>
+		<string text="\hExecutive Test Manager" map="196"/>
+		<string text="Harold Ryan" map="197"/>
+		<string text="\s1" map="198"/>
+		<string text="\hExecutive Producer" map="199"/>
+		<string text="Hamilton Chu" map="200"/>
+		<string text="\s1" map="201"/>
+		<string text="\hStudio Management" map="202"/>
+		<string text="Peter Parsons" map="203"/>
+		<string text="\s1" map="204"/>
+		<string text="\hSpecial Thanks" map="205"/>
+		<string text="Jason Jones and everyone on the original Bungie Halo team" map="206"/>
+		<string text="The legions of Bungie fans" map="207"/>
+		<string text="Alta Hartmann" map="208"/>
+		<string text="Stuart Moulder" map="209"/>
+		<string text="\s1" map="210"/>
+		<string text="\hMicrosoft Game Studios" map="211"/>
+		<string text="\hAdditional Programming" map="212"/>
+		<string text="Kev Gee" map="213"/>
+		<string text="Phil Teschner" map="214"/>
+		<string text="\s1" map="215"/>
+		<string text="\hProduct Planning" map="216"/>
+		<string text="Jon Kimmich" map="217"/>
+		<string text="\s1" map="218"/>
+		<string text="\hProduct Management" map="219"/>
+		<string text="Andrew Jenkins" map="220"/>
+		<string text="Cameron Payne" map="221"/>
+		<string text="\s1" map="222"/>
+		<string text="\hLocalization Program Management" map="223"/>
+		<string text="Yasmine Nelson" map="224"/>
+		<string text="Warren Wright *" map="225"/>
+		<string text="\s1" map="226"/>
+		<string text="\hIreland Localization Team" map="227"/>
+		<string text="Peter Fitzpatrick (Program Manager)" map="228"/>
+		<string text="David Foster (Test Manager)" map="229"/>
+		<string text="Ciaran Boylan (Tester)" map="230"/>
+		<string text="Alan Davis (Tester)" map="231"/>
+		<string text="Alan McNicholas (Tester)" map="232"/>
+		<string text="Jonathan Tyrrell (Engineering)" map="233"/>
+		<string text="Emma Crosbie (Documentation)" map="234"/>
+		<string text="Barry Comyn (Packaging)" map="235"/>
+		<string text="\s1" map="236"/>
+		<string text="\hKorean Localization Team" map="237"/>
+		<string text="Ji Young Kim (Group Manager)" map="238"/>
+		<string text="Chae Seong Lim (Program Manager)" map="239"/>
+		<string text="Yoon Hee Jung (Localization Project Manager)" map="240"/>
+		<string text="Won Kyoung Kim (Localization Project Manager)" map="241"/>
+		<string text="Il Jin Park (Tester)" map="242"/>
+		<string text="Suk Hyun Lee (Product Manager)" map="243"/>
+		<string text="\s1" map="244"/>
+		<string text="\hPrint Manual" map="245"/>
+		<string text="Writing: Matt Whiting (Lead)" map="246"/>
+		<string text="Keith Cirillo" map="247"/>
+		<string text="Eric Trautmann" map="248"/>
+		<string text="Editing: Jason Groce" map="249"/>
+		<string text="Print Design: Chris Lassen" map="250"/>
+		<string text="\s1" map="251"/>
+		<string text="\hPrint &amp; Packaging Operations" map="252"/>
+		<string text="Liz Corcoran (Manager)" map="253"/>
+		<string text="Ernst Janson" map="254"/>
+		<string text="Darin Stumme ^" map="255"/>
+		<string text="\s1" map="256"/>
+		<string text="\hUser Testing" map="257"/>
+		<string text="Jerome Hagen" map="258"/>
+		<string text="\s1" map="259"/>
+		<string text="\hTesters" map="260"/>
+		<string text="Brandon Anthony *" map="261"/>
+		<string text="Graham Bartlett *" map="262"/>
+		<string text="Kyall Barrows *" map="263"/>
+		<string text="Cameron Bruce *" map="264"/>
+		<string text="Wendy Church *" map="265"/>
+		<string text="Jeff Cloud *" map="266"/>
+		<string text="Matt Coyle *" map="267"/>
+		<string text="Rob Cummings ~" map="268"/>
+		<string text="Erik Davis *" map="269"/>
+		<string text="Clifford Donathan *" map="270"/>
+		<string text="Joe Ezell *" map="271"/>
+		<string text="Brian Fetty *" map="272"/>
+		<string text="John Foster *" map="273"/>
+		<string text="David Gasca *" map="274"/>
+		<string text="John Gayness *" map="275"/>
+		<string text="Mike Graeber ~" map="276"/>
+		<string text="Jordan Gray *" map="277"/>
+		<string text="Dan Hitchcock *" map="278"/>
+		<string text="Shawn Johnson *" map="279"/>
+		<string text="David Kyllo *" map="280"/>
+		<string text="Josh Lyon *" map="281"/>
+		<string text="Charles Martin *" map="282"/>
+		<string text="Robert Minnick *" map="283"/>
+		<string text="Collin Moore *" map="284"/>
+		<string text="Max Perry *" map="285"/>
+		<string text="Jeremiah Pieschl *" map="286"/>
+		<string text="Joe Phillippi *" map="287"/>
+		<string text="John Potter *" map="288"/>
+		<string text="Kazunori Tsuchihashi *" map="289"/>
+		<string text="Tim Williams *" map="290"/>
+		<string text="Chris Wilson *" map="291"/>
+		<string text="Chris Winterer *" map="292"/>
+		<string text="\s1" map="293"/>
+		<string text="\hRecon Testers" map="294"/>
+		<string text="Sheldon Bono *" map="295"/>
+		<string text="Brook Buxton *" map="296"/>
+		<string text="Joshua Colas *" map="297"/>
+		<string text="Blake Dodson *" map="298"/>
+		<string text="Chris Green *" map="299"/>
+		<string text="David Green *" map="300"/>
+		<string text="Jeff Grossmann *" map="301"/>
+		<string text="Chris Hanson *" map="302"/>
+		<string text="Chad Heward *" map="303"/>
+		<string text="Dotrstry Jackson *" map="304"/>
+		<string text="Chris Killian *" map="305"/>
+		<string text="Andrew Langdon *" map="306"/>
+		<string text="Cahlen Lee *" map="307"/>
+		<string text="Vinnie Lujan *" map="308"/>
+		<string text="Mori Marchany *" map="309"/>
+		<string text="Karla Margeson *" map="310"/>
+		<string text="Andrew Marthaller *" map="311"/>
+		<string text="Matt Metke *" map="312"/>
+		<string text="Christian Novembrino *" map="313"/>
+		<string text="Josh Rodgers *" map="314"/>
+		<string text="Jacob Rouse *" map="315"/>
+		<string text="Lance Rowley *" map="316"/>
+		<string text="Jay Walton *" map="317"/>
+		<string text="\s1" map="318"/>
+		<string text="\hShared Games Resources" map="319"/>
+		<string text="Robbie Booth (Development Manager)" map="320"/>
+		<string text="Dan Wallace (AP Lead) #" map="321"/>
+		<string text="Randy Shedden (AP R&amp;D)" map="322"/>
+		<string text="Christopher Guthrie (AP Developer) #" map="323"/>
+		<string text="Hiroki Kobayashi (Localization Developer) #" map="324"/>
+		<string text="Sean Stroud (Setup Scripter) #" map="325"/>
+		<string text="Mark Morgan (Setup Developer) #" map="326"/>
+		<string text="Brian Perlman (Developer (Setup, Loc and AP)) #" map="327"/>
+		<string text="Scott Murray (Test Lead)" map="328"/>
+		<string text="Leonard Gaspari (SDET) *" map="329"/>
+		<string text="Pam Espinoza (Tester) *" map="330"/>
+		<string text="\s1" map="331"/>
+		<string text="\hShared Resources PC Multiplayer Test Team" map="332"/>
+		<string text="TJ Duez (Test Lead)" map="333"/>
+		<string text="Mehdi Slaoui Andaloussi (Team Lead)" map="334"/>
+		<string text="Chris Robinson *" map="335"/>
+		<string text="Patrick O'Day *" map="336"/>
+		<string text="\s1" map="337"/>
+		<string text="\hPC Configuration Test Team" map="338"/>
+		<string text="Jason Mangold (Test Lead)" map="339"/>
+		<string text="Patrick Ascolese (Team Lead)" map="340"/>
+		<string text="Yaqub Bandey *" map="341"/>
+		<string text="Jeff Felker *" map="342"/>
+		<string text="Salifou Fofana *" map="343"/>
+		<string text="Tom Jenkins *" map="344"/>
+		<string text="Chris Shivers *" map="345"/>
+		<string text="Dustin Stroh *" map="346"/>
+		<string text="\s1" map="347"/>
+		<string text="* Volt" map="348"/>
+		<string text="^ ArtSource" map="349"/>
+		<string text="# Siemens Business Services" map="350"/>
+		<string text="~ Excell Data Corp" map="351"/>
+		<string text="\s1" map="352"/>
+		<string text="\hOriginal Halo Team" map="353"/>
+		<string text="\hProject Lead" map="354"/>
+		<string text="Jason Jones" map="355"/>
+		<string text="\s1" map="356"/>
+		<string text="\hLead Producer" map="357"/>
+		<string text="Hamilton Chu" map="358"/>
+		<string text="\s1" map="359"/>
+		<string text="\hProducer" map="360"/>
+		<string text="Rick Ryan" map="361"/>
+		<string text="\s1" map="362"/>
+		<string text="\hProgrammers" map="363"/>
+		<string text="Chris Butcher" map="364"/>
+		<string text="Bernie Freildin" map="365"/>
+		<string text="Charlie Gough" map="366"/>
+		<string text="Mat Noguchi" map="367"/>
+		<string text="Matt Segur" map="368"/>
+		<string text="\s1" map="369"/>
+		<string text="\hGuest Starring" map="370"/>
+		<string text="Eamon McKenzie" map="371"/>
+		<string text="Stefan Sinclair" map="372"/>
+		<string text="Ben Wallace" map="373"/>
+		<string text="\s1" map="374"/>
+		<string text="\hArt Director" map="375"/>
+		<string text="Marcus Lehto" map="376"/>
+		<string text="\s1" map="377"/>
+		<string text="\hAsst. Art Lead" map="378"/>
+		<string text="Steve Abeyta" map="379"/>
+		<string text="\s1" map="380"/>
+		<string text="\hArtists" map="381"/>
+		<string text="Eric Arroyo" map="382"/>
+		<string text="Chris Barrett" map="383"/>
+		<string text="Mark Bernal" map="384"/>
+		<string text="David Dunn" map="385"/>
+		<string text="Chris Hughes" map="386"/>
+		<string text="Chris Lee" map="387"/>
+		<string text="Robert McLees" map="388"/>
+		<string text="Stephen Okasaki" map="389"/>
+		<string text="Paul Russel" map="390"/>
+		<string text="Shi Kai Wang" map="391"/>
+		<string text="Michael Wu" map="392"/>
+		<string text="\s1" map="393"/>
+		<string text="with: Brian Schultz" map="394"/>
+		<string text="\s1" map="395"/>
+		<string text="\hLead Designer" map="396"/>
+		<string text="John Howard" map="397"/>
+		<string text="\s1" map="398"/>
+		<string text="\hDesigners" map="399"/>
+		<string text="Paul Bertone" map="400"/>
+		<string text="Tyson Green" map="401"/>
+		<string text="Jaime Griesemer" map="402"/>
+		<string text="Dan Orzulak" map="403"/>
+		<string text="\s1" map="404"/>
+		<string text="\hAdditional Writing" map="405"/>
+		<string text="Brannon Boren" map="406"/>
+		<string text="Matt Soell" map="407"/>
+		<string text="Eric Trautmann" map="408"/>
+		<string text="\s1" map="409"/>
+		<string text="\hMultiplayer Lead," map="410"/>
+		<string text="\hLead Programmer" map="411"/>
+		<string text="Michael Evans" map="412"/>
+		<string text="\s1" map="413"/>
+		<string text="\hMultiplayer Programmers" map="414"/>
+		<string text="Adrian Perez" map="415"/>
+		<string text="Stefan Sinclair" map="416"/>
+		<string text="\s1" map="417"/>
+		<string text="\hMultiplayer Lead Designer" map="418"/>
+		<string text="Hardy LeBel" map="419"/>
+		<string text="\s1" map="420"/>
+		<string text="\hMultiplayer Artists" map="421"/>
+		<string text="Chris Carney" map="422"/>
+		<string text="David Dunn" map="423"/>
+		<string text="Peter Marks" map="424"/>
+		<string text="Derrick Moore" map="425"/>
+		<string text="Stephen Okasaki" map="426"/>
+		<string text="\s1" map="427"/>
+		<string text="\hUI Lead" map="428"/>
+		<string text="Max Hoberman" map="429"/>
+		<string text="\s1" map="430"/>
+		<string text="\hUI Designer" map="431"/>
+		<string text="David Candland" map="432"/>
+		<string text="\s1" map="433"/>
+		<string text="\hUI Programmer" map="434"/>
+		<string text="Stefan Sinclair" map="435"/>
+		<string text="\s1" map="436"/>
+		<string text="\hCinematics Director" map="437"/>
+		<string text="Joseph Staten" map="438"/>
+		<string text="\s1" map="439"/>
+		<string text="\hCinematic Artists" map="440"/>
+		<string text="Steve Abeyta" map="441"/>
+		<string text="Paul Clift" map="442"/>
+		<string text="Adam Crockett" map="443"/>
+		<string text="Lorraine McLees" map="444"/>
+		<string text="Stephen Okasaki" map="445"/>
+		<string text="with: Craig Mullins" map="446"/>
+		<string text="Lee Wilson" map="447"/>
+		<string text="\s1" map="448"/>
+		<string text="\hAudio Lead and Original Music" map="449"/>
+		<string text="Martin O'Donnell" map="450"/>
+		<string text="\s1" map="451"/>
+		<string text="\hAdditional Music" map="452"/>
+		<string text="Michael Salvatori" map="453"/>
+		<string text="\s1" map="454"/>
+		<string text="\hSound Designers" map="455"/>
+		<string text="Jay Weinland" map="456"/>
+		<string text="with: Adam Tewes" map="457"/>
+		<string text="\s1" map="458"/>
+		<string text="\hTest Manager" map="459"/>
+		<string text="Harold Ryan" map="460"/>
+		<string text="\s1" map="461"/>
+		<string text="\hTest Leads" map="462"/>
+		<string text="Curtis Creamer" map="463"/>
+		<string text="Ryan Hylland" map="464"/>
+		<string text="Keith Steury" map="465"/>
+		<string text="\s1" map="466"/>
+		<string text="\hTesters" map="467"/>
+		<string text="Chris Chamberlain" map="468"/>
+		<string text="Mike Cody" map="469"/>
+		<string text="Chuck Cooper" map="470"/>
+		<string text="Erik Davis" map="471"/>
+		<string text="John Frey" map="472"/>
+		<string text="Rick Lockyear" map="473"/>
+		<string text="Paul Peterson" map="474"/>
+		<string text="Zach Russell" map="475"/>
+		<string text="Mathew Shimbaku" map="476"/>
+		<string text="Luke Timmins" map="477"/>
+		<string text="Jeff Wilson" map="478"/>
+		<string text="Roger Wolfson" map="479"/>
+		<string text="\s1" map="480"/>
+		<string text="\hVoice Talent" map="481"/>
+		<string text="Keny Boynton" map="482"/>
+		<string text="Tim Dadabo" map="483"/>
+		<string text="Mark Dias" map="484"/>
+		<string text="Steve Downes" map="485"/>
+		<string text="Todd Licea" map="486"/>
+		<string text="Mike Madeoy" map="487"/>
+		<string text="Andy Mckaige" map="488"/>
+		<string text="Tawnya Pettiford-Waites" map="489"/>
+		<string text="David Scully" map="490"/>
+		<string text="Pete Stacker" map="491"/>
+		<string text="Jeff Steitzer" map="492"/>
+		<string text="Jen Taylor" map="493"/>
+		<string text="Chris Wicklund" map="494"/>
+		<string text="\s1" map="495"/>
+		<string text="\hAdditional Voices" map="496"/>
+		<string text="Bungie Folks" map="497"/>
+		<string text="\s1" map="498"/>
+		<string text="\hDamage and Spin" map="499"/>
+		<string text="Matt Soell" map="500"/>
+		<string text="\s1" map="501"/>
+		<string text="\hDraft Dodgers" map="502"/>
+		<string text="Pete Demoreuille" map="503"/>
+		<string text="Tom Gioconda" map="504"/>
+		<string text="Joshua Grass" map="505"/>
+		<string text="Justin Hayward" map="506"/>
+		<string text="Jason Major" map="507"/>
+		<string text="Juan Ramirez" map="508"/>
+		<string text="Bob Settles" map="509"/>
+		<string text="\s1" map="510"/>
+		<string text="\hExecutive Producer" map="511"/>
+		<string text="Alexander Seropian" map="512"/>
+		<string text="\s1" map="513"/>
+		<string text="\hProduct Manager" map="514"/>
+		<string text="Steve Fowler" map="515"/>
+		<string text="\s1" map="516"/>
+		<string text="\hProduct Planner" map="517"/>
+		<string text="Jon Kimmich" map="518"/>
+		<string text="\s1" map="519"/>
+		<string text="\hLocalization Program Manager" map="520"/>
+		<string text="Ji Hong" map="521"/>
+		<string text="\s1" map="522"/>
+		<string text="\hHalo Manual" map="523"/>
+		<string text="Writer: Keith Cirillo" map="524"/>
+		<string text="Editor: Tom Brush" map="525"/>
+		<string text="Designer: Karin Jaques" map="526"/>
+		<string text="\s1" map="527"/>
+		<string text="\hSpecial Thanks" map="528"/>
+		<string text="Jule Zuccotti " map="529"/>
+		<string text="Ed Fries" map="530"/>
+		<string text="Matt Gradwohl" map="531"/>
+		<string text="Michael Sartain" map="532"/>
+		<string text="Mark Thomas" map="533"/>
+		<string text="Stuart Moulder" map="534"/>
+		<string text="Jonathan Sposato" map="535"/>
+		<string text="Peter Parsons" map="536"/>
+		<string text="Chris Cocks" map="537"/>
+		<string text="Vic Bonilla" map="538"/>
+		<string text="Miguel Chavez" map="539"/>
+		<string text="Claude Errera" map="540"/>
+		<string text="Brian Morden" map="541"/>
+		<string text="\s4" map="542"/>
+		<string text="This product contains software technology licensed " map="543"/>
+		<string text="from GameSpy Industries, Inc.  (c) 1999-2003 GameSpy " map="544"/>
+		<string text='Industries, Inc. GameSpy and the "Powered by GameSpy" ' map="545"/>
+		<string text="design are trademarks of GameSpy Industries, Inc. " map="546"/>
+		<string text="All rights reserved." map="547"/>
+		<string text="\s10" map="548"/>
+	</strings>
 	<strings name="main_menu/difficulty_select/difficulty_descriptions" map="ui\shell\main_menu\difficulty_select\difficulty_descriptions">
 		<string text="Your foes cower and fall before\nyour unstoppable onslaught, yet\nfinal victory will leave you\nwanting more." map="0"/>
 		<string text="Hordes of aliens vie to destroy \nyou, but nerves of steel and a\nquick trigger finger give you a\nsolid chance to prevail." map="1"/>

@@ -181,8 +181,13 @@
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<widget name="main_menu/main_menu_item_credits" type="text" width="256" height="33" bitmap="main_menu/menu_credits">
-		<on event="a" run="port credits"/>
-		<on event="start" run="port credits"/>
+		<on event="a" run="port credits" open="main_menu/credits_screen"/>
+		<on event="start" run="port credits" open="main_menu/credits_screen"/>
 		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/credits_screen" width="640" height="480">
+		<data input="port credits update"/>
+		<on event="created" run="port credits begin"/>
+		<on event="a b start back" back="true"/>
 	</widget>
 </menus>
