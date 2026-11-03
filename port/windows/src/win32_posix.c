@@ -56,7 +56,32 @@ static void windows_startup(void)
 		{
 			strcpy(slash + 1, "halo.log");
 			if (freopen(path, "w", stderr))
+			{
 				setvbuf(stderr, NULL, _IONBF, 0);
+			}
+			else
+			{
+				/* (halo.log not writable there, as when an administrator's
+				run made it and this one is not: a failed freopen leaves
+				stderr closed, and the log's first line would then end the
+				game (the C runtime's invalid parameter). The log goes to
+				%TEMP% instead, else nowhere) */
+				char temp[MAX_PATH];
+				DWORD temp_length = GetTempPathA(sizeof(temp), temp);
+
+				if (temp_length && temp_length + sizeof("halo.log") <= sizeof(temp))
+				{
+					strcpy(temp + temp_length, "halo.log");
+					if (freopen(temp, "w", stderr))
+					{
+						setvbuf(stderr, NULL, _IONBF, 0);
+						fprintf(stderr, "%s could not be written: this log is here instead\n", path);
+						return;
+					}
+				}
+				if (freopen("NUL", "w", stderr))
+					setvbuf(stderr, NULL, _IONBF, 0);
+			}
 		}
 	}
 }
