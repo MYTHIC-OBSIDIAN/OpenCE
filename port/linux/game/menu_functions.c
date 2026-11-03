@@ -2839,18 +2839,23 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 }
 
 /* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
-build): a video named credits that the player put beside the game, in the
-system's video player (sdl_platform.c's platform_play_credits_video), and
-FALSE (the main menu stays); else TRUE, and its handler opens the credits
-screen: Halo PC's credits, scrolling (below) */
-int platform_play_credits_video(void);
-
+build): the Xbox's credits movie, if bink\credits.bik is in the data root
+(beside halo.exe; extracted with the maps), in the game as after The Maw
+(attract_mode.c's game_end_credits_start, which stops the menu's music:
+started again when the movie cannot be played), and FALSE (the main menu
+stays); else TRUE, and its handler opens the credits screen: Halo PC's
+credits, scrolling (below) */
 static boolean credits_play(void)
 {
-	if (platform_play_credits_video())
+	FILE *movie = fopen(attract_mode_get_localized_movie_path(_bink_outro_movie), "rb");
+
+	if (movie)
 	{
-		ui_play_audio_feedback_sound(SOUND_FORWARD);
-		return FALSE;
+		fclose(movie);
+		game_end_credits_start();
+		if (bink_playback_active())
+			return FALSE;
+		ui_start_main_menu_music();
 	}
 	return TRUE;
 }

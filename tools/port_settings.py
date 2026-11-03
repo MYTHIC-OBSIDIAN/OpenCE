@@ -2198,9 +2198,10 @@ def _credits_item() -> list:
     """the main menu's CREDITS (in MODS' place), and its screen: Halo PC's
     credits, scrolling over the main menu's scene as Halo PC's credits screen
     has them (menu_functions.c's credits_update: the PC version's string list
-    ui\\shell\\main_menu\\credits, strings.xml's main_menu/credits), or a
-    video named credits beside the game (credits_play, which then fails: the
-    screen is not opened). Any of A, B, Start or Back closes the screen."""
+    ui\\shell\\main_menu\\credits, strings.xml's main_menu/credits), or the
+    Xbox's credits movie when bink\\credits.bik is there (credits_play, which
+    then fails: the screen is not opened). Any of A, B, Start or Back closes
+    the screen."""
     screen = "main_menu/credits_screen"
     return _widget("main_menu/main_menu_item_credits",
                    [("type", "text"), ("width", 256), ("height", 33), ("bitmap", "main_menu/menu_credits")],
