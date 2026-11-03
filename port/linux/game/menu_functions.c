@@ -2838,26 +2838,90 @@ static short mods_wrap(char const *text, char *wrapped, size_t size, short box, 
 	return line;
 }
 
+/* The credits the player chose (display.credits, Video Setup > Extra
+Effects' CREDITS), and only those: "original", the Xbox's credits movie
+(bink\credits.bik in the data root, extracted with the maps), in the game as
+after The Maw (attract_mode.c's game_end_credits_start, which stops the
+menu's music: started again when the movie cannot be played); "pc", Halo
+PC's credits, scrolling (the credits screen, below). */
+boolean ui_widget_port_credits_original(void)
+{
+	return strcmp(config_string("display.credits"), "pc") != 0;
+}
+
+/* (Halo PC's credits after The Maw, once the main menu is up:
+credits_after_game; and the credits screen then closes after the last
+string, as Halo PC's does) */
+static struct
+{
+	boolean after_game;
+	boolean opening_after_game;
+	boolean once;
+	boolean closed;
+} credits_roll;
+
+/* (ui_widget.c's: a press for the widgets to take after they are drawn) */
+void ui_widget_port_post_button(short controller_index, short button_index);
+
+/* main.c's main_roll_credits, with Halo PC's credits chosen */
+void ui_widget_port_roll_credits(void)
+{
+	credits_roll.after_game = TRUE;
+}
+
 /* "port credits" (the main menu's CREDITS, in Mods' place in this LAN
-build): the Xbox's credits movie, if bink\credits.bik is in the data root
-(beside halo.exe; extracted with the maps), in the game as after The Maw
-(attract_mode.c's game_end_credits_start, which stops the menu's music:
-started again when the movie cannot be played), and FALSE (the main menu
-stays); else TRUE, and its handler opens the credits screen: Halo PC's
-credits, scrolling (below) */
+build): with the original credits, the movie, and FALSE (the main menu
+stays; with no movie, it fails); with Halo PC's, TRUE, and its handler opens
+the credits screen */
 static boolean credits_play(void)
 {
-	FILE *movie = fopen(attract_mode_get_localized_movie_path(_bink_outro_movie), "rb");
+	FILE *movie;
 
-	if (movie)
+	credits_roll.once = credits_roll.opening_after_game;
+	credits_roll.opening_after_game = FALSE;
+	if (!ui_widget_port_credits_original())
+		return TRUE;
+	movie = fopen(attract_mode_get_localized_movie_path(_bink_outro_movie), "rb");
+	if (!movie)
 	{
-		fclose(movie);
-		game_end_credits_start();
-		if (bink_playback_active())
-			return FALSE;
-		ui_start_main_menu_music();
+		platform_log("credits: %s is not there (the original credits)",
+			attract_mode_get_localized_movie_path(_bink_outro_movie));
+		return campaign_fail();
 	}
-	return TRUE;
+	fclose(movie);
+	game_end_credits_start();
+	if (!bink_playback_active())
+	{
+		ui_start_main_menu_music();
+		return campaign_fail();
+	}
+	return FALSE;
+}
+
+/* "port credits after game" (the main menu's, as it is drawn): after The
+Maw, with Halo PC's credits chosen, CREDITS pressed for player 1 (the
+widgets take the press after they are drawn: ui_widget_port_post_button),
+so that the credits screen opens over the main menu as from CREDITS */
+static void credits_after_game(struct widget_instance *main_menu)
+{
+	struct widget_instance *list = named(main_menu, "main_menu_select_list", 0);
+	struct widget_instance *child;
+	short row = 0;
+
+	if (!credits_roll.after_game || !list)
+		return;
+	credits_roll.after_game = FALSE;
+	for (child = list->child; child; child = child->next, row++)
+	{
+		if (!strcmp(child->name, "main_menu_item_credits"))
+		{
+			main_menu->focused_child = list;
+			focus_row(list, row);
+			credits_roll.opening_after_game = TRUE;
+			ui_widget_port_post_button(0, BUTTON_A);
+			return;
+		}
+	}
 }
 
 /* ---- the credits screen: Halo PC's credits (its string list
@@ -2868,7 +2932,8 @@ screen in small_ui, shown between y 50 and 430, coming in at the bottom and
 going out at the top at 80 units a second. A string beginning \h is a
 header, in yellow (the rest of it); the others are in blue; \s<n> is a gap
 of n lines; an empty string is none. After the last string the first comes
-again, until the screen is closed. */
+again, until the screen is closed; after The Maw, the screen closes once the
+last string has gone (B pressed for player 1, as Halo PC closes it). */
 
 #define CREDITS_STRINGS "pc\\main_menu\\credits"
 #define CREDITS_TOP 50
@@ -2900,6 +2965,7 @@ static boolean credits_begin(void)
 	credits.count = 0;
 	credits.next = 0;
 	credits.scrolled_time = system_milliseconds();
+	credits_roll.closed = FALSE;
 	return TRUE;
 }
 
@@ -2987,8 +3053,17 @@ static void credits_update(struct widget_instance *widget)
 		credits.count < MAXIMUM_CREDITS_LINES; index++)
 	{
 		if (credits.next >= list->strings.count)
+		{
+			if (credits_roll.once)
+				break;
 			credits.next = 0;
+		}
 		bottom += credits_line_add(tag_index, credits.next++, bottom);
+	}
+	if (credits_roll.once && !credits_roll.closed && !credits.count && credits.next >= list->strings.count)
+	{
+		credits_roll.closed = TRUE;
+		ui_widget_port_post_button(0, BUTTON_B);
 	}
 	clip.x0 = widget->horizontal_offset;
 	clip.x1 = (short)(widget->horizontal_offset + CREDITS_WIDTH);
@@ -8080,6 +8155,8 @@ void pc_menu_game_data_function_invoke(
 	}
 	else if (!strcmp(name, "port credits update"))
 		credits_update(widget);
+	else if (!strcmp(name, "port credits after game"))
+		credits_after_game(widget);
 	else if (!strcmp(name, "port hdr calibration"))
 		hdr_calibration_update(widget);
 	else if (!strcmp(name, "controls update menu"))

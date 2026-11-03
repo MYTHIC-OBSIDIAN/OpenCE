@@ -498,6 +498,17 @@ static const struct config_setting config_settings[] =
 		"times as far, and at full strength from a third of the flare).\n"
 		"In a network game, the host's network.shield_effects decides, unless\n"
 		"it is \"players\" (each player's own) or the game is co-op." },
+	{ "display.credits", _config_string, "\"original\"", "HALO_CREDITS", _environment_value, _platform_all,
+		"The credits, the main menu's CREDITS and those after The Maw:\n"
+		"\"original\", the Xbox's credits movie (bink\\credits.bik in the data\n"
+		"root, extracted with the maps; none without it), or \"pc\", Halo PC's\n"
+		"credits, scrolling over the main menu. CREDITS in Video Setup > Extra\n"
+		"Effects writes its choice here." },
+	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
+		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
+		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
+		"bink\\intro_pc.bik (none without it). INTRO in Video Setup > Extra\n"
+		"Effects writes its choice here; it plays from the next start." },
 	{ "display.shield_color", _config_string, "\"default\"", "HALO_SHIELD_COLOR", _environment_value, _platform_all,
 		"Your energy shield's color, as this machine draws it: \"default\" (the\n"
 		"shield's own) or a multiplayer armor color: white, black, red, blue,\n"
@@ -1821,6 +1832,8 @@ static const struct
 	{ "display.scoreboard_team_layout", { "teams", "score", NULL }, NULL },
 	{ "display.chat_style", { "colors", "white", NULL }, NULL },
 	{ "display.shield_glow_intensity", { "default", "light_show", NULL }, NULL },
+	{ "display.credits", { "original", "pc", NULL }, NULL },
+	{ "display.intro", { "xbox", "pc", NULL }, NULL },
 	{ "display.shield_color", { "default", "white", "black", "red", "blue", "gray", "yellow", "green", "pink",
 		"purple", "cyan", "cobalt", "orange", "teal", "sage", "brown", "tan", "maroon", "salmon", NULL }, NULL },
 	{ "audio.resampler", { "sinc", "linear", NULL }, NULL },

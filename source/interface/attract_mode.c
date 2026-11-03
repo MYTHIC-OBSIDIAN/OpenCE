@@ -93,6 +93,9 @@ void attract_mode_reset_timer(
 	return;
 }
 
+/* port: port/linux/src/port_config.c's */
+const char *config_string(const char *name);
+
 const char *attract_mode_get_localized_movie_path(
 	short movie)
 {
@@ -111,6 +114,26 @@ const char *attract_mode_get_localized_movie_path(
 	};
 
 	match_assert("c:\\halo\\SOURCE\\interface\\attract_mode.c", 163, movie>=0 && movie<NUMBER_OF_BINK_MOVIES);
+
+	/* port: the intro the player chose (display.intro, Video Setup > Extra
+	Effects' INTRO): bink\intro_xbox.bik, else the Xbox's own (bink\intro.bik,
+	the language's, below); or bink\intro_pc.bik, and no intro without it */
+	if (movie == _bink_intro_movie)
+	{
+		struct file_reference intro_file;
+		boolean pc = strcmp(config_string("display.intro"), "pc") == 0;
+
+		_snprintf(bss_00453ae8, NUMBEROF(bss_00453ae8), "%s",
+			pc ? "d:\\bink\\intro_pc.bik" : "d:\\bink\\intro_xbox.bik");
+		if (file_exists(file_reference_create_from_path(&intro_file, bss_00453ae8, FALSE)))
+			return bss_00453ae8;
+		if (pc)
+		{
+			error(_error_silent, "no intro: %s is not there", bss_00453ae8);
+			bss_00453ae8[0] = '\0';
+			return bss_00453ae8;
+		}
+	}
 
 	switch (XGetLanguage())
 	{

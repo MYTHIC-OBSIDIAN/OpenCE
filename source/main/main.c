@@ -1926,12 +1926,22 @@ void main_load_ui_scenario(
 	return;
 }
 
+/* port: port/linux/game/menu_functions.c's: the credits the player chose */
+boolean ui_widget_port_credits_original(void);
+void ui_widget_port_roll_credits(void);
+
 void main_roll_credits(
 	void)
 {
 	error(_error_silent, "congratulations, you won the game!");
 	main_menu_load();
-	game_end_credits_start();
+	/* port: the credits the player chose (display.credits): the Xbox's
+	movie, or Halo PC's scrolling credits over the main menu once it is up
+	(port/linux/game/menu_functions.c) */
+	if (ui_widget_port_credits_original())
+		game_end_credits_start();
+	else
+		ui_widget_port_roll_credits();
 	return;
 }
 
