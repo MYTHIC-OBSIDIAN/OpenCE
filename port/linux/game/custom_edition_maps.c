@@ -191,10 +191,10 @@ struct custom_edition_maps_globals
 	struct custom_edition_map digsite_missing[NUMBER_OF_DIGSITE_MAPS];
 	/* the Xbox's multiplayer maps put in multi_maps as <name>_xbox.map, by
 	their index in the Xbox's level list (xbox_maps'), and their menu names
-	(Halo PC's for the map, and " (Xbox)") */
+	(Halo PC's for the map, and " (Classic)") */
 	short original_count;
 	short original[NUMBER_OF_ORIGINAL_MAPS];
-	wchar_t original_names[NUMBER_OF_ORIGINAL_MAPS][MAXIMUM_MAP_NAME_LENGTH + 8];
+	wchar_t original_names[NUMBER_OF_ORIGINAL_MAPS][MAXIMUM_MAP_NAME_LENGTH + 16];
 	/* MULTIPLAYER's entries: multi_maps' Halo PC maps (an index in pc), each
 	followed by the Xbox's own of it if it is there (-1 - its index in the
 	Xbox's level list), and those of the Xbox's without one of Halo PC's in
@@ -722,7 +722,7 @@ static void custom_edition_maps_look_for(
 
 				ustrncpy(name, xbox_maps[xbox_index].name, MAXIMUM_MAP_NAME_LENGTH);
 				name[MAXIMUM_MAP_NAME_LENGTH] = 0;
-				ustrcat(name, L" (Xbox)");
+				ustrcat(name, L" (Classic)");
 				globals->original[globals->original_count++] = xbox_index;
 			}
 		}

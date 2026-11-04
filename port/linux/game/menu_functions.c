@@ -982,7 +982,7 @@ static boolean campaign_continue(short controller)
 chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the Halo
 PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions of
 the Xbox's, each followed by the Xbox's own of it put in multi_maps as
-<name>_xbox.map, "<name> (Xbox)"; the maps folder's are not listed), DIGSITE (the Digsite
+<name>_xbox.map, "<name> (Classic)"; the maps folder's are not listed), DIGSITE (the Digsite
 maps, a fixed list, each played as its file's scenario type says) or
 CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
 custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
@@ -1149,7 +1149,7 @@ static short multiplayer_entry_display_index(short entry)
 }
 
 /* MULTIPLAYER's entry's name: a Halo PC map's (by its display index:
-custom_edition_maps.c), or "<its name> (Xbox)" for the Xbox's own */
+custom_edition_maps.c), or "<its name> (Classic)" for the Xbox's own */
 static void multiplayer_map_text(short map, wchar_t *text)
 {
 	short pc_index;
@@ -4357,7 +4357,7 @@ static void map_display_name(char const *map_name, wchar_t *text)
 		if (!_stricmp(scenario_name(names[index]), scenario_name(map_name)))
 		{
 			/* (the Xbox's own, which this build plays from multi_maps'
-			<name>_xbox.map: named as MULTIPLAYER names it, "<name> (Xbox)") */
+			<name>_xbox.map: named as MULTIPLAYER names it, "<name> (Classic)") */
 			if (custom_edition_maps_original_name(index)[0])
 			{
 				ustrncpy(text, custom_edition_maps_original_name(index), ROW_TEXT_LENGTH - 1);
@@ -4365,8 +4365,8 @@ static void map_display_name(char const *map_name, wchar_t *text)
 				return;
 			}
 			string_get("pc\\main_menu\\mp_map_list", index, text);
-			if (ustrlen(text) + 8 < ROW_TEXT_LENGTH)
-				ustrcat(text, L" (Xbox)");
+			if (ustrlen(text) + 11 < ROW_TEXT_LENGTH)
+				ustrcat(text, L" (Classic)");
 			return;
 		}
 	}

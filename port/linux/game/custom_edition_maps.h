@@ -120,7 +120,7 @@ Halo PC's in their places by name: how many; an entry's Xbox level index (in
 the Xbox's level list, its level and display index) for one of the Xbox's,
 else NONE and *pc_index its index in multi_maps' Halo PC maps; the entry of a
 Halo PC map (xbox_level NONE) or of an Xbox map, else NONE; and an Xbox map's
-menu name (Halo PC's for it, and " (Xbox)"). Scans for maps the first time. */
+menu name (Halo PC's for it, and " (Classic)"). Scans for maps the first time. */
 short custom_edition_maps_multiplayer_count(
 	void);
 short custom_edition_maps_multiplayer_entry(
