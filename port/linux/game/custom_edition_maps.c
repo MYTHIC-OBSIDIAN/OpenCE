@@ -78,6 +78,8 @@ the same, as not installed.
 #define FIRST_CUSTOM_CAMPAIGN_DISPLAY_INDEX 0x6000
 /* room for the level list's Xbox levels (ui_widget_event_handler_functions.c has 13) */
 #define MAXIMUM_XBOX_LEVELS 16
+/* the Xbox's multiplayer maps (xbox_maps) */
+#define NUMBER_OF_ORIGINAL_MAPS 13
 
 /* the longest map file name whose level name
 (CUSTOM_EDITION_LEVEL_NAME_PREFIX and it) the game engine keeps whole */
@@ -187,6 +189,10 @@ struct custom_edition_maps_globals
 	NULL and a stand-in of its name, saying it is not installed */
 	struct custom_edition_map *digsite[NUMBER_OF_DIGSITE_MAPS];
 	struct custom_edition_map digsite_missing[NUMBER_OF_DIGSITE_MAPS];
+	/* ORIGINAL MAPS': the Xbox's multiplayer maps put in multi_maps as
+	<name>_xbox.map, by their index in the Xbox's level list (xbox_maps') */
+	short original_count;
+	short original[NUMBER_OF_ORIGINAL_MAPS];
 };
 
 /* ---------- globals */
@@ -222,6 +228,7 @@ static struct
 	{ "bloodgulch", L"Blood Gulch" }, { "wizard", L"Wizard" }, { "putput", L"Chiron TL-34" },
 	{ "longest", L"Longest" },
 };
+typedef char verify_number_of_original_maps[NUMBEROF(xbox_maps) == NUMBER_OF_ORIGINAL_MAPS ? 1 : -1];
 
 /* the Digsite maps, in the DIGSITE list's order: their files' names (without
 .map) and their menu names */
@@ -689,6 +696,20 @@ static void custom_edition_maps_look_for(
 
 	custom_edition_maps_forget();
 	globals->looked_for = TRUE;
+	/* (ORIGINAL MAPS': the Xbox's in multi_maps as <name>_xbox.map,
+	custom_edition_original_map_file; Custom Edition maps or none) */
+	globals->original_count = 0;
+	{
+		short xbox_index;
+
+		for (xbox_index = 0; xbox_index < NUMBER_OF_ORIGINAL_MAPS; xbox_index++)
+		{
+			char path[256];
+
+			if (custom_edition_original_map_file(xbox_maps[xbox_index].file, path, sizeof(path)))
+				globals->original[globals->original_count++] = xbox_index;
+		}
+	}
 	if (!halo_custom_edition_tag_cache())
 	{
 		return;
@@ -1046,6 +1067,21 @@ short custom_edition_maps_pc_display_index(
 {
 	return index < 0 || index >= custom_edition_maps_pc_count() ? NONE :
 		FIRST_DISPLAY_INDEX + custom_edition_maps_globals.pc[index];
+}
+
+short custom_edition_maps_original_count(
+	void)
+{
+	if (!custom_edition_maps_globals.looked_for)
+		custom_edition_maps_look_for();
+	return custom_edition_maps_globals.original_count;
+}
+
+short custom_edition_maps_original_level(
+	short index)
+{
+	return index < 0 || index >= custom_edition_maps_original_count() ? NONE :
+		custom_edition_maps_globals.original[index];
 }
 
 short custom_edition_maps_digsite_count(

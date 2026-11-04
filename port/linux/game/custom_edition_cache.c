@@ -927,6 +927,32 @@ boolean custom_edition_level_name(
 		!_strnicmp(level_name, CUSTOM_EDITION_LEVEL_NAME_PREFIX, csstrlen(CUSTOM_EDITION_LEVEL_NAME_PREFIX));
 }
 
+boolean custom_edition_original_map_file(
+	char const *name,
+	char *path,
+	unsigned long size)
+{
+	unsigned char header[8];
+	FILE *file;
+	boolean found = FALSE;
+	int length;
+
+	if (!name || !name[0] || strchr(name, '\\') || custom_edition_level_name(name))
+		return FALSE;
+	length = snprintf(path, size, "%s%s%s.map", CUSTOM_EDITION_PC_MAP_DIRECTORY, name,
+		CUSTOM_EDITION_ORIGINAL_MAP_SUFFIX);
+	if (length < 0 || (unsigned long)length >= size || !(file = fopen(path, "rb")))
+		return FALSE;
+	/* ('head', little-endian, and the Xbox's cache version, 5) */
+	if (fread(header, 1, sizeof(header), file) == sizeof(header) && !memcmp(header, "daeh", 4) &&
+		header[4] == 5 && !header[5] && !header[6] && !header[7])
+	{
+		found = TRUE;
+	}
+	fclose(file);
+	return found;
+}
+
 boolean custom_edition_map_file_path(
 	char const *map_name,
 	char *path)

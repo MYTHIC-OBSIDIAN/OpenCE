@@ -1253,8 +1253,14 @@ static void cache_file_get_map_path(
 	{
 		MAXIMUM_MAP_PATH_LENGTH = 256,
 	};
-	int length = snprintf(path, MAXIMUM_MAP_PATH_LENGTH, "%s%s.map", cache_files_map_directory(), map_name);
+	int length;
 
+	/* port: the Xbox's map put in multi_maps as <name>_xbox.map (ORIGINAL
+	MAPS: port/linux/game/custom_edition_cache.c), in place of the maps
+	folder's */
+	if (custom_edition_original_map_file(map_name, path, MAXIMUM_MAP_PATH_LENGTH))
+		return;
+	length = snprintf(path, MAXIMUM_MAP_PATH_LENGTH, "%s%s.map", cache_files_map_directory(), map_name);
 	if (length < 0 || length >= MAXIMUM_MAP_PATH_LENGTH)
 	{
 		error(_error_silent, "map path for '%.64s' is too long", map_name);

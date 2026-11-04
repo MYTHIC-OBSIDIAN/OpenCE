@@ -110,6 +110,8 @@ python3 tools/pc_map_pictures.py "<Halo PC or Halo CE install>/maps" <game>/mult
 
 writes `icefields.bmp`, `deathisland.bmp` and so on beside the maps, and the menus' pictures into the game's `menus` folder (any `<name>.bmp` or `<name>.txt` you put beside a map yourself wins).
 
+The Xbox's own multiplayer maps can be played too, in the map lists' **ORIGINAL MAPS** (after MULTIPLAYER): copy any of the Xbox's 13 from `maps` into `multi_maps` with `_xbox` added to the name (`bloodgulch_xbox.map`, `sidewinder_xbox.map` and so on). They are listed by the Xbox's names, pictures and descriptions, and play as the Xbox's maps (Halo PC's versions in MULTIPLAYER stay as they are); a game on one needs each player to have it. A dedicated server's rotation entry by name (`bloodgulch:ctf`) plays `multi_maps\bloodgulch_xbox.map` too when it is there, else `maps\bloodgulch.map`.
+
 With HIGH-RES HUD on (the default), Halo PC's own maps draw the Xbox's HUD throughout: the shield and health meters, the ammo meters, counter digits and damage arrows too, from the Xbox redraws laid out as Halo PC's sheets (`port/assets/hud/pc_layout.json`, made by `tools/pc_hud_assets.py`).
 
 With HIGH-RES HUD on, the campaign (and every Xbox map) draws the weapons' pickup icons from Halo PC's own, four times the Xbox's resolution: they are read from the first Halo PC map in `multi_maps`, with its `bitmaps.map` (`port/linux/game/hud_pc_icons.c`). Without one, the Xbox's icons are drawn, upscaled.

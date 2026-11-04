@@ -630,6 +630,17 @@ static void custom_maps_folder(char *folder, int size)
 		platform_translate_path("d:\\custom_maps", folder, (unsigned long)size);
 }
 
+/* the Xbox's map of the name put in multi_maps as <name>_xbox.map (ORIGINAL
+MAPS: port/linux/game/custom_edition_cache.h), which the game plays in place
+of the maps folder's, into path */
+static int original_map_file(const char *name, char *path, int size)
+{
+	char suffixed[SERVER_MAP_SIZE + 8];
+
+	snprintf(suffixed, sizeof(suffixed), "%s_xbox", name);
+	return map_file("d:\\multi_maps", suffixed, path, size);
+}
+
 void server_rotation_resolve(struct server_entry *entry)
 {
 	char path[1024];
@@ -639,10 +650,12 @@ void server_rotation_resolve(struct server_entry *entry)
 	if (entry->rejected[0])
 		return;
 	custom_maps_folder(folder, sizeof(folder));
-	/* a name: the Xbox's map of it, else Custom Edition's */
+	/* a name: the Xbox's map of it (multi_maps' <name>_xbox.map, else the maps
+	folder's), else Custom Edition's */
 	if (entry->map_kind == _server_map_name)
 	{
-		if (map_file("d:\\maps", entry->map_name, path, sizeof(path)))
+		if (original_map_file(entry->map_name, path, sizeof(path)) ||
+			map_file("d:\\maps", entry->map_name, path, sizeof(path)))
 		{
 			server_map_header(path, &version, &type);
 			server_rotation_check_kind(entry, type, version);
@@ -680,8 +693,10 @@ void server_rotation_resolve(struct server_entry *entry)
 		entry->map_missing = 1;
 		return;
 	}
-	/* a path: the maps folder's file of its last part */
-	if (!map_file("d:\\maps", entry->map_name, path, sizeof(path)))
+	/* a path: the maps folder's file of its last part (or multi_maps'
+	<name>_xbox.map) */
+	if (!original_map_file(entry->map_name, path, sizeof(path)) &&
+		!map_file("d:\\maps", entry->map_name, path, sizeof(path)))
 	{
 		snprintf(entry->rejected, sizeof(entry->rejected), "there is no map file maps/%s.map for %s", entry->map_name,
 			entry->level);

@@ -37,6 +37,10 @@ PC's multiplayer maps (its own six, Gearbox's, and its versions of the
 Xbox's), with Halo PC's bitmaps.map and sounds.map; and digsite_maps, for
 the Digsite maps (custom_edition_maps.c) */
 #define CUSTOM_EDITION_PC_MAP_DIRECTORY "d:\\multi_maps\\"
+/* the suffix of an Xbox map put in multi_maps (<name>_xbox.map, the Xbox's own
+<name>.map renamed: ORIGINAL MAPS), which plays as the Xbox's map of that
+name (custom_edition_original_map_file) */
+#define CUSTOM_EDITION_ORIGINAL_MAP_SUFFIX "_xbox"
 #define CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY "d:\\digsite_maps\\"
 
 /* A Custom Edition map's level name is this and its file's name
@@ -113,6 +117,14 @@ boolean custom_edition_map_file_path(
 changed (custom_edition_maps_look_again) */
 void custom_edition_map_paths_forget(
 	void);
+/* The Xbox's map of the name (a level name's last part: bloodgulch) put in
+multi_maps as <name>_xbox.map, an Xbox cache file: TRUE and its path, which
+the game reads in place of the maps folder's <name>.map (cache_files.c,
+cache_files_windows.c); FALSE if there is none. */
+boolean custom_edition_original_map_file(
+	char const *name,
+	char *path,
+	unsigned long size);
 /* ... the file the name names, whatever version a network game is on:
 <name>.map; for a name without a hash, the custom_maps folder's map of that
 name and a hash (<name>_<hash>.map, another version's) if it is the one;

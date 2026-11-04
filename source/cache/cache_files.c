@@ -1002,7 +1002,10 @@ boolean cache_files_map_plays_multiplayer(
 	header's build is Halo PC's, not one to check */
 	if (custom_edition_level_name(map_name))
 		return TRUE;
-	snprintf(path, sizeof(path), "%s%s.map", cache_files_map_directory(), tag_name_strip_path(map_name));
+	/* port: (or the Xbox's map put in multi_maps as <name>_xbox.map:
+	custom_edition_original_map_file) */
+	if (!custom_edition_original_map_file(tag_name_strip_path(map_name), path, sizeof(path)))
+		snprintf(path, sizeof(path), "%s%s.map", cache_files_map_directory(), tag_name_strip_path(map_name));
 	file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (file != INVALID_HANDLE_VALUE)
 	{
@@ -1107,7 +1110,10 @@ boolean cache_files_map_present(
 
 		if (cache_files_precache_map_loaded(map_name))
 			return TRUE;
-		snprintf(path, sizeof(path), "%s%s.map", cache_files_map_directory(), name);
+		/* port: (or the Xbox's map put in multi_maps as <name>_xbox.map:
+		custom_edition_original_map_file) */
+		if (!custom_edition_original_map_file(name, path, sizeof(path)))
+			snprintf(path, sizeof(path), "%s%s.map", cache_files_map_directory(), name);
 		file = CreateFileA(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 		if (file != INVALID_HANDLE_VALUE)
 		{
