@@ -152,10 +152,10 @@ def main() -> int:
     masters = ROOT / "port/assets/network/masters.txt"
     if masters.exists():
         shutil.copy2(masters, dist / "masters.txt")
-    # the dedicated server's examples: init.txt's commands and gametype
-    # files (docs/dedicated_server.md, "Files")
+    # the dedicated server's example of init.txt's commands
+    # (docs/dedicated_server.md, "Files"; its example gametype files,
+    # deploy/gametypes, are not shipped)
     shutil.copy2(ROOT / "deploy/init.txt.example", dist / "init.txt.example")
-    shutil.copytree(ROOT / "deploy/gametypes", dist / "gametypes")
     return 0
 
 
