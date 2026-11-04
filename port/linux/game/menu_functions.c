@@ -981,8 +981,8 @@ static boolean campaign_continue(short controller)
 /* ---- the map lists (New Game's and the Map screen's): their first row's
 chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the Halo
 PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions of
-the Xbox's; the Xbox's own are not listed), ORIGINAL MAPS (the Xbox's own,
-put in multi_maps as <name>_xbox.map), DIGSITE (the Digsite
+the Xbox's, each followed by the Xbox's own of it put in multi_maps as
+<name>_xbox.map, "<name> (Xbox)"; the maps folder's are not listed), DIGSITE (the Digsite
 maps, a fixed list, each played as its file's scenario type says) or
 CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
 custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
@@ -994,9 +994,6 @@ enum
 {
 	MAP_KIND_SINGLEPLAYER,
 	MAP_KIND_MULTIPLAYER,
-	/* (the Xbox's multiplayer maps put in multi_maps as <name>_xbox.map,
-	which play as the Xbox's own: custom_edition_maps_original_count) */
-	MAP_KIND_ORIGINAL,
 	MAP_KIND_DIGSITE,
 	MAP_KIND_CUSTOM_MULTIPLAYER,
 	NUMBER_OF_MAP_KINDS
@@ -1132,33 +1129,36 @@ static short xbox_multiplayer_map_count(short multiplayer_map_count)
 	return (short)PIN(multiplayer_map_count, 0, XBOX_MULTIPLAYER_MAPS);
 }
 
-/* MULTIPLAYER's entries: multi_maps' Halo PC maps (custom_edition_maps.c),
-the Xbox's own not listed */
+/* MULTIPLAYER's entries: multi_maps' Halo PC maps, each followed by the
+Xbox's own of it put in multi_maps as <name>_xbox.map
+(custom_edition_maps_multiplayer_count) */
 static short multiplayer_entry_count(short multiplayer_map_count)
 {
 	(void)multiplayer_map_count;
-	return custom_edition_maps_pc_count();
+	return custom_edition_maps_multiplayer_count();
 }
 
-/* MULTIPLAYER's entry's name: one of multi_maps' (by its display index:
-custom_edition_maps.c) */
+/* MULTIPLAYER's entry's display index: a Halo PC map's (custom_edition_maps.c),
+or an Xbox map's, its index in the Xbox's level list */
+static short multiplayer_entry_display_index(short entry)
+{
+	short pc_index;
+	short xbox_level = custom_edition_maps_multiplayer_entry(entry, &pc_index);
+
+	return xbox_level != NONE ? xbox_level : custom_edition_maps_pc_display_index(pc_index);
+}
+
+/* MULTIPLAYER's entry's name: a Halo PC map's (by its display index:
+custom_edition_maps.c), or "<its name> (Xbox)" for the Xbox's own */
 static void multiplayer_map_text(short map, wchar_t *text)
 {
-	wchar_t const *name = custom_edition_maps_name(custom_edition_maps_pc_display_index(map));
+	short pc_index;
+	short xbox_level = custom_edition_maps_multiplayer_entry(map, &pc_index);
+	wchar_t const *name = xbox_level != NONE ? custom_edition_maps_original_name(xbox_level) :
+		custom_edition_maps_name(custom_edition_maps_pc_display_index(pc_index));
 
 	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
 	text[ROW_TEXT_LENGTH - 1] = 0;
-}
-
-/* ORIGINAL MAPS' entry's name: the Xbox's for its map (the menus' mp_map_list,
-by its index in the Xbox's level list) */
-static void original_map_text(short map, wchar_t *text)
-{
-	short level = custom_edition_maps_original_level(map);
-
-	text[0] = 0;
-	if (level != NONE)
-		string_get("pc\\main_menu\\mp_map_list", level, text);
 }
 
 /* DIGSITE's entry's name */
@@ -1192,8 +1192,6 @@ static void (*map_kind_text(short kind))(short entry, wchar_t *text)
 	{
 	case MAP_KIND_MULTIPLAYER:
 		return multiplayer_map_text;
-	case MAP_KIND_ORIGINAL:
-		return original_map_text;
 	case MAP_KIND_DIGSITE:
 		return digsite_map_text;
 	default:
@@ -1254,8 +1252,6 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return NUMBER_OF_SINGLE_PLAYER_LEVELS;
 	case MAP_KIND_MULTIPLAYER:
 		return multiplayer_entry_count(multiplayer_map_count);
-	case MAP_KIND_ORIGINAL:
-		return custom_edition_maps_original_count();
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_count();
 	default:
@@ -1270,10 +1266,7 @@ static short map_kind_display_index(short kind, short entry)
 	switch (kind)
 	{
 	case MAP_KIND_MULTIPLAYER:
-		return custom_edition_maps_pc_display_index(entry);
-	/* (an Xbox map's display index is its index in the Xbox's level list) */
-	case MAP_KIND_ORIGINAL:
-		return custom_edition_maps_original_level(entry);
+		return multiplayer_entry_display_index(entry);
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_display_index(entry);
 	case MAP_KIND_CUSTOM_MULTIPLAYER:
@@ -1291,9 +1284,15 @@ static short map_kind_level_index(short kind, short entry)
 	if (kind == MAP_KIND_SINGLEPLAYER)
 		return NONE;
 	/* (an Xbox map's: its index in the Xbox's level list, the multiplayer
-	maps' first) */
-	if (kind == MAP_KIND_ORIGINAL)
-		return custom_edition_maps_original_level(entry);
+	maps' first, which is its display index too) */
+	if (kind == MAP_KIND_MULTIPLAYER)
+	{
+		short pc_index;
+		short xbox_level = custom_edition_maps_multiplayer_entry(entry, &pc_index);
+
+		if (xbox_level != NONE)
+			return xbox_level;
+	}
 	return custom_edition_maps_level_index(map_kind_display_index(kind, entry));
 }
 
@@ -1304,24 +1303,20 @@ static short map_kind_of_level_index(short level_index, short *kind)
 	short entry, part;
 
 	*kind = MAP_KIND_MULTIPLAYER;
-	/* (an Xbox map: ORIGINAL MAPS' entry, if it has it) */
+	/* (an Xbox map: MULTIPLAYER's entry of it, if it has one) */
 	if (level_index < XBOX_MULTIPLAYER_MAPS)
 	{
-		for (entry = 0; entry < custom_edition_maps_original_count(); entry++)
-		{
-			if (custom_edition_maps_original_level(entry) == level_index)
-			{
-				*kind = MAP_KIND_ORIGINAL;
-				return entry;
-			}
-		}
-		return 0;
+		entry = custom_edition_maps_multiplayer_entry_of(NONE, level_index);
+		return entry != NONE ? entry : 0;
 	}
 	entry = custom_edition_maps_entry(custom_edition_maps_level_display_index(level_index), &part);
 	if (entry == NONE)
 		return 0;
 	if (part == _custom_edition_maps_kind_pc)
-		return entry;
+	{
+		entry = custom_edition_maps_multiplayer_entry_of(entry, NONE);
+		return entry != NONE ? entry : 0;
+	}
 	*kind = part == _custom_edition_maps_kind_digsite ? MAP_KIND_DIGSITE : MAP_KIND_CUSTOM_MULTIPLAYER;
 	return entry;
 }
@@ -4361,7 +4356,17 @@ static void map_display_name(char const *map_name, wchar_t *text)
 	{
 		if (!_stricmp(scenario_name(names[index]), scenario_name(map_name)))
 		{
+			/* (the Xbox's own, which this build plays from multi_maps'
+			<name>_xbox.map: named as MULTIPLAYER names it, "<name> (Xbox)") */
+			if (custom_edition_maps_original_name(index)[0])
+			{
+				ustrncpy(text, custom_edition_maps_original_name(index), ROW_TEXT_LENGTH - 1);
+				text[ROW_TEXT_LENGTH - 1] = 0;
+				return;
+			}
 			string_get("pc\\main_menu\\mp_map_list", index, text);
+			if (ustrlen(text) + 8 < ROW_TEXT_LENGTH)
+				ustrcat(text, L" (Xbox)");
 			return;
 		}
 	}

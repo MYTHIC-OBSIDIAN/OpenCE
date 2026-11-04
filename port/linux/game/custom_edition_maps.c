@@ -189,10 +189,19 @@ struct custom_edition_maps_globals
 	NULL and a stand-in of its name, saying it is not installed */
 	struct custom_edition_map *digsite[NUMBER_OF_DIGSITE_MAPS];
 	struct custom_edition_map digsite_missing[NUMBER_OF_DIGSITE_MAPS];
-	/* ORIGINAL MAPS': the Xbox's multiplayer maps put in multi_maps as
-	<name>_xbox.map, by their index in the Xbox's level list (xbox_maps') */
+	/* the Xbox's multiplayer maps put in multi_maps as <name>_xbox.map, by
+	their index in the Xbox's level list (xbox_maps'), and their menu names
+	(Halo PC's for the map, and " (Xbox)") */
 	short original_count;
 	short original[NUMBER_OF_ORIGINAL_MAPS];
+	wchar_t original_names[NUMBER_OF_ORIGINAL_MAPS][MAXIMUM_MAP_NAME_LENGTH + 8];
+	/* MULTIPLAYER's entries: multi_maps' Halo PC maps (an index in pc), each
+	followed by the Xbox's own of it if it is there (-1 - its index in the
+	Xbox's level list), and those of the Xbox's without one of Halo PC's in
+	their places by name (made with the first ask after a scan) */
+	boolean multiplayer_made;
+	short multiplayer_count;
+	short multiplayer[CUSTOM_EDITION_MAPS_MAXIMUM + NUMBER_OF_ORIGINAL_MAPS];
 };
 
 /* ---------- globals */
@@ -696,7 +705,8 @@ static void custom_edition_maps_look_for(
 
 	custom_edition_maps_forget();
 	globals->looked_for = TRUE;
-	/* (ORIGINAL MAPS': the Xbox's in multi_maps as <name>_xbox.map,
+	globals->multiplayer_made = FALSE;
+	/* (the Xbox's in multi_maps as <name>_xbox.map,
 	custom_edition_original_map_file; Custom Edition maps or none) */
 	globals->original_count = 0;
 	{
@@ -707,7 +717,14 @@ static void custom_edition_maps_look_for(
 			char path[256];
 
 			if (custom_edition_original_map_file(xbox_maps[xbox_index].file, path, sizeof(path)))
+			{
+				wchar_t *name = globals->original_names[xbox_index];
+
+				ustrncpy(name, xbox_maps[xbox_index].name, MAXIMUM_MAP_NAME_LENGTH);
+				name[MAXIMUM_MAP_NAME_LENGTH] = 0;
+				ustrcat(name, L" (Xbox)");
 				globals->original[globals->original_count++] = xbox_index;
+			}
 		}
 	}
 	if (!halo_custom_edition_tag_cache())
@@ -1069,19 +1086,114 @@ short custom_edition_maps_pc_display_index(
 		FIRST_DISPLAY_INDEX + custom_edition_maps_globals.pc[index];
 }
 
-short custom_edition_maps_original_count(
+/* MULTIPLAYER's entries (custom_edition_maps_multiplayer_count): multi_maps'
+Halo PC maps in their order, each followed by the Xbox's own of it if it is
+in multi_maps, and the Xbox's without one of Halo PC's put in by name */
+static void custom_edition_maps_multiplayer_make(
+	void)
+{
+	struct custom_edition_maps_globals *globals = &custom_edition_maps_globals;
+	boolean paired[NUMBER_OF_ORIGINAL_MAPS];
+	short alone[NUMBER_OF_ORIGINAL_MAPS];
+	short alone_count = 0, alone_next = 0;
+	short index, original;
+
+	globals->multiplayer_made = TRUE;
+	globals->multiplayer_count = 0;
+	csmemset(paired, 0, sizeof(paired));
+	for (index = 0; index < globals->pc_count; index++)
+	{
+		short xbox_index = xbox_map_index(globals->maps[globals->pc[index]].name);
+
+		if (xbox_index != NONE)
+			paired[xbox_index] = TRUE;
+	}
+	/* (the Xbox's alone, by name) */
+	for (original = 0; original < globals->original_count; original++)
+	{
+		short xbox_index = globals->original[original];
+
+		if (paired[xbox_index])
+			continue;
+		for (index = alone_count++;
+			index > 0 && display_name_after(globals->original_names[alone[index - 1]], globals->original_names[xbox_index]);
+			index--)
+		{
+			alone[index] = alone[index - 1];
+		}
+		alone[index] = xbox_index;
+	}
+	for (index = 0; index < globals->pc_count; index++)
+	{
+		struct custom_edition_map const *map = &globals->maps[globals->pc[index]];
+		short xbox_index = xbox_map_index(map->name);
+
+		while (alone_next < alone_count &&
+			display_name_after(map->display_name, globals->original_names[alone[alone_next]]))
+		{
+			globals->multiplayer[globals->multiplayer_count++] = (short)(-1 - alone[alone_next++]);
+		}
+		globals->multiplayer[globals->multiplayer_count++] = index;
+		for (original = 0; xbox_index != NONE && original < globals->original_count; original++)
+		{
+			if (globals->original[original] == xbox_index)
+				globals->multiplayer[globals->multiplayer_count++] = (short)(-1 - xbox_index);
+		}
+	}
+	while (alone_next < alone_count)
+		globals->multiplayer[globals->multiplayer_count++] = (short)(-1 - alone[alone_next++]);
+
+	return;
+}
+
+short custom_edition_maps_multiplayer_count(
 	void)
 {
 	if (!custom_edition_maps_globals.looked_for)
 		custom_edition_maps_look_for();
-	return custom_edition_maps_globals.original_count;
+	if (!custom_edition_maps_globals.multiplayer_made)
+		custom_edition_maps_multiplayer_make();
+	return custom_edition_maps_globals.multiplayer_count;
 }
 
-short custom_edition_maps_original_level(
-	short index)
+short custom_edition_maps_multiplayer_entry(
+	short entry,
+	short *pc_index)
 {
-	return index < 0 || index >= custom_edition_maps_original_count() ? NONE :
-		custom_edition_maps_globals.original[index];
+	short value;
+
+	*pc_index = NONE;
+	if (entry < 0 || entry >= custom_edition_maps_multiplayer_count())
+		return NONE;
+	value = custom_edition_maps_globals.multiplayer[entry];
+	if (value < 0)
+		return (short)(-1 - value);
+	*pc_index = value;
+	return NONE;
+}
+
+short custom_edition_maps_multiplayer_entry_of(
+	short pc_index,
+	short xbox_level)
+{
+	short entry;
+	short count = custom_edition_maps_multiplayer_count();
+
+	for (entry = 0; entry < count; entry++)
+	{
+		short value = custom_edition_maps_globals.multiplayer[entry];
+
+		if (xbox_level != NONE ? value == -1 - xbox_level : value == pc_index)
+			return entry;
+	}
+	return NONE;
+}
+
+wchar_t const *custom_edition_maps_original_name(
+	short xbox_level)
+{
+	return xbox_level < 0 || xbox_level >= NUMBER_OF_ORIGINAL_MAPS ? L"" :
+		custom_edition_maps_globals.original_names[xbox_level];
 }
 
 short custom_edition_maps_digsite_count(

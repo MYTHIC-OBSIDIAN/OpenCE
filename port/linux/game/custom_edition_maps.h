@@ -112,15 +112,25 @@ short custom_edition_maps_pc_count(
 short custom_edition_maps_pc_display_index(
 	short index);
 
-/* the Xbox's multiplayer maps put in multi_maps as <name>_xbox.map (ORIGINAL
-MAPS: custom_edition_cache.c's custom_edition_original_map_file), which play
-as the Xbox's levels\test\<name>\<name>: how many, and each one's index in
-the Xbox's level list, its level index and its display index (NONE past
-them). Scans for maps the first time. */
-short custom_edition_maps_original_count(
+/* MULTIPLAYER's entries: multi_maps' Halo PC maps (custom_edition_maps_pc_*),
+each followed by the Xbox's own of it put in multi_maps as <name>_xbox.map
+(custom_edition_cache.c's custom_edition_original_map_file), which plays as
+the Xbox's levels\test\<name>\<name>, and those of the Xbox's without one of
+Halo PC's in their places by name: how many; an entry's Xbox level index (in
+the Xbox's level list, its level and display index) for one of the Xbox's,
+else NONE and *pc_index its index in multi_maps' Halo PC maps; the entry of a
+Halo PC map (xbox_level NONE) or of an Xbox map, else NONE; and an Xbox map's
+menu name (Halo PC's for it, and " (Xbox)"). Scans for maps the first time. */
+short custom_edition_maps_multiplayer_count(
 	void);
-short custom_edition_maps_original_level(
-	short index);
+short custom_edition_maps_multiplayer_entry(
+	short entry,
+	short *pc_index);
+short custom_edition_maps_multiplayer_entry_of(
+	short pc_index,
+	short xbox_level);
+wchar_t const *custom_edition_maps_original_name(
+	short xbox_level);
 
 /* the Digsite maps (DIGSITE's, all of them, found or not): how many, and
 each one's display index (NONE past them) */
