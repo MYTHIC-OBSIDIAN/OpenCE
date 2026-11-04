@@ -137,13 +137,17 @@ SCREENS = {
              "With HDR Display, how bright white is, in nits.\nAuto: Windows' SDR content brightness.", "desktop"),
             ("PEAK BRIGHTNESS:", "display.hdr_peak_brightness", PEAK_BRIGHTNESSES,
              "With HDR Display, your display's brightest, in\nnits. Auto: Windows' HDR calibration.", "desktop"),
+            # (every mod of the mods folder played, or none: port_mods.c's
+            # port_mods_scan, from the next map loaded)
+            ("HIGH RES ASSETS:", "mods.enabled", ON_OFF,
+             "Toggle between classic and modern vehicle and\nweapon textures.", None, "high_res_assets"),
             # (attract_mode.c's attract_mode_get_localized_movie_path)
             ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
              "Choose what intro video plays on launch.",
              None),
             # (the main menu's CREDITS: menu_functions.c's credits_play)
             ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
-             "Choose what version of the credits play in the\nmain menu", None),
+             "Choose what version of the credits play in the\nmain menu.", None),
         ],
     },
     "mouse_settings": {
@@ -277,14 +281,15 @@ _graphics = {"display.show_fps", "display.high_res_hud",
 _extra_effects = {"display.shield_glow", "display.shield_glow_intensity",
                   "display.overshield_effect", "display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
                   "display.hdr_peak_brightness", "display.credits",
-                  "display.intro"}
+                  "display.intro", "mods.enabled"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }
 SCREENS["video_settings/extra_effects"] = {
-    # (24 apart: its eleven rows clear of the help)
-    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 24,
+    # (24 apart, the help lower, as Server Setup's: its twelve rows clear of
+    # the help)
+    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 24, "help_top": 366,
     "rows": [row for row in _video["rows"] if row[1] in _extra_effects],
     # (shown only with an HDR display: menu_functions.c's
     # hdr_calibration_row_show)

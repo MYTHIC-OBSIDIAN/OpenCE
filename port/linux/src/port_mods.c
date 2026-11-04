@@ -942,8 +942,9 @@ long port_mods_scan(void)
 		struct port_mod *mod = &port_mods.mods[mod_index];
 		char path[MAXIMUM_PATH_LENGTH];
 
-		/* (those on play in their places in the load order) */
-		mod->order = mod->disabled || mod->refusal ? -1 : mod->position;
+		/* (those on play in their places in the load order; none with
+		mods.enabled false, Extra Effects' HIGH RES ASSETS OFF) */
+		mod->order = !config_boolean("mods.enabled") || mod->disabled || mod->refusal ? -1 : mod->position;
 		if (mod->order < 0)
 			continue;
 		port_mods.played_count++;
@@ -964,7 +965,8 @@ long port_mods_scan(void)
 			snprintf(order + length, sizeof(order) - length, "%s%s%s", mod_index ? ", " : "", mod->folder,
 				mod->disabled ? " (off)" : mod->refusal ? " (not played)" : "");
 		}
-		platform_log("mods: load order %s", order);
+		platform_log("mods: load order %s%s", order,
+			config_boolean("mods.enabled") ? "" : " (none played: mods.enabled is false)");
 	}
 	return port_mods.played_count;
 }
@@ -1402,7 +1404,8 @@ void port_mods_startup(void)
 	int answer;
 
 	port_mods_scan();
-	if (!port_mods_conflicts(conflicts, sizeof(conflicts)))
+	/* (none played: mods.enabled false) */
+	if (!config_boolean("mods.enabled") || !port_mods_conflicts(conflicts, sizeof(conflicts)))
 		return;
 	port_mods_conflicting_names(names, sizeof(names));
 	platform_log("mods: %s", conflicts);
