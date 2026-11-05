@@ -2066,10 +2066,11 @@ profile's button settings as the Xbox's Controller Setup shows them */
 
 /* the picture's frames (the bitmap's: tools/port_settings.py's
 BITMAP_FRAMES): Gamepad Setup's row's, as the list numbers its rows
-(player_profile_edit_select_menu_update_extended_description), and after
-the PC version's nine the Xbox's five of the button settings */
+(player_profile_edit_select_menu_update_extended_description): the PC
+version's nine, with CUSTOMISATION's (Video Setup's) before About's, then the
+Xbox's five of the button settings (tools/port_settings.py's FRAME_ORDER) */
 #define PROFILE_GAMEPAD_FRAME 2
-#define PROFILE_FIRST_LAYOUT_FRAME 9
+#define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's

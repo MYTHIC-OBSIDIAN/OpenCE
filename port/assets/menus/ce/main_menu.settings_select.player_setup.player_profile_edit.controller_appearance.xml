@@ -100,11 +100,11 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/controller_appearance/help_strings">
 		<string text=""/>
-		<string text="Show styles for your controller's family.\nRequires High-Res HUD in Graphics."/>
-		<string text="Manual gameplay button artwork, kept when auto\ndetection is on. Requires High-Res HUD."/>
-		<string text="Preferred Xbox artwork for automatic detection.\nRequires High-Res HUD in Graphics."/>
-		<string text="Preferred PlayStation artwork for auto detection.\nRequires High-Res HUD in Graphics."/>
-		<string text="Preferred Switch artwork for automatic detection.\nRequires High-Res HUD in Graphics."/>
+		<string text="Show styles for your controller's family."/>
+		<string text="Manual gameplay button artwork, kept when auto\ndetection is on."/>
+		<string text="Preferred Xbox artwork for automatic detection."/>
+		<string text="Preferred PlayStation artwork for auto detection."/>
+		<string text="Preferred Switch artwork for automatic detection."/>
 		<string text="Original: black/white buttons. Modern: LB/RB.\nKept when automatic detection is on."/>
 	</strings>
 </menus>

@@ -1954,6 +1954,7 @@
 		<string text="Choose a window or the full\nscreen, the frame rate and more.\n\nProfile:"/>
 		<string text="Internet play, updates and the\nmultiplayer HUD.\n\nProfile:"/>
 		<string text="Change the current profile's\nfree-for-all multiplayer color.\n\nProfile:" map="7"/>
+		<string text="Your legs, the shield glow,\nmods, the intro and credits.\n\nProfile:"/>
 		<string text="Halo: Combat Evolved, the Xbox\ngame, on this computer.\n\nProfile:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_edit_options">
@@ -1967,6 +1968,7 @@
 		<string text="SAVE CHANGES " map="7"/>
 		<string text="NETWORK SETUP " map="8"/>
 		<string text="ABOUT" map="9"/>
+		<string text="CUSTOMISATION"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/cap_video_settings_strings" map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\video_settings\cap_video_settings_strings">
 		<string text="Select a display resolution." map="0"/>

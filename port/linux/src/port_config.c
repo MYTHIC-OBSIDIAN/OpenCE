@@ -503,17 +503,17 @@ static const struct config_setting config_settings[] =
 		"credits movie (bink\\credits.bik in the data root, extracted with the\n"
 		"maps; none without it), or \"pc\", Halo PC's credits, scrolling over\n"
 		"the main menu. After The Maw the Xbox's movie always plays. CREDITS\n"
-		"in Video Setup > Extra Effects (XBOX or PC) writes its choice here." },
+		"in Settings > Customisation (XBOX or PC) writes its choice here." },
 	{ "mods.enabled", _config_boolean, "true", "HALO_MODS_ENABLED", _environment_value, _platform_all,
 		"Play the mods of the mods folder (high-res vehicle and weapon textures\n"
 		"and so on): true, every one that is on (port_mods.c), false none, from\n"
-		"the next map loaded. HIGH RES ASSETS in Video Setup > Extra Effects\n"
+		"the next map loaded. HIGH RES ASSETS in Settings > Customisation\n"
 		"(ON or OFF) writes its choice here." },
 	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
 		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
 		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
-		"bink\\intro_pc.bik (none without it). INTRO in Video Setup > Extra\n"
-		"Effects (XBOX or PC) writes its choice here; it plays from the next\n"
+		"bink\\intro_pc.bik (none without it). INTRO in Settings >\n"
+		"Customisation (XBOX or PC) writes its choice here; it plays from the next\n"
 		"start." },
 	{ "display.shield_color", _config_string, "\"default\"", "HALO_SHIELD_COLOR", _environment_value, _platform_all,
 		"Your energy shield's color, as this machine draws it: \"default\" (the\n"

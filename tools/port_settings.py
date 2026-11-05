@@ -102,8 +102,6 @@ SCREENS = {
             # display.show_fps turns on: port/linux/game/frame_rate_display.c)
             ("SHOW FRAMES:", "display.show_fps", ON_OFF,
              "Draw the frame rate at the bottom right of a game,\ncounted over half a second.", None),
-            ("HIGH-RES HUD:", "display.high_res_hud", ON_OFF,
-             "Draw the HUD from the high-res redraws; off\ndraws the game's own pictures.", None),
             ("HIGH-RES TEXT:", "display.high_res_text", ON_OFF,
              "Draw text and titles with high-res fonts; off\ndraws the game's own.", None),
             ("ANTI-ALIASING:", "display.anti_aliasing",
@@ -122,8 +120,6 @@ SCREENS = {
              "Light models for each pixel, without the facets\nof the Xbox's lighting for each vertex.", None),
             ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
              "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
-            ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
-             "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
             ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
              "Light Show: three times as far, at full from a\nthird of the flare. Online: the host's choice.", None),
             ("HDR:", "display.hdr", ON_OFF,
@@ -137,17 +133,6 @@ SCREENS = {
              "With HDR Display, how bright white is, in nits.\nAuto: Windows' SDR content brightness.", "desktop"),
             ("PEAK BRIGHTNESS:", "display.hdr_peak_brightness", PEAK_BRIGHTNESSES,
              "With HDR Display, your display's brightest, in\nnits. Auto: Windows' HDR calibration.", "desktop"),
-            # (every mod of the mods folder played, or none: port_mods.c's
-            # port_mods_scan, from the next map loaded)
-            ("HIGH RES ASSETS:", "mods.enabled", ON_OFF,
-             "Toggle between classic and modern vehicle and\nweapon textures.", None, "high_res_assets"),
-            # (attract_mode.c's attract_mode_get_localized_movie_path)
-            ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
-             "Choose what intro video plays on launch.",
-             None),
-            # (the main menu's CREDITS: menu_functions.c's credits_play)
-            ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
-             "Choose what version of the credits play in the\nmain menu.", None),
         ],
     },
     "mouse_settings": {
@@ -241,7 +226,7 @@ SCREENS = {
         "categories": [("BUTTON REMAPPING", "controller_remapping",
                         "Custom button layouts for P1-P4.\nUse / Reload stays combined."),
                        ("BUTTON APPEARANCE", "controller_appearance",
-                        "Controller artwork and bumper style.\nRequires High-Res HUD in Graphics.")],
+                        "Controller artwork and bumper style.")],
     },
     "controller_appearance": {
         "screen": "controller_appearance_screen", "spacing": 30,
@@ -249,15 +234,15 @@ SCREENS = {
         "same_place": ["hud_button_style_xbox", "hud_button_style_ps", "hud_button_style_switch"],
         "rows": [
             ("AUTO BUTTON DETECTION:", "input.auto_button_detection", ON_OFF,
-             "Show styles for your controller's family.\nRequires High-Res HUD in Graphics.", None),
+             "Show styles for your controller's family.", None),
             ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES + PS_BUTTON_STYLES + SWITCH_BUTTON_STYLES,
-             "Manual gameplay button artwork, kept when auto\ndetection is on. Requires High-Res HUD.", None),
+             "Manual gameplay button artwork, kept when auto\ndetection is on.", None),
             ("BUTTON STYLE:", "display.hud_button_style_xbox", XBOX_BUTTON_STYLES,
-             "Preferred Xbox artwork for automatic detection.\nRequires High-Res HUD in Graphics.", None),
+             "Preferred Xbox artwork for automatic detection.", None),
             ("BUTTON STYLE:", "display.hud_button_style_ps", PS_BUTTON_STYLES,
-             "Preferred PlayStation artwork for auto detection.\nRequires High-Res HUD in Graphics.", None),
+             "Preferred PlayStation artwork for auto detection.", None),
             ("BUTTON STYLE:", "display.hud_button_style_switch", SWITCH_BUTTON_STYLES,
-             "Preferred Switch artwork for automatic detection.\nRequires High-Res HUD in Graphics.", None),
+             "Preferred Switch artwork for automatic detection.", None),
             ("BUMPER STYLE:", "display.hud_bumper_style",
              [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
              "Original: black/white buttons. Modern: LB/RB.\nKept when automatic detection is on.", None),
@@ -274,22 +259,19 @@ SCREENS = {
 # Video Setup's categories open ordinary settings screens. Each has the same
 # pending edits, Defaults, OK and Cancel as the other settings screens.
 _video = SCREENS["video_settings"]
-_graphics = {"display.show_fps", "display.high_res_hud",
+_graphics = {"display.show_fps",
              "display.high_res_text", "display.anti_aliasing",
              "display.anisotropic_filtering", "display.shadow_resolution", "display.per_pixel_lighting"}
 # (the visual modifiers: a screen of their own, Extra Effects)
-_extra_effects = {"display.shield_glow", "display.shield_glow_intensity",
+_extra_effects = {"display.shield_glow_intensity",
                   "display.overshield_effect", "display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
-                  "display.hdr_peak_brightness", "display.credits",
-                  "display.intro", "mods.enabled"}
+                  "display.hdr_peak_brightness"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
     "rows": [row for row in _video["rows"] if row[1] in _graphics],
 }
 SCREENS["video_settings/extra_effects"] = {
-    # (24 apart, the help lower, as Server Setup's: its twelve rows clear of
-    # the help)
-    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 24, "help_top": 366,
+    "screen": "extra_effects_settings_screen", "header": _video["header"], "spacing": 30,
     "rows": [row for row in _video["rows"] if row[1] in _extra_effects],
     # (shown only with an HDR display: menu_functions.c's
     # hdr_calibration_row_show)
@@ -333,12 +315,51 @@ SCREENS["video_settings/fov_viewmodels"] = {
          "Third-person Warthog and Scorpion passengers in\nthe campaign and co-op. Weapon zoom is disabled.", None),
         ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
          "The energy shield's flare on your first-person\narms too, as on your body.", None),
-        ("LEGS:", "display.first_person_legs", ON_OFF,
-         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
         ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
          "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
     ],
 }
+
+# Customisation (the profile menu's CUSTOMISATION, above ABOUT: the
+# profile_edit_select_list's patch below): the player's legs, the shield
+# glow, the mods (HIGH RES ASSETS), the intro and the main menu's credits
+SCREENS["customisation"] = {
+    "screen": "customisation_settings_screen",
+    "header": ("header_customisation", f"{PE}/customisation/header_customisation"),
+    "spacing": 30,
+    "rows": [
+        ("LEGS:", "display.first_person_legs", ON_OFF,
+         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
+        ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
+         "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
+        # (every mod of the mods folder played, or none: port_mods.c's
+        # port_mods_scan, from the next map loaded)
+        ("HIGH RES ASSETS:", "mods.enabled", ON_OFF,
+         "Toggle between classic and modern vehicle and\nweapon textures.", None, "high_res_assets"),
+        # (attract_mode.c's attract_mode_get_localized_movie_path)
+        ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
+         "Choose what intro video plays on launch.",
+         None),
+        # (the main menu's CREDITS: menu_functions.c's credits_play)
+        ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
+         "Choose what version of the credits play in the\nmain menu.", None),
+    ],
+}
+# the profile menu's item that opens it (CUSTOMISATION, the profile_edit_options
+# string STRING_INSERTS adds), in About's place (About a row lower)
+CUSTOMISATION_ITEM = f"{PE}/customisation_item"
+
+
+def _customisation_item() -> list:
+    target = f"{PE}/customisation/{SCREENS['customisation']['screen']}"
+    return _widget(CUSTOMISATION_ITEM,
+                   [("type", "text"), ("left", 51), ("top", 310), ("width", 232), ("height", 32),
+                    ("bitmap", "bitmaps/list_item_bkd"), ("string_list", f"{PE}/profile_edit_options"),
+                    ("string_index", 10), ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
+                    ("text_y", 5)],
+                   [f'<on event="a" open="{target}"/>', f'<on event="start" open="{target}"/>',
+                    '<on event="left_mouse" run="mouse emit accept event"/>'])
+
 
 # Audio Setup's sound processing (port/linux/src/dsound_sdl.c): the reverb
 # and the resampler, a screen of their own (a category, as Video Setup's);
@@ -550,6 +571,7 @@ STRING_OVERRIDES = {
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
+        "Your legs, the shield glow,\\nmods, the intro and credits.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],
 }
@@ -840,6 +862,8 @@ def settings_files() -> dict:
     for folder, spec in SCREENS.items():
         files[f"{PE}/{folder}".replace("/", ".") + ".xml"] = (
             _controller_screen() if folder == "controller_remapping" else _setting_screen(folder, spec))
+    # (and the profile menu's item that opens Customisation)
+    files[f"{PE}/customisation".replace("/", ".") + ".xml"] += _customisation_item()
     files[f"{PE}/controls_setup".replace("/", ".") + ".xml"] = _controls_screen()
     return {name: ['<?xml version="1.0" encoding="UTF-8"?>',
                    "<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->",
@@ -889,6 +913,8 @@ SHIELD_EFFECTS_HELP = [
 ]
 
 STRING_INSERTS = {
+    # (the profile menu's CUSTOMISATION: CUSTOMISATION_ITEM)
+    f"{PE}/profile_edit_options": [(10, ["CUSTOMISATION"])],
     # (Filters' SHOW MISSING MAPS' third value's help, after the PC version's:
     # menu_functions.c's filters_help)
     f"{MT}/join_game/filters/cap_filter_options": [(11, [
@@ -987,7 +1013,7 @@ STRING_OVERRIDES.update({
 # menu_tags.c's map_strings); the inserted strings (STRING_INSERTS) are the
 # port's own, the rest of their lists the PC version's
 OVERRIDE_ORIGINALS = {
-    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
+    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
     f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
@@ -1006,6 +1032,10 @@ OVERRIDE_ORIGINALS = {
 # screen) for LAN, 2 (one Spartan) for the others
 FRAME_ORDER = {
     f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
+    # (the profile menu's items' pictures: CUSTOMISATION, before ABOUT,
+    # shows Video Setup's; then the Xbox's button settings' (BITMAP_FRAMES,
+    # menu_functions.c's PROFILE_FIRST_LAYOUT_FRAME))
+    f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 5, 8],
 }
 
 # the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
@@ -1038,6 +1068,11 @@ WIDGET_PATCHES = {
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
     f"{PE}/profile_edit_extended_desc_pic": {"inputs": ["port gamepad layout preview"]},
+    # (CUSTOMISATION before ABOUT, which goes a row lower)
+    f"{PE}/profile_edit_select_list": {
+        "insert_before": {f"{PE}/about_item": [f'<child widget="{CUSTOMISATION_ITEM}" y="32"/>']},
+        "move": {f"{PE}/about_item": (None, 65)},
+    },
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)
     # (JOIN GAME's INTERNET: the server browser's item, named INTERNET as
@@ -1191,6 +1226,7 @@ TITLES = {
     f"{MT}/lobby/header_lobby": "GAME LOBBY",
     f"{MT}/coop/header_player_2": "PLAYER 2 PROFILE",
     f"{MT}/lobby/header_add_player": "ADD PLAYER",
+    f"{PE}/customisation/header_customisation": "CUSTOMISATION",
 }
 
 

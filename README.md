@@ -6,7 +6,7 @@
 > `port/linux/src/port_config.c` (`lan_only_off_booleans`) whatever
 > `config.toml` says; the Multiplayer menu's INTERNET items do as LAN does.
 > The main menu has CREDITS in MODS' place, which plays the credits chosen
-> in Video Setup > Extra Effects (CREDITS: XBOX or PC): the Xbox's credits
+> in Settings > Customisation (CREDITS: XBOX or PC): the Xbox's credits
 > movie in the game (`bink\credits.bik` beside `halo.exe`, in the data root),
 > or Halo PC's credits scrolling over the main menu as Halo PC does (yellow
 > headers, blue names, round and round until A, B or Escape); after The Maw
@@ -157,15 +157,15 @@ The game retains the original look and feel as it did on the Xbox by default. Th
 | PER-PIXEL LIGHTING | Lights models for each pixel, without the facets of the Xbox's per-vertex lighting | Off |
 | MODEL DETAIL | Keep more model detail at a distance at high resolutions, or always the most detailed | Stock |
 | HDR, HDR DISPLAY | Keeps explosions, plasma and the sun's glare past white and tone maps them; on an HDR monitor, shows them brighter than white | Off |
-| HIGH-RES HUD, HIGH-RES TEXT | The HUD from hand-drawn redraws at 8x the size, and text in the Overpass font, sharp at any resolution | On |
+| HIGH-RES TEXT | Text in the Overpass font, sharp at any resolution (the HUD is always drawn from hand-drawn redraws at 8x the size: `display.high_res_hud` in `config.toml`) | On |
 
 **Extras**
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| LEGS | See your own legs when you look down in first person | Off |
+| LEGS (Customisation) | See your own legs when you look down in first person | Off |
 | ARM SHIELDS | The energy shield's flare on your first-person arms too | Off |
-| SHIELD GLOW, GLOW INTENSITY | Energy shields light up what is around them as they flare | Off |
+| SHIELD GLOW (Customisation), GLOW INTENSITY | Energy shields light up what is around them as they flare | Off |
 | SHIELD COLOR | Your own shield in a multiplayer armor color, as your machine draws it | Default |
 | OVERSHIELD | The overshield's own color, rising up the body as it charges | Off |
 | PASSENGER THIRD PERSON | Third-person view for Warthog and Scorpion passengers (Campaign-only) | Off |
