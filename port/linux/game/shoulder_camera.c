@@ -22,10 +22,11 @@ for the scope.
 #include "units/units.h"
 
 /* world units (one is about three metres): behind the eye, to the right of
-it, and above it */
-#define SHOULDER_DISTANCE 0.5f
-#define SHOULDER_SIDE 0.2f
-#define SHOULDER_HEIGHT 0.05f
+it, and above it. The player stands just left of the centre, seen from the
+knees up, with the head a little below the reticle. */
+#define SHOULDER_DISTANCE 0.9f
+#define SHOULDER_SIDE 0.13f
+#define SHOULDER_HEIGHT 0.06f
 /* kept between the camera's pivot and a wall beside the player */
 #define SHOULDER_WALL_MARGIN 0.05f
 
