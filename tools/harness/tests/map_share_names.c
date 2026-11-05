@@ -47,7 +47,16 @@ static char const *menu_name(char const *name)
 {
 	static wchar_t display_name[64];
 
-	display_name_make(name, display_name);
+	display_name_make(name, FALSE, display_name);
+	return wide_text(display_name);
+}
+
+/* a map of multi_maps (Halo PC's: its versions of the Xbox's take its names) */
+static char const *pc_menu_name(char const *name)
+{
+	static wchar_t display_name[64];
+
+	display_name_make(name, TRUE, display_name);
 	return wide_text(display_name);
 }
 
@@ -62,7 +71,7 @@ static short fake_list(char const *const *names, short count)
 	for (index = 0; index < count; index++)
 	{
 		strcpy(fake_maps[index].name, names[index]);
-		display_name_make(fake_maps[index].name, fake_maps[index].display_name);
+		display_name_make(fake_maps[index].name, FALSE, fake_maps[index].display_name);
 	}
 	custom_edition_maps_tell_versions_apart(fake_maps, count);
 	return count;
@@ -153,6 +162,12 @@ int main(int argc, char **argv)
 			menu_name("the_bay_of_pigs"));
 		CHECK(!strcmp(menu_name("icefields_0e2b3ee4"), "Ice Fields"), "Halo PC's map: %s",
 			menu_name("icefields_0e2b3ee4"));
+		CHECK(!strcmp(pc_menu_name("carousel"), "Derelict"), "Halo PC's Xbox map: %s",
+			pc_menu_name("carousel"));
+		CHECK(!strcmp(menu_name("carousel"), "Carousel"), "a custom map of an Xbox map's name: %s",
+			menu_name("carousel"));
+		CHECK(!strcmp(menu_name("m1_assault_0e2b3ee4"), "M1 Assault"), "a Digsite map: %s",
+			menu_name("m1_assault_0e2b3ee4"));
 		return 0;
 	}
 	/* versions of a map: the one of the name alone first, the others (2),

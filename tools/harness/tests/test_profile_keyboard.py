@@ -36,8 +36,9 @@ def generated(fault=False):
     if fault is True:
         setter = mutated(setter, 'platform_text_typing(active);', 'if (active) platform_text_typing(active);')
     code += setter + '\n'
+    # (virtual_keyboard_select's .fortune, as the keyboard has it)
     code += '\n'.join(function(vk, name) for name in
-                      ['virtual_keyboard_initialize', 'virtual_keyboard_dispose',
+                      ['virtual_keyboard_fortune_check', 'virtual_keyboard_initialize', 'virtual_keyboard_dispose',
                        'virtual_keyboard_launch', 'virtual_keyboard_cancel',
                        'virtual_keyboard_close', 'virtual_keyboard_select', 'virtual_keyboard_process'])
     return (('config.inc', config), ('under_test.inc', code))

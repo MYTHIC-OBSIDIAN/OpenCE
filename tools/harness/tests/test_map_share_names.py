@@ -59,11 +59,17 @@ def generated(fault=None, faulty_function=None):
         if fault and name == faulty_function:
             code = mutated(code, *fault)
         text += code + "\n"
-    # the menus' names (custom_edition_maps.c): Halo PC's own maps, and the rest
+    # the menus' names (custom_edition_maps.c): Halo PC's own maps, its
+    # versions of the Xbox's, the Digsite maps, and the rest
     maps = read("port/linux/game/custom_edition_maps.c")
-    start = maps.index("static struct\n{\n\tchar const *file;")
-    text += maps[start:maps.index("};", start) + 2] + "\n"
-    for name in ("stock_map_index", "display_name_make", "custom_edition_maps_tell_versions_apart"):
+    for name in ("NUMBER_OF_ORIGINAL_MAPS", "NUMBER_OF_DIGSITE_MAPS"):
+        config += f"#define {name} {constant(maps, name)}\n"
+    for table in ("stock_maps[]", "xbox_maps[]", "digsite_maps[NUMBER_OF_DIGSITE_MAPS]"):
+        end = maps.index(f"}} const {table} =")
+        start = maps.rindex("static struct\n{\n\tchar const *file;", 0, end)
+        text += maps[start:maps.index("};", end) + 2] + "\n"
+    for name in ("stock_map_index", "xbox_map_index", "digsite_map_index", "display_name_make",
+                 "custom_edition_maps_tell_versions_apart"):
         code = function(maps, name)
         if fault and name == faulty_function:
             code = mutated(code, *fault)
