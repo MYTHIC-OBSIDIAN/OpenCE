@@ -148,7 +148,7 @@
 		<string text="INSTANT AIM:"/>
 		<string text="GRAPHICS:"/>
 		<string text="FOV AND VIEWMODELS:"/>
-		<string text="EXTRA EFFECTS:"/>
+		<string text="HDR:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/help_strings">
 		<string text=""/>
@@ -160,8 +160,8 @@
 		<string text="With V-Sync off, the most frames a second. Auto:\ntwice the display's refresh rate."/>
 		<string text="Draw a frame for every display refresh, blending\nbetween the game's 30 ticks a second."/>
 		<string text="In first person, turn the view the moment the\nmouse moves, not up to two ticks later."/>
-		<string text="The HUD, text, anti-aliasing, shadows,\nlighting and HDR."/>
+		<string text="Text, anti-aliasing, texture filtering,\nshadows and lighting."/>
 		<string text="The field of view and the first-person\nweapon. Their defaults keep the stock view."/>
-		<string text="Light brighter than white (HDR), which\nthe stock game does not have."/>
+		<string text="Light brighter than white, which the stock\ngame does not have, and your HDR display."/>
 	</strings>
 </menus>

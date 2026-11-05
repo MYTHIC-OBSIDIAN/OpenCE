@@ -41,7 +41,7 @@ SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 # an HDR display's paper white and peak in nits (display.hdr_paper_white,
 # display.hdr_peak_brightness), in steps fine enough for HDR Calibration's
-# patterns (and BT.2408's reference white, 203); Extra Effects' rows have the
+# patterns (and BT.2408's reference white, 203); HDR's rows have the
 # same, so they show what it chose
 PAPER_WHITES = [("AUTO", "0")] + [(str(nits), str(nits)) for nits in sorted({*range(80, 200, 10), 200, 203, *range(220, 401, 20), 250})]
 PEAK_BRIGHTNESSES = [("AUTO", "0")] + [(str(nits), str(nits)) for nits in
@@ -236,7 +236,7 @@ _video = SCREENS["video_settings"]
 _graphics = {"display.show_fps",
              "display.high_res_text", "display.anti_aliasing",
              "display.anisotropic_filtering", "display.shadow_resolution", "display.per_pixel_lighting"}
-# (the visual modifiers: a screen of their own, Extra Effects)
+# (HDR: a screen of its own, Video Setup's HDR (its folder still extra_effects))
 _extra_effects = {"display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
                   "display.hdr_peak_brightness"}
 SCREENS["video_settings/graphics"] = {
@@ -269,11 +269,11 @@ SCREENS["video_settings/hdr_calibration"] = {
 }
 _video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics | _extra_effects]
 _video["categories"] = [
-    ("GRAPHICS:", "video_settings/graphics", "The HUD, text, anti-aliasing, shadows,\nlighting and HDR."),
+    ("GRAPHICS:", "video_settings/graphics", "Text, anti-aliasing, texture filtering,\nshadows and lighting."),
     ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
      "The field of view and the first-person\nweapon. Their defaults keep the stock view."),
-    ("EXTRA EFFECTS:", "video_settings/extra_effects",
-     "Light brighter than white (HDR), which\nthe stock game does not have."),
+    ("HDR:", "video_settings/extra_effects",
+     "Light brighter than white, which the stock\ngame does not have, and your HDR display."),
 ]
 SCREENS["video_settings/fov_viewmodels"] = {
     "screen": "fov_viewmodel_settings_screen", "header": _video["header"], "spacing": 30,

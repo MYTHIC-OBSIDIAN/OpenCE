@@ -28,7 +28,7 @@ calls them from PC_MENU_FUNCTION_BASE on):
   (OK) writes those changed and applies the window's (the rest follow
   config.toml themselves), "port settings defaults" shows the defaults,
   "port settings help" the help of the row chosen (and Video Setup's
-  Resolution or Window Size, for the display mode shown; Extra Effects' HDR
+  Resolution or Window Size, for the display mode shown; Video Setup > HDR's HDR
   Calibration only with an HDR display);
 - HDR Calibration's: "port hdr calibration" has the renderer draw the
   pattern of the row chosen, at the peak and paper white its rows show,
@@ -1909,7 +1909,7 @@ static void hud_button_style_row_show(struct widget_instance *list)
 	}
 }
 
-/* ---------- HDR Calibration (tools/port_settings.py): Extra Effects' row
+/* ---------- HDR Calibration (tools/port_settings.py): Video Setup > HDR's row
 for it is there only with an HDR display (display.hdr_output's window, the
 system's HDR on); on its screen the renderer draws the pattern of the row
 chosen, at the values the rows show, and the display takes them until the
