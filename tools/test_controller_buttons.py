@@ -164,19 +164,20 @@ def test_menu_generated_and_default_on():
     # by ui_widget's text update before the next frame.
     import xml.etree.ElementTree as ET
     prefix = 'main_menu.settings_select.player_setup.player_profile_edit'
-    menu = ET.parse(ROOT / f'port/assets/menus/ce/{prefix}.controller_appearance.xml')
+    menu = ET.parse(ROOT / f'port/assets/menus/ce/{prefix}.customisation.xml')
     labels = [w for w in menu.getroot().findall('widget')
               if '/hud_button_style' in w.get('name', '') and w.get('name', '').endswith('_label')]
     assert len(labels) == 4
     assert all('string_list' not in w.attrib and 'string_index' in w.attrib for w in labels)
-    rows = port_settings.SCREENS['controller_appearance']['rows']
+    rows = port_settings.SCREENS['customisation']['rows']
     assert len(next(r[2] for r in rows if r[1] == 'display.hud_button_style')) == 11
     assert next(r[2] for r in rows if r[1] == 'display.hud_bumper_style') == [('ORIGINAL XBOX', 'original'), ('MODERN XBOX', 'modern')]
-    parent = ET.parse(ROOT / f'port/assets/menus/ce/{prefix}.gamepad_setup.xml')
-    assert any('controller_appearance_screen' in e.get('open', '') for e in parent.iter('on'))
+    # (Settings > Customisation's, its rows last: the profile menu opens it)
+    assert any('customisation_settings_screen' in e.get('open', '') for e in menu.iter('on'))
+    assert rows[-1][1] == 'display.hud_bumper_style'
     assert not any(r[1] in ('input.auto_button_detection', 'display.hud_bumper_style') or r[1].startswith('display.hud_button_style')
                    for r in port_settings.SCREENS['video_settings/graphics']['rows'])
-    assert f'ce/{prefix}.controller_appearance.xml' in json.loads((ROOT / 'port/assets/menus/menus.json').read_text())['files']
+    assert f'ce/{prefix}.customisation.xml' in json.loads((ROOT / 'port/assets/menus/menus.json').read_text())['files']
     config = (ROOT / 'port/linux/src/port_config.c').read_text()
     assert re.search(r'"input.auto_button_detection", _config_boolean, "true"', config)
     assert r'"display.hud_bumper_style", _config_string, "\"original\""' in config

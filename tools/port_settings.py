@@ -118,10 +118,6 @@ SCREENS = {
              None),
             ("PER-PIXEL LIGHTING:", "display.per_pixel_lighting", ON_OFF,
              "Light models for each pixel, without the facets\nof the Xbox's lighting for each vertex.", None),
-            ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
-             "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
-            ("GLOW INTENSITY:", "display.shield_glow_intensity", [("DEFAULT", "default"), ("LIGHT SHOW", "light_show")],
-             "Light Show: three times as far, at full from a\nthird of the flare. Online: the host's choice.", None),
             ("HDR:", "display.hdr", ON_OFF,
              "Let explosions, plasma and the sun shine brighter\nthan white, then fit them to the screen.", None),
             ("HDR DISPLAY:", "display.hdr_output", ON_OFF,
@@ -224,29 +220,7 @@ SCREENS = {
             ("IN-GAME HELP:", "profile.ingame_help", ON_OFF, "Show the game's hints about its controls.", None),
         ],
         "categories": [("BUTTON REMAPPING", "controller_remapping",
-                        "Custom button layouts for P1-P4.\nUse / Reload stays combined."),
-                       ("BUTTON APPEARANCE", "controller_appearance",
-                        "Controller artwork and bumper style.")],
-    },
-    "controller_appearance": {
-        "screen": "controller_appearance_screen", "spacing": 30,
-        "header": ("header_profile_controller_setting", f"{PE}/controller_edit/header_profile_controller_setting"),
-        "same_place": ["hud_button_style_xbox", "hud_button_style_ps", "hud_button_style_switch"],
-        "rows": [
-            ("AUTO BUTTON DETECTION:", "input.auto_button_detection", ON_OFF,
-             "Show styles for your controller's family.", None),
-            ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES + PS_BUTTON_STYLES + SWITCH_BUTTON_STYLES,
-             "Manual gameplay button artwork, kept when auto\ndetection is on.", None),
-            ("BUTTON STYLE:", "display.hud_button_style_xbox", XBOX_BUTTON_STYLES,
-             "Preferred Xbox artwork for automatic detection.", None),
-            ("BUTTON STYLE:", "display.hud_button_style_ps", PS_BUTTON_STYLES,
-             "Preferred PlayStation artwork for auto detection.", None),
-            ("BUTTON STYLE:", "display.hud_button_style_switch", SWITCH_BUTTON_STYLES,
-             "Preferred Switch artwork for automatic detection.", None),
-            ("BUMPER STYLE:", "display.hud_bumper_style",
-             [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
-             "Original: black/white buttons. Modern: LB/RB.\nKept when automatic detection is on.", None),
-        ],
+                        "Custom button layouts for P1-P4.\nUse / Reload stays combined.")],
     },
     "controller_remapping": {
         "screen": "controller_remapping_screen", "spacing": 30,
@@ -263,8 +237,7 @@ _graphics = {"display.show_fps",
              "display.high_res_text", "display.anti_aliasing",
              "display.anisotropic_filtering", "display.shadow_resolution", "display.per_pixel_lighting"}
 # (the visual modifiers: a screen of their own, Extra Effects)
-_extra_effects = {"display.shield_glow_intensity",
-                  "display.overshield_effect", "display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
+_extra_effects = {"display.hdr", "display.hdr_output", "display.hdr_tone_mapping", "display.hdr_paper_white",
                   "display.hdr_peak_brightness"}
 SCREENS["video_settings/graphics"] = {
     "screen": "graphics_settings_screen", "header": _video["header"], "spacing": 27,
@@ -300,7 +273,7 @@ _video["categories"] = [
     ("FOV AND VIEWMODELS:", "video_settings/fov_viewmodels",
      "The field of view and the first-person\nweapon. Their defaults keep the stock view."),
     ("EXTRA EFFECTS:", "video_settings/extra_effects",
-     "Visual modifiers the stock game does not\nhave, such as the shield glow."),
+     "Light brighter than white (HDR), which\nthe stock game does not have."),
 ]
 SCREENS["video_settings/fov_viewmodels"] = {
     "screen": "fov_viewmodel_settings_screen", "header": _video["header"], "spacing": 30,
@@ -313,20 +286,21 @@ SCREENS["video_settings/fov_viewmodels"] = {
          "Draw first-person weapons, hands and attached\nvisuals. Gameplay and sound continue when off.", None),
         ("PASSENGER THIRD PERSON:", "display.passenger_third_person", ON_OFF,
          "Third-person Warthog and Scorpion passengers in\nthe campaign and co-op. Weapon zoom is disabled.", None),
-        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
-         "The energy shield's flare on your first-person\narms too, as on your body.", None),
-        ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
-         "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
     ],
 }
 
 # Customisation (the profile menu's CUSTOMISATION, above ABOUT: the
 # profile_edit_select_list's patch below): the player's legs, the shield
-# glow, the mods (HIGH RES ASSETS), the intro and the main menu's credits
+# glow, the mods (HIGH RES ASSETS), the intro, the main menu's credits, the
+# shield's color and flare, the overshield, and the controller's button
+# pictures
 SCREENS["customisation"] = {
     "screen": "customisation_settings_screen",
     "header": ("header_customisation", f"{PE}/customisation/header_customisation"),
-    "spacing": 30,
+    # (24 apart, the help lower, as Server Setup's: its eleven places clear of
+    # the help)
+    "spacing": 24, "help_top": 366,
+    "same_place": ["hud_button_style_xbox", "hud_button_style_ps", "hud_button_style_switch"],
     "rows": [
         ("LEGS:", "display.first_person_legs", ON_OFF,
          "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
@@ -343,6 +317,28 @@ SCREENS["customisation"] = {
         # (the main menu's CREDITS: menu_functions.c's credits_play)
         ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
          "Choose what version of the credits play in the\nmain menu.", None),
+        ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
+         "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
+        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
+         "The energy shield's flare on your first-person\narms too, as on your body.", None),
+        ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
+         "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
+        # (the controller's button pictures, last: menu_functions.c's
+        # controller_button_rows_show shows one BUTTON STYLE row of the four in
+        # one place, and BUMPER STYLE only for the Xbox's styles)
+        ("AUTO BUTTON DETECTION:", "input.auto_button_detection", ON_OFF,
+         "Show styles for your controller's family.", None),
+        ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES + PS_BUTTON_STYLES + SWITCH_BUTTON_STYLES,
+         "Manual gameplay button artwork, kept when auto\ndetection is on.", None),
+        ("BUTTON STYLE:", "display.hud_button_style_xbox", XBOX_BUTTON_STYLES,
+         "Preferred Xbox artwork for automatic detection.", None),
+        ("BUTTON STYLE:", "display.hud_button_style_ps", PS_BUTTON_STYLES,
+         "Preferred PlayStation artwork for auto detection.", None),
+        ("BUTTON STYLE:", "display.hud_button_style_switch", SWITCH_BUTTON_STYLES,
+         "Preferred Switch artwork for automatic detection.", None),
+        ("BUMPER STYLE:", "display.hud_bumper_style",
+         [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
+         "Original: black/white buttons. Modern: LB/RB.\nKept when automatic detection is on.", None),
     ],
 }
 # the profile menu's item that opens it (CUSTOMISATION, the profile_edit_options
@@ -571,7 +567,7 @@ STRING_OVERRIDES = {
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
-        "Your legs, the shield glow,\\nmods, the intro and credits.\\n\\nProfile:",
+        "Your look, the button pictures,\\nmods, the intro and credits.\\n\\nProfile:",
         "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
     ],
 }

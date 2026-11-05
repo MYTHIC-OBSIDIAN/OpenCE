@@ -2609,6 +2609,9 @@ static const char *const lan_only_strings[][2] =
 	{ "discord.application_id", "" },
 	{ "network.stun_servers", "" },
 	{ "server.auto_update", "off" },
+	/* (no longer in the menus: the shield glow's own reach, as the stock
+	glow's) */
+	{ "display.shield_glow_intensity", "default" },
 };
 
 static int lan_only_boolean_off(const char *name)
