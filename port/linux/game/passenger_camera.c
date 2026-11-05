@@ -9,6 +9,7 @@ and the deterministic camera used for shooting keeps its original view.
 
 #include "cseries.h"
 #include "passenger_camera.h"
+#include "shoulder_camera.h"
 #include "camera/director.h"
 #include "cutscene/cinematics.h"
 #include "game/game_engine.h"
@@ -140,14 +141,19 @@ boolean passenger_camera_reticle_begin(short local_player_index, long weapon_ind
 	real_vector3d direction, ray;
 	real_point2d screen;
 	struct collision_result collision;
+	boolean passenger;
 
 	reticle_active = FALSE;
-	if (!passenger_camera_enabled(local_player_index) ||
+	/* (and the over-the-shoulder view's, shoulder_camera.c) */
+	passenger = passenger_camera_enabled(local_player_index);
+	if ((!passenger && !shoulder_camera_enabled(local_player_index)) ||
 		director_get_perspective(local_player_index) != _director_perspective_third_person)
 		return TRUE;
 	unit_index = player_control_get_unit_index(local_player_index);
+	/* A weapon with no shot to project (a sword's) keeps the shoulder view's
+	reticle at the centre; the passenger's has none. */
 	if (weapon_index == NONE || !weapon_get_projectile_ray(weapon_index, 0, &origin, &direction))
-		return FALSE;
+		return !passenger;
 	/* The same finite ray as the shot's aiming reference, before random
 	spread or a projectile's flight. Its origin remains at the weapon. */
 	scale_vector3d(&direction, 128.0f, &ray);
@@ -156,7 +162,7 @@ boolean passenger_camera_reticle_begin(short local_player_index, long weapon_ind
 	else
 		point_from_line3d(&origin, &direction, 128.0f, &target);
 	if (!render_camera_world_to_screen(&render.camera, &render.frustum, &target, &screen))
-		return FALSE;
+		return !passenger;
 	reticle_offset.x = screen.x - (render.camera.window_bounds.x0 + render.camera.window_bounds.x1) * 0.5f;
 	reticle_offset.y = screen.y - (render.camera.window_bounds.y0 + render.camera.window_bounds.y1) * 0.5f;
 	reticle_active = TRUE;

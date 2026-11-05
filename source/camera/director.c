@@ -128,6 +128,7 @@ symbols in this file:
 #include "flying_camera.h"
 #include "following_camera.h"
 #include "passenger_camera.h" /* port: port/linux/game/passenger_camera.c */
+#include "shoulder_camera.h" /* port: port/linux/game/shoulder_camera.c */
 #include "observer.h"
 #include "orbiting_camera.h"
 
@@ -638,7 +639,12 @@ static void director_choose_game_perspective(
 {
 	/* port: remember only local display choices, never a shared seat flag */
 	static boolean passenger_views[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS];
+	static boolean shoulder_views[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS];
 	boolean passenger = passenger_camera_enabled(local_player_index);
+	boolean shoulder = shoulder_camera_enabled(local_player_index);
+	/* port: the shoulder view cuts straight to and from first person (a scope
+	or a weapon change answers at once) */
+	boolean interpolate = !force && shoulder == shoulder_views[local_player_index];
 	director_perspective perspective;
 	short following;
 	long unit_index;
@@ -649,10 +655,11 @@ static void director_choose_game_perspective(
 	/* port: the local passenger view must not change the deterministic
 	camera used by player_aim_projectile. Reconsider a menu toggle even
 	when the seat's enter/exit state has not changed. */
-	if (passenger)
+	if (passenger || shoulder)
 		following = TRUE;
 	if (force || director->seat_state != perspective ||
-		passenger != passenger_views[local_player_index])
+		passenger != passenger_views[local_player_index] ||
+		shoulder != shoulder_views[local_player_index])
 	{
 		if (following == TRUE)
 		{
@@ -662,7 +669,7 @@ static void director_choose_game_perspective(
 				director_set_camera(
 					local_player_index,
 					(director_camera_update_proc)following_camera_update,
-					!force);
+					interpolate);
 			}
 		}
 		else if (force || director->camera_proc == (director_camera_update_proc)following_camera_update)
@@ -671,7 +678,7 @@ static void director_choose_game_perspective(
 			director_set_camera(
 				local_player_index,
 				(director_camera_update_proc)first_person_camera_update,
-				!force);
+				interpolate);
 		}
 
 		director->seat_state = perspective;
@@ -679,6 +686,7 @@ static void director_choose_game_perspective(
 
 	/* port: a menu toggle can change the view without changing seats */
 	passenger_views[local_player_index] = passenger;
+	shoulder_views[local_player_index] = shoulder;
 	return;
 }
 
@@ -934,8 +942,11 @@ static boolean director_update_controls(
 		struct mouse_state const *mouse = input_get_mouse_state();
 
 		switch_camera = input_key_is_down(_key_backspace) == TRUE;
-		/* port: the passenger follows their aim, never the debug mouse orbit */
-		if (!passenger_camera_enabled(local_player_index) && ((director->camera_proc !=
+		/* port: the passenger and the shoulder view follow their aim, never
+		the debug mouse orbit */
+		if (!passenger_camera_enabled(local_player_index) &&
+			!shoulder_camera_enabled(local_player_index) &&
+			((director->camera_proc !=
 				(director_camera_update_proc)first_person_camera_update &&
 			mouse->buttons[1]) || input_key_is_down(_key_tab)))
 		{

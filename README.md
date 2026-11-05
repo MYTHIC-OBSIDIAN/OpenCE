@@ -169,6 +169,8 @@ The game retains the original look and feel as it did on the Xbox by default. Th
 | OVERSHIELD (Customisation) | The overshield's own color, rising up the body as it charges | Off |
 | PASSENGER THIRD PERSON | Third-person view for Warthog and Scorpion passengers (Campaign-only) | Off |
 
+Weapons that have no first-person model (many of the Digsite maps' weapons, such as Spasm's) are held in an over-the-shoulder third-person view, so you see the weapon in your hands. It switches on and off by itself as you change weapons; zooming in returns to first person for the scope. Shots still leave from your eyes as in first person, and the reticle is drawn where they will land. This works everywhere, multiplayer included: only your own view changes.
+
 
 ## How to build the game
 

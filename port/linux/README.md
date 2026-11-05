@@ -584,6 +584,25 @@ the game does with the body are unchanged.
 Only this machine's view changes. Nothing the machines send each other
 changes, so players with different settings play together.
 
+### Weapons without a first-person model
+
+A weapon whose tag has no first-person model (many of Digsite's: most of
+Spasm's, the E3 and Macworld weapons, the energy sword and the knives)
+shows nothing in first person, so on foot the port holds it in an
+over-the-shoulder view instead (`port/linux/game/shoulder_camera.c`):
+
+- The camera sits behind the right shoulder, pulled back along your aim,
+  and keeps out of walls beside and behind you.
+- It cuts to it and back as you change weapons, enter a vehicle or die.
+  Zooming in returns to first person for the scope until you zoom out.
+- Shots, aim assist and everything the machines send each other still use
+  the first-person eye. The reticle is drawn where the shot will land
+  (the passenger view's projection); a weapon with no shot, such as a
+  sword, keeps it at the centre.
+- It works in the campaign and in multiplayer: it depends only on the
+  weapon, so every player holding one sees the same way. Cinematics and
+  scripted cameras keep their own view.
+
 ## System link
 
 The Xbox game lets 16 players on 4 machines play a system link game. This
