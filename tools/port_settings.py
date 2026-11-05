@@ -292,15 +292,12 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # Customisation (the profile menu's CUSTOMISATION, above ABOUT: the
 # profile_edit_select_list's patch below): the player's legs, the shield
 # glow, the mods (HIGH RES ASSETS), the intro, the main menu's credits, the
-# shield's color and flare, the overshield, and the controller's button
+# shield's flare on the arms, the overshield, and the controller's button
 # pictures
 SCREENS["customisation"] = {
     "screen": "customisation_settings_screen",
     "header": ("header_customisation", f"{PE}/customisation/header_customisation"),
-    # (24 apart, the help lower, as Server Setup's: its eleven places clear of
-    # the help)
-    "spacing": 24, "help_top": 366,
-    "same_place": ["hud_button_style_xbox", "hud_button_style_ps", "hud_button_style_switch"],
+    "spacing": 30,
     "rows": [
         ("LEGS:", "display.first_person_legs", ON_OFF,
          "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
@@ -317,28 +314,19 @@ SCREENS["customisation"] = {
         # (the main menu's CREDITS: menu_functions.c's credits_play)
         ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
          "Choose what version of the credits play in the\nmain menu.", None),
-        ("SHIELD COLOR:", "display.shield_color", [("DEFAULT", "default")] + [(c.upper(), c) for c in SHIELD_COLORS],
-         "Your shield's flare in an armor color, whatever\nyour armor. Only you see it. Default: its own.", None),
         ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
          "The energy shield's flare on your first-person\narms too, as on your body.", None),
         ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
          "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
         # (the controller's button pictures, last: menu_functions.c's
-        # controller_button_rows_show shows one BUTTON STYLE row of the four in
-        # one place, and BUMPER STYLE only for the Xbox's styles)
-        ("AUTO BUTTON DETECTION:", "input.auto_button_detection", ON_OFF,
-         "Show styles for your controller's family.", None),
+        # controller_button_rows_show shows BUMPER STYLE only for the Xbox's
+        # styles; no automatic detection: input.auto_button_detection is held
+        # off)
         ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES + PS_BUTTON_STYLES + SWITCH_BUTTON_STYLES,
-         "Manual gameplay button artwork, kept when auto\ndetection is on.", None),
-        ("BUTTON STYLE:", "display.hud_button_style_xbox", XBOX_BUTTON_STYLES,
-         "Preferred Xbox artwork for automatic detection.", None),
-        ("BUTTON STYLE:", "display.hud_button_style_ps", PS_BUTTON_STYLES,
-         "Preferred PlayStation artwork for auto detection.", None),
-        ("BUTTON STYLE:", "display.hud_button_style_switch", SWITCH_BUTTON_STYLES,
-         "Preferred Switch artwork for automatic detection.", None),
+         "The gameplay button pictures.", None),
         ("BUMPER STYLE:", "display.hud_bumper_style",
          [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
-         "Original: black/white buttons. Modern: LB/RB.\nKept when automatic detection is on.", None),
+         "Original: black/white buttons. Modern: LB/RB.", None),
     ],
 }
 # the profile menu's item that opens it (CUSTOMISATION, the profile_edit_options

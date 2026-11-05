@@ -167,7 +167,8 @@ def test_menu_generated_and_default_on():
     menu = ET.parse(ROOT / f'port/assets/menus/ce/{prefix}.customisation.xml')
     labels = [w for w in menu.getroot().findall('widget')
               if '/hud_button_style' in w.get('name', '') and w.get('name', '').endswith('_label')]
-    assert len(labels) == 4
+    # (the manual style's alone: input.auto_button_detection is held off)
+    assert len(labels) == 1
     assert all('string_list' not in w.attrib and 'string_index' in w.attrib for w in labels)
     rows = port_settings.SCREENS['customisation']['rows']
     assert len(next(r[2] for r in rows if r[1] == 'display.hud_button_style')) == 11
@@ -180,6 +181,7 @@ def test_menu_generated_and_default_on():
     assert f'ce/{prefix}.customisation.xml' in json.loads((ROOT / 'port/assets/menus/menus.json').read_text())['files']
     config = (ROOT / 'port/linux/src/port_config.c').read_text()
     assert re.search(r'"input.auto_button_detection", _config_boolean, "true"', config)
+    assert not any(r[1] == 'input.auto_button_detection' for r in rows)
     assert r'"display.hud_bumper_style", _config_string, "\"original\""' in config
 
 

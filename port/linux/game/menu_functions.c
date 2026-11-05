@@ -1885,7 +1885,7 @@ static void hud_button_style_row_show(struct widget_instance *list)
 	short index;
 	boolean visible;
 
-	if (named(list, "op_auto_button_detection", 0))
+	if (named(list, "op_auto_button_detection", 0) || named(list, "op_hud_bumper_style", 0))
 	{
 		controller_button_rows_show(list);
 		return;

@@ -14,11 +14,12 @@ static void controller_button_rows_show(struct widget_instance *list)
     short index, family = 0, selected, port;
     boolean bumper_visible = FALSE;
     wchar_t caption[64];
-    if (!automatic) return;
+    /* (without AUTO BUTTON DETECTION's row, Settings > Customisation's: the
+     * manual style's row alone, input.auto_button_detection held off) */
     port = controller_of(list);
     controller_device_get(port, &device);
-    setting = pc_menu_setting_get(automatic->definition_tag_index);
-    index = automatic->parameters.list.selected_index;
+    setting = automatic ? pc_menu_setting_get(automatic->definition_tag_index) : NULL;
+    index = automatic ? automatic->parameters.list.selected_index : -1;
     if (setting && index >= 0 && index < setting->value_count && !strcmp(setting->values[index], "true"))
         family = (short)device.family;
     if (family < 0 || family > 3) family = 0;

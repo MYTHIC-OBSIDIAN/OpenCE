@@ -2601,6 +2601,9 @@ static const char *const lan_only_off_booleans[] =
 	"network.online", "network.join_from_clipboard", "network.allow_upnp", "network.public_lobby",
 	"network.host_public", "update.auto", "server.public", "server.master_publish",
 	"server.master_publish_address",
+	/* (no longer in the menus: the button pictures are the manual style's,
+	Xbox's by default, whatever the controller) */
+	"input.auto_button_detection",
 };
 
 /* the string settings held to a value: name, value */
@@ -2612,6 +2615,7 @@ static const char *const lan_only_strings[][2] =
 	/* (no longer in the menus: the shield glow's own reach, as the stock
 	glow's) */
 	{ "display.shield_glow_intensity", "default" },
+	{ "display.shield_color", "default" },
 };
 
 static int lan_only_boolean_off(const char *name)

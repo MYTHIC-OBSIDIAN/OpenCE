@@ -166,7 +166,6 @@ The game retains the original look and feel as it did on the Xbox by default. Th
 | LEGS (Customisation) | See your own legs when you look down in first person | Off |
 | ARM SHIELDS (Customisation) | The energy shield's flare on your first-person arms too | Off |
 | SHIELD GLOW (Customisation) | Energy shields light up what is around them as they flare | Off |
-| SHIELD COLOR (Customisation) | Your own shield in a multiplayer armor color, as your machine draws it | Default |
 | OVERSHIELD (Customisation) | The overshield's own color, rising up the body as it charges | Off |
 | PASSENGER THIRD PERSON | Third-person view for Warthog and Scorpion passengers (Campaign-only) | Off |
 
