@@ -33,10 +33,6 @@ SHIELD_COLORS = ["white", "black", "red", "blue", "gray", "yellow", "green", "pi
                  "orange", "teal", "sage", "brown", "tan", "maroon", "salmon"]
 XBOX_BUTTON_STYLES = [("XBOX CLASSIC", "classic"), ("XBOX GEMS", "gems"),
                      ("XBOX DARK GEMS", "menu_gems"), ("XBOX MODERN", "xbox_modern")]
-PS_BUTTON_STYLES = [("PS CLASSIC", "ps_classic"), ("PS GEMS", "ps_gems"),
-                   ("PS DARK GEMS", "ps_dark_gems"), ("PS MODERN", "ps_modern")]
-SWITCH_BUTTON_STYLES = [("SWITCH CLASSIC", "switch_classic"), ("SWITCH GEMS", "switch_gems"),
-                       ("SWITCH MODERN", "switch_modern")]
 SENSITIVITIES = [(f"{value:g}", f"{value:g}") for value in (0.1, 0.15, 0.25, 0.4, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4)]
 VOLUMES = [(str(step), f"{step / 10:g}") for step in range(11)]
 # an HDR display's paper white and peak in nits (display.hdr_paper_white,
@@ -289,8 +285,9 @@ SCREENS["video_settings/fov_viewmodels"] = {
     ],
 }
 
-# Customisation (the profile menu's CUSTOMISATION, above ABOUT: the
-# profile_edit_select_list's patch below): the player's legs, the shield
+# Preferences (the profile menu's PREFERENCES, last, in About's place: the
+# profile_edit_select_list's patch below; named customisation inside): the
+# player's legs, the shield
 # glow, the mods (HIGH RES ASSETS), the intro, the main menu's credits, the
 # shield's flare on the arms, the overshield, and the controller's button
 # pictures
@@ -318,19 +315,18 @@ SCREENS["customisation"] = {
         # (the main menu's CREDITS: menu_functions.c's credits_play)
         ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
          "Choose what version of the credits play in the\nmain menu.", None),
-        # (the controller's button pictures, last: menu_functions.c's
-        # controller_button_rows_show shows BUMPER STYLE only for the Xbox's
-        # styles; no automatic detection: input.auto_button_detection is held
-        # off)
-        ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES + PS_BUTTON_STYLES + SWITCH_BUTTON_STYLES,
+        # (the controller's button pictures, last, the Xbox's styles only and
+        # one for the computer, whichever player: controller_button_menu.inl
+        # shows BUMPER STYLE only for those with black and white buttons)
+        ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES,
          "The gameplay button pictures.", None),
         ("BUMPER STYLE:", "display.hud_bumper_style",
          [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
          "Original: black/white buttons. Modern: LB/RB.", None),
     ],
 }
-# the profile menu's item that opens it (CUSTOMISATION, the profile_edit_options
-# string STRING_INSERTS adds), in About's place (About a row lower)
+# the profile menu's item that opens it (PREFERENCES, the profile_edit_options
+# string STRING_INSERTS adds), in About's place (About is left out)
 CUSTOMISATION_ITEM = f"{PE}/customisation_item"
 
 
@@ -555,8 +551,7 @@ STRING_OVERRIDES = {
         "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
         "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
-        "Your look, the button pictures,\\nmods, the intro and credits.\\n\\nProfile:",
-        "Halo: Combat Evolved, the Xbox\\ngame, on this computer.\\n\\nProfile:",
+        "Change game version\\npreferences and button glyphs.\\n\\nProfile:",
     ],
 }
 
@@ -677,15 +672,13 @@ def _setting_screen(folder: str, spec: dict) -> list:
         wide = setting in WIDE_SETTINGS
         bumper_style = setting == "display.hud_bumper_style"
         controller_style = setting.startswith("display.hud_button_style")
-        # Dynamic captions retain their help index without a string list that
-        # would overwrite the player number during the engine's text update.
         extra += _widget(row, [("width", 512), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                                ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF"), ("platform", platform)],
                          [f'<child{attributes([("widget", f"{base}/{key}_label")])}/>',
                           f'<child{attributes([("widget", f"{base}/{key}_spinner"), ("x", 240 if controller_style or bumper_style else 286 if wide else 320), ("y", 1)])}/>'])
         extra += _widget(f"{base}/{key}_label",
                          [("type", "text"), ("controller", 1), ("width", 300), ("height", 22),
-                          ("string_list", None if controller_style else f"{base}/labels"),
+                          ("string_list", f"{base}/labels"),
                           ("string_index", index), ("font", "ui\\large_ui"),
                           ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
         extra += _widget(f"{base}/{key}_spinner",
@@ -897,8 +890,8 @@ SHIELD_EFFECTS_HELP = [
 ]
 
 STRING_INSERTS = {
-    # (the profile menu's CUSTOMISATION: CUSTOMISATION_ITEM)
-    f"{PE}/profile_edit_options": [(10, ["CUSTOMISATION"])],
+    # (the profile menu's PREFERENCES: CUSTOMISATION_ITEM)
+    f"{PE}/profile_edit_options": [(10, ["PREFERENCES"])],
     # (Filters' SHOW MISSING MAPS' third value's help, after the PC version's:
     # menu_functions.c's filters_help)
     f"{MT}/join_game/filters/cap_filter_options": [(11, [
@@ -997,7 +990,7 @@ STRING_OVERRIDES.update({
 # menu_tags.c's map_strings); the inserted strings (STRING_INSERTS) are the
 # port's own, the rest of their lists the PC version's
 OVERRIDE_ORIGINALS = {
-    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None, None],
+    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
     f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
@@ -1016,10 +1009,10 @@ OVERRIDE_ORIGINALS = {
 # screen) for LAN, 2 (one Spartan) for the others
 FRAME_ORDER = {
     f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
-    # (the profile menu's items' pictures: CUSTOMISATION, before ABOUT,
-    # shows Video Setup's; then the Xbox's button settings' (BITMAP_FRAMES,
+    # (the profile menu's items' pictures: PREFERENCES, in About's place,
+    # shows About's; then the Xbox's button settings' (BITMAP_FRAMES,
     # menu_functions.c's PROFILE_FIRST_LAYOUT_FRAME))
-    f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 5, 8],
+    f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 8],
 }
 
 # the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
@@ -1052,10 +1045,10 @@ WIDGET_PATCHES = {
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
     f"{PE}/profile_edit_extended_desc_pic": {"inputs": ["port gamepad layout preview"]},
-    # (CUSTOMISATION before ABOUT, which goes a row lower)
+    # (PREFERENCES in ABOUT's place, which is left out)
     f"{PE}/profile_edit_select_list": {
-        "insert_before": {f"{PE}/about_item": [f'<child widget="{CUSTOMISATION_ITEM}" y="32"/>']},
-        "move": {f"{PE}/about_item": (None, 65)},
+        "swap": {f"{PE}/about_item": CUSTOMISATION_ITEM},
+        "move": {f"{PE}/about_item": (None, 32)},
     },
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)
@@ -1210,7 +1203,7 @@ TITLES = {
     f"{MT}/lobby/header_lobby": "GAME LOBBY",
     f"{MT}/coop/header_player_2": "PLAYER 2 PROFILE",
     f"{MT}/lobby/header_add_player": "ADD PLAYER",
-    f"{PE}/customisation/header_customisation": "CUSTOMISATION",
+    f"{PE}/customisation/header_customisation": "PREFERENCES",
 }
 
 

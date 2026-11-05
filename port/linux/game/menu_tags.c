@@ -2123,14 +2123,12 @@ the profile itself. */
 	"main_menu/settings_select/player_setup/player_profile_edit/network_setup/in_game/in_game_network_settings_screen"
 
 /* Change Name's keyboard and Change Color's pictures are ui.map's, Network
-Setup is for others' games (shown in co-op: its pages, pause_network_patch),
-and About is nothing to it */
+Setup is for others' games (shown in co-op: its pages, pause_network_patch) */
 static char const *const pause_settings_hidden_items[] =
 {
 	"main_menu/settings_select/player_setup/player_profile_edit/name_profile_item",
 	PAUSE_NETWORK_ITEM,
 	"main_menu/settings_select/player_setup/player_profile_edit/color_profile_item",
-	"main_menu/settings_select/player_setup/player_profile_edit/about_item",
 };
 
 /* the PC version's pause menu's row pitch (30 apart). The pause box's frames

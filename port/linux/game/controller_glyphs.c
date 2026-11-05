@@ -1,5 +1,6 @@
-/* Optional controller-family artwork. Legacy Xbox renderers remain the fallback;
- * callers identify their own map's controller entries before reaching this code. */
+/* Xbox Modern's artwork, and the modern bumpers the older Xbox styles can use.
+ * Legacy Xbox renderers remain the fallback; callers identify their own map's
+ * controller entries before reaching this code. */
 #include "cseries.h"
 #include "memory/data.h"
 #include "controller_buttons.h"
@@ -28,8 +29,7 @@ struct controller_glyph_asset
 };
 #include "controller_glyph_assets.h"
 
-/* Key by artwork rather than the current player: mixed-controller split screen
- * never invalidates another viewport's textures. Released at map teardown. */
+/* Keyed by artwork. Released at map teardown. */
 static struct
 {
     struct bitmap_data *bitmap;
@@ -37,16 +37,10 @@ static struct
     boolean attempted;
 } controller_glyph_cache[NUMBEROF(controller_glyph_assets)];
 
+/* The computer's one style, for every player's prompts. */
 short controller_glyph_style(void)
 {
-    short port = render.local_player_index;
-    long player_index;
-    if (port >= 0 && port < 4)
-    {
-        player_index = local_player_get_player_index(port);
-        if (player_index != NONE) port = player_get(player_index)->local_player_index;
-    }
-    return (short)controller_button_style_for_port(port);
+    return (short)controller_button_style();
 }
 
 void controller_glyphs_dispose(void)
@@ -63,18 +57,17 @@ void controller_glyphs_dispose(void)
     memset(controller_glyph_cache, 0, sizeof(controller_glyph_cache));
 }
 
+/* controller_glyph_assets: Xbox Modern's four faces, then its controls by
+ * slot (4 to 13) */
 static short controller_glyph_asset_index(short style, short slot)
 {
-    short family;
     /* Older Xbox styles can use the supplied modern bumpers independently of
-     * their face buttons. The caller has already resolved automatic detection. */
+     * their face buttons. */
     if (style >= 0 && style < 3 && (slot == 4 || slot == 5) &&
         !strcmp(config_string("display.hud_bumper_style"), "modern"))
-        return (short)(32 + slot - 4);
-    if (style < 3 || style >= 11 || slot < 0 || slot >= 14) return NONE;
-    if (slot < 4) return (short)((style - 3) * 4 + slot);
-    family = (short)(style < 4 ? 0 : style < 8 ? 1 : 2);
-    return (short)(32 + family * 10 + slot - 4);
+        return slot;
+    if (style != 3 || slot < 0 || slot >= 14) return NONE;
+    return slot;
 }
 
 boolean controller_glyph_draw(short style, short index,

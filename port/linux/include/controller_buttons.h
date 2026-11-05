@@ -23,9 +23,9 @@ struct controller_device
 void controller_device_get(short port, struct controller_device *device);
 void controller_device_read(void *gamepad, struct controller_device *device);
 void controller_device_update(short port, void *gamepad);
+/* the HUD's button pictures: Xbox classic, gems, dark gems or modern */
+#define CONTROLLER_BUTTON_STYLES 4
 int controller_button_style_index(char const *name);
-int controller_button_style_family(int style);
-char const *controller_button_family_setting(int family);
-int controller_button_style_for_port(short port);
+int controller_button_style(void);
 
 #endif

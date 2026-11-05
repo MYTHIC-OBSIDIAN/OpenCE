@@ -52,43 +52,22 @@ void controller_device_read(void *handle, struct controller_device *device)
     }
 }
 
+/* The Xbox's styles only: classic, gems, dark gems (menu_gems, as saved
+ * before it was named so) and modern. Anything else, a PlayStation or Switch
+ * style an earlier build saved included, is classic. */
 int controller_button_style_index(char const *name)
 {
-    static char const *names[] = {"classic", "gems", "menu_gems", "xbox_modern",
-        "ps_classic", "ps_gems", "ps_dark_gems", "ps_modern",
-        "switch_classic", "switch_gems", "switch_modern"};
+    static char const *names[] = {"classic", "gems", "menu_gems", "xbox_modern"};
     int i;
+    if (!name) return 0;
     if (!strcmp(name, "dark_gems")) return 2;
-    for (i = 0; i < 11; i++) if (!strcmp(name, names[i])) return i;
+    for (i = 0; i < CONTROLLER_BUTTON_STYLES; i++) if (!strcmp(name, names[i])) return i;
     return 0;
 }
 
-int controller_button_style_family(int style)
+/* One style for the whole computer (config.toml), whichever player or
+ * controller the prompt is for. */
+int controller_button_style(void)
 {
-    return style < 0 || style >= 11 ? CONTROLLER_UNKNOWN :
-        style < 4 ? CONTROLLER_XBOX : style < 8 ? CONTROLLER_PLAYSTATION : CONTROLLER_SWITCH;
-}
-
-char const *controller_button_family_setting(int family)
-{
-    switch (family)
-    {
-    case CONTROLLER_XBOX: return "display.hud_button_style_xbox";
-    case CONTROLLER_PLAYSTATION: return "display.hud_button_style_ps";
-    case CONTROLLER_SWITCH: return "display.hud_button_style_switch";
-    default: return "display.hud_button_style";
-    }
-}
-
-int controller_button_style_for_port(short port)
-{
-    struct controller_device device;
-    int style;
-    /* Always identify devices, even when automatic glyph selection is off. */
-    controller_device_get(port, &device);
-    if (!config_boolean("input.auto_button_detection") || !device.family)
-        return controller_button_style_index(config_string("display.hud_button_style"));
-    style = controller_button_style_index(config_string(controller_button_family_setting(device.family)));
-    if (controller_button_style_family(style) == device.family) return style;
-    return device.family == CONTROLLER_PLAYSTATION ? 4 : device.family == CONTROLLER_SWITCH ? 8 : 0;
+    return controller_button_style_index(config_string("display.hud_button_style"));
 }

@@ -6,7 +6,7 @@
 > `port/linux/src/port_config.c` (`lan_only_off_booleans`) whatever
 > `config.toml` says; the Multiplayer menu's INTERNET items do as LAN does.
 > The main menu has CREDITS in MODS' place, which plays the credits chosen
-> in Settings > Customisation (CREDITS: XBOX or PC): the Xbox's credits
+> in Settings > Preferences (CREDITS: XBOX or PC): the Xbox's credits
 > movie in the game (`bink\credits.bik` beside `halo.exe`, in the data root),
 > or Halo PC's credits scrolling over the main menu as Halo PC does (yellow
 > headers, blue names, round and round until A, B or Escape); after The Maw
@@ -163,10 +163,10 @@ The game retains the original look and feel as it did on the Xbox by default. Th
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| LEGS (Customisation) | See your own legs when you look down in first person | Off |
-| ARM SHIELDS (Customisation) | The energy shield's flare on your first-person arms too | Off |
-| SHIELD GLOW (Customisation) | Energy shields light up what is around them as they flare | Off |
-| OVERSHIELD (Customisation) | The overshield's own color, rising up the body as it charges | Off |
+| LEGS (Preferences) | See your own legs when you look down in first person | Off |
+| ARM SHIELDS (Preferences) | The energy shield's flare on your first-person arms too | Off |
+| SHIELD GLOW (Preferences) | Energy shields light up what is around them as they flare | Off |
+| OVERSHIELD (Preferences) | The overshield's own color, rising up the body as it charges | Off |
 | PASSENGER THIRD PERSON | Third-person view for Warthog and Scorpion passengers (Campaign-only) | Off |
 
 Weapons that have no first-person model (many of the Digsite maps' weapons, such as Spasm's) are held in an over-the-shoulder third-person view, so you see the weapon in your hands. It switches on and off by itself as you change weapons; zooming in returns to first person for the scope. Shots still leave from your eyes as in first person, and the reticle is drawn where they will land. This works everywhere, multiplayer included: only your own view changes.

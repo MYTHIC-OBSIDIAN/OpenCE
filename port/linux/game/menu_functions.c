@@ -1872,7 +1872,7 @@ static void discord_account_show(struct widget_instance *list)
 
 /* Graphics' button style follows the pending HUD choice, including Defaults.
 The remaining options close the gap; the help and bottom buttons stay put. */
-/* Button Appearance filters its rows in the controller feature module. */
+/* Preferences' BUMPER STYLE follows its BUTTON STYLE (controller_button_menu.inl). */
 #include "controller_buttons.h"
 #include "controller_button_menu.inl"
 
@@ -1885,7 +1885,7 @@ static void hud_button_style_row_show(struct widget_instance *list)
 	short index;
 	boolean visible;
 
-	if (named(list, "op_auto_button_detection", 0) || named(list, "op_hud_bumper_style", 0))
+	if (named(list, "op_hud_bumper_style", 0))
 	{
 		controller_button_rows_show(list);
 		return;
@@ -2067,10 +2067,10 @@ profile's button settings as the Xbox's Controller Setup shows them */
 /* the picture's frames (the bitmap's: tools/port_settings.py's
 BITMAP_FRAMES): Gamepad Setup's row's, as the list numbers its rows
 (player_profile_edit_select_menu_update_extended_description): the PC
-version's nine, with CUSTOMISATION's (Video Setup's) before About's, then the
-Xbox's five of the button settings (tools/port_settings.py's FRAME_ORDER) */
+version's nine, PREFERENCES's (About's) last, then the Xbox's five of the
+button settings (tools/port_settings.py's FRAME_ORDER) */
 #define PROFILE_GAMEPAD_FRAME 2
-#define PROFILE_FIRST_LAYOUT_FRAME 10
+#define PROFILE_FIRST_LAYOUT_FRAME 9
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
