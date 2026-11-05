@@ -299,14 +299,18 @@ SCREENS["customisation"] = {
     "header": ("header_customisation", f"{PE}/customisation/header_customisation"),
     "spacing": 30,
     "rows": [
-        ("LEGS:", "display.first_person_legs", ON_OFF,
-         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
-        ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
-         "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
         # (every mod of the mods folder played, or none: port_mods.c's
         # port_mods_scan, from the next map loaded)
         ("HIGH RES ASSETS:", "mods.enabled", ON_OFF,
          "Toggle between classic and modern vehicle and\nweapon textures.", None, "high_res_assets"),
+        ("LEGS:", "display.first_person_legs", ON_OFF,
+         "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
+        ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
+         "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
+        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
+         "The energy shield's flare on your first-person\narms too, as on your body.", None),
+        ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
+         "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
         # (attract_mode.c's attract_mode_get_localized_movie_path)
         ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
          "Choose what intro video plays on launch.",
@@ -314,10 +318,6 @@ SCREENS["customisation"] = {
         # (the main menu's CREDITS: menu_functions.c's credits_play)
         ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],
          "Choose what version of the credits play in the\nmain menu.", None),
-        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
-         "The energy shield's flare on your first-person\narms too, as on your body.", None),
-        ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
-         "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
         # (the controller's button pictures, last: menu_functions.c's
         # controller_button_rows_show shows BUMPER STYLE only for the Xbox's
         # styles; no automatic detection: input.auto_button_detection is held

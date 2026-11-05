@@ -13,13 +13,13 @@
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/customisation/help">
 		<data input="port settings help"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_first_person_legs" x="54" y="73"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_shield_glow" x="54" y="103"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_high_res_assets" x="54" y="133"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_intro" x="54" y="163"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_credits" x="54" y="193"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_viewmodel_shield" x="54" y="223"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_overshield_effect" x="54" y="253"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_high_res_assets" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_first_person_legs" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_shield_glow" x="54" y="133"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_viewmodel_shield" x="54" y="163"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_overshield_effect" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_intro" x="54" y="223"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_credits" x="54" y="253"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_hud_button_style" x="54" y="283"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_hud_bumper_style" x="54" y="313"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/button_bar" y="414"/>
@@ -29,11 +29,20 @@
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/button_ok" x="380" y="1"/>
 		<child widget="common_button_cancel" x="510" y="1"/>
 	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_high_res_assets" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="mods.enabled" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="created" run="port setting load"/>
+	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_first_person_legs" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/first_person_legs_label"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/first_person_legs_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/first_person_legs_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/first_person_legs_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/first_person_legs_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="display.first_person_legs" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
@@ -42,43 +51,16 @@
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/shield_glow_label"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/shield_glow_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/shield_glow_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/shield_glow_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/shield_glow_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="display.shield_glow" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
-		<on event="created" run="port setting load"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_high_res_assets" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_label"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_spinner" x="320" y="1"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/high_res_assets_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="mods.enabled" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
-		<on event="created" run="port setting load"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_intro" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_label"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_spinner" x="320" y="1"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|PC" setting="display.intro" values="xbox|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
-		<on event="created" run="port setting load"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_credits" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_label"/>
-		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_spinner" x="320" y="1"/>
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
-	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|PC" setting="display.credits" values="original|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_viewmodel_shield" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/viewmodel_shield_label"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/viewmodel_shield_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/viewmodel_shield_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/viewmodel_shield_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/viewmodel_shield_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="display.viewmodel_shield" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
@@ -87,9 +69,27 @@
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/overshield_effect_label"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/overshield_effect_spinner" x="320" y="1"/>
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/overshield_effect_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/overshield_effect_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/overshield_effect_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="display.overshield_effect" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_intro" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/intro_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|PC" setting="display.intro" values="xbox|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_credits" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/credits_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="XBOX|PC" setting="display.credits" values="original|pc" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/customisation/op_hud_button_style" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -121,25 +121,25 @@
 		<on event="left_mouse" run="mouse emit accept event"/>
 	</widget>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/customisation/labels">
+		<string text="HIGH RES ASSETS:"/>
 		<string text="LEGS:"/>
 		<string text="SHIELD GLOW:"/>
-		<string text="HIGH RES ASSETS:"/>
-		<string text="INTRO:"/>
-		<string text="CREDITS:"/>
 		<string text="ARM SHIELDS:"/>
 		<string text="OVERSHIELD:"/>
+		<string text="INTRO:"/>
+		<string text="CREDITS:"/>
 		<string text="BUTTON STYLE:"/>
 		<string text="BUMPER STYLE:"/>
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/customisation/help_strings">
 		<string text=""/>
+		<string text="Toggle between classic and modern vehicle and\nweapon textures."/>
 		<string text="Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it."/>
 		<string text="Shields light their surroundings as they flare.\nOnline: the host's choice."/>
-		<string text="Toggle between classic and modern vehicle and\nweapon textures."/>
-		<string text="Choose what intro video plays on launch."/>
-		<string text="Choose what version of the credits play in the\nmain menu."/>
 		<string text="The energy shield's flare on your first-person\narms too, as on your body."/>
 		<string text="The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice."/>
+		<string text="Choose what intro video plays on launch."/>
+		<string text="Choose what version of the credits play in the\nmain menu."/>
 		<string text="The gameplay button pictures."/>
 		<string text="Original: black/white buttons. Modern: LB/RB."/>
 	</strings>
