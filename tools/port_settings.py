@@ -934,14 +934,12 @@ def LOADOUT_HELPS(slot: str) -> list:
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
                                   "SERVER BROWSER", "CO-OP CAMPAIGN"],
-    # (one for each item: JOIN GAME, its INTERNET and LAN, CREATE GAME, its
+    # (one for each item: JOIN GAME's INTERNET and LAN, CREATE GAME's
     # INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES; the INTERNET items
     # play on the LAN in this build: multiplayer_mode_set)
     f"{MT}/multiplayer_option_descriptions": [
-        "Join a multiplayer game on\\nthe Internet or your LAN.",
         "Browse the games on the\\nInternet.",
         "Join a multiplayer game on\\nyour LAN.",
-        "Host a multiplayer game on\\nthe Internet or your LAN.",
         "Host a game on the\\nInternet.",
         "Host a game on your LAN\\nonly.",
         "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
@@ -994,7 +992,7 @@ STRING_OVERRIDES.update({
 OVERRIDE_ORIGINALS = {
     f"{PE}/profile_edit_descriptions": [None, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
-    f"{MT}/multiplayer_option_descriptions": [None, 0, 1, None, None, 4, None, 5],
+    f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
     "main_menu/settings_select/multiplayer_setup/item_options_edit/item_options_labels": [0, 1, 2, 3, 4] + [None] * 4,
     # (the first's note that infinite grenades work only with 4 players or
@@ -1005,13 +1003,13 @@ OVERRIDE_ORIGINALS = {
 }
 
 # the Multiplayer menu's pictures, one for each of its items in order (its
-# description shows the item's frame: JOIN GAME, its INTERNET and LAN,
-# CREATE GAME, its INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES): the PC
+# description shows the item's frame: JOIN GAME's INTERNET and LAN, CREATE
+# GAME's INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES): the PC
 # version's frame 0 (two Spartans) for INTERNET, 1 (two Spartans on a
-# screen) for LAN, 2 (one Spartan) for the others (the headings', CREATE
-# GAME's and CO-OP CAMPAIGN's then replaced: FRAME_REPLACEMENTS)
+# screen) for LAN, 2 (one Spartan) for the others (CREATE GAME's and CO-OP
+# CAMPAIGN's then replaced: FRAME_REPLACEMENTS)
 FRAME_ORDER = {
-    f"{MT}/mp_options": [0, 0, 1, 0, 0, 1, 2, 2],
+    f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
     # (the profile menu's items' pictures: PREFERENCES, in About's place
     # (replaced: FRAME_REPLACEMENTS); then About's, shown on OK
     # (menu_functions.c's PROFILE_OK_FRAME); then the Xbox's button settings'
@@ -1070,16 +1068,6 @@ WIDGET_PATCHES = {
         f'<on event="a" run="mp type set mode" open="{MT}/connected/connected_map_select_wrapper"/>',
         '<on event="left_mouse" run="mouse emit accept event"/>',
     ]},
-    # (the headings, JOIN GAME and CREATE GAME, rows of their own: their
-    # picture and words, and A goes on to their INTERNET; the rows'
-    # background shows the focus on them)
-    **{f"{MT}/multiplayer_type_{heading}_item": {
-        "set": {"bitmap": "bitmaps/list_item_bkd"},
-        "handlers": [
-            '<on event="a" run="port next row"/>',
-            '<on event="start" run="port next row"/>',
-            '<on event="left_mouse" run="mouse emit accept event"/>',
-        ]} for heading in ("join", "create")},
     f"{MT}/multiplayer_type_join_direct_item": {"handlers": [
         f'<on event="a" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
         f'<on event="start" run="mp type set mode" open="{MT}/join_game/join_game_screen"/>',
@@ -1211,8 +1199,7 @@ BITMAP_FRAMES = {
 
 # frames of a bitmap (by our names, after FRAME_ORDER) drawn instead from a
 # frame of the Xbox map's (the player's own): its bitmap, its frame. The
-# Multiplayer menu's headings, JOIN GAME and CREATE GAME, show the Xbox
-# Multiplayer menu's second picture, its CREATE GAME INTERNET the Xbox's gametype
+# Multiplayer menu's CREATE GAME INTERNET shows the Xbox's gametype
 # settings' second picture, its LAN the Xbox Multiplayer menu's third, and
 # CO-OP CAMPAIGN its split screen picture (the first: one television, two
 # controllers, one Xbox); Edit Multiplayer Gametype's OK (its button bar:
@@ -1223,11 +1210,9 @@ XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_set
 XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
-        0: (XBOX_MULTIPLAYER_PICTURES, 1),
-        3: (XBOX_MULTIPLAYER_PICTURES, 1),
-        4: (XBOX_GAMETYPE_PICTURES, 1),
-        5: (XBOX_MULTIPLAYER_PICTURES, 2),
-        6: (XBOX_MULTIPLAYER_PICTURES, 0),
+        2: (XBOX_GAMETYPE_PICTURES, 1),
+        3: (XBOX_MULTIPLAYER_PICTURES, 2),
+        4: (XBOX_MULTIPLAYER_PICTURES, 0),
     },
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": {
         7: (XBOX_GAMETYPE_PICTURES, 5),

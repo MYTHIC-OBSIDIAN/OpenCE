@@ -772,7 +772,7 @@ def main() -> None:
     report += [
         "",
         "These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's",
-        "headings, its CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer",
+        "CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer",
         "Gametype's OK; the profile menu's PREFERENCES).",
         "",
         "| Our bitmap | Our frame | The Xbox's frame |",
