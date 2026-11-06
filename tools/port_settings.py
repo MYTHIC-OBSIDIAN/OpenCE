@@ -1199,7 +1199,8 @@ BITMAP_FRAMES = {
 
 # frames of a bitmap (by our names, after FRAME_ORDER) drawn instead from a
 # frame of the Xbox map's (the player's own): its bitmap, its frame. The
-# Multiplayer menu's CREATE GAME INTERNET shows the Xbox's gametype
+# Multiplayer menu's JOIN GAME INTERNET and LAN show the Xbox Multiplayer
+# menu's second picture, its CREATE GAME INTERNET the Xbox's gametype
 # settings' second picture, its LAN the Xbox Multiplayer menu's third, and
 # CO-OP CAMPAIGN its split screen picture (the first: one television, two
 # controllers, one Xbox); Edit Multiplayer Gametype's OK (its button bar:
@@ -1210,6 +1211,8 @@ XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_set
 XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
+        0: (XBOX_MULTIPLAYER_PICTURES, 1),
+        1: (XBOX_MULTIPLAYER_PICTURES, 1),
         2: (XBOX_GAMETYPE_PICTURES, 1),
         3: (XBOX_MULTIPLAYER_PICTURES, 2),
         4: (XBOX_MULTIPLAYER_PICTURES, 0),
