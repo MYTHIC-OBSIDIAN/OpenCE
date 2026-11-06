@@ -406,6 +406,9 @@ static char const *const port_function_names[] =
 	/* (a dedicated server's map vote: menu_functions.c) */
 	"port map vote open", "port map vote choose",
 	"port controller clear", "port controller cancel",
+	/* (the Multiplayer menu's headings, JOIN GAME and CREATE GAME: A goes
+	on to the row after) */
+	"port next row",
 };
 
 /* the PC version's game data functions that the Xbox's have not, from

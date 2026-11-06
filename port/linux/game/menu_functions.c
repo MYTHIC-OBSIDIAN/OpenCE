@@ -3717,6 +3717,17 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 	return campaign_fail();
 }
 
+/* "port next row" (A on the Multiplayer menu's headings, JOIN GAME and
+CREATE GAME, which are rows for their picture and words): the focus on to
+the row after, their INTERNET, as down does */
+static boolean next_row(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted)
+{
+	/* (3: a column list) */
+	if (widget->parent && widget->parent->type == 3)
+		widget_event_function_list_widget_goto_next_item(widget->parent, event, widget_deleted);
+	return FALSE;
+}
+
 /* "port map list back" (B on the list): out of the Map screen */
 static boolean map_list_back(struct widget_instance *list, boolean *widget_deleted)
 {
@@ -7832,6 +7843,10 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port map list back"))
 		{
 			return map_list_back(widget, widget_deleted);
+		}
+		else if (!strcmp(name, "port next row"))
+		{
+			return next_row(widget, event, widget_deleted);
 		}
 		else if (!strcmp(name, "mp profiles list initialize"))
 		{

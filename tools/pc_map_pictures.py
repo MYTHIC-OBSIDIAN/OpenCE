@@ -15,8 +15,8 @@ multi_maps folder).
     python tools/pc_map_pictures.py <install>/maps --menus <game>
 
 writes the menus' pictures that have no redraw and are not the Xbox map's
-(port/assets/menus/NON_HANDDRAWN.md's placeholders: the gametype editor's
-and the profile settings' pictures) from Halo PC's,
+(port/assets/menus/NON_HANDDRAWN.md's placeholders: the multiplayer menu's,
+the gametype editor's and the profile settings' pictures) from Halo PC's,
 as PNG files in the game's menus folder (beside halo.exe), which the menus
 draw in place of the built-in placeholders (port/linux/src/menu_files.c).
 
@@ -48,6 +48,7 @@ PICTURES_TAG = "ui\\shell\\bitmaps\\mp_map_grafix"
 # ui\shell, and the frames of it that are placeholders; each is written as
 # menus/ce/shell/<tag>__<frame>.png
 MENU_PLACEHOLDERS = {
+    "main_menu\\multiplayer_type_select\\mp_options": [0, 1],
     "main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options": [0, 3, 4, 6],
     "main_menu\\settings_select\\player_setup\\player_profile_edit\\profile_options": [1, 3, 4, 5, 6, 8],
 }
