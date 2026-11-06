@@ -2065,21 +2065,45 @@ static boolean color_choose(void)
 profile's button settings as the Xbox's Controller Setup shows them */
 
 /* the picture's frames (the bitmap's: tools/port_settings.py's
-BITMAP_FRAMES): Gamepad Setup's row's, as the list numbers its rows
-(player_profile_edit_select_menu_update_extended_description): the PC
-version's nine, PREFERENCES's (About's) last, then the Xbox's five of the
-button settings (tools/port_settings.py's FRAME_ORDER) */
+FRAME_ORDER, FRAME_REPLACEMENTS and BITMAP_FRAMES): the nine rows', as the
+list numbers its rows (player_profile_edit_select_menu_update_extended_description),
+PREFERENCES's last; OK's (the PC version's About's); then the Xbox's five of
+the button settings */
 #define PROFILE_GAMEPAD_FRAME 2
-#define PROFILE_FIRST_LAYOUT_FRAME 9
+#define PROFILE_OK_FRAME 9
+#define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
+
+/* OK's picture while the button bar's OK has the focus, and the row's
+before it back after (the list leaves the picture be on its buttons) */
+static void profile_ok_picture(struct widget_instance *picture)
+{
+	static short row_frame = 0;
+	struct widget_instance *bar = named(screen_of(picture), "profile_edit_button_bar", 0);
+	boolean on_bar = bar && bar->parent && bar->parent->focused_child == bar;
+	boolean on_ok = on_bar && bar->focused_child && !strcmp(bar->focused_child->name, "profile_edit_button_ok");
+
+	if (on_ok && picture->animation.current_frame_index != PROFILE_OK_FRAME)
+	{
+		row_frame = picture->animation.current_frame_index;
+		picture->animation.current_frame_index = PROFILE_OK_FRAME;
+	}
+	else if (!on_ok && picture->animation.current_frame_index == PROFILE_OK_FRAME)
+	{
+		picture->animation.current_frame_index = row_frame;
+	}
+}
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
 row, the edited profile's button settings; the port's own (Bumper Jumper),
-of which the Xbox has no picture, keeps the row's */
+of which the Xbox has no picture, keeps the row's; on OK, OK's */
 static void profile_gamepad_layout(struct widget_instance *picture)
 {
 	struct player_profile *profile = player_ui_get_edit_player_profile();
-	short frame = picture->animation.current_frame_index;
+	short frame;
+
+	profile_ok_picture(picture);
+	frame = picture->animation.current_frame_index;
 
 	if (frame == PROFILE_GAMEPAD_FRAME ||
 		(frame >= PROFILE_FIRST_LAYOUT_FRAME && frame < PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES))

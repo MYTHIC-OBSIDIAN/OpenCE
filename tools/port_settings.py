@@ -1010,10 +1010,11 @@ OVERRIDE_ORIGINALS = {
 # CAMPAIGN's then replaced: FRAME_REPLACEMENTS)
 FRAME_ORDER = {
     f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
-    # (the profile menu's items' pictures: PREFERENCES, in About's place,
-    # shows About's; then the Xbox's button settings' (BITMAP_FRAMES,
-    # menu_functions.c's PROFILE_FIRST_LAYOUT_FRAME))
-    f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    # (the profile menu's items' pictures: PREFERENCES, in About's place
+    # (replaced: FRAME_REPLACEMENTS); then About's, shown on OK
+    # (menu_functions.c's PROFILE_OK_FRAME); then the Xbox's button settings'
+    # (BITMAP_FRAMES, PROFILE_FIRST_LAYOUT_FRAME))
+    f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 8, 8],
 }
 
 # the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
@@ -1199,14 +1200,23 @@ BITMAP_FRAMES = {
 # Multiplayer menu's CREATE GAME INTERNET shows the Xbox's gametype
 # settings' second picture, its LAN the Xbox Multiplayer menu's third, and
 # CO-OP CAMPAIGN its split screen picture (the first: one television, two
-# controllers, one Xbox)
+# controllers, one Xbox); Edit Multiplayer Gametype's OK (its button bar:
+# the list's eighth item) the Xbox's gametype settings' sixth; the profile
+# menu's PREFERENCES the Xbox's profile settings' third
 XBOX_MULTIPLAYER_PICTURES = "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options"
 XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options"
+XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
         2: (XBOX_GAMETYPE_PICTURES, 1),
         3: (XBOX_MULTIPLAYER_PICTURES, 2),
         4: (XBOX_MULTIPLAYER_PICTURES, 0),
+    },
+    "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": {
+        7: (XBOX_GAMETYPE_PICTURES, 5),
+    },
+    f"{PE}/profile_options": {
+        8: (XBOX_PROFILE_PICTURES, 2),
     },
 }
 
