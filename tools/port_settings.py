@@ -543,13 +543,13 @@ TEAMPLAY_EXTRA_ROWS = TEAMPLAY_GAMETYPE_ROWS + TEAMPLAY_ROWS
 # the profile menu's words for what its items now open
 STRING_OVERRIDES = {
     f"{PE}/profile_edit_descriptions": [
-        "Rename this profile.\\n\\n\\nProfile:",
-        "Choose the keys and mouse\\nbuttons for each action.\\n\\nProfile:",
-        "Set this profile's controller\\nsensitivity and layouts.\\n\\nProfile:",
-        "Adjust the mouse's sensitivity\\nand aiming.\\n\\nProfile:",
-        "Adjust the volume of the music\\nand of everything else.\\n\\nProfile:",
-        "Choose a window or the full\\nscreen, the frame rate and more.\\n\\nProfile:",
-        "Internet play, updates and the\\nmultiplayer HUD.\\n\\nProfile:",
+        "Rename this profile using the\\nvirtual keyboard.\\n\\nProfile:",
+        "Customize controls for this\\nprofile.\\n\\nProfile:",
+        "Select the gamepads to be used\\nby this profile.\\n\\nProfile:",
+        "Adjust mouse settings for this\\nprofile.\\n\\nProfile:",
+        "Adjust audio settings for this\\nprofile.\\n\\nProfile:",
+        "Adjust video settings for this\\nprofile.\\n\\nProfile:",
+        "Adjust network settings for\\nthis profile.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
         "Change game version\\npreferences and button glyphs.\\n\\nProfile:",
     ],
@@ -990,7 +990,7 @@ STRING_OVERRIDES.update({
 # menu_tags.c's map_strings); the inserted strings (STRING_INSERTS) are the
 # port's own, the rest of their lists the PC version's
 OVERRIDE_ORIGINALS = {
-    f"{PE}/profile_edit_descriptions": [0, None, None, None, None, None, None, 7, None],
+    f"{PE}/profile_edit_descriptions": [None, None, None, None, None, None, None, 7, None],
     f"{MT}/multiplayer_options": [0, 1, 2, 3, None, 5, None, None],
     f"{MT}/multiplayer_option_descriptions": [0, 1, None, 4, None, 5],
     "main_menu/gametype_select/var_gametype_banks": [0, 2],
