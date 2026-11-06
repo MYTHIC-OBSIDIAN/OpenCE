@@ -427,6 +427,8 @@ static char const *const port_game_data_input_names[] =
 	/* (the profile settings' picture: the Xbox's of the button settings,
 	on Gamepad Setup's row) */
 	"port gamepad layout preview",
+	/* (the profile settings' picture on OK, from their list) */
+	"port profile ok picture",
 	/* (the main menu's Mods) */
 	"port mods update",
 	"port controller update",

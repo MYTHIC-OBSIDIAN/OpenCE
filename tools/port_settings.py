@@ -1051,6 +1051,8 @@ WIDGET_PATCHES = {
     f"{PE}/profile_edit_select_list": {
         "swap": {f"{PE}/about_item": CUSTOMISATION_ITEM},
         "move": {f"{PE}/about_item": (None, 32)},
+        # (its picture on OK: the list knows its focus, the picture does not)
+        "inputs": ["port profile ok picture"],
     },
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)

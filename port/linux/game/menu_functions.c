@@ -2074,15 +2074,21 @@ the button settings */
 #define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 
-/* OK's picture while the button bar's OK has the focus, and the row's
-before it back after (the list leaves the picture be on its buttons) */
-static void profile_ok_picture(struct widget_instance *picture)
+/* "port profile ok picture" (the list's, after the Xbox's description
+update, which leaves the picture be on its buttons): OK's picture while the
+button bar's OK has the focus, and the row's before it back after. (The
+picture cannot see the list: an extended description has no parent.) */
+static void profile_ok_picture(struct widget_instance *list)
 {
 	static short row_frame = 0;
-	struct widget_instance *bar = named(screen_of(picture), "profile_edit_button_bar", 0);
-	boolean on_bar = bar && bar->parent && bar->parent->focused_child == bar;
-	boolean on_ok = on_bar && bar->focused_child && !strcmp(bar->focused_child->name, "profile_edit_button_ok");
+	struct widget_instance *bar = list->focused_child;
+	struct widget_instance *picture = named(list->parameters.list.extended_description,
+		"profile_edit_extended_desc_pic", 0);
+	boolean on_ok = bar && !strcmp(bar->name, "profile_edit_button_bar") && bar->focused_child &&
+		!strcmp(bar->focused_child->name, "profile_edit_button_ok");
 
+	if (!picture)
+		return;
 	if (on_ok && picture->animation.current_frame_index != PROFILE_OK_FRAME)
 	{
 		row_frame = picture->animation.current_frame_index;
@@ -2096,14 +2102,11 @@ static void profile_ok_picture(struct widget_instance *picture)
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
 row, the edited profile's button settings; the port's own (Bumper Jumper),
-of which the Xbox has no picture, keeps the row's; on OK, OK's */
+of which the Xbox has no picture, keeps the row's */
 static void profile_gamepad_layout(struct widget_instance *picture)
 {
 	struct player_profile *profile = player_ui_get_edit_player_profile();
-	short frame;
-
-	profile_ok_picture(picture);
-	frame = picture->animation.current_frame_index;
+	short frame = picture->animation.current_frame_index;
 
 	if (frame == PROFILE_GAMEPAD_FRAME ||
 		(frame >= PROFILE_FIRST_LAYOUT_FRAME && frame < PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES))
@@ -8184,4 +8187,6 @@ void pc_menu_game_data_function_invoke(
 		saved_game_list_update(widget);
 	else if (!strcmp(name, "port gamepad layout preview"))
 		profile_gamepad_layout(widget);
+	else if (!strcmp(name, "port profile ok picture"))
+		profile_ok_picture(widget);
 }

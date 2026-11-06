@@ -72,6 +72,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_select_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_items" description="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_extended_description">
 		<data input="plyr prof edit select menu upd8"/>
+		<data input="port profile ok picture"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/name_profile_item"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/controller_setup_profile_item"/>
 		<child widget="main_menu/settings_select/player_setup/player_profile_edit/gamepads_profile_item"/>
