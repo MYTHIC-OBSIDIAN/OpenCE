@@ -41,11 +41,13 @@ picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button s
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller` frame 7 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller` frame 8 |
 
-These frames are drawn instead from a frame of another of the Xbox map's bitmaps (the Multiplayer
-menu's CO-OP CAMPAIGN: the Xbox's split screen picture).
+These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's
+CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture).
 
 | Our bitmap | Our frame | The Xbox's frame |
 | --- | --- | --- |
+| `main_menu/multiplayer_type_select/mp_options` | 2 | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 1 |
+| `main_menu/multiplayer_type_select/mp_options` | 3 | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 2 |
 | `main_menu/multiplayer_type_select/mp_options` | 4 | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 0 |
 
 ## Placeholders, to be redrawn

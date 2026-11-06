@@ -771,8 +771,8 @@ def main() -> None:
     report += [f"| `{name}` | `{tag}` frame {index} |" for name, tag, index in art.added_frames]
     report += [
         "",
-        "These frames are drawn instead from a frame of another of the Xbox map's bitmaps (the Multiplayer",
-        "menu's CO-OP CAMPAIGN: the Xbox's split screen picture).",
+        "These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's",
+        "CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture).",
         "",
         "| Our bitmap | Our frame | The Xbox's frame |",
         "| --- | --- | --- |",

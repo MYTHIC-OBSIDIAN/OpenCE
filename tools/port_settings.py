@@ -1006,8 +1006,8 @@ OVERRIDE_ORIGINALS = {
 # description shows the item's frame: JOIN GAME's INTERNET and LAN, CREATE
 # GAME's INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES): the PC
 # version's frame 0 (two Spartans) for INTERNET, 1 (two Spartans on a
-# screen) for LAN, 2 (one Spartan) for the others (CO-OP CAMPAIGN's then
-# replaced: FRAME_REPLACEMENTS)
+# screen) for LAN, 2 (one Spartan) for the others (CREATE GAME's and CO-OP
+# CAMPAIGN's then replaced: FRAME_REPLACEMENTS)
 FRAME_ORDER = {
     f"{MT}/mp_options": [0, 1, 0, 1, 2, 2],
     # (the profile menu's items' pictures: PREFERENCES, in About's place,
@@ -1196,11 +1196,18 @@ BITMAP_FRAMES = {
 
 # frames of a bitmap (by our names, after FRAME_ORDER) drawn instead from a
 # frame of the Xbox map's (the player's own): its bitmap, its frame. The
-# Multiplayer menu's CO-OP CAMPAIGN shows the Xbox's split screen picture
-# (its Multiplayer menu's first: one television, two controllers, one Xbox)
+# Multiplayer menu's CREATE GAME INTERNET shows the Xbox's gametype
+# settings' second picture, its LAN the Xbox Multiplayer menu's third, and
+# CO-OP CAMPAIGN its split screen picture (the first: one television, two
+# controllers, one Xbox)
 XBOX_MULTIPLAYER_PICTURES = "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options"
+XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options"
 FRAME_REPLACEMENTS = {
-    f"{MT}/mp_options": {4: (XBOX_MULTIPLAYER_PICTURES, 0)},
+    f"{MT}/mp_options": {
+        2: (XBOX_GAMETYPE_PICTURES, 1),
+        3: (XBOX_MULTIPLAYER_PICTURES, 2),
+        4: (XBOX_MULTIPLAYER_PICTURES, 0),
+    },
 }
 
 # the titles this port has that the PC version has not, set as its headers
