@@ -348,6 +348,7 @@ class Art:
         self.pictures = []  # (frame, size, PC picture) of the frames drawn as the placeholder
         self.xbox_frames = []  # (PC frame, Xbox bitmap, its frame) drawn from the Xbox map
         self.added_frames = []  # (our bitmap, Xbox bitmap, its frame): port_settings.BITMAP_FRAMES
+        self.replaced_frames = []  # (our bitmap, our frame, Xbox bitmap, its frame): FRAME_REPLACEMENTS
         self.svgs = []
         self.pngs = []
 
@@ -427,6 +428,10 @@ class Art:
         if our_name(tag) in port_settings.FRAME_ORDER:
             frames = lines[1:]
             lines = lines[:1] + [frames[index] for index in port_settings.FRAME_ORDER[our_name(tag)]]
+        # (frames drawn from another of the Xbox map's: port_settings.FRAME_REPLACEMENTS)
+        for position, (source, index) in sorted(port_settings.FRAME_REPLACEMENTS.get(our_name(tag), {}).items()):
+            self.replaced_frames.append((our_name(tag), position, source, index))
+            lines[1 + position] = f"\t\t<frame{attributes([('map', source), ('index', index)])}/>"
         # (the port's frames after them: the Xbox map's, scaled)
         for source, index, width, height, x, y in port_settings.BITMAP_FRAMES.get(our_name(tag), []):
             self.added_frames.append((our_name(tag), source, index))
@@ -764,6 +769,16 @@ def main() -> None:
         "| --- | --- |",
     ]
     report += [f"| `{name}` | `{tag}` frame {index} |" for name, tag, index in art.added_frames]
+    report += [
+        "",
+        "These frames are drawn instead from a frame of another of the Xbox map's bitmaps (the Multiplayer",
+        "menu's CO-OP CAMPAIGN: the Xbox's split screen picture).",
+        "",
+        "| Our bitmap | Our frame | The Xbox's frame |",
+        "| --- | --- | --- |",
+    ]
+    report += [f"| `{name}` | {position} | `{tag}` frame {index} |"
+               for name, position, tag, index in art.replaced_frames]
     report += [
         "",
         "## Placeholders, to be redrawn",
