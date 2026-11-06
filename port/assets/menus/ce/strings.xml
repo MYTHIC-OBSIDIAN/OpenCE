@@ -1631,12 +1631,12 @@
 		<string text="Voices at 32 kilobits a second, in the lobby\nand in the game."/>
 		<string text="Voices at 48 kilobits a second, in the lobby\nand in the game."/>
 		<string text="Voices at 64 kilobits a second, in the lobby\nand in the game."/>
-		<string text="Players 15 metres apart or less are near\nfor voice chat."/>
-		<string text="Players 30 metres apart or less are near\nfor voice chat."/>
-		<string text="Players 45 metres apart or less are near\nfor voice chat."/>
-		<string text="Players 60 metres apart or less are near\nfor voice chat."/>
-		<string text="Players 90 metres apart or less are near\nfor voice chat."/>
-		<string text="Players 150 metres apart or less are near\nfor voice chat."/>
+		<string text="Players 15 meters apart or less are near\nfor voice chat."/>
+		<string text="Players 30 meters apart or less are near\nfor voice chat."/>
+		<string text="Players 45 meters apart or less are near\nfor voice chat."/>
+		<string text="Players 60 meters apart or less are near\nfor voice chat."/>
+		<string text="Players 90 meters apart or less are near\nfor voice chat."/>
+		<string text="Players 150 meters apart or less are near\nfor voice chat."/>
 		<string text="Players can vote to kick a player, from the\nscoreboard."/>
 		<string text="Players cannot vote to kick anyone."/>
 		<string text="Players can type to each other; lines with links\nare refused. Off in a public internet game."/>
@@ -1947,12 +1947,12 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_descriptions" map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_edit_descriptions">
 		<string text="Rename this profile using the\nvirtual keyboard.\n\nProfile:"/>
-		<string text="Customize controls for this\nprofile.\n\nProfile:"/>
+		<string text="Customize controls for this\nmachine.\n\nProfile:"/>
 		<string text="Select the gamepads to be used\nby this profile.\n\nProfile:"/>
-		<string text="Adjust mouse settings for this\nprofile.\n\nProfile:"/>
-		<string text="Adjust audio settings for this\nprofile.\n\nProfile:"/>
-		<string text="Adjust video settings for this\nprofile.\n\nProfile:"/>
-		<string text="Adjust network settings for\nthis profile.\n\nProfile:"/>
+		<string text="Adjust mouse settings for this\nmachine.\n\nProfile:"/>
+		<string text="Adjust audio settings for this\nmachine.\n\nProfile:"/>
+		<string text="Adjust video settings for this\nmachine.\n\nProfile:"/>
+		<string text="Adjust network settings for\nthis machine.\n\nProfile:"/>
 		<string text="Change the current profile's\nfree-for-all multiplayer color.\n\nProfile:" map="7"/>
 		<string text="Change game version\npreferences and button glyphs.\n\nProfile:"/>
 	</strings>

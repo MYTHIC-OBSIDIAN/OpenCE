@@ -260,7 +260,7 @@ SCREENS["video_settings/hdr_calibration"] = {
         ("PEAK BRIGHTNESS:", "display.hdr_peak_brightness", PEAK_BRIGHTNESSES,
          "Raise it until the ring just disappears into\nthe square: the brightest your display shows.", None),
         ("PAPER WHITE:", "display.hdr_paper_white", PAPER_WHITES,
-         "How bright white is (the menus, the HUD, the\ngrey bars), in nits. Choose what looks right.", None),
+         "How bright white is (the menus, the HUD, the\ngray bars), in nits. Choose what looks right.", None),
     ],
 }
 _video["rows"] = [row for row in _video["rows"] if row[1] not in _graphics | _extra_effects]
@@ -523,7 +523,7 @@ TEAMPLAY_ROWS = [
     ("voice_kbps", "VOICE QUALITY:", [f"{kbps} KBPS" for kbps in VOICE_QUALITIES],
      [f"Voices at {kbps} kilobits a second, in the lobby\\nand in the game." for kbps in VOICE_QUALITIES]),
     ("voice_proximity", "VOICE NEAR DISTANCE:", ["15 M", "30 M", "45 M", "60 M", "90 M", "150 M"],
-     [f"Players {metres} metres apart or less are near\\nfor voice chat." for metres in (15, 30, 45, 60, 90, 150)]),
+     [f"Players {meters} meters apart or less are near\\nfor voice chat." for meters in (15, 30, 45, 60, 90, 150)]),
     # (network_votekick.c)
     ("votekick", "VOTE KICK:", ["ON", "OFF"], [
         "Players can vote to kick a player, from the\\nscoreboard.",
@@ -544,12 +544,12 @@ TEAMPLAY_EXTRA_ROWS = TEAMPLAY_GAMETYPE_ROWS + TEAMPLAY_ROWS
 STRING_OVERRIDES = {
     f"{PE}/profile_edit_descriptions": [
         "Rename this profile using the\\nvirtual keyboard.\\n\\nProfile:",
-        "Customize controls for this\\nprofile.\\n\\nProfile:",
+        "Customize controls for this\\nmachine.\\n\\nProfile:",
         "Select the gamepads to be used\\nby this profile.\\n\\nProfile:",
-        "Adjust mouse settings for this\\nprofile.\\n\\nProfile:",
-        "Adjust audio settings for this\\nprofile.\\n\\nProfile:",
-        "Adjust video settings for this\\nprofile.\\n\\nProfile:",
-        "Adjust network settings for\\nthis profile.\\n\\nProfile:",
+        "Adjust mouse settings for this\\nmachine.\\n\\nProfile:",
+        "Adjust audio settings for this\\nmachine.\\n\\nProfile:",
+        "Adjust video settings for this\\nmachine.\\n\\nProfile:",
+        "Adjust network settings for\\nthis machine.\\n\\nProfile:",
         "Change the current profile's\\nfree-for-all multiplayer color.\\n\\nProfile:",
         "Change game version\\npreferences and button glyphs.\\n\\nProfile:",
     ],

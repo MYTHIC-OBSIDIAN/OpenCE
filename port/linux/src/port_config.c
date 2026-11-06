@@ -214,7 +214,7 @@ static const struct config_setting config_settings[] =
 		"Draw a panel behind the multiplayer scoreboard, for clearer text." },
 	{ "display.scoreboard_background_color", _config_string, "\"16, 16, 16, 150\"", "HALO_SCOREBOARD_BACKGROUND_COLOR",
 		_environment_value, _platform_all,
-		"The scoreboard panel's colour: \"red, green, blue, alpha\", each 0 to 255\n"
+		"The scoreboard panel's color: \"red, green, blue, alpha\", each 0 to 255\n"
 		"(alpha 0 is see-through, 255 solid)." },
 	{ "display.anisotropic_filtering", _config_integer, "0", "HALO_ANISOTROPIC_FILTERING", _environment_value,
 		_platform_all,
@@ -225,7 +225,7 @@ static const struct config_setting config_settings[] =
 		"In a network game, your round trip to the host in milliseconds at the\n"
 		"screen's top right, with bars (the host: its slowest player's), and\n"
 		"\"Connection problem\" when the host has sent nothing for two seconds;\n"
-		"the scoreboard's pings in the same colours, as this machine times them." },
+		"the scoreboard's pings in the same colors, as this machine times them." },
 	{ "display.shader_cache", _config_boolean, "true", "HALO_SHADER_CACHE", _environment_value, _platform_desktop,
 		"Keep the GPU programs the game links under the save root (shader_cache),\n"
 		"and load them from there next time instead of linking them again, which\n"
@@ -262,7 +262,7 @@ static const struct config_setting config_settings[] =
 		"false: as the Xbox. The campaign is always as the Xbox." },
 	{ "display.reversed_depth", _config_boolean, "true", "HALO_REVERSED_DEPTH", _environment_value, _platform_desktop,
 		"Keep depth in 32-bit floats, reversed (1 near, 0 far), as precise far\n"
-		"away as near: surfaces a few millimetres apart (the lights on Blood\n"
+		"away as near: surfaces a few millimeters apart (the lights on Blood\n"
 		"Gulch's base) stay apart at any distance in place of flickering\n"
 		"through each other. false: 24 bits, as the Xbox's. Taken up when the\n"
 		"game starts." },
@@ -281,7 +281,7 @@ static const struct config_setting config_settings[] =
 		"With display.hdr, the curve that fits the brightest light into what the\n"
 		"display shows: \"gt7\" (Gran Turismo 7's: the brightest light turns to\n"
 		"white, as film shows it), \"neutral\" (the picture as drawn, its\n"
-		"brightest parts rolled off at their own colour), \"aces\" (filmic,\n"
+		"brightest parts rolled off at their own color), \"aces\" (filmic,\n"
 		"more contrast) or \"reinhard\" (softer, and darker throughout)." },
 	{ "display.hdr_output", _config_boolean, "false", "HALO_HDR_OUTPUT", _environment_value, _platform_desktop,
 		"With display.hdr, ask for a floating-point window (scRGB), so that an\n"
@@ -444,7 +444,7 @@ static const struct config_setting config_settings[] =
 		"its keys (and a controller's D-pad Up) from opening it, as for purists\n"
 		"and streamers." },
 	{ "display.chat_style", _config_string, "\"colors\"", "HALO_CHAT_STYLE", _environment_value, _platform_all,
-		"The text chat's colours: \"colors\" (names in their team's colour, the\n"
+		"The text chat's colors: \"colors\" (names in their team's color, the\n"
 		"text a pale blue) or \"white\" (all white, as Custom Edition)." },
 	{ "game.enhanced_animations", _config_boolean, "true", "HALO_ENHANCED_ANIMATIONS", _environment_value, _platform_all,
 		"The player bipeds' grenade throws keep their legs moving (crouched,\n"
@@ -492,17 +492,17 @@ static const struct config_setting config_settings[] =
 		"credits movie (bink\\credits.bik in the data root, extracted with the\n"
 		"maps; none without it), or \"pc\", Halo PC's credits, scrolling over\n"
 		"the main menu. After The Maw the Xbox's movie always plays. CREDITS\n"
-		"in Settings > Customisation (XBOX or PC) writes its choice here." },
+		"in Settings > Preferences (XBOX or PC) writes its choice here." },
 	{ "mods.enabled", _config_boolean, "true", "HALO_MODS_ENABLED", _environment_value, _platform_all,
 		"Play the mods of the mods folder (high-res vehicle and weapon textures\n"
 		"and so on): true, every one that is on (port_mods.c), false none, from\n"
-		"the next map loaded. HIGH RES ASSETS in Settings > Customisation\n"
+		"the next map loaded. HIGH RES ASSETS in Settings > Preferences\n"
 		"(ON or OFF) writes its choice here." },
 	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
 		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
 		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
 		"bink\\intro_pc.bik (none without it). INTRO in Settings >\n"
-		"Customisation (XBOX or PC) writes its choice here; it plays from the next\n"
+		"Preferences (XBOX or PC) writes its choice here; it plays from the next\n"
 		"start." },
 	{ "display.shield_color", _config_string, "\"default\"", "HALO_SHIELD_COLOR", _environment_value, _platform_all,
 		"Your energy shield's color, as this machine draws it: \"default\" (the\n"
@@ -598,7 +598,7 @@ static const struct config_setting config_settings[] =
 		"second (8 to 64)." },
 	{ "network.voice_proximity", _config_real, "15.0", "HALO_NET_VOICE_PROXIMITY", _environment_value,
 		_platform_all,
-		"Hosting: how near (world units: 1 is about 3 metres) a player must be\n"
+		"Hosting: how near (world units: 1 is about 3 meters) a player must be\n"
 		"to be heard by proximity voice chat (5 to 100)." },
 	{ "network.text_chat", _config_string, "\"on\"", "HALO_NET_TEXT_CHAT", _environment_value, _platform_all,
 		"Hosting: the text chat: \"on\" (links in lines are refused), \"links\"\n"
@@ -1096,7 +1096,7 @@ static const struct config_setting config_settings[] =
 	{ "debug.gpu_debug_texture0", _config_boolean, "false", "HALO_GPU_DEBUG_T0", _environment_set_is_true, _platform_all,
 		"Pixel shaders show their first texture." },
 	{ "debug.gpu_debug_flat", _config_boolean, "false", "HALO_GPU_DEBUG_FLAT", _environment_set_is_true, _platform_all,
-		"Pixel shaders show their vertex colour." },
+		"Pixel shaders show their vertex color." },
 	{ "debug.screenshot_directory", _config_string, "\"\"", "HALO_SCREENSHOT_DIR", _environment_value, _platform_all,
 		"A folder to save frames to (with screenshot_every); empty none." },
 	{ "debug.screenshot_every", _config_integer, "0", "HALO_SCREENSHOT_EVERY", _environment_value, _platform_all,

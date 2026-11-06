@@ -58,6 +58,6 @@
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/hdr_calibration/help_strings">
 		<string text=""/>
 		<string text="Raise it until the ring just disappears into\nthe square: the brightest your display shows."/>
-		<string text="How bright white is (the menus, the HUD, the\ngrey bars), in nits. Choose what looks right."/>
+		<string text="How bright white is (the menus, the HUD, the\ngray bars), in nits. Choose what looks right."/>
 	</strings>
 </menus>
