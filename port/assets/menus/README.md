@@ -62,6 +62,24 @@ A settings screen (Controls Setup, Gamepads, Mouse, Audio, Video or Network
 Setup) is changed in `tools/port_settings.py`, not in its XML, and written
 with the command above.
 
+## The Xbox's pictures these menus do not draw
+
+`tools/xbox_menu_images.py` writes out, as PNGs with a list
+(`unused.md`), every picture of the Xbox menus in the Xbox's `ui.map` that
+this build never shows: the Xbox screens' that the PC menus stand in for,
+and the frames of a bitmap the menu files take only some of. A picture
+counts as drawn if a menu file names it (or a widget that uses it), if the
+game's or the port's code names it (or a screen that uses it, but the main
+menu's screens), or if the map's scenario or globals use it.
+
+```sh
+python3 tools/xbox_menu_images.py <data root>/maps --out unused_menu_images
+```
+
+`--all` takes every bitmap of the map, not only the menus'; `--list` writes
+the list without the pictures (all a PC `ui.map` gives, its pictures being
+in `bitmaps.map`). It needs NumPy and Pillow.
+
 ## Elements
 
 A file holds one `<menus>` element (`root` names the main menu's widget, in
