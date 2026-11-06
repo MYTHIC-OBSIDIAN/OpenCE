@@ -249,7 +249,7 @@ static struct
 {
 	{ "abyss", L"Abyss" }, { "b20", L"B20" }, { "city", L"City" }, { "destructo", L"Destructo" },
 	{ "dusk", L"Dusk" }, { "indoor", L"Indoor" }, { "m1_assault", L"M1 Assault" },
-	{ "m1_defense", L"M1 Defense" }, { "m1_exploration_moonbase", L"M1 Exploration Moonbase" },
+	{ "m1_defense", L"M1 Defense" }, { "m1_exploration_moonbase", L"M1 Exploration" },
 	{ "ruinedpain", L"Ruined Pain" }, { "spacestation", L"Space Station" }, { "spasm", L"Spasm" },
 	{ "swamp", L"Swamp" }, { "swampthing", L"Swamp Thing" }, { "tutorial", L"Tutorial" },
 	{ "underground", L"Underground" },
