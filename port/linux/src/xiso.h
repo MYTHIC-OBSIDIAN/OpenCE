@@ -24,4 +24,10 @@ titles, intro.bik, the credits, credits.bik, the attract movies) to
 success, or 0 with the reason in error */
 int xiso_extract_videos(const char *image_path, const char *destination, char *error, int error_size);
 
+/* writes the loading screen's picture, <maps_folder>/loading.tga, from
+source_path: the disc's default.xbe itself, or a disc image (its root's
+default.xbe); returns nonzero if it was written, or 0 with the reason in
+error */
+int xiso_extract_loading_picture(const char *source_path, const char *maps_folder, char *error, int error_size);
+
 #endif

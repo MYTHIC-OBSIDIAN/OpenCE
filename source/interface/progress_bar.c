@@ -2285,9 +2285,9 @@ static void progress_bar_load_loading_texture(
 		fclose(file);
 	}
 	/* port: no disc has loading.tga as a file (the retail default.xbe holds
-	the picture, which importing a disc writes as loading.tga:
-	port/linux/src/xiso.c); without it the texture is left as created,
-	black */
+	the picture, which importing a disc, or start-up from a default.xbe or
+	disc image beside the game, writes as loading.tga: port/linux/src/xiso.c,
+	sdl_platform.c); without it the texture is left as created, black */
 	IDirect3DTexture8_UnlockRect(*texture, 0);
 
 	return;

@@ -529,29 +529,21 @@ static int xiso_write_all(int output, const unsigned char *bytes, unsigned long 
 	return 1;
 }
 
-/* writes default.xbe's picture to folder/loading.tga, if it has one; a
-picture that cannot be written whole is removed (the loading screen would
-read past one cut short). Nothing is written when it is not found: the
-light then sweeps over black, as the game's own does */
-static void xiso_write_loading_picture(struct xiso_image *image, const struct xiso_entry *xbe, const char *folder,
-	char *path, size_t path_size)
+/* writes the picture in data (a default.xbe's size bytes) to
+folder/loading.tga, if it has one; a picture that cannot be written whole is
+removed (the loading screen would read past one cut short). Nothing is
+written when it is not found: the light then sweeps over black. Returns
+nonzero if it was written */
+static int xiso_write_loading_tga(const unsigned char *data, unsigned long size, const char *folder, char *path,
+	size_t path_size)
 {
-	unsigned char *data = NULL, *greys = NULL, *tga = NULL;
-	int output, x, y, whole;
+	unsigned char *greys = NULL, *tga = NULL;
+	int output, x, y, whole = 0;
 
-	if (!xbe->size || xbe->size > XISO_MAXIMUM_XBE_SIZE ||
-		xiso_sector_offset(image, xbe->sector) + xbe->size > image->size)
-	{
-		return;
-	}
-	data = malloc(xbe->size);
 	greys = malloc(XISO_LOADING_PIXELS);
 	tga = malloc(XISO_LOADING_TGA_SIZE);
-	if (!data || !greys || !tga || !xiso_read(image, xiso_sector_offset(image, xbe->sector), data, xbe->size) ||
-		!xiso_loading_greys(data, xbe->size, greys))
-	{
+	if (!greys || !tga || !xiso_loading_greys(data, size, greys))
 		goto done;
-	}
 	memset(tga, 0, XISO_TGA_HEADER_SIZE);
 	tga[2] = 2;
 	tga[12] = XISO_LOADING_WIDTH & 0xFF;
@@ -585,7 +577,27 @@ static void xiso_write_loading_picture(struct xiso_image *image, const struct xi
 done:
 	free(tga);
 	free(greys);
+	return whole;
+}
+
+/* writes the image's default.xbe's picture to folder/loading.tga, if it has
+one; returns nonzero if it was written */
+static int xiso_write_loading_picture(struct xiso_image *image, const struct xiso_entry *xbe, const char *folder,
+	char *path, size_t path_size)
+{
+	unsigned char *data;
+	int written = 0;
+
+	if (!xbe->size || xbe->size > XISO_MAXIMUM_XBE_SIZE ||
+		xiso_sector_offset(image, xbe->sector) + xbe->size > image->size)
+	{
+		return 0;
+	}
+	data = malloc(xbe->size);
+	if (data && xiso_read(image, xiso_sector_offset(image, xbe->sector), data, xbe->size))
+		written = xiso_write_loading_tga(data, xbe->size, folder, path, path_size);
 	free(data);
+	return written;
 }
 
 /* ---------- public code */
@@ -899,3 +911,91 @@ done:
 	return succeeded;
 }
 
+int xiso_extract_loading_picture(const char *source_path, const char *maps_folder, char *error, int error_size)
+{
+	struct xiso_image image;
+	struct xiso_entry *entries = NULL;
+	struct xiso_entry xbe;
+	unsigned char *table = NULL, *data = NULL;
+	unsigned char magic[4];
+	char *path = NULL;
+	unsigned long root_sector, root_size;
+	posix_ulong size_low, size_high;
+	int count, index, out_of_memory, succeeded = 0;
+
+	memset(&image, 0, sizeof(image));
+	memset(&xbe, 0, sizeof(xbe));
+	image.descriptor = open(source_path, O_RDONLY | O_LARGEFILE | O_CLOEXEC);
+	if (image.descriptor < 0)
+	{
+		xiso_error(error, error_size, "Could not open %s.", source_path);
+		return 0;
+	}
+	image.size = ~0ULL;
+	if (posix_seek(image.descriptor, 0, 0, SEEK_END, &size_low, &size_high) == 0)
+		image.size = (unsigned long long)size_high << 32 | size_low;
+	path = malloc(XISO_MAXIMUM_PATH);
+	if (!path)
+	{
+		xiso_error(error, error_size, "Out of memory.");
+		goto done;
+	}
+
+	/* the disc's default.xbe itself (an executable starts "XBEH") */
+	if (xiso_read(&image, 0, magic, sizeof(magic)) && !memcmp(magic, "XBEH", 4))
+	{
+		if (image.size > XISO_MAXIMUM_XBE_SIZE)
+		{
+			xiso_error(error, error_size, "%s is too large for a default.xbe.", source_path);
+			goto done;
+		}
+		data = malloc((size_t)image.size);
+		if (!data || !xiso_read(&image, 0, data, (unsigned long)image.size))
+		{
+			xiso_error(error, error_size, data ? "Could not read %s." : "Out of memory.", source_path);
+			goto done;
+		}
+		succeeded = xiso_write_loading_tga(data, (unsigned long)image.size, maps_folder, path, XISO_MAXIMUM_PATH);
+		if (!succeeded)
+			xiso_error(error, error_size, "%s has no loading screen picture (or %s/loading.tga could not be written).",
+				source_path, maps_folder);
+		goto done;
+	}
+
+	/* a disc image: its root's default.xbe */
+	entries = malloc(sizeof(*entries) * XISO_MAXIMUM_ENTRIES);
+	if (!entries)
+	{
+		xiso_error(error, error_size, "Out of memory.");
+		goto done;
+	}
+	if (!xiso_find_volume(&image, &root_sector, &root_size))
+	{
+		xiso_error(error, error_size, "%s is neither a default.xbe nor an Xbox disc image.", source_path);
+		goto done;
+	}
+	table = xiso_read_table(&image, root_sector, root_size, &out_of_memory);
+	if (!table)
+	{
+		xiso_error(error, error_size, out_of_memory ? "Out of memory." : "The disc image's file system is damaged.");
+		goto done;
+	}
+	count = xiso_walk_table(table, root_size, 0, entries);
+	for (index = 0; index < count; index++)
+	{
+		if (xiso_name_is(entries[index].name, (int)strlen(entries[index].name), "default.xbe"))
+			xbe = entries[index];
+	}
+	succeeded = xiso_write_loading_picture(&image, &xbe, maps_folder, path, XISO_MAXIMUM_PATH);
+	if (!succeeded)
+		xiso_error(error, error_size, "The disc image's default.xbe has no loading screen picture "
+			"(or %s/loading.tga could not be written).", maps_folder);
+
+done:
+	free(table);
+	free(data);
+	free(entries);
+	free(path);
+	close(image.descriptor);
+	return succeeded;
+}

@@ -119,6 +119,7 @@ kind goes and the game quits, rather than failing to load Halo PC's ui.map
 as the Xbox's (game_load). Halo PC maps in maps/ itself, which play only from
 multi_maps (Halo PC's) or custom_maps (Custom Edition's), are warned of */
 static void data_check_videos(void);
+static void data_check_loading_picture(void);
 
 static void data_check_maps(void)
 {
@@ -226,6 +227,7 @@ BOOL platform_sdl_initialize(void)
 	{
 		data_check_maps();
 		data_check_videos();
+		data_check_loading_picture();
 	}
 	/* (a new version looked for meanwhile, updater_poll asking about it; a
 	dedicated server's is server.auto_update's) */
@@ -462,6 +464,58 @@ static void data_check_videos(void)
 	platform_log("videos: extracting the bink folder from %s to %s/bink", image, root);
 	if (!xiso_extract_videos(image, root, error, sizeof(error)))
 		platform_log("videos: not extracted: %s", error);
+}
+
+/* The loading screen's picture, maps/loading.tga (progress_bar.c; without
+it the screen is black): no disc has it as a file, as its default.xbe holds
+it. For maps not extracted from a disc image by this game (or extracted
+before it wrote the picture): from a default.xbe in the data folder or beside
+the executable, or else from a disc image there, at start-up, until it is
+written. */
+static void data_check_loading_picture(void)
+{
+	const char *root = platform_data_root();
+	const char *base = SDL_GetBasePath();
+	const char *folders[2];
+	char maps[1100];
+	char path[1100];
+	char error[512];
+	FILE *file;
+	int index;
+
+	snprintf(maps, sizeof(maps), "%s/maps", root);
+	snprintf(path, sizeof(path), "%s/loading.tga", maps);
+	file = fopen(path, "rb");
+	if (file)
+	{
+		fclose(file);
+		return;
+	}
+	folders[0] = root;
+	folders[1] = base;
+	for (index = 0; index < 2; index++)
+	{
+		if (!folders[index])
+			continue;
+		snprintf(path, sizeof(path), "%s/default.xbe", folders[index]);
+		file = fopen(path, "rb");
+		if (!file)
+			continue;
+		fclose(file);
+		if (xiso_extract_loading_picture(path, maps, error, sizeof(error)))
+			return;
+		platform_log("loading screen: %s", error);
+	}
+	for (index = 0; index < 2; index++)
+	{
+		if (!folders[index] || !data_find_image(folders[index], path, sizeof(path)))
+			continue;
+		if (xiso_extract_loading_picture(path, maps, error, sizeof(error)))
+			return;
+		platform_log("loading screen: %s", error);
+	}
+	platform_log("loading screen: no maps/loading.tga, and no default.xbe or disc image beside the game to take "
+		"it from: the loading screen is not shown");
 }
 
 /* the disc image the player picks; FALSE if they pick none, with *failed
