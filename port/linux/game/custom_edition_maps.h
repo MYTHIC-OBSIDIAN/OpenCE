@@ -96,25 +96,13 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). The campaign maps (built as singleplayer, the Digsite maps' too, but
-the 1749 folder's) are the campaign menu's CUSTOM CAMPAIGNS; the multiplayer maps CUSTOM EDITION's:
+them). The campaign maps (built as singleplayer, the Digsite maps' too) are
+the campaign menu's CUSTOM CAMPAIGNS; the multiplayer maps CUSTOM EDITION's:
 neither multi_maps' nor the Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
 short custom_edition_maps_display_index_of(
 	boolean campaign,
-	short index);
-
-/* the campaign menu's 1749 BUILD: the campaign maps of the 1749 folder
-(custom_edition_cache.h's CUSTOM_EDITION_1749_MAP_DIRECTORY), sorted by
-name (the levels' order: a10, a30, ... d40): how many, the display index of
-the one at `index` (NONE past them), and the campaign level it is a version
-of by its file's name (a10.map: 0, The Pillar of Autumn), or NONE */
-short custom_edition_maps_1749_count(
-	void);
-short custom_edition_maps_1749_display_index(
-	short index);
-short custom_edition_maps_1749_campaign_level(
 	short index);
 
 /* the Halo PC multiplayer maps of the multi_maps folder, which

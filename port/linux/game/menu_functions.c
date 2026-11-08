@@ -981,10 +981,7 @@ static boolean campaign_continue(short controller)
 /* ---- the map lists (New Game's and the Map screen's): their first row's
 chooser of New Game's SINGLEPLAYER (the campaign's levels) or CUSTOM
 CAMPAIGNS (the Custom Edition maps built as singleplayer of the custom_maps
-folder, and the Digsite maps built so) or 1749 BUILD (the campaign maps of
-the 1749 folder beside the maps folder, ports of the campaign's levels of a
-build of before, shown with the levels' own names, pictures and words), or
-the Map screen's MULTIPLAYER maps (the
+folder, and the Digsite maps built so), or the Map screen's MULTIPLAYER maps (the
 Halo PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions
 of the Xbox's, each followed by the Xbox's own of it put in multi_maps as
 <name>_xbox.map, "<name> (Classic)"; the maps folder's are not listed),
@@ -1002,7 +999,6 @@ enum
 	MAP_KIND_DIGSITE,
 	MAP_KIND_CUSTOM_MULTIPLAYER,
 	MAP_KIND_CUSTOM_CAMPAIGN,
-	MAP_KIND_BUILD_1749,
 	NUMBER_OF_MAP_KINDS
 };
 
@@ -1042,7 +1038,7 @@ short ui_widget_port_multiplayer_maps(char const *const **names, short *last_use
 /* the campaign menu's kinds (New Game's), the others the Map screen's */
 static boolean map_kind_singleplayer(short kind)
 {
-	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_CAMPAIGN || kind == MAP_KIND_BUILD_1749;
+	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_CAMPAIGN;
 }
 
 /* The kind the chooser shows, kept to the campaign menu's kinds if
@@ -1198,23 +1194,6 @@ static void custom_campaign_map_text(short map, wchar_t *text)
 	custom_map_text(TRUE, map, text);
 }
 
-/* 1749 BUILD's entry's name: the campaign level's it is a version of (the
-SINGLEPLAYER list's), else its own */
-static void build_1749_map_text(short map, wchar_t *text)
-{
-	short level = custom_edition_maps_1749_campaign_level(map);
-	wchar_t const *name;
-
-	if (level != NONE)
-	{
-		string_get("pc\\main_menu\\map_list", level, text);
-		return;
-	}
-	name = custom_edition_maps_name(custom_edition_maps_1749_display_index(map));
-	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
-	text[ROW_TEXT_LENGTH - 1] = 0;
-}
-
 /* a map kind's entries' names */
 static void (*map_kind_text(short kind))(short entry, wchar_t *text)
 {
@@ -1226,8 +1205,6 @@ static void (*map_kind_text(short kind))(short entry, wchar_t *text)
 		return digsite_map_text;
 	case MAP_KIND_CUSTOM_CAMPAIGN:
 		return custom_campaign_map_text;
-	case MAP_KIND_BUILD_1749:
-		return build_1749_map_text;
 	default:
 		return custom_multiplayer_map_text;
 	}
@@ -1264,8 +1241,8 @@ static void map_description_show(struct widget_instance *description, short leve
 }
 
 /* New Game's list: SINGLEPLAYER's levels, the profile's reached, or CUSTOM
-CAMPAIGNS' or 1749 BUILD's maps, played as the campaign's levels are, at the
-difficulty chosen next */
+CAMPAIGNS' maps, played as the campaign's levels are, at the difficulty
+chosen next */
 static struct
 {
 	short kind;
@@ -1288,8 +1265,6 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return custom_edition_maps_digsite_count();
 	case MAP_KIND_CUSTOM_CAMPAIGN:
 		return custom_edition_maps_count(TRUE);
-	case MAP_KIND_BUILD_1749:
-		return custom_edition_maps_1749_count();
 	default:
 		return custom_edition_maps_count(FALSE);
 	}
@@ -1309,8 +1284,6 @@ static short map_kind_display_index(short kind, short entry)
 		return custom_edition_maps_display_index_of(FALSE, entry);
 	case MAP_KIND_CUSTOM_CAMPAIGN:
 		return custom_edition_maps_display_index_of(TRUE, entry);
-	case MAP_KIND_BUILD_1749:
-		return custom_edition_maps_1749_display_index(entry);
 	default:
 		return entry;
 	}
@@ -1412,15 +1385,6 @@ static void level_list_update(struct widget_instance *list)
 		kind == MAP_KIND_SINGLEPLAYER ? level_row_text : map_kind_text(kind));
 	if (entry != NONE)
 		level_list.chosen = entry;
-	/* (a 1749 map of a campaign level: the level's picture and words) */
-	if (kind == MAP_KIND_BUILD_1749 && level_list.chosen < count &&
-		(level = custom_edition_maps_1749_campaign_level(level_list.chosen)) != NONE)
-	{
-		map_description_show(description, 0, NONE);
-		level_description(description, "replay_level", level, FALSE, NULL, NONE);
-		profile_name_show(description);
-		return;
-	}
 	if (kind != MAP_KIND_SINGLEPLAYER)
 	{
 		map_description_show(description, NONE,
@@ -1454,8 +1418,8 @@ static boolean level_choose(struct widget_instance *list, short controller)
 
 	if (level_list.kind != MAP_KIND_SINGLEPLAYER && (level_list.chosen < 0 || level_list.chosen >= count))
 		return campaign_fail();
-	/* (a CUSTOM CAMPAIGNS or 1749 BUILD map: the difficulty menu next) */
-	if (level_list.kind == MAP_KIND_CUSTOM_CAMPAIGN || level_list.kind == MAP_KIND_BUILD_1749)
+	/* (a CUSTOM CAMPAIGNS map: the difficulty menu next) */
+	if (level_list.kind == MAP_KIND_CUSTOM_CAMPAIGN)
 	{
 		char const *map_name = custom_map_level_name(level_list.kind, level_list.chosen);
 

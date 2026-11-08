@@ -42,14 +42,6 @@ the Digsite maps (custom_edition_maps.c) */
 name (custom_edition_original_map_file) */
 #define CUSTOM_EDITION_ORIGINAL_MAP_SUFFIX "_xbox"
 #define CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY "d:\\digsite_maps\\"
-/* the 1749 folder, beside the maps folder: Custom Edition ports of the
-campaign's levels of a build of before (the campaign menu's 1749 BUILD,
-custom_edition_maps.c). Their files are named as the levels are (a10.map);
-the menus and the loader name each with this before it (1749_a10, level name
-custom_maps\1749_a10), so that it stays apart from a map of custom_maps of
-the same name, and is read from this folder alone. */
-#define CUSTOM_EDITION_1749_MAP_DIRECTORY "d:\\1749\\"
-#define CUSTOM_EDITION_1749_NAME_PREFIX "1749_"
 
 /* A Custom Edition map's level name is this and its file's name
 (custom_maps\a30 for custom_maps\a30.map), which the game's own levels'

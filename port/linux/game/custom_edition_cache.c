@@ -265,16 +265,11 @@ static boolean maps_folder_hashed_name(
 
 /* A map's own folder, looked in before the others: multi_maps for any map it
 has (Halo PC's: those of a name there play from there), digsite_maps for
-the Digsite maps (custom_edition_maps_home); the 1749 folder for a name of
-its (1749_<file>), its file there named without the 1749_. */
+the Digsite maps (custom_edition_maps_home). */
 static boolean custom_edition_map_home_has(
 	char const *name,
 	char *path)
 {
-	size_t prefix = strlen(CUSTOM_EDITION_1749_NAME_PREFIX);
-
-	if (!_strnicmp(name, CUSTOM_EDITION_1749_NAME_PREFIX, prefix))
-		return name[prefix] && maps_folder_has(CUSTOM_EDITION_1749_MAP_DIRECTORY, name + prefix, MAP_FILE_EXTENSION, path);
 	if (maps_folder_has(CUSTOM_EDITION_PC_MAP_DIRECTORY, name, MAP_FILE_EXTENSION, path))
 		return TRUE;
 	switch (custom_edition_maps_home(name))
@@ -299,11 +294,6 @@ static boolean custom_edition_map_named(
 	if (custom_edition_map_home_has(name, path))
 	{
 		return TRUE;
-	}
-	/* (a 1749 map's is in the 1749 folder alone) */
-	if (!_strnicmp(name, CUSTOM_EDITION_1749_NAME_PREFIX, strlen(CUSTOM_EDITION_1749_NAME_PREFIX)))
-	{
-		return FALSE;
 	}
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{

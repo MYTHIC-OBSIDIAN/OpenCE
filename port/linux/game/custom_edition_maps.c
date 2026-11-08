@@ -185,13 +185,6 @@ struct custom_edition_maps_globals
 	short listed[CUSTOM_EDITION_MAPS_MAXIMUM];
 	short pc_count;
 	short pc[CUSTOM_EDITION_MAPS_MAXIMUM];
-	/* the campaign maps CUSTOM CAMPAIGNS shows (all but the 1749 folder's),
-	and those 1749 BUILD shows (the 1749 folder's), by their index in
-	campaigns */
-	short campaign_listed_count;
-	short campaign_listed[MAXIMUM_CUSTOM_EDITION_CAMPAIGNS];
-	short build_1749_count;
-	short build_1749[MAXIMUM_CUSTOM_EDITION_CAMPAIGNS];
 	/* each Digsite map's: the map found (in maps or campaigns), else
 	NULL and a stand-in of its name, saying it is not installed */
 	struct custom_edition_map *digsite[NUMBER_OF_DIGSITE_MAPS];
@@ -411,21 +404,6 @@ static void display_name_make(
 	return;
 }
 
-/* whether a map's name is the 1749 folder's (1749_<file>) */
-static boolean name_1749(
-	char const *name)
-{
-	return !_strnicmp(name, CUSTOM_EDITION_1749_NAME_PREFIX, csstrlen(CUSTOM_EDITION_1749_NAME_PREFIX));
-}
-
-/* a map's file's name, without .map: its name, but a 1749 map's without the
-1749_ */
-static char const *custom_edition_map_file_name(
-	char const *name)
-{
-	return name_1749(name) ? name + csstrlen(CUSTOM_EDITION_1749_NAME_PREFIX) : name;
-}
-
 /* Reads <name>.txt into map->description: line ends become \r\n (as in the
 menus' strings), tabs become spaces, and non-ASCII characters become '?'.
 A missing or empty file gives the default description. */
@@ -439,7 +417,7 @@ static void custom_edition_map_description_read(
 	long text_index = 0;
 	short length = 0;
 
-	csprintf(path, "%s%s%s", map->folder, custom_edition_map_file_name(map->name), DESCRIPTION_EXTENSION);
+	csprintf(path, "%s%s%s", map->folder, map->name, DESCRIPTION_EXTENSION);
 	stream = fopen(path, "rb");
 	/* (a map named for its hash: its description named without it too) */
 	if (!stream && map_share_name_hashed(map->name))
@@ -533,10 +511,9 @@ static void custom_edition_map_add(
 			return;
 		}
 	}
-	/* campaign maps go to co-op; anything that isn't multiplayer either is
-	skipped (and the 1749 folder's campaign maps alone are kept) */
+	/* campaign maps go to co-op; anything that isn't multiplayer either is skipped */
 	campaign = custom_edition_cache_campaign(name);
-	if (!campaign && (name_1749(name) || !custom_edition_cache_multiplayer(name)))
+	if (!campaign && !custom_edition_cache_multiplayer(name))
 	{
 		return;
 	}
@@ -577,7 +554,7 @@ static void custom_edition_map_add(
 	csstrncpy(map->folder, folder, sizeof(map->folder) - 1);
 	map->pc = !campaign && !csstrcasecmp(folder, CUSTOM_EDITION_PC_MAP_DIRECTORY);
 	csprintf(map->level_name, "%s%s", CUSTOM_EDITION_LEVEL_NAME_PREFIX, name);
-	display_name_make(custom_edition_map_file_name(name), map->pc, map->display_name);
+	display_name_make(name, map->pc, map->display_name);
 	custom_edition_map_description_read(map);
 	/* (named for its hash by a build of before: its name given back,
 	map_share_files.c) */
@@ -704,20 +681,12 @@ static void custom_edition_maps_sort_into_lists(
 		}
 		globals->listed[globals->listed_count++] = map_index;
 	}
-	globals->campaign_listed_count = 0;
-	globals->build_1749_count = 0;
 	for (map_index = 0; map_index < globals->campaign_count; map_index++)
 	{
 		short digsite = digsite_map_index(globals->campaigns[map_index].name);
 
-		if (name_1749(globals->campaigns[map_index].name))
-		{
-			globals->build_1749[globals->build_1749_count++] = map_index;
-			continue;
-		}
 		if (digsite != NONE && !globals->digsite[digsite])
 			globals->digsite[digsite] = &globals->campaigns[map_index];
-		globals->campaign_listed[globals->campaign_listed_count++] = map_index;
 	}
 
 	return;
@@ -730,8 +699,8 @@ static void custom_edition_maps_look_for(
 	/* (each map's own folder first, so its copy there wins: multi_maps' Halo
 	PC maps (all of them), digsite_maps' Digsite maps (those alone)) */
 	char const *folders[] = { CUSTOM_EDITION_PC_MAP_DIRECTORY, CUSTOM_EDITION_DIGSITE_MAP_DIRECTORY,
-		CUSTOM_EDITION_MAP_DIRECTORY, CUSTOM_EDITION_INSTALL_MAP_DIRECTORY, CUSTOM_EDITION_1749_MAP_DIRECTORY };
-	short const folder_homes[] = { NONE, _custom_edition_maps_home_digsite, NONE, NONE, NONE };
+		CUSTOM_EDITION_MAP_DIRECTORY, CUSTOM_EDITION_INSTALL_MAP_DIRECTORY };
+	short const folder_homes[] = { NONE, _custom_edition_maps_home_digsite, NONE, NONE };
 	short folder_index;
 
 	custom_edition_maps_forget();
@@ -800,15 +769,6 @@ static void custom_edition_maps_look_for(
 				/* (digsite_maps' Digsite maps alone) */
 				if (folder_homes[folder_index] != NONE && custom_edition_maps_home(name) != folder_homes[folder_index])
 					continue;
-				/* (the 1749 folder's named 1749_<file>) */
-				if (folders[folder_index] == CUSTOM_EDITION_1749_MAP_DIRECTORY)
-				{
-					char prefixed[sizeof(name) + sizeof(CUSTOM_EDITION_1749_NAME_PREFIX)];
-
-					csprintf(prefixed, "%s%s", CUSTOM_EDITION_1749_NAME_PREFIX, name);
-					custom_edition_map_add(folders[folder_index], prefixed, extension);
-					continue;
-				}
 				custom_edition_map_add(folders[folder_index], name, extension);
 			}
 		} while (FindNextFileA(find, &data));
@@ -838,7 +798,7 @@ static struct bitmap_data *custom_edition_map_picture_read(
 	FILE *stream;
 	long size = 0;
 
-	csprintf(path, "%s%s%s", map->folder, custom_edition_map_file_name(map->name), PICTURE_EXTENSION);
+	csprintf(path, "%s%s%s", map->folder, map->name, PICTURE_EXTENSION);
 	stream = fopen(path, "rb");
 	/* (a map named for its hash: its picture named without it too) */
 	if (!stream && map_share_name_hashed(map->name))
@@ -1019,16 +979,6 @@ short custom_edition_maps_display_index(
 	{
 		custom_edition_maps_look_for();
 	}
-	/* (a 1749 map: by its name alone, its file named as another's may be) */
-	if (name_1749(name))
-	{
-		for (map_index = 0; map_index < globals->campaign_count; map_index++)
-		{
-			if (!csstrcasecmp(globals->campaigns[map_index].name, name))
-				return FIRST_CUSTOM_CAMPAIGN_DISPLAY_INDEX + map_index;
-		}
-		return NONE;
-	}
 	/* (the map by its file: a network game's of its version, which may be
 	one of another name, <name>_<hash>.map, shown with its number) */
 	if (custom_edition_map_file_path(level_name, path))
@@ -1108,7 +1058,7 @@ short custom_edition_maps_count(
 		custom_edition_maps_look_for();
 	}
 
-	return campaign ? globals->campaign_listed_count : globals->listed_count;
+	return campaign ? globals->campaign_count : globals->listed_count;
 }
 
 short custom_edition_maps_display_index_of(
@@ -1117,33 +1067,8 @@ short custom_edition_maps_display_index_of(
 {
 	if (index < 0 || index >= custom_edition_maps_count(campaign))
 		return NONE;
-	return campaign ? FIRST_CUSTOM_CAMPAIGN_DISPLAY_INDEX + custom_edition_maps_globals.campaign_listed[index] :
+	return campaign ? FIRST_CUSTOM_CAMPAIGN_DISPLAY_INDEX + index :
 		FIRST_DISPLAY_INDEX + custom_edition_maps_globals.listed[index];
-}
-
-short custom_edition_maps_1749_count(
-	void)
-{
-	if (!custom_edition_maps_globals.looked_for)
-		custom_edition_maps_look_for();
-	return custom_edition_maps_globals.build_1749_count;
-}
-
-short custom_edition_maps_1749_display_index(
-	short index)
-{
-	if (index < 0 || index >= custom_edition_maps_1749_count())
-		return NONE;
-	return FIRST_CUSTOM_CAMPAIGN_DISPLAY_INDEX + custom_edition_maps_globals.build_1749[index];
-}
-
-short custom_edition_maps_1749_campaign_level(
-	short index)
-{
-	short display_index = custom_edition_maps_1749_display_index(index);
-	struct custom_edition_map const *map = display_index != NONE ? custom_edition_map_get(display_index) : NULL;
-
-	return map ? campaign_level_from_name(custom_edition_map_file_name(map->name)) : NONE;
 }
 
 short custom_edition_maps_pc_count(
