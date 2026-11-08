@@ -979,16 +979,18 @@ static boolean campaign_continue(short controller)
 }
 
 /* ---- the map lists (New Game's and the Map screen's): their first row's
-chooser of SINGLEPLAYER (the campaign's levels), MULTIPLAYER maps (the Halo
-PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions of
-the Xbox's, each followed by the Xbox's own of it put in multi_maps as
-<name>_xbox.map, "<name> (Classic)"; the maps folder's are not listed), DIGSITE (the Digsite
-maps, a fixed list, each played as its file's scenario type says) or
-CUSTOM EDITION maps (the other Custom Edition multiplayer maps of the
-custom_maps folder: custom_edition_maps.c) (port_settings.MAP_KIND_CHOOSER),
-then the kind's rows, scrolling as list_scroll scrolls. A campaign map is
-played as the campaign is (alone, or split screen co-op; New Game's list
-alone has SINGLEPLAYER), a multiplayer map as multiplayer maps are. */
+chooser of New Game's SINGLEPLAYER (the campaign's levels) or CUSTOM
+CAMPAIGNS (the Custom Edition maps built as singleplayer of the custom_maps
+folder, and the Digsite maps built so), or the Map screen's MULTIPLAYER maps (the
+Halo PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions
+of the Xbox's, each followed by the Xbox's own of it put in multi_maps as
+<name>_xbox.map, "<name> (Classic)"; the maps folder's are not listed),
+DIGSITE (the Digsite maps, a fixed list, each played as its file's scenario
+type says) or CUSTOM EDITION maps (the other Custom Edition multiplayer maps
+of the custom_maps folder: custom_edition_maps.c)
+(port_settings.MAP_KIND_CHOOSER), then the kind's rows, scrolling as
+list_scroll scrolls. A campaign map is played as the campaign is (alone, or
+split screen co-op), a multiplayer map as multiplayer maps are. */
 
 enum
 {
@@ -996,6 +998,7 @@ enum
 	MAP_KIND_MULTIPLAYER,
 	MAP_KIND_DIGSITE,
 	MAP_KIND_CUSTOM_MULTIPLAYER,
+	MAP_KIND_CUSTOM_CAMPAIGN,
 	NUMBER_OF_MAP_KINDS
 };
 
@@ -1032,14 +1035,15 @@ static boolean map_ready(char const *map_name)
 static void visible_set(struct widget_instance *widget, boolean visible);
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
 
+/* the campaign menu's kinds (New Game's), the others the Map screen's */
 static boolean map_kind_singleplayer(short kind)
 {
-	return kind == MAP_KIND_SINGLEPLAYER;
+	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_CAMPAIGN;
 }
 
-/* The kind the chooser shows, kept to the multiplayer kinds unless
-`singleplayer`: a singleplayer kind it was turned to becomes the next
-multiplayer one the way it turned from `previous`. */
+/* The kind the chooser shows, kept to the campaign menu's kinds if
+`singleplayer`, else to the multiplayer ones: another it was turned to
+becomes the next of the list's the way it turned from `previous`. */
 static short map_kind_shown(struct widget_instance *list, boolean singleplayer, short previous)
 {
 	struct widget_instance *spinner = named(list, "list_item_0_map_kind_spinner", 0);
@@ -1048,13 +1052,13 @@ static short map_kind_shown(struct widget_instance *list, boolean singleplayer, 
 	if (!spinner)
 		return singleplayer ? MAP_KIND_SINGLEPLAYER : MAP_KIND_MULTIPLAYER;
 	kind = (short)PIN(spinner->parameters.list.selected_index, 0, NUMBER_OF_MAP_KINDS - 1);
-	if (!singleplayer && map_kind_singleplayer(kind))
+	if (map_kind_singleplayer(kind) != singleplayer)
 	{
 		short step = kind == (previous + NUMBER_OF_MAP_KINDS - 1) % NUMBER_OF_MAP_KINDS ? -1 : 1;
 
 		do
 			kind = (short)((kind + step + NUMBER_OF_MAP_KINDS) % NUMBER_OF_MAP_KINDS);
-		while (map_kind_singleplayer(kind));
+		while (map_kind_singleplayer(kind) != singleplayer);
 		spinner->parameters.list.selected_index = kind;
 	}
 	return kind;
@@ -1185,6 +1189,11 @@ static void custom_multiplayer_map_text(short map, wchar_t *text)
 	custom_map_text(FALSE, map, text);
 }
 
+static void custom_campaign_map_text(short map, wchar_t *text)
+{
+	custom_map_text(TRUE, map, text);
+}
+
 /* a map kind's entries' names */
 static void (*map_kind_text(short kind))(short entry, wchar_t *text)
 {
@@ -1194,6 +1203,8 @@ static void (*map_kind_text(short kind))(short entry, wchar_t *text)
 		return multiplayer_map_text;
 	case MAP_KIND_DIGSITE:
 		return digsite_map_text;
+	case MAP_KIND_CUSTOM_CAMPAIGN:
+		return custom_campaign_map_text;
 	default:
 		return custom_multiplayer_map_text;
 	}
@@ -1229,11 +1240,9 @@ static void map_description_show(struct widget_instance *description, short leve
 		widget->parameters.text_box.string_list_index = map;
 }
 
-/* New Game's list: SINGLEPLAYER's levels, the profile's reached, or
-MULTIPLAYER's maps, played alone to walk around (no game engine: a campaign
-game on the map); DIGSITE's campaign maps played as the campaign's levels
-are, at the difficulty chosen next, its multiplayer ones and CUSTOM
-MULTIPLAYER's walked around as MULTIPLAYER's are */
+/* New Game's list: SINGLEPLAYER's levels, the profile's reached, or CUSTOM
+CAMPAIGNS' maps, played as the campaign's levels are, at the difficulty
+chosen next */
 static struct
 {
 	short kind;
@@ -1254,6 +1263,8 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return multiplayer_entry_count(multiplayer_map_count);
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_count();
+	case MAP_KIND_CUSTOM_CAMPAIGN:
+		return custom_edition_maps_count(TRUE);
 	default:
 		return custom_edition_maps_count(FALSE);
 	}
@@ -1271,6 +1282,8 @@ static short map_kind_display_index(short kind, short entry)
 		return custom_edition_maps_digsite_display_index(entry);
 	case MAP_KIND_CUSTOM_MULTIPLAYER:
 		return custom_edition_maps_display_index_of(FALSE, entry);
+	case MAP_KIND_CUSTOM_CAMPAIGN:
+		return custom_edition_maps_display_index_of(TRUE, entry);
 	default:
 		return entry;
 	}
@@ -1281,7 +1294,7 @@ static short map_kind_display_index(short kind, short entry)
 campaign map, or one not installed */
 static short map_kind_level_index(short kind, short entry)
 {
-	if (kind == MAP_KIND_SINGLEPLAYER)
+	if (map_kind_singleplayer(kind))
 		return NONE;
 	/* (an Xbox map's: its index in the Xbox's level list, the multiplayer
 	maps' first, which is its display index too) */
@@ -1405,26 +1418,8 @@ static boolean level_choose(struct widget_instance *list, short controller)
 
 	if (level_list.kind != MAP_KIND_SINGLEPLAYER && (level_list.chosen < 0 || level_list.chosen >= count))
 		return campaign_fail();
-	/* (a Digsite map not installed) */
-	if (level_list.kind == MAP_KIND_DIGSITE &&
-		!custom_edition_maps_installed(map_kind_display_index(level_list.kind, level_list.chosen)))
-	{
-		return campaign_fail();
-	}
-	if (map_kind_level_index(level_list.kind, level_list.chosen) != NONE)
-	{
-		struct player_profile profile;
-		short level_index = map_kind_level_index(level_list.kind, level_list.chosen);
-		char const *map_name = level_index < level_list.map_count ? level_list.map_names[level_index] : NULL;
-
-		if (!map_name || !campaign_profile(controller, &profile))
-			return campaign_fail();
-		if (!map_ready(map_name))
-			return FALSE;
-		campaign_start(map_name, main_get_difficulty(), controller);
-		return FALSE;
-	}
-	if (level_list.kind == MAP_KIND_DIGSITE)
+	/* (a CUSTOM CAMPAIGNS map: the difficulty menu next) */
+	if (level_list.kind == MAP_KIND_CUSTOM_CAMPAIGN)
 	{
 		char const *map_name = custom_map_level_name(level_list.kind, level_list.chosen);
 

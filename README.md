@@ -15,8 +15,10 @@
 > Every mod in the `mods` folder is played. The Xbox's videos (the disc's `bink` folder, extracted
 > with the maps) play in the game as on the Xbox: the opening titles before
 > the main menu, the credits after The Maw (`port/linux/src/bink_play.c`,
-> on a Bink decoder adapted from FFmpeg's, LGPL 2.1 or later). The map lists show Halo PC's maps (the multi_maps folder's) in
-> MULTIPLAYER and a DIGSITE list in place of CUSTOM SINGLEPLAYER (see
+> on a Bink decoder adapted from FFmpeg's, LGPL 2.1 or later). The campaign menu's New Game lists SINGLEPLAYER (the campaign's
+> levels) and CUSTOM CAMPAIGNS (the `custom_maps` folder's maps built as
+> singleplayer); the Map screen lists Halo PC's maps (the multi_maps folder's) in
+> MULTIPLAYER, the DIGSITE list and CUSTOM EDITION (see
 > [Custom Edition Maps](#custom-edition-maps)); the gametype list has
 > STANDARD (the Xbox's built-in gametypes) and CUSTOM (those saved); OpenCE's own built-in gametypes are not listed. Its
 > GitHub Actions build Windows only: each push uploads
@@ -116,7 +118,9 @@ With HIGH-RES HUD on (the default), Halo PC's own maps draw the Xbox's HUD throu
 
 With HIGH-RES HUD on, the campaign (and every Xbox map) draws the weapons' pickup icons from Halo PC's own, four times the Xbox's resolution: they are read from the first Halo PC map in `multi_maps`, with its `bitmaps.map` (`port/linux/game/hud_pc_icons.c`). Without one, the Xbox's icons are drawn, upscaled.
 
-The **DIGSITE** list (in place of CUSTOM SINGLEPLAYER) always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration (`m1_exploration_moonbase.map`), Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in a **`digsite_maps`** folder beside `maps`. They are Custom Edition maps, so they need Custom Edition's `bitmaps.map`, `sounds.map` and `loc.map` in `custom_maps` (or in `digsite_maps`): Halo PC's are not the same files. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a campaign scenario as a campaign level (alone, or as LAN co-op from Create Game), a multiplayer one as any multiplayer map. `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
+The campaign menu's New Game lists two kinds: **SINGLEPLAYER**, the campaign's levels, and **CUSTOM CAMPAIGNS**, every map of `custom_maps` (or of a Custom Edition install's `maps`) built as a singleplayer scenario, the Digsite maps built so too, played as a campaign level is at the difficulty chosen next (alone, or split screen co-op). Maps built as multiplayer are the Map screen's CUSTOM EDITION, never listed there.
+
+The Map screen's **DIGSITE** list always shows the 16 Digsite maps: Abyss, B20, City, Destructo, Dusk, Indoor, M1 Assault, M1 Defense, M1 Exploration (`m1_exploration_moonbase.map`), Ruined Pain, Space Station, Spasm, Swamp, Swamp Thing, Tutorial and Underground. Put their `.map` files (`abyss.map`, `b20.map`, ... `underground.map`) in a **`digsite_maps`** folder beside `maps`. They are Custom Edition maps, so they need Custom Edition's `bitmaps.map`, `sounds.map` and `loc.map` in `custom_maps` (or in `digsite_maps`): Halo PC's are not the same files. A map that is missing, or that this build cannot load, is listed as "Not installed". Each plays as its file says: a multiplayer one as any multiplayer map; a campaign scenario is played from New Game's CUSTOM CAMPAIGNS (the Map screen lists it but does not host it). `<name>.bmp` and `<name>.txt` beside one give it a picture and a description.
 
 All other Custom Edition multiplayer maps are in **CUSTOM EDITION**, in the map list in Campaign's New Game and on the Map screen of Create Game. On these maps every vehicle and weapon the map places always spawns, whatever the gametype: its vehicle sets and MAP WEAPONS setting, and the map's own per-gametype spawn flags, are not applied (a weapon set still swaps weapons, but never removes one).
 

@@ -7,8 +7,8 @@ Whenever a map list opens, the custom_maps folder and then the Halo Custom
 Edition install's maps folder are scanned for CE caches (.map; OpenSauce
 caches are refused by the loader, so not listed). Multiplayer maps join the
 level list after the Xbox levels, and the map lists' CUSTOM EDITION;
-campaign maps (solo scenarios) are the map lists' CUSTOM SINGLEPLAYER,
-played alone or as network co-op. The stock campaign levels get display
+campaign maps (solo scenarios) are the campaign menu's CUSTOM CAMPAIGNS,
+played alone or as split screen co-op. The stock campaign levels get display
 indices here too, so the menus can show them the same way.
 
 A map's level name is custom_maps\<name> (CUSTOM_EDITION_LEVEL_NAME_PREFIX),

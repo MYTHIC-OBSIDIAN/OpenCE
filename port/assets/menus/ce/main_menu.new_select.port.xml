@@ -12,5 +12,6 @@
 		<string text="MULTIPLAYER"/>
 		<string text="DIGSITE"/>
 		<string text="CUSTOM EDITION"/>
+		<string text="CUSTOM CAMPAIGNS"/>
 	</strings>
 </menus>

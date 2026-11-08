@@ -1017,8 +1017,8 @@ FRAME_ORDER = {
     f"{PE}/profile_options": [0, 1, 2, 3, 4, 5, 6, 7, 8, 8],
 }
 
-# the map lists' first row: SINGLEPLAYER, MULTIPLAYER, DIGSITE or CUSTOM
-# MULTIPLAYER maps (_map_kind)
+# the map lists' first row: New Game's SINGLEPLAYER or CUSTOM CAMPAIGNS, the
+# Map screen's MULTIPLAYER, DIGSITE or CUSTOM EDITION maps (_map_kind)
 MAP_KIND_CHOOSER = "main_menu/new_select/list_item_0_map_kind"
 
 # changes to the PC version's widgets (by our names): attributes set, all
@@ -2119,11 +2119,12 @@ def _teamplay_options_extras() -> list:
 
 def _map_kind() -> list:
     """the map lists' first row (New Game's and the Map screen's), as the
-    gametype list's chooser: a spinner of SINGLEPLAYER or MULTIPLAYER maps
-    (the Xbox's and Halo PC's own), the Digsite maps, or the other Custom
-    Edition multiplayer maps of the custom_maps folder (menu_functions.c's
-    map lists), for either controller (split screen co-op's New Game takes
-    both)"""
+    gametype list's chooser: a spinner of New Game's SINGLEPLAYER or CUSTOM
+    CAMPAIGNS (the custom_maps folder's maps built as singleplayer), or the
+    Map screen's MULTIPLAYER maps (Halo PC's own), the Digsite maps, or the
+    other Custom Edition multiplayer maps of the custom_maps folder
+    (menu_functions.c's map lists), for either controller (split screen
+    co-op's New Game takes both)"""
     lines = _widget(MAP_KIND_CHOOSER, [("width", 256), ("height", 28), ("flags", "pass_unhandled_to_focused_child"),
                                        ("bitmap", "bitmaps/option_bkds_sm"), ("font", "ui\\large_ui"),
                                        ("color", "#FF2896FF"), ("align", "center"), ("text_y", 3)],
@@ -2137,8 +2138,10 @@ def _map_kind() -> list:
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 238 19 244")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
+    # (New Game's SINGLEPLAYER and CUSTOM CAMPAIGNS, the Map screen's the
+    # rest: menu_functions.c's map_kind_shown)
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION"])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION", "CUSTOM CAMPAIGNS"])
     return lines
 
 

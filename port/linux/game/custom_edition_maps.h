@@ -96,8 +96,9 @@ boolean custom_edition_maps_level_campaign(
 
 /* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
 how many there are, and the display index of the one at `index` (NONE past
-them). The multiplayer maps are CUSTOM EDITION's: neither multi_maps' nor the
-Digsite maps. Scans for maps the first time. */
+them). The campaign maps (built as singleplayer, the Digsite maps' too) are
+the campaign menu's CUSTOM CAMPAIGNS; the multiplayer maps CUSTOM EDITION's:
+neither multi_maps' nor the Digsite maps. Scans for maps the first time. */
 short custom_edition_maps_count(
 	boolean campaign);
 short custom_edition_maps_display_index_of(

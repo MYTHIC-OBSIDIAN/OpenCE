@@ -57,21 +57,19 @@ which.
 ### In the menus
 
 The map lists (New Game's, and the Map screen of Create Game's INTERNET and
-LAN and of split screen) have four kinds in their first row's chooser:
-SINGLEPLAYER (the campaign's levels), MULTIPLAYER (the Xbox's maps), and
-CUSTOM SINGLEPLAYER and CUSTOM MULTIPLAYER, the Custom Edition maps of the
-custom maps folders by the scenario type their files give (solo or
-multiplayer). A map is played as its kind says
+LAN and of split screen) have their kinds in their first row's chooser, the
+Custom Edition maps of the custom maps folders sorted by the scenario type
+their files give (solo or multiplayer). A map is played as its kind says
 (`port/linux/game/menu_functions.c`):
 
-- **New Game**: a CUSTOM SINGLEPLAYER map is played as the campaign's
-  levels are, at the difficulty chosen next (alone, or with split screen
-  co-op's two players); a CUSTOM MULTIPLAYER map is walked around alone, as
-  MULTIPLAYER's are.
-- **The Map screen**: only the multiplayer kinds (no SINGLEPLAYER, and a
-  campaign map chosen there is refused: the campaign is not hosted over the
-  network); a CUSTOM MULTIPLAYER map goes on to the gametypes, as
-  MULTIPLAYER's do.
+- **New Game**: SINGLEPLAYER (the campaign's levels) and CUSTOM CAMPAIGNS
+  (the maps built as singleplayer, the Digsite maps' too), played as the
+  campaign's levels are, at the difficulty chosen next (alone, or with
+  split screen co-op's two players). No multiplayer map is listed.
+- **The Map screen**: MULTIPLAYER (Halo PC's maps), DIGSITE and CUSTOM
+  EDITION (the maps built as multiplayer); a campaign map chosen there is
+  refused (the campaign is not hosted over the network); a CUSTOM EDITION
+  map goes on to the gametypes, as MULTIPLAYER's do.
 
 The Xbox menus' multiplayer level list offers the Custom Edition multiplayer
 maps after the thirteen Xbox levels. The pregame lobby shows a Custom
