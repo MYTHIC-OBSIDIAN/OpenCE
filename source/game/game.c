@@ -152,6 +152,7 @@ struct game_options;
 #include "interface/interface.h"
 #include "interface/player_ui.h"
 #include "interface/progress_bar.h"
+#include "loading_screen.h" /* port: port/linux/game/loading_screen.c */
 #include "interface/ui_widget.h"
 #include "items/items.h"
 #include "items/projectiles.h"
@@ -888,6 +889,32 @@ void game_precache_new_map(
 			globals->map_load_in_progress = FALSE;
 			globals->loading_progress = 1.0f;
 		}
+	}
+	/* port: a level the cache files already hold (kept from run to run, so
+	never copied again) shows the loading screen as its copy would have, its
+	ring filling over a moment; its last frame stays while the level loads
+	(display.loading_screen) */
+	else if (blocking && loading_screen_for_cached_map(map_name))
+	{
+		struct game_runtime_globals_prefix *globals = game_globals;
+		unsigned long started = system_milliseconds();
+
+		globals->map_load_in_progress = TRUE;
+		globals->loading_progress = 0.0f;
+		ui_widget_load_progress_widget();
+		progress_bar_begin(global_scenario_index != NONE);
+		do
+		{
+			globals->loading_progress = loading_screen_progress(started);
+			main_pregame_render();
+			main_rasterizer_throttle();
+			main_present_frame();
+		}
+		while (globals->loading_progress < 1.0f);
+		progress_bar_end();
+		ui_widgets_close_all();
+		globals->map_load_in_progress = FALSE;
+		globals->loading_progress = 1.0f;
 	}
 
 	if (blocking)

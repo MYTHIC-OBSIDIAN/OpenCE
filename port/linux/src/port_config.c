@@ -498,6 +498,13 @@ static const struct config_setting config_settings[] =
 		"and so on): true, every one that is on (port_mods.c), false none, from\n"
 		"the next map loaded. HIGH RES ASSETS in Settings > Preferences\n"
 		"(ON or OFF) writes its choice here." },
+	{ "display.loading_screen", _config_boolean, "true", "HALO_LOADING_SCREEN", _environment_value, _platform_all,
+		"Show the Xbox's loading screen (the glowing ring, loading.tga and the\n"
+		"chant) for every level, as the Xbox did while copying it from the disc.\n"
+		"The cache files are kept from run to run, so a level loaded before is\n"
+		"never copied again; with this on its loading screen still shows, filling\n"
+		"over two seconds, then stays while the level loads. Off: such a level\n"
+		"loads with the last menu on the screen." },
 	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
 		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
 		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
