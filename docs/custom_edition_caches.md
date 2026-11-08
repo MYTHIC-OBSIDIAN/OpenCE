@@ -62,8 +62,11 @@ Custom Edition maps of the custom maps folders sorted by the scenario type
 their files give (solo or multiplayer). A map is played as its kind says
 (`port/linux/game/menu_functions.c`):
 
-- **New Game**: SINGLEPLAYER (the campaign's levels) and CUSTOM CAMPAIGNS
-  (the maps built as singleplayer, the Digsite maps' too), played as the
+- **New Game**: SINGLEPLAYER (the campaign's levels), CUSTOM CAMPAIGNS
+  (the maps built as singleplayer, the Digsite maps' too, but the 1749
+  folder's) and 1749 BUILD (the 1749 folder's, shown as the campaign levels
+  of their file names: level name `custom_maps\1749_a10` for
+  `1749\a10.map`, read from that folder alone), played as the
   campaign's levels are, at the difficulty chosen next (alone, or with
   split screen co-op's two players). No multiplayer map is listed.
 - **The Map screen**: MULTIPLAYER (Halo PC's maps), DIGSITE and CUSTOM

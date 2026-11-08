@@ -2138,10 +2138,10 @@ def _map_kind() -> list:
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 238 19 244")],
                      ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
-    # (New Game's SINGLEPLAYER and CUSTOM CAMPAIGNS, the Map screen's the
-    # rest: menu_functions.c's map_kind_shown)
+    # (New Game's SINGLEPLAYER, CUSTOM CAMPAIGNS and 1749 BUILD, the Map
+    # screen's the rest: menu_functions.c's map_kind_shown)
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION", "CUSTOM CAMPAIGNS"])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION", "CUSTOM CAMPAIGNS", "1749 BUILD"])
     return lines
 
 
