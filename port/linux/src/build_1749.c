@@ -43,6 +43,12 @@ Read in docs/build_1749.md.
 #define EXECUTABLE_NAME_1749 "halo1749"
 #define FOLDER_1749 "1749"
 
+/* the game's build numbers, as their executables give them (the menus'
+build number, debug.txt's first line, a saved game's header): 1749's
+cachebeta.exe, and this build's */
+#define GAME_BUILD_NUMBER_1749 "01.08.15.1749"
+#define GAME_BUILD_NUMBER "01.01.14.2342"
+
 /* ---------- private code */
 
 static int name_begins(const char *name, const char *prefix)
@@ -127,4 +133,9 @@ const char *halo_build_1749_root(void)
 unsigned long halo_tag_cache_base_address(void)
 {
 	return halo_build_1749() ? TAG_CACHE_BASE_ADDRESS_1749 : TAG_CACHE_BASE_ADDRESS;
+}
+
+const char *halo_game_build_number(void)
+{
+	return halo_build_1749() ? GAME_BUILD_NUMBER_1749 : GAME_BUILD_NUMBER;
 }

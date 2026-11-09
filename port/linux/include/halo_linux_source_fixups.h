@@ -120,9 +120,11 @@ run is one; its start, before the game's (shell_xbox.c); its frames' pace
 output, which it logs and captures for its commands' replies (terminal.c) */
 /* halo1749.exe, Halo's build 01.08.15.1749 on its own maps
 (port/linux/src/build_1749.c): whether this run is it, and the tag cache's
-address, 1749's maps' (0x803AF000) or this build's (0x803A6000) */
+address, 1749's maps' (0x803AF000) or this build's (0x803A6000); and the
+game's build number, "01.08.15.1749" or "01.01.14.2342" */
 int halo_build_1749(void);
 unsigned long halo_tag_cache_base_address(void);
+const char *halo_game_build_number(void);
 /* ... its maps' scripts given this build's function numbers, by name, as
 they load (cache_files.c: port/linux/game/custom_edition_scripts.c) */
 unsigned char build_1749_scripts_convert(void *scenario_definition, char const *map_name);

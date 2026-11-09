@@ -102,6 +102,22 @@ keyboard still stands in for a controller). The display's own settings
 (window, resolution, vsync, anti-aliasing) and the controls are the
 player's.
 
+## Build numbers
+
+halo1749.exe gives the game's build as 1749's executable does
+(`halo_game_build_number`, in [build_1749.c](../port/linux/src/build_1749.c)):
+`01.08.15.1749` in the menus' build number, the first line of each
+`debug.txt` (`halobeta xbox 01.08.15.1749(CACHE)`) and a saved game's
+header, where halo.exe gives `01.01.14.2342`.
+
+A build of the `build-1749` branch names its release, `1749-build-<n>`
+(`HALO_BUILD_1749_NUMBER`, which the workflow works out before it builds
+and tags the release with): the console's `version`, the error screen and
+the dedicated server say `OpenCE Windows | 1749-build-<n> (release)`, and
+halo1749.exe adds `| halobeta xbox 01.08.15.1749`. Its crash reports are
+named `...-1749build<n>-<flavor>`. It has no standard build number, so it
+never looks for the standard line's updates.
+
 ## Reading route
 
 1. [build_1749.c](../port/linux/src/build_1749.c): the mode, its folder and

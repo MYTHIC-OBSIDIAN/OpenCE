@@ -315,7 +315,8 @@ void game_state_initialize_for_new_map(
 	/* port: no longer than the header has room for (a map's scenario's
 	name is the map's) */
 	strncpy(game_state_globals.header->map_name, name, sizeof(game_state_globals.header->map_name) - 1);
-	strcpy(game_state_globals.header->build_number, "01.01.14.2342");
+	/* port: 1749's in halo1749.exe (port/linux/src/build_1749.c) */
+	strcpy(game_state_globals.header->build_number, halo_game_build_number());
 
 	game_state_globals.header->player_count = player_spawn_count;
 	game_state_globals.header->difficulty = game_difficulty_level_get();

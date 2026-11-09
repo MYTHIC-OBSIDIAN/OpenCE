@@ -293,7 +293,10 @@ void write_to_error_file(
 	{
 		data_002dcd2c = FALSE;
 		write_to_error_file("\r\n\r\n", FALSE);
-		write_to_error_file("halobeta xbox 01.01.14.2342(CACHE) ----------------------------------------------\r\n", TRUE);
+		/* port: 1749's build number in halo1749.exe (port/linux/src/build_1749.c) */
+		sprintf(line, "halobeta xbox %s(CACHE) ----------------------------------------------\r\n",
+			halo_game_build_number());
+		write_to_error_file(line, TRUE);
 		sprintf(line, "reference function: %s\r\n", "_write_to_error_file");
 		write_to_error_file(line, TRUE);
 		sprintf(line, "reference address: %x\r\n", write_to_error_file);

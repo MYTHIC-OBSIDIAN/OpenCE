@@ -14,7 +14,10 @@ and is skipped with an older one). A profile build is a debug build with
 configure.py --profile, so that the profiling build is built too. CI_COMPILER_LAUNCHER (ccache, say) is
 passed on as --compiler-launcher. A build of the main branch gets the run's
 number (HALO_BUILD_NUMBER), which its release is named after and the
-self-updater compares.
+self-updater compares. A build of the build-1749 branch gets its release's
+number (HALO_BUILD_1749_NUMBER, 1749-build-<n>) from the workflow, which
+works it out before building, and names itself by it; it has no
+HALO_BUILD_NUMBER, so it never looks for updates.
 
     python tools/ci_build.py sums release/
 

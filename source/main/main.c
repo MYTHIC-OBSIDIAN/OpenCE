@@ -409,6 +409,10 @@ symbols in this file:
 #ifndef HALO_BUILD_NUMBER
 #define HALO_BUILD_NUMBER 0
 #endif
+/* (a build of the build-1749 branch: its release's number, 1749-build-<n>) */
+#ifndef HALO_BUILD_1749_NUMBER
+#define HALO_BUILD_1749_NUMBER 0
+#endif
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "local"
 #endif
@@ -1724,22 +1728,32 @@ void main_crash(
 
 #ifdef HALO_NATIVE_BUILD_INFO
 /* The original Xbox version string describes the map format, not this port.
-   Keep it on Xbox; native builds name the binary that is actually running. */
+   Keep it on Xbox; native builds name the binary that is actually running.
+   port: a build of the build-1749 branch names its release (1749-build-<n>),
+   and halo1749.exe the game's build it plays (port/linux/src/build_1749.c). */
 static void main_native_build_label(char *label, size_t capacity)
 {
 	char const *platform;
+	char game[48];
 
 	#if   defined(HALO_WINDOWS)
 	platform = "Windows";
 	#else
 	platform = "Linux";
 	#endif
-	if (HALO_BUILD_NUMBER > 0)
-		_snprintf(label, capacity - 1, "OpenCE %s | build %d (%s)",
-			platform, HALO_BUILD_NUMBER, HALO_BUILD_FLAVOR);
+	game[0] = 0;
+	if (halo_build_1749())
+		_snprintf(game, sizeof(game) - 1, " | halobeta xbox %s", halo_game_build_number());
+	game[sizeof(game) - 1] = 0;
+	if (HALO_BUILD_1749_NUMBER > 0)
+		_snprintf(label, capacity - 1, "OpenCE %s | 1749-build-%d (%s)%s",
+			platform, HALO_BUILD_1749_NUMBER, HALO_BUILD_FLAVOR, game);
+	else if (HALO_BUILD_NUMBER > 0)
+		_snprintf(label, capacity - 1, "OpenCE %s | build %d (%s)%s",
+			platform, HALO_BUILD_NUMBER, HALO_BUILD_FLAVOR, game);
 	else
-		_snprintf(label, capacity - 1, "OpenCE %s | local build (%s)",
-			platform, HALO_BUILD_FLAVOR);
+		_snprintf(label, capacity - 1, "OpenCE %s | local build (%s)%s",
+			platform, HALO_BUILD_FLAVOR, game);
 	label[capacity - 1] = 0;
 }
 

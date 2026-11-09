@@ -35,6 +35,10 @@ without a display to wait for, and its exits.
 #ifndef HALO_BUILD_NUMBER
 #define HALO_BUILD_NUMBER 0
 #endif
+/* (a build of the build-1749 branch: its release's number) */
+#ifndef HALO_BUILD_1749_NUMBER
+#define HALO_BUILD_1749_NUMBER 0
+#endif
 
 /* the game side's check of a rotation entry's gametype
 (port/linux/game/server_gametypes.c) */
@@ -93,6 +97,8 @@ const char *server_mode_build(void)
 {
 	static char build[32];
 
+	if (!build[0] && HALO_BUILD_1749_NUMBER > 0)
+		snprintf(build, sizeof(build), "1749-build-%d", (int)HALO_BUILD_1749_NUMBER);
 	if (!build[0])
 		snprintf(build, sizeof(build), "build-%d", (int)HALO_BUILD_NUMBER);
 	return build;

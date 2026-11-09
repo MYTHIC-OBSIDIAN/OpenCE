@@ -173,8 +173,15 @@ def updater_defines(release: bool) -> str:
     label = os.environ.get("HALO_BUILD_LABEL", "0")
     if not label.isdigit():
         label = "0"
+    # (a build of the build-1749 branch: its release's number, 1749-build-<n>,
+    # which it names itself by; its HALO_BUILD_NUMBER stays 0, so it never
+    # looks for the standard line's updates)
+    number_1749 = os.environ.get("HALO_BUILD_1749_NUMBER", "0")
+    if not number_1749.isdigit():
+        number_1749 = "0"
     flavor = "release" if release else "debug"
-    return (f'-DHALO_BUILD_NUMBER={number} -DHALO_BUILD_LABEL={label} -DHALO_BUILD_FLAVOR=\\"{flavor}\\" '
+    return (f'-DHALO_BUILD_NUMBER={number} -DHALO_BUILD_LABEL={label} -DHALO_BUILD_1749_NUMBER={number_1749} '
+            f'-DHALO_BUILD_FLAVOR=\\"{flavor}\\" '
             f'-DHALO_BUILD_REPOSITORY=\\"{build_repository()}\\"')
 
 def configuration_defines(sln: Any) -> List[str]:

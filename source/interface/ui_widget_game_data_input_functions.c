@@ -2040,7 +2040,8 @@ static void set_textbox_to_build_number(
 	if (!build_number_string[0])
 	{
 		ascii_to_wide(
-			"01.01.14.2342",
+			/* port: 1749's in halo1749.exe (port/linux/src/build_1749.c) */
+			halo_game_build_number(),
 			build_number_string,
 			sizeof(build_number_string));
 	}

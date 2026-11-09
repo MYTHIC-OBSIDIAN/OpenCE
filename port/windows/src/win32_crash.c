@@ -46,6 +46,11 @@ here, so they are reported too.
 #ifndef HALO_BUILD_NUMBER
 #define HALO_BUILD_NUMBER 0
 #endif
+/* (a build of the build-1749 branch: its release's number, 1749-build-<n>,
+which its reports are named after instead) */
+#ifndef HALO_BUILD_1749_NUMBER
+#define HALO_BUILD_1749_NUMBER 0
+#endif
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
@@ -330,7 +335,8 @@ static int crash_upload(const wchar_t *folder, const wchar_t *name)
 {
 	typedef const char *(CDECL *wine_get_version_proc)(void);
 	wchar_t path[PATH_SIZE];
-	const wchar_t *build_text = wcsstr(name, L"-build");
+	const wchar_t *build_1749_text = wcsstr(name, L"-1749build");
+	const wchar_t *build_text = build_1749_text ? build_1749_text : wcsstr(name, L"-build");
 	char release[32] = "build-0", environment[16] = "release", file_name[MAX_PATH * 3], answer[256];
 	struct crash_body body = { 0 };
 	char *dump, *log = NULL;
@@ -339,10 +345,13 @@ static int crash_upload(const wchar_t *folder, const wchar_t *name)
 	int number = 0;
 	wchar_t flavor[16] = L"";
 
-	/* the build that crashed, from the name: <time>-<process>-build<number>-<flavor> */
-	if (build_text && swscanf(build_text, L"-build%d-%15ls", &number, flavor) >= 1)
+	/* the build that crashed, from the name: <time>-<process>-build<number>-<flavor>
+	(-1749build<number>- for build 1749's line, released as 1749-build-<number>) */
+	if (build_text)
+		build_text += build_1749_text ? 5 : 1;
+	if (build_text && swscanf(build_text, L"build%d-%15ls", &number, flavor) >= 1)
 	{
-		snprintf(release, sizeof(release), "build-%d", number);
+		snprintf(release, sizeof(release), "%sbuild-%d", build_1749_text ? "1749-" : "", number);
 		if (flavor[0])
 			snprintf(environment, sizeof(environment), "%ls", flavor);
 	}
@@ -643,8 +652,10 @@ static void crash_reporter(DWORD process_id, DWORD thread_id, ULONG_PTR exceptio
 		return;
 	}
 	GetSystemTime(&now);
-	_snwprintf(name, MAX_PATH, L"%04u%02u%02u-%02u%02u%02u-%lu-build%d-%hs", now.wYear, now.wMonth, now.wDay,
-		now.wHour, now.wMinute, now.wSecond, (unsigned long)process_id, HALO_BUILD_NUMBER, HALO_BUILD_FLAVOR);
+	/* (a build of the build-1749 branch: 1749build<number>) */
+	_snwprintf(name, MAX_PATH, L"%04u%02u%02u-%02u%02u%02u-%lu-%hsbuild%d-%hs", now.wYear, now.wMonth, now.wDay,
+		now.wHour, now.wMinute, now.wSecond, (unsigned long)process_id, HALO_BUILD_1749_NUMBER > 0 ? "1749" : "",
+		HALO_BUILD_1749_NUMBER > 0 ? HALO_BUILD_1749_NUMBER : HALO_BUILD_NUMBER, HALO_BUILD_FLAVOR);
 	name[MAX_PATH - 1] = 0;
 	if (!crash_path(dump, PATH_SIZE, folder, name, L".dmp") || !crash_path(log, PATH_SIZE, folder, name, L".log"))
 	{

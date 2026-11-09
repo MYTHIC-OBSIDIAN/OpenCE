@@ -19,7 +19,9 @@ name: Build
 #
 # The build-1749 branch (halo1749.exe, docs/build_1749.md) is released apart:
 # 1749-build-<n>, numbered from 1 on its own, never marked latest (the latest
-# release stays the standard build's); its last five are kept too.
+# release stays the standard build's); its last five are kept too. The
+# Windows job works the number out before it builds (HALO_BUILD_1749_NUMBER:
+# the builds name themselves by it), and the release is tagged with it.
 on:
   push:
     paths-ignore:
@@ -53,6 +55,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    outputs:
+      build_1749: ${{ steps.number_1749.outputs.number }}
     steps:
       - name: Install the toolchain
         shell: pwsh
@@ -81,6 +85,24 @@ jobs:
         with:
           path: build/windows/third_party
           key: windows-third-party-${{ hashFiles('tools/windows_build.py') }}
+
+      # The build-1749 branch's release number, the next 1749-build-<n>,
+      # which the builds name themselves by (HALO_BUILD_1749_NUMBER: the
+      # console's version, the error screen, crash reports) and the release
+      # job tags them with
+      - name: Number the 1749 build
+        id: number_1749
+        if: ${{ github.ref == 'refs/heads/build-1749' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          last="$(gh release list --limit 100 --json tagName \
+            --jq '[.[] | .tagName | select(startswith("1749-build-")) | ltrimstr("1749-build-") | tonumber] | max // 0')"
+          number=$((last + 1))
+          echo "1749-build-$number"
+          echo "HALO_BUILD_1749_NUMBER=$number" >> "$GITHUB_ENV"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
 
       - name: Debug
         run: python tools/ci_build.py windows debug
@@ -184,6 +206,7 @@ jobs:
       - name: Publish
         id: publish
         env:
+          BUILD_1749: ${{ needs.windows.outputs.build_1749 }}
           MESSAGE: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -191,12 +214,21 @@ jobs:
           tag="build-$GITHUB_RUN_NUMBER"
           title="Build $GITHUB_RUN_NUMBER (${GITHUB_SHA:0:7})"
           latest="--latest"
-          # (build 1749's own line: the next of its numbers, not the run's)
+          # (build 1749's own line: the number its builds were given and name
+          # themselves by, not the run's; a release of that number made since
+          # stops this one, rather than tag builds that name another)
           if [ "$GITHUB_REF" = "refs/heads/build-1749" ]; then
-            last="$(gh release list --limit 100 --json tagName \
-              --jq '[.[] | .tagName | select(startswith("1749-build-")) | ltrimstr("1749-build-") | tonumber] | max // 0')"
-            tag="1749-build-$((last + 1))"
-            title="1749 Build $((last + 1)) (${GITHUB_SHA:0:7})"
+            number="$BUILD_1749"
+            if ! [ "$number" -gt 0 ] 2>/dev/null; then
+              echo "::error::the Windows job gave no 1749 build number"
+              exit 1
+            fi
+            if gh release view "1749-build-$number" > /dev/null 2>&1; then
+              echo "::error::1749-build-$number is already released: these builds name that number"
+              exit 1
+            fi
+            tag="1749-build-$number"
+            title="1749 Build $number (${GITHUB_SHA:0:7})"
             latest="--latest=false"
           fi
           subject="$(printf '%s' "${MESSAGE:-manual run}" | head -n 1)"
