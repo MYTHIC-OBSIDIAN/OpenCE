@@ -36,9 +36,6 @@ boolean shoulder_camera_enabled(short local_player_index)
 	struct unit_datum *unit;
 	struct weapon_datum *weapon;
 
-	/* (not in stock build 1749: halo1749.exe, port/linux/src/build_1749.c) */
-	if (halo_build_1749())
-		return FALSE;
 	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
 		cinematic_in_progress() || (director_camera_scripted && *director_camera_scripted))
 		return FALSE;

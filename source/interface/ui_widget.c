@@ -6766,9 +6766,7 @@ static struct widget_instance *ui_mouse_menu(
 static boolean ui_mouse_menus_active(
 	void)
 {
-	/* port: halo1749.exe's menus are the Xbox's, driven as a controller
-	drives them (port/linux/src/build_1749.c) */
-	if (widget_globals.initialization_thread || progress_bar_is_active() || halo_build_1749())
+	if (widget_globals.initialization_thread || progress_bar_is_active())
 		return FALSE;
 
 	/* (and the scores after a game, which take A and B like the menus:

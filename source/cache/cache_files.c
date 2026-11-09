@@ -459,19 +459,6 @@ static boolean cache_file_tag_header_verify(
 		}
 	}
 
-	/* port: a map linked to the other tag cache's address, whose tag table
-	follows its header there: 1749's maps in halo.exe, or this build's in
-	halo1749.exe (port/linux/src/build_1749.c) */
-	if (problem && (unsigned long)tag_header->tag_instances - sizeof(*tag_header) ==
-		(halo_build_1749() ? 0x803A6000UL : 0x803AF000UL))
-	{
-		error(_error_silent, halo_build_1749() ?
-			"'%s' is not a map of build 01.08.15.1749: halo1749.exe plays only 1749's maps (its 1749\\maps folder); play it with halo.exe" :
-			"'%s' is a map of build 01.08.15.1749: play it with halo1749.exe (from its 1749\\maps folder)",
-			scenario_name);
-
-		return FALSE;
-	}
 	if (problem)
 	{
 		error(_error_silent, "the cache file '%s' is damaged: its tag header's %s is wrong", scenario_name, problem);
@@ -731,9 +718,7 @@ long tag_loaded(
 void cache_files_enable_writes(
 	void)
 {
-	/* port: the tag cache's, wherever it is (halo1749.exe's is higher:
-	port/linux/src/build_1749.c) */
-	XPhysicalProtect(physical_memory_get_tag_cache_base_address(), 0x01600000, PAGE_READWRITE);
+	XPhysicalProtect((void *)0x803A6000, 0x01600000, PAGE_READWRITE);
 
 	return;
 }
@@ -741,7 +726,7 @@ void cache_files_enable_writes(
 void cache_files_disable_writes(
 	void)
 {
-	XPhysicalProtect(physical_memory_get_tag_cache_base_address(), 0x01600000, PAGE_READONLY);
+	XPhysicalProtect((void *)0x803A6000, 0x01600000, PAGE_READONLY);
 	XPhysicalProtect(
 		cache_file_globals.tag_header->vertex_buffers,
 		cache_file_globals.tag_header->vertex_buffer_count * 12,
@@ -1314,22 +1299,6 @@ long scenario_tags_load(
 				cache_file_close();
 
 				return NONE;
-			}
-			/* port: halo1749.exe's maps' scripts name this build's functions by
-			1749's numbers: each call is given this build's, by its name
-			(port/linux/src/build_1749.c, custom_edition_scripts.c) */
-			if (halo_build_1749())
-			{
-				struct cache_file_tag_header *loaded_header = (struct cache_file_tag_header *)tag_cache_base_address;
-
-				if (!build_1749_scripts_convert(
-					loaded_header->tag_instances[DATUM_INDEX_TO_ABSOLUTE_INDEX(loaded_header->scenario_tag_index)].base_address,
-					scenario_name))
-				{
-					cache_file_close();
-
-					return NONE;
-				}
 			}
 
 			cache_file_globals.tag_header = tag_cache_base_address;

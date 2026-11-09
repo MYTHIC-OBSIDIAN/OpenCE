@@ -12,9 +12,6 @@
 > headers, blue names, round and round until A, B or Escape); after The Maw
 > the Xbox's movie always plays. INTRO there (XBOX or PC) picks the movie before the main menu:
 > `bink\intro_xbox.bik` (else the Xbox's `intro.bik`) or `bink\intro_pc.bik`.
-> `halo1749.exe`, beside `halo.exe`, plays Halo's Xbox build 01.08.15.1749 as
-> stock on your own dump of that build's maps, from a `1749` folder beside it
-> (see [Build 1749](docs/build_1749.md)).
 > Every mod in the `mods` folder is played. The Xbox's videos (the disc's `bink` folder, extracted
 > with the maps) play in the game as on the Xbox: the opening titles before
 > the main menu, the credits after The Maw (`port/linux/src/bink_play.c`,

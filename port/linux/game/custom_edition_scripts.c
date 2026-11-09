@@ -2,10 +2,7 @@
 CUSTOM_EDITION_SCRIPTS.C
 
 Makes the compiled scripts of Halo Custom Edition maps run on this build's
-script interpreter (custom_edition_cache.h), and those of build 1749's maps
-(halo1749.exe: port/linux/src/build_1749.c), whose functions are numbered
-otherwise too: b30.map's 1,209 calls name 89 functions by 1749's numbers,
-which this build has, by name, all of them.
+script interpreter (custom_edition_cache.h).
 
 A compiled script refers to every function it calls, and every engine
 global it uses, by its index in the engine's table. Halo PC's tables aren't
@@ -67,8 +64,6 @@ designator (hs_find_global_by_name) */
 
 struct scripts_conversion
 {
-	/* whose maps' scripts, for the log: "custom edition", "build 1749" */
-	char const *who;
 	struct hs_syntax_node *nodes;
 	long node_count;
 	char const *strings;
@@ -134,16 +129,16 @@ static void node_make_inert(
 	{
 		if (conversion->missing_count < MAXIMUM_MISSING_NAME_MESSAGES)
 		{
-			error(_error_silent, "%s: the scripts use the %s '%s', which this build does not have", conversion->who,
-				kind, name);
+			error(_error_silent, "custom edition: the scripts use the %s '%s', which this build does not have", kind,
+				name);
 		}
 		conversion->missing_count++;
 		return;
 	}
 	if (conversion->made_inert < MAXIMUM_MISSING_NAME_MESSAGES)
 	{
-		error(_error_silent, "%s: the scripts use the %s '%s', which this build does not have: it does nothing",
-			conversion->who, kind, name);
+		error(_error_silent, "custom edition: the scripts use the %s '%s', which this build does not have: it does nothing",
+			kind, name);
 	}
 	/* (still permanent: hs_node_gc frees a scenario node that isn't, and the
 	script then halts on it as "unused or changed") */
@@ -244,39 +239,39 @@ static boolean engine_global_convert(
 	return TRUE;
 }
 
-/* FALSE after logging why when the scripts cannot run: the syntax data
-(syntax_bytes at syntax), and the string data (string_bytes at strings, at
-the Xbox address strings_address) of the scenario tag_name */
-static boolean scripts_convert(
-	char const *who,
-	char const *tag_name,
-	struct data_array *syntax,
-	unsigned long syntax_bytes,
-	char const *strings,
-	unsigned long string_bytes,
-	long strings_address)
+/* FALSE after logging why when the scenario's scripts cannot run */
+static boolean scenario_scripts_convert(
+	byte *tag_cache,
+	unsigned long loaded_bytes,
+	int32_t tag_index,
+	struct scenario *scenario)
 {
 	struct scripts_conversion conversion = { 0 };
+	uint32_t syntax_bytes = 0;
+	uint32_t string_bytes = 0;
+	struct data_array *syntax = custom_edition_cache_data_get(tag_cache, loaded_bytes, &scenario->hs_syntax_data, &syntax_bytes);
 	long node_index;
 
 	if (!syntax)
 	{
 		return TRUE;
 	}
-	conversion.who = who;
-	conversion.strings = strings;
-	conversion.string_bytes = strings ? string_bytes : 0;
+	conversion.strings = custom_edition_cache_data_get(tag_cache, loaded_bytes, &scenario->hs_string_constants, &string_bytes);
+	conversion.string_bytes = conversion.strings ? string_bytes : 0;
 	/* (every string in the data ends with a 0, so the last byte is one, read
 	as the empty string) */
 	if (conversion.string_bytes && !conversion.strings[conversion.string_bytes - 1])
-		conversion.empty_string = strings_address + (long)conversion.string_bytes - 1;
+		conversion.empty_string = (long)scenario->hs_string_constants.address + (long)conversion.string_bytes - 1;
 	if (syntax_bytes < sizeof(*syntax) ||
 		syntax->size != sizeof(struct hs_syntax_node) ||
 		syntax->count < 0 ||
 		syntax->count > syntax->maximum_count ||
 		syntax_bytes < sizeof(*syntax) + (unsigned long)syntax->maximum_count * sizeof(struct hs_syntax_node))
 	{
-		error(_error_silent, "%s: the script syntax of '%s' is not laid out as this build's", who, tag_name);
+		error(
+			_error_silent,
+			"custom edition: the script syntax of '%s' is not laid out as this build's",
+			custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index));
 		return FALSE;
 	}
 	/* the nodes follow the array (its data pointer is set there when the
@@ -314,52 +309,27 @@ static boolean scripts_convert(
 		{
 			error(
 				_error_silent,
-				"%s: script syntax node %ld of '%s' does not name what it uses",
-				who,
+				"custom edition: script syntax node %ld of '%s' does not name what it uses",
 				node_index % conversion.node_count,
-				tag_name);
+				custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index));
 			return FALSE;
 		}
 	}
 	error(
 		_error_silent,
-		"%s: %ld script calls and %ld engine global references were given this build's index",
-		who,
+		"custom edition: %ld script calls and %ld engine global references were given this build's index",
 		conversion.functions_renumbered,
 		conversion.globals_renumbered);
 	if (conversion.missing_count)
 	{
 		error(
 			_error_silent,
-			"%s: the scripts use %ld functions or engine globals this build does not have, giving script indices, and cannot run",
-			who,
+			"custom edition: the scripts use %ld functions or engine globals this build does not have, giving script indices, and cannot run",
 			conversion.missing_count);
 		return FALSE;
 	}
 
 	return TRUE;
-}
-
-/* FALSE after logging why when the scenario's scripts cannot run */
-static boolean scenario_scripts_convert(
-	byte *tag_cache,
-	unsigned long loaded_bytes,
-	int32_t tag_index,
-	struct scenario *scenario)
-{
-	uint32_t syntax_bytes = 0;
-	uint32_t string_bytes = 0;
-	struct data_array *syntax = custom_edition_cache_data_get(tag_cache, loaded_bytes, &scenario->hs_syntax_data, &syntax_bytes);
-	char const *strings = custom_edition_cache_data_get(tag_cache, loaded_bytes, &scenario->hs_string_constants, &string_bytes);
-
-	return scripts_convert(
-		"custom edition",
-		custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index),
-		syntax,
-		syntax_bytes,
-		strings,
-		string_bytes,
-		(long)scenario->hs_string_constants.address);
 }
 
 /* ---------- public code */
@@ -380,21 +350,4 @@ boolean custom_edition_scripts_convert(
 	}
 
 	return TRUE;
-}
-
-boolean build_1749_scripts_convert(
-	void *scenario_definition,
-	char const *map_name)
-{
-	struct scenario *scenario = scenario_definition;
-
-	/* (the tag validator has found both data in the tags) */
-	return scripts_convert(
-		"build 1749",
-		map_name,
-		scenario->hs_syntax_data.size > 0 ? scenario->hs_syntax_data.address : NULL,
-		(unsigned long)scenario->hs_syntax_data.size,
-		scenario->hs_string_constants.size > 0 ? scenario->hs_string_constants.address : NULL,
-		(unsigned long)(scenario->hs_string_constants.size > 0 ? scenario->hs_string_constants.size : 0),
-		(long)scenario->hs_string_constants.address);
 }

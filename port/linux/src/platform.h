@@ -101,12 +101,6 @@ host path below the data root. Components are matched case-insensitively
 against what exists on disk, as the Xbox file system is case-insensitive. */
 void platform_translate_path(const char *xbox_path, char *host_path, unsigned long host_path_size);
 const char *platform_data_root(void);
-/* halo1749.exe, Halo's build 01.08.15.1749 on its own maps (build_1749.c):
-whether this run is it; the folder of its files (<executable's folder>/1749);
-and the tag cache's address, 1749's maps' or this build's */
-int halo_build_1749(void);
-const char *halo_build_1749_root(void);
-unsigned long halo_tag_cache_base_address(void);
 /* the Halo Custom Edition install the Xbox drive h:\ is (paths.custom_edition),
 or "" when none is set or it has no maps folder */
 const char *platform_custom_edition_root(void);

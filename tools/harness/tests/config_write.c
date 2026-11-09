@@ -35,13 +35,6 @@ static int answering_writes;
 
 static long config_setting_index(const char *name);
 
-/* (halo.exe's run: halo1749.exe holds none of these settings) */
-static int build_1749_holds(const char *name)
-{
-	(void)name;
-	return 0;
-}
-
 static const struct config_value *config_value(const char *name, enum config_type type)
 {
 	(void)type;

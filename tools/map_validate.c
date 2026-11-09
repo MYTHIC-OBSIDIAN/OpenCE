@@ -32,11 +32,7 @@ Vorbis sounds and converts its scripts and geometry, from tags the validator
 passed: not here.) Resource maps given as maps are passed over; OpenSauce
 maps are refused, as the game refuses them.
 
-With --build-1749, the maps are build 01.08.15.1749's, read at the tag
-cache address they were linked to (0x803AF000), as halo1749.exe reads them
-(port/linux/src/build_1749.c); their scripts are not checked here.
-
-usage: map_validate [--build-1749] [--strict] [--quiet] [--maps folder] [--fuzz iterations [--seed n] [--log file]] map.map...
+usage: map_validate [--strict] [--quiet] [--maps folder] [--fuzz iterations [--seed n] [--log file]] map.map...
 */
 
 #include <stdarg.h>
@@ -50,19 +46,13 @@ usage: map_validate [--build-1749] [--strict] [--quiet] [--maps folder] [--fuzz 
 #include "zlib_prefixed.h"
 #include "../port/linux/game/cache_file_formats.h"
 
-/* where the game reads a map's tags: this build's maps', or with
---build-1749 those of build 1749 (port/linux/src/build_1749.c) */
-#define TAG_CACHE_BASE_ADDRESS_STOCK 0x803A6000UL
-#define TAG_CACHE_BASE_ADDRESS_1749 0x803AF000UL
-static unsigned long tag_cache_base_address = TAG_CACHE_BASE_ADDRESS_STOCK;
-#define TAG_CACHE_BASE_ADDRESS tag_cache_base_address
-
 /* ---------- constants */
 
 enum
 {
 	/* where the game reads a map's tags, and how many bytes there are room
 	for (physical_memory_map.c, physical_memory_map.h) */
+	TAG_CACHE_BASE_ADDRESS = 0x803A6000,
 	TAG_CACHE_SIZE = 0x1600000,
 
 	CACHE_FILE_HEADER_SIZE = 0x800,
@@ -964,16 +954,11 @@ int main(int argc, char **argv)
 	unsigned long seed = 1;
 	int argument;
 
-	for (argument = 1; argument < argc; argument++)
-	{
-		if (!strcmp(argv[argument], "--build-1749"))
-			tag_cache_base_address = TAG_CACHE_BASE_ADDRESS_1749;
-	}
 	tag_cache = mmap((void *)TAG_CACHE_BASE_ADDRESS, TAG_CACHE_SIZE, PROT_READ | PROT_WRITE,
 		MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
 	if (tag_cache != (unsigned char *)TAG_CACHE_BASE_ADDRESS)
 	{
-		fprintf(stderr, "map_validate: the tag cache's address (%08lx) is taken\n", TAG_CACHE_BASE_ADDRESS);
+		fprintf(stderr, "map_validate: the tag cache's address (%08x) is taken\n", TAG_CACHE_BASE_ADDRESS);
 		return 2;
 	}
 	custom_edition_tag_cache = mmap((void *)CUSTOM_EDITION_TAG_CACHE_ADDRESS, CUSTOM_EDITION_TAG_CACHE_BYTES,
@@ -988,8 +973,6 @@ int main(int argc, char **argv)
 	{
 		long corrections;
 
-		if (!strcmp(argv[argument], "--build-1749"))
-			continue;
 		if (!strcmp(argv[argument], "--strict"))
 		{
 			strict = 1;

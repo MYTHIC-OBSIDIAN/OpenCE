@@ -1200,14 +1200,6 @@ static void config_path(char *path, size_t size)
 	}
 	if (config_argument("--config", path, size) && *path)
 		return;
-	/* halo1749.exe: its own, in its 1749 folder (build_1749.c) */
-	if (halo_build_1749())
-	{
-		/* (made for it, so the defaults can be written there) */
-		posix_make_directory(halo_build_1749_root());
-		snprintf(path, size, "%s/config.toml", halo_build_1749_root());
-		return;
-	}
 	base = SDL_GetBasePath();
 	snprintf(path, size, "%sconfig.toml", base ? base : "");
 }
@@ -2028,91 +2020,6 @@ static void config_apply_probe_mode(void)
 	}
 }
 
-/* halo1749.exe (build_1749.c): stock build 1749, so every OpenCE addition
-that changes what is seen, heard or played is held to the stock value,
-whatever its config.toml says. The display's own settings (window,
-resolution, vsync, anti-aliasing and the like) and the controls are left to
-the player; the frame rate is the Xbox's 30. */
-static const char *const build_1749_forced[][2] =
-{
-	/* the Xbox's menus, out of 1749's ui.map */
-	{ "display.menus", "xbox" },
-	{ "display.intro", "xbox" },
-	{ "display.credits", "original" },
-	{ "display.loading_screen", "false" },
-	/* the HUD and text as drawn on the Xbox */
-	{ "display.high_res_hud", "false" },
-	{ "display.high_res_text", "false" },
-	{ "display.hud_button_style", "classic" },
-	{ "display.hud_bumper_style", "original" },
-	/* 30 frames a second, the view moved by the game's ticks */
-	{ "display.interpolation", "false" },
-	{ "display.direct_camera", "false" },
-	/* the stock view and effects */
-	{ "display.fov", "0.0" },
-	{ "display.viewmodel_fov", "0.0" },
-	{ "display.viewmodel_visible", "true" },
-	{ "display.passenger_third_person", "false" },
-	{ "display.viewmodel_shield", "false" },
-	{ "display.first_person_legs", "false" },
-	{ "display.shield_glow", "false" },
-	{ "display.overshield_effect", "false" },
-	{ "display.portal_clipping", "true" },
-	{ "display.multiplayer_draw_distance", "false" },
-	{ "display.player_names", "none" },
-	{ "display.match_timer", "false" },
-	{ "display.latency_meter", "false" },
-	{ "display.text_chat", "false" },
-	{ "display.scoreboard_background", "false" },
-	{ "game.enhanced_animations", "false" },
-	{ "game.unlock_all_levels", "false" },
-	{ "mods.enabled", "false" },
-	{ "input.mouse_aim_assist", "false" },
-	/* nothing between players that the Xbox did not send */
-	{ "audio.voice_chat", "off" },
-	{ "network.text_chat", "off" },
-	{ "network.voice_lobby", "false" },
-	{ "network.votekick", "false" },
-	{ "network.vote_end_game", "false" },
-	{ "network.map_share", "false" },
-	{ "network.map_seed", "false" },
-	{ "network.map_download", "false" },
-	{ "network.shield_effects", "stock" },
-	/* Custom Edition maps are not 1749's */
-	{ "paths.custom_maps", "" },
-	{ "paths.custom_edition", "" },
-};
-
-static void config_apply_build_1749(void)
-{
-	size_t index;
-
-	for (index = 0; index < sizeof(build_1749_forced) / sizeof(build_1749_forced[0]); index++)
-	{
-		long found = config_setting_index(build_1749_forced[index][0]);
-
-		if (found >= 0)
-			config_set_from_text(&config_values[found], config_settings[found].type, build_1749_forced[index][1]);
-		else
-			platform_log("settings: build 1749 holds %s, which is not a setting", build_1749_forced[index][0]);
-	}
-}
-
-/* whether halo1749.exe holds the setting to its stock value */
-static int build_1749_holds(const char *name)
-{
-	size_t index;
-
-	if (!halo_build_1749())
-		return 0;
-	for (index = 0; index < sizeof(build_1749_forced) / sizeof(build_1749_forced[0]); index++)
-	{
-		if (!strcmp(name, build_1749_forced[index][0]))
-			return 1;
-	}
-	return 0;
-}
-
 static void config_apply_server_mode(void)
 {
 	static const char *const forced[][2] =
@@ -2293,8 +2200,6 @@ static void config_load(void)
 		config_apply_server_mode();
 	else if (config_probe_mode)
 		config_apply_probe_mode();
-	if (halo_build_1749())
-		config_apply_build_1749();
 	config_check_words();
 }
 
@@ -2383,9 +2288,6 @@ int config_write(const char *name, const char *value)
 	{
 		return 0;
 	}
-	/* (halo1749.exe's stock values stay: config_apply_build_1749) */
-	if (build_1749_holds(name))
-		return 0;
 	/* (the line: its key, and its value with each character escaped as
 	\uXXXX at most) */
 	line_size = strlen(dot + 1) + 6 * strlen(value) + 64;

@@ -20,8 +20,7 @@ client's own objects take the upper half of the object array).
 The Xbox game state is 0x345000 bytes at 0x80061000 and ends where the tag
 cache begins (0x803A6000). Cache files are linked to that tag cache address,
 so the game state cannot grow in place. The native builds put a 16 MB game
-state above the tag cache (which ends at 0x819A6000; halo1749.exe's, at
-0x803AF000 for build 1749's maps, ends at 0x819AF000), inside the Xbox memory
+state above the tag cache (which ends at 0x819A6000), inside the Xbox memory
 window (0x80000000-0xA0000000: port/linux/src/platform.h) and below everything the window hands out
 top-down (texture and sound caches, Direct3D resources).
 

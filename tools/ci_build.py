@@ -107,14 +107,6 @@ def main() -> int:
         shutil.copy2(ROOT / output, dist)
         print(f"{output} -> {dist.relative_to(ROOT)}", flush=True)
     if args.platform == "windows":
-        # halo1749.exe: the same program, which by its name runs as Halo's
-        # build 01.08.15.1749 on that build's maps, from the 1749 folder
-        # beside it (port/linux/src/build_1749.c, docs/build_1749.md); the
-        # folder ships with only a note of what goes in it
-        shutil.copy2(ROOT / "build/windows/halo.exe", dist / "halo1749.exe")
-        (dist / "1749").mkdir()
-        shutil.copy2(ROOT / "port/assets/build_1749/README.txt", dist / "1749" / "README.txt")
-        print(f"halo1749.exe, 1749/README.txt -> {dist.relative_to(ROOT)}", flush=True)
         # the symbols of halo.exe and SDL3.dll, apart (players do not need
         # them): the workflow uploads them to Sentry, which turns the crash
         # reports' minidumps into function names and lines
