@@ -45,6 +45,11 @@ log: 0 for a build of one's own */
 #ifndef HALO_BUILD_LABEL
 #define HALO_BUILD_LABEL 0
 #endif
+/* (a build of the build-1749 branch: its release's number, 1749-build-<n>;
+its line doesn't update itself) */
+#ifndef HALO_BUILD_1749_NUMBER
+#define HALO_BUILD_1749_NUMBER 0
+#endif
 #ifndef HALO_BUILD_FLAVOR
 #define HALO_BUILD_FLAVOR "release"
 #endif
@@ -717,7 +722,10 @@ void updater_start(void)
 	watching, but for a test with its answer) */
 	if (HALO_BUILD_NUMBER <= 0)
 	{
-		if (HALO_BUILD_LABEL > 0)
+		if (HALO_BUILD_1749_NUMBER > 0)
+			platform_log("update: not looked for: this is 1749-build-%d, of build 01.08.15.1749's line, which "
+				"doesn't update itself", (int)HALO_BUILD_1749_NUMBER);
+		else if (HALO_BUILD_LABEL > 0)
 			platform_log("update: not looked for: only the builds CI numbers update themselves (this is build-%d "
 				"of a branch)", (int)HALO_BUILD_LABEL);
 		else

@@ -84,6 +84,18 @@ the same kind of build as 2342's).
   1749's maps) and game data inputs (1 to 35) are numbered as this build's
   first ones: each is used by the widget its name says (`launch_new_campaign_button`
   starts a new game, `level_select_list` lists the levels, and so on).
+- **The menus' lists.** This build's game data inputs find a list item's
+  parts by their order among its children, and three of 1749's lists have
+  fewer: the game types' and playlists' items have no container around the
+  description (the description is shown and hidden itself), the campaign
+  levels' have no completion, difficulty or co-op markers, and the player
+  profiles' have one text box where this build's have a container of
+  labelled fields (its own text is left as it is, the name and colour
+  filled in). The rest of 1749's lists and screens are laid out as these
+  functions expect (the descriptions, option menus, server list, pregame
+  screens and quarter-screen profile spinners). 1749's own code drew some of
+  these screens otherwise (its asserts name a wrapper of three children
+  around the level and profile lists), which this build doesn't do.
 - **The executable's own tags.** 1749's executable loads the same levels
   (`a10` to `d40`, and the multiplayer maps of `levels\test`) and menus as
   this build's. This build also loads a few that 1749's `ui.map` lacks (the
@@ -119,8 +131,9 @@ A build of the `build-1749` branch names its release, `1749-build-<n>`
 and tags the release with): the console's `version`, the error screen and
 the dedicated server say `OpenCE Windows | 1749-build-<n> (release)`, and
 halo1749.exe adds `| halobeta xbox 01.08.15.1749`. Its crash reports are
-named `...-1749build<n>-<flavor>`. It has no standard build number, so it
-never looks for the standard line's updates.
+named `...-1749build<n>-<flavor>`, and the crash lines in `debug.txt` and
+`halo.log` name `1749-build-<n>`. It has no standard build number, so it
+never looks for the standard line's updates (`halo.log` says so).
 
 ## Reading route
 

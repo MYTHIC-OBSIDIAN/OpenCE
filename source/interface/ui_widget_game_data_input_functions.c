@@ -3304,6 +3304,11 @@ static void mutliplayer_settings_select_list_update_displayed_items(
 		long profile_index;
 		long cache_index;
 
+		/* port: 1749's items (halo1749.exe's ui.map) have no container
+		around the description: the description is shown and hidden itself */
+		if (!description_container)
+			description_container = label_box;
+
 		definition = ui_widget_definition_get(item->definition_tag_index);
 		match_vassert(
 			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
@@ -3607,6 +3612,7 @@ static void player_profile_3wide_list_update(
 		struct widget_instance *current_skill_text;
 		struct widget_instance *controls_label;
 		struct widget_instance *controls_text;
+		boolean fields;
 		struct player_profile *profile = NULL;
 		long profile_index;
 		long cache_index;
@@ -3630,54 +3636,63 @@ static void player_profile_3wide_list_update(
 			color_picture && color_picture->type == _ui_widget_type_bitmap,
 			"expected a container widget for the profile color picture");
 		description_fields = color_picture->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7B8,
-			description_fields && description_fields->type == _ui_widget_type_bitmap,
-			"expected a container widget for the profile description fields");
+		/* port: 1749's items (halo1749.exe's ui.map) have a text box there,
+		not a container of the fields below: its own text is left as it is */
+		fields = !(description_fields && description_fields->type == _ui_widget_type_text_box &&
+			!description_fields->child);
+		empty_profile_label = current_level_label = current_level_text = NULL;
+		current_skill_label = current_skill_text = controls_label = controls_text = NULL;
+		if (fields)
+		{
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7B8,
+				description_fields && description_fields->type == _ui_widget_type_bitmap,
+				"expected a container widget for the profile description fields");
 
-		empty_profile_label = description_fields->child;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7BB,
-			empty_profile_label && empty_profile_label->type == _ui_widget_type_text_box,
-			"expected a text box widget for the 'empty profile' label");
-		current_level_label = empty_profile_label->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7BE,
-			current_level_label && current_level_label->type == _ui_widget_type_text_box,
-			"expected a text box widget for the current level label");
-		current_level_text = current_level_label->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7C1,
-			current_level_text && current_level_text->type == _ui_widget_type_text_box,
-			"expected a text box widget for the current level text field");
-		current_skill_label = current_level_text->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7C4,
-			current_skill_label && current_skill_label->type == _ui_widget_type_text_box,
-			"expected a text box widget for the current skill level label");
-		current_skill_text = current_skill_label->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7C7,
-			current_skill_text && current_skill_text->type == _ui_widget_type_text_box,
-			"expected a text box widget for the profile's current skill level text field");
-		controls_label = current_skill_text->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7CA,
-			controls_label && controls_label->type == _ui_widget_type_text_box,
-			"expected a text box widget for the controls label");
-		controls_text = controls_label->next;
-		match_vassert(
-			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
-			0x7CD,
-			controls_text && controls_text->type == _ui_widget_type_text_box,
-			"expected a text box widget for the controls text field");
+			empty_profile_label = description_fields->child;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7BB,
+				empty_profile_label && empty_profile_label->type == _ui_widget_type_text_box,
+				"expected a text box widget for the 'empty profile' label");
+			current_level_label = empty_profile_label->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7BE,
+				current_level_label && current_level_label->type == _ui_widget_type_text_box,
+				"expected a text box widget for the current level label");
+			current_level_text = current_level_label->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7C1,
+				current_level_text && current_level_text->type == _ui_widget_type_text_box,
+				"expected a text box widget for the current level text field");
+			current_skill_label = current_level_text->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7C4,
+				current_skill_label && current_skill_label->type == _ui_widget_type_text_box,
+				"expected a text box widget for the current skill level label");
+			current_skill_text = current_skill_label->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7C7,
+				current_skill_text && current_skill_text->type == _ui_widget_type_text_box,
+				"expected a text box widget for the profile's current skill level text field");
+			controls_label = current_skill_text->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7CA,
+				controls_label && controls_label->type == _ui_widget_type_text_box,
+				"expected a text box widget for the controls label");
+			controls_text = controls_label->next;
+			match_vassert(
+				"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
+				0x7CD,
+				controls_text && controls_text->type == _ui_widget_type_text_box,
+				"expected a text box widget for the controls text field");
+		}
 
 		profile_index = ((long *)list_widget->parameters.list.list_items)
 			[displayed_item_indices[item_index]];
@@ -3698,13 +3713,16 @@ static void player_profile_3wide_list_update(
 		if (profile)
 		{
 			profile_name->visible = TRUE;
-			empty_profile_label->visible = FALSE;
-			current_level_label->visible = TRUE;
-			current_level_text->visible = TRUE;
-			current_skill_label->visible = TRUE;
-			current_skill_text->visible = TRUE;
-			controls_label->visible = TRUE;
-			controls_text->visible = TRUE;
+			if (fields)
+			{
+				empty_profile_label->visible = FALSE;
+				current_level_label->visible = TRUE;
+				current_level_text->visible = TRUE;
+				current_skill_label->visible = TRUE;
+				current_skill_text->visible = TRUE;
+				controls_label->visible = TRUE;
+				controls_text->visible = TRUE;
+			}
 
 			profile_name->parameters.text_box.text = ui_widget_realloc(
 				profile_name->parameters.text_box.text,
@@ -3746,12 +3764,12 @@ static void player_profile_3wide_list_update(
 				0,
 				player_profile_number_of_available_primary_colors() - 1);
 
-			if (TEST_FLAG(profile->flags, _player_profile_default_profile_bit))
+			if (fields && TEST_FLAG(profile->flags, _player_profile_default_profile_bit))
 			{
 				current_level_text->visible = FALSE;
 				current_skill_text->visible = FALSE;
 			}
-			else
+			else if (fields)
 			{
 				short highest_level;
 				short highest_difficulty;
@@ -3775,13 +3793,16 @@ static void player_profile_3wide_list_update(
 			profile_name->visible = FALSE;
 			color_picture->animation.current_frame_index =
 				player_profile_number_of_available_primary_colors();
-			empty_profile_label->visible = TRUE;
-			current_level_label->visible = FALSE;
-			current_level_text->visible = FALSE;
-			current_skill_label->visible = FALSE;
-			current_skill_text->visible = FALSE;
-			controls_label->visible = FALSE;
-			controls_text->visible = FALSE;
+			if (fields)
+			{
+				empty_profile_label->visible = TRUE;
+				current_level_label->visible = FALSE;
+				current_level_text->visible = FALSE;
+				current_skill_label->visible = FALSE;
+				current_skill_text->visible = FALSE;
+				controls_label->visible = FALSE;
+				controls_text->visible = FALSE;
+			}
 		}
 	}
 	return;
@@ -4048,6 +4069,7 @@ static void solo_level_select_list_update_displayed_items(
 		struct widget_instance *completion_marker;
 		struct widget_instance *difficulty_marker;
 		struct widget_instance *cooperative_marker;
+		boolean markers;
 
 		if (displayed_item_indices[item_index] == NONE)
 			break;
@@ -4058,9 +4080,12 @@ static void solo_level_select_list_update_displayed_items(
 		map_name = item->child;
 		map_bitmap = map_name->next;
 		map_description = map_bitmap->next;
+		/* port: 1749's items (halo1749.exe's ui.map) are the name, picture
+		and description only, without the markers */
 		completion_marker = map_description->next;
-		difficulty_marker = completion_marker->next;
-		cooperative_marker = difficulty_marker->next;
+		difficulty_marker = completion_marker ? completion_marker->next : NULL;
+		cooperative_marker = difficulty_marker ? difficulty_marker->next : NULL;
+		markers = completion_marker && difficulty_marker && cooperative_marker;
 
 		definition = ui_widget_definition_get(item->definition_tag_index);
 		match_vassert(
@@ -4087,9 +4112,12 @@ static void solo_level_select_list_update_displayed_items(
 				_ui_widget_type_text_box,
 			"expected a text box widget for the list item's third child (map description)");
 
-		completion_marker->animation.current_frame_index = 1;
-		difficulty_marker->animation.current_frame_index = 2;
-		cooperative_marker->animation.current_frame_index = 3;
+		if (markers)
+		{
+			completion_marker->animation.current_frame_index = 1;
+			difficulty_marker->animation.current_frame_index = 2;
+			cooperative_marker->animation.current_frame_index = 3;
+		}
 
 		match_vassert(
 			"c:\\halo\\SOURCE\\interface\\ui_widget_game_data_input_functions.c",
@@ -4106,9 +4134,12 @@ static void solo_level_select_list_update_displayed_items(
 			map_name->parameters.text_box.string_list_index = 10;
 			map_bitmap->animation.current_frame_index = 10;
 			map_description->parameters.text_box.string_list_index = 10;
-			completion_marker->visible = FALSE;
-			difficulty_marker->visible = FALSE;
-			cooperative_marker->visible = FALSE;
+			if (markers)
+			{
+				completion_marker->visible = FALSE;
+				difficulty_marker->visible = FALSE;
+				cooperative_marker->visible = FALSE;
+			}
 		}
 		else
 		{
@@ -4126,12 +4157,15 @@ static void solo_level_select_list_update_displayed_items(
 				map_description->parameters.text_box.string_list_index = 11;
 			}
 
-			completion_marker->visible = single_player_level_data[
-				displayed_item_indices[item_index]].completion_marker;
-			difficulty_marker->visible = single_player_level_data[
-				displayed_item_indices[item_index]].difficulty_marker;
-			cooperative_marker->visible = single_player_level_data[
-				displayed_item_indices[item_index]].cooperative_marker;
+			if (markers)
+			{
+				completion_marker->visible = single_player_level_data[
+					displayed_item_indices[item_index]].completion_marker;
+				difficulty_marker->visible = single_player_level_data[
+					displayed_item_indices[item_index]].difficulty_marker;
+				cooperative_marker->visible = single_player_level_data[
+					displayed_item_indices[item_index]].cooperative_marker;
+			}
 		}
 	}
 	return;

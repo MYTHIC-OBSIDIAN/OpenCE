@@ -834,8 +834,9 @@ static LONG WINAPI crash_filter(EXCEPTION_POINTERS *exception)
 	dumped = crash_reports_enabled() && crash_dump(exception);
 	/* (where halo.exe is: tools/symbolize_crash.py finds the lines of the
 	addresses below from it and halo.pdb) */
-	crash_line("crash: halo.exe at %p, build %d (%s)", (void *)GetModuleHandleW(NULL), HALO_BUILD_NUMBER,
-		HALO_BUILD_FLAVOR);
+	crash_line("crash: halo.exe at %p, %sbuild %d (%s)", (void *)GetModuleHandleW(NULL),
+		HALO_BUILD_1749_NUMBER > 0 ? "1749-" : "",
+		HALO_BUILD_1749_NUMBER > 0 ? HALO_BUILD_1749_NUMBER : HALO_BUILD_NUMBER, HALO_BUILD_FLAVOR);
 	crash_line("crash: exception %08lx at %p (accessing %p), eip %08lx ebp %08lx esp %08lx",
 		record->ExceptionCode, record->ExceptionAddress,
 		record->NumberParameters >= 2 ? (void *)record->ExceptionInformation[1] : NULL,
