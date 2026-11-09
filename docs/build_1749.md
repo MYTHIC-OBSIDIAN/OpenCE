@@ -63,7 +63,19 @@ the same kind of build as 2342's).
   [custom_edition_scripts.c](../port/linux/game/custom_edition_scripts.c),
   as Custom Edition maps' are). A function this build lacks would do
   nothing, and is logged. The value types are numbered alike: every call's
-  type in b30 is its function's, or that of where it is used.
+  type in b30 is its function's, or that of where it is used. `a10.map`,
+  `c40.map` and `ui.map` call no function this build lacks either.
+- **Engine globals that are functions here.** `a10.map`'s cryo bay sets the
+  engine global `player0_look_invert_pitch` to try the player's look
+  inverted, and reads it to say which was kept; this build has functions
+  for that (`player0_look_invert_pitch`, which saves it to the profile, and
+  `player0_look_pitch_is_inverted`). A set is made a call of the function
+  with the value, in place; a read, a call of the reader, with a new script
+  node for its name, written over the name of an engine global made inert
+  (the scripts' loading finds functions by their names). The other,
+  `player0_alternate_player_control`, which picks the help text for 1749's
+  alternate controls, is made inert: it reads false, so the help is the
+  normal joystick set's (`tools/harness/tests/test_scripts_1749.py`).
 - **The menus' functions.** The widgets' event handler functions (1 to 94 in
   1749's maps) and game data inputs (1 to 35) are numbered as this build's
   first ones: each is used by the widget its name says (`launch_new_campaign_button`

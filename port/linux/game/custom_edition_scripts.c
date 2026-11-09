@@ -28,6 +28,19 @@ Both builds number their value types alike: every call in the maps examined
 has the same types here (docs/custom_edition_caches.md, and
 tools/custom_edition_script_names.py checks a map's calls against this
 build's tables).
+
+Build 1749 had some engine globals this build has as functions
+(build_1749_globals): a10.map's cryo bay sets player0_look_invert_pitch to
+try the player's look inverted, and reads it to say which was kept, where
+this build calls player0_look_invert_pitch and
+player0_look_pitch_is_inverted. A set of one is made a call of this
+build's function with the value, in place; a read, a call of its reader
+with a node of its own (the array has room past the nodes in use). The
+scripts' loading finds each call's function again by its name
+(hs_compile_postprocess), so a name a call needs must be in the string
+data: where it is already, or written over the name of an engine global
+the conversion made inert, which no node reads any more. Without either,
+the global is made inert, as any other missing one is.
 */
 
 /* ---------- headers */
@@ -63,13 +76,27 @@ designator (hs_find_global_by_name) */
 /* missing names are logged up to this many times */
 #define MAXIMUM_MISSING_NAME_MESSAGES 8
 
+/* the names of engine globals made inert that are kept, whose bytes a name
+a call needs may be written over (build_1749_name_offset) */
+#define MAXIMUM_INERT_NAMES 16
+
+/* the bytes at the end of the string data that the console's expressions are
+written to (hs_compile.c's HS_MAXIMUM_DYNAMIC_SOURCE_DATA_BYTES): no name
+the scripts' loading reads starts in them (hs_verify_source_offset) */
+#define STRING_CONSOLE_BYTES 0x400
+
 /* ---------- structures */
 
 struct scripts_conversion
 {
 	/* whose maps' scripts, for the log: "custom edition", "build 1749" */
 	char const *who;
+	/* build 1749's (build_1749_globals) */
+	boolean build_1749;
+	/* the array the nodes are in, whose counts a new node raises */
+	struct data_array *syntax;
 	struct hs_syntax_node *nodes;
+	/* the nodes the map has (those made here come after them) */
 	long node_count;
 	char const *strings;
 	unsigned long string_bytes;
@@ -78,9 +105,32 @@ struct scripts_conversion
 	long empty_string;
 	long functions_renumbered;
 	long globals_renumbered;
+	/* reads and sets of build 1749's engine globals made calls */
+	long globals_made_calls;
+	/* where the names of engine globals made inert are in the string data */
+	long inert_names[MAXIMUM_INERT_NAMES];
+	short inert_name_count;
 	/* what is missing and has no harmless value: the map can't run */
 	long missing_count;
 	long made_inert;
+};
+
+/* build 1749's engine globals that this build has as functions: a read of
+one is a call of reader, a set of one a call of writer with the value
+(NULL: made inert) */
+struct build_1749_global
+{
+	char const *name;
+	char const *reader;
+	char const *writer;
+};
+
+/* ---------- globals */
+
+static struct build_1749_global const build_1749_globals[] =
+{
+	/* (a10.map's cryo bay) */
+	{ "player0_look_invert_pitch", "player0_look_pitch_is_inverted", "player0_look_invert_pitch" },
 };
 
 /* ---------- private code */
@@ -129,6 +179,9 @@ static void node_make_inert(
 	char const *name)
 {
 	long value;
+	/* (a reference to a global names it; a call's offset is its source's) */
+	boolean global_reference = TEST_FLAG(node->flags, _hs_syntax_node_primitive_bit) &&
+		TEST_FLAG(node->flags, _hs_syntax_node_global_bit);
 
 	if (!missing_value(conversion, node->type, &value))
 	{
@@ -151,6 +204,222 @@ static void node_make_inert(
 	node->constant_type = node->type;
 	node->data = value;
 	conversion->made_inert++;
+	/* (a global's name, which nodes of other globals may name too: kept,
+	once) */
+	if (global_reference)
+	{
+		short name_index;
+
+		for (name_index = 0; name_index < conversion->inert_name_count; name_index++)
+		{
+			if (conversion->inert_names[name_index] == node->string_offset)
+				break;
+		}
+		if (name_index == conversion->inert_name_count && name_index < MAXIMUM_INERT_NAMES)
+			conversion->inert_names[conversion->inert_name_count++] = node->string_offset;
+	}
+}
+
+/* the build 1749 engine global called name (build_1749_globals), or NULL:
+always, for other maps */
+static struct build_1749_global const *build_1749_global_get(
+	struct scripts_conversion const *conversion,
+	char const *name)
+{
+	short global_index;
+
+	if (!conversion->build_1749 || !name)
+		return NULL;
+	for (global_index = 0; global_index < (short)NUMBEROF(build_1749_globals); global_index++)
+	{
+		if (!strcmp(build_1749_globals[global_index].name, name))
+			return &build_1749_globals[global_index];
+	}
+
+	return NULL;
+}
+
+/* the bytes of the string data the scripts' loading may read names from */
+static unsigned long string_name_bytes(
+	struct scripts_conversion const *conversion)
+{
+	return conversion->string_bytes > STRING_CONSOLE_BYTES ? conversion->string_bytes - STRING_CONSOLE_BYTES : 0;
+}
+
+/* whether a node's text is read where the scripts are loaded: a function's
+name, a global's, or a constant of a type parsed from its text (strings,
+objects' and the scenario's names: hs_compile_postprocess) */
+static boolean node_text_read(
+	struct hs_syntax_node const *node)
+{
+	return node->datum_header &&
+		TEST_FLAG(node->flags, _hs_syntax_node_primitive_bit) &&
+		(node->type == _hs_function_name ||
+			TEST_FLAG(node->flags, _hs_syntax_node_global_bit) ||
+			node->type >= _hs_type_string);
+}
+
+/* whether a node's text is read from the string data's bytes first to last */
+static boolean string_read(
+	struct scripts_conversion const *conversion,
+	long first,
+	long last)
+{
+	long node_index;
+
+	for (node_index = 0; node_index < conversion->syntax->count; node_index++)
+	{
+		struct hs_syntax_node const *node = &conversion->nodes[node_index];
+
+		if (node_text_read(node) && node->string_offset >= first && node->string_offset <= last)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* where the string data has the name a call needs: where it is, or written
+over the name of an engine global made inert that no node reads any more,
+and long enough; NONE if neither */
+static long build_1749_name_offset(
+	struct scripts_conversion *conversion,
+	char const *name)
+{
+	unsigned long name_bytes = string_name_bytes(conversion);
+	long name_length = (long)strlen(name);
+	long offset;
+	short name_index;
+
+	for (offset = 0; (unsigned long)offset < name_bytes; offset++)
+	{
+		char const *string = script_string_get(conversion, offset);
+
+		if (string && !strcmp(string, name))
+			return offset;
+	}
+	for (name_index = 0; name_index < conversion->inert_name_count; name_index++)
+	{
+		long first = conversion->inert_names[name_index];
+		char const *string = first >= 0 && (unsigned long)first < name_bytes ? script_string_get(conversion, first) : NULL;
+
+		/* (the whole of a string, not the end of another's) */
+		if (!string || (first > 0 && conversion->strings[first - 1]) || (long)strlen(string) < name_length ||
+			string_read(conversion, first, first + (long)strlen(string)))
+		{
+			continue;
+		}
+		memcpy((char *)string, name, name_length + 1);
+		conversion->inert_names[name_index] = conversion->inert_names[--conversion->inert_name_count];
+		return first;
+	}
+
+	return NONE;
+}
+
+/* a new node after those in use (the array's count raised, as datum_new
+would), zeroed but for its identifier; NONE if the array has no room */
+static long node_new(
+	struct scripts_conversion *conversion)
+{
+	struct data_array *syntax = conversion->syntax;
+	short identifier = syntax->next_identifier;
+	long absolute_index = syntax->count;
+
+	if (absolute_index >= syntax->maximum_count || !identifier)
+		return NONE;
+	syntax->next_identifier++;
+	if (!syntax->next_identifier)
+		syntax->next_identifier = (short)0x8000;
+	syntax->count++;
+	syntax->actual_count++;
+	memset(&conversion->nodes[absolute_index], 0, sizeof(struct hs_syntax_node));
+	conversion->nodes[absolute_index].datum_header = identifier;
+
+	return (long)(unsigned short)identifier << SHORT_BITS | absolute_index;
+}
+
+/* (build 1749's) the set call of an engine global made a call of the
+global's writer with its value, in place: (set g v) is (writer v), and
+the global's node is freed; FALSE if it can't be */
+static boolean build_1749_global_set_convert(
+	struct scripts_conversion *conversion,
+	struct hs_syntax_node *call,
+	struct hs_syntax_node *name_node,
+	struct hs_syntax_node *global)
+{
+	struct build_1749_global const *entry =
+		build_1749_global_get(conversion, script_string_get(conversion, global->string_offset));
+	struct hs_function_definition const *function;
+	struct hs_syntax_node const *value;
+	short function_index;
+	long name_offset;
+	long global_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(name_node->next_node_index);
+
+	if (!entry || !entry->writer || (function_index = hs_find_function_by_name(entry->writer)) == NONE ||
+		global->next_node_index == NONE ||
+		DATUM_INDEX_TO_ABSOLUTE_INDEX(global->next_node_index) >= conversion->node_count)
+	{
+		return FALSE;
+	}
+	function = hs_function_get(function_index);
+	value = &conversion->nodes[DATUM_INDEX_TO_ABSOLUTE_INDEX(global->next_node_index)];
+	/* (the value is its one argument, of its type; the set's value is
+	unused, as the function returns none) */
+	if (function->parameter_count != 1 || function->parameter_types[0] != value->type ||
+		value->next_node_index != NONE || function->return_type != call->type ||
+		(name_offset = build_1749_name_offset(conversion, entry->writer)) == NONE)
+	{
+		return FALSE;
+	}
+	call->function_index = function_index;
+	name_node->function_index = function_index;
+	name_node->string_offset = name_offset;
+	name_node->next_node_index = global->next_node_index;
+	/* (no longer linked: freed, as datum_delete would) */
+	global->datum_header = 0;
+	conversion->syntax->actual_count--;
+	if (global_index < conversion->syntax->first_free_absolute_index)
+		conversion->syntax->first_free_absolute_index = (short)global_index;
+	conversion->globals_made_calls++;
+
+	return TRUE;
+}
+
+/* (build 1749's) a read of an engine global made a call of its reader, in
+place, with a new node for the reader's name; FALSE if it can't be */
+static boolean build_1749_global_read_convert(
+	struct scripts_conversion *conversion,
+	struct hs_syntax_node *reference)
+{
+	struct build_1749_global const *entry =
+		build_1749_global_get(conversion, script_string_get(conversion, reference->string_offset));
+	struct hs_function_definition const *function;
+	struct hs_syntax_node *name_node;
+	short function_index;
+	long name_offset;
+	long name_index;
+
+	if (!entry || !entry->reader || (function_index = hs_find_function_by_name(entry->reader)) == NONE)
+		return FALSE;
+	function = hs_function_get(function_index);
+	if (function->parameter_count != 0 || function->return_type != reference->type ||
+		(name_offset = build_1749_name_offset(conversion, entry->reader)) == NONE ||
+		(name_index = node_new(conversion)) == NONE)
+	{
+		return FALSE;
+	}
+	name_node = &conversion->nodes[DATUM_INDEX_TO_ABSOLUTE_INDEX(name_index)];
+	name_node->function_index = function_index;
+	name_node->type = _hs_function_name;
+	name_node->flags = FLAG(_hs_syntax_node_primitive_bit) | FLAG(_hs_syntax_node_permanent_bit);
+	name_node->next_node_index = NONE;
+	name_node->string_offset = name_offset;
+	reference->function_index = function_index;
+	reference->flags &= FLAG(_hs_syntax_node_permanent_bit);
+	reference->data = name_index;
+	conversion->globals_made_calls++;
+
+	return TRUE;
 }
 
 /* whether the node refers to an engine global this build does not have */
@@ -204,6 +473,12 @@ static boolean function_call_convert(
 		engine_global_missing(conversion,
 			&conversion->nodes[DATUM_INDEX_TO_ABSOLUTE_INDEX(name_node->next_node_index)]))
 	{
+		/* (build 1749's: a set of one this build has as a function, a call) */
+		if (build_1749_global_set_convert(conversion, call, name_node,
+				&conversion->nodes[DATUM_INDEX_TO_ABSOLUTE_INDEX(name_node->next_node_index)]))
+		{
+			return TRUE;
+		}
 		node_make_inert(conversion, call, "engine global",
 			script_string_get(conversion,
 				conversion->nodes[DATUM_INDEX_TO_ABSOLUTE_INDEX(name_node->next_node_index)].string_offset));
@@ -233,7 +508,12 @@ static boolean engine_global_convert(
 	designator = hs_find_global_by_name(name);
 	if (designator == NONE || !TEST_FLAG(designator, HS_EXTERNAL_GLOBAL_DESIGNATOR_BIT))
 	{
-		node_make_inert(conversion, reference, "engine global", name);
+		struct build_1749_global const *entry = build_1749_global_get(conversion, name);
+
+		/* (build 1749's read of one this build has as a function: a call,
+		once every other missing global's name is free, scripts_convert) */
+		if (!entry || !entry->reader)
+			node_make_inert(conversion, reference, "engine global", name);
 	}
 	else if (reference->short_value != designator)
 	{
@@ -249,6 +529,7 @@ static boolean engine_global_convert(
 the Xbox address strings_address) of the scenario tag_name */
 static boolean scripts_convert(
 	char const *who,
+	boolean build_1749,
 	char const *tag_name,
 	struct data_array *syntax,
 	unsigned long syntax_bytes,
@@ -264,6 +545,8 @@ static boolean scripts_convert(
 		return TRUE;
 	}
 	conversion.who = who;
+	conversion.build_1749 = build_1749;
+	conversion.syntax = syntax;
 	conversion.strings = strings;
 	conversion.string_bytes = strings ? string_bytes : 0;
 	/* (every string in the data ends with a 0, so the last byte is one, read
@@ -321,12 +604,33 @@ static boolean scripts_convert(
 			return FALSE;
 		}
 	}
+	/* then build 1749's reads of engine globals this build has as
+	functions: calls of them, with the names of the globals made inert free
+	to hold theirs (build_1749_name_offset) */
+	for (node_index = 0; conversion.build_1749 && node_index < conversion.node_count; node_index++)
+	{
+		struct hs_syntax_node *node = &conversion.nodes[node_index];
+
+		if (node->datum_header && engine_global_missing(&conversion, node) &&
+			!build_1749_global_read_convert(&conversion, node))
+		{
+			node_make_inert(&conversion, node, "engine global", script_string_get(&conversion, node->string_offset));
+		}
+	}
 	error(
 		_error_silent,
 		"%s: %ld script calls and %ld engine global references were given this build's index",
 		who,
 		conversion.functions_renumbered,
 		conversion.globals_renumbered);
+	if (conversion.globals_made_calls)
+	{
+		error(
+			_error_silent,
+			"%s: %ld reads and sets of engine globals were made calls of this build's functions",
+			who,
+			conversion.globals_made_calls);
+	}
 	if (conversion.missing_count)
 	{
 		error(
@@ -354,6 +658,7 @@ static boolean scenario_scripts_convert(
 
 	return scripts_convert(
 		"custom edition",
+		FALSE,
 		custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index),
 		syntax,
 		syntax_bytes,
@@ -391,6 +696,7 @@ boolean build_1749_scripts_convert(
 	/* (the tag validator has found both data in the tags) */
 	return scripts_convert(
 		"build 1749",
+		TRUE,
 		map_name,
 		scenario->hs_syntax_data.size > 0 ? scenario->hs_syntax_data.address : NULL,
 		(unsigned long)scenario->hs_syntax_data.size,
