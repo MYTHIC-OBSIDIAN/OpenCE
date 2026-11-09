@@ -3560,6 +3560,104 @@ static void mutliplayer_settings_select_list_update_displayed_items(
 	return;
 }
 
+/* port: build 1749's profile list items (halo1749.exe's ui.map) have one
+text box for the profile's description, which 1749's executable wrote (as
+here, from its disassembly): for a default profile its joystick and button
+sets' long descriptions, for another each of profile_description_labels
+over its value, a line each (the level it has reached from map_list, its
+difficulty from difficulty_names, numbered as 1749's menus set it, and its
+joystick and button sets' short descriptions); none for an empty item */
+static void player_profile_description_1749(
+	struct widget_instance *text_box,
+	struct player_profile *profile)
+{
+	wchar_t *text;
+
+	text_box->parameters.text_box.text = ui_widget_realloc(
+		text_box->parameters.text_box.text,
+		0x200,
+		__FILE__,
+		__LINE__);
+	text = text_box->parameters.text_box.text;
+	if (!text)
+		return;
+	text[0] = 0;
+
+	if (profile && TEST_FLAG(profile->flags, _player_profile_default_profile_bit))
+	{
+		long joystick_descriptions_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\joystick_set_defaults_descriptions");
+		long button_descriptions_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\button_set_long_descriptions");
+
+		if (joystick_descriptions_tag_index != NONE && button_descriptions_tag_index != NONE)
+		{
+			usnprintf(
+				text,
+				0xFF,
+				L"%s%hs%s",
+				unicode_string_list_get_string(joystick_descriptions_tag_index,
+					profile->controller_settings.joystick_preset),
+				"\r\n",
+				unicode_string_list_get_string(button_descriptions_tag_index,
+					profile->controller_settings.button_preset));
+		}
+	}
+	else if (profile)
+	{
+		long labels_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\profile_description_labels");
+		long levels_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\map_list");
+		long difficulties_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\difficulty_names");
+		long joystick_descriptions_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\joystick_set_short_descriptions");
+		long button_descriptions_tag_index = tag_loaded(
+			UNICODE_STRING_LIST_TAG,
+			"ui\\shell\\main_menu\\player_profiles_select\\button_set_short_descriptions");
+		short level;
+		short difficulty;
+
+		/* (the level after the last it finished, as 1749's: its "current
+		level") */
+		player_profile_get_current_solo_level(profile, &level, &difficulty);
+		if (labels_tag_index != NONE && levels_tag_index != NONE && difficulties_tag_index != NONE &&
+			joystick_descriptions_tag_index != NONE && button_descriptions_tag_index != NONE)
+		{
+			usnprintf(
+				text,
+				0xFF,
+				L"%s%hs%s%hs%s%hs%s%hs%s%hs%s%hs%s%hs%s",
+				unicode_string_list_get_string(labels_tag_index, 0),
+				"\r\n",
+				unicode_string_list_get_string(levels_tag_index, level),
+				"\r\n",
+				unicode_string_list_get_string(labels_tag_index, 1),
+				"\r\n",
+				unicode_string_list_get_string(difficulties_tag_index, difficulty != NONE ? difficulty : 0),
+				"\r\n",
+				unicode_string_list_get_string(labels_tag_index, 2),
+				"\r\n",
+				unicode_string_list_get_string(joystick_descriptions_tag_index,
+					profile->controller_settings.joystick_preset),
+				"\r\n",
+				unicode_string_list_get_string(labels_tag_index, 3),
+				"\r\n",
+				unicode_string_list_get_string(button_descriptions_tag_index,
+					profile->controller_settings.button_preset));
+		}
+	}
+	text[0xFF] = 0;
+	return;
+}
+
 static void player_profile_3wide_list_update(
 	struct widget_instance *list_widget)
 {
@@ -3637,7 +3735,8 @@ static void player_profile_3wide_list_update(
 			"expected a container widget for the profile color picture");
 		description_fields = color_picture->next;
 		/* port: 1749's items (halo1749.exe's ui.map) have a text box there,
-		not a container of the fields below: its own text is left as it is */
+		not a container of the fields below, which holds the profile's
+		description (player_profile_description_1749) */
 		fields = !(description_fields && description_fields->type == _ui_widget_type_text_box &&
 			!description_fields->child);
 		empty_profile_label = current_level_label = current_level_text = NULL;
@@ -3713,7 +3812,9 @@ static void player_profile_3wide_list_update(
 		if (profile)
 		{
 			profile_name->visible = TRUE;
-			if (fields)
+			if (!fields)
+				player_profile_description_1749(description_fields, profile);
+			else
 			{
 				empty_profile_label->visible = FALSE;
 				current_level_label->visible = TRUE;
@@ -3793,7 +3894,9 @@ static void player_profile_3wide_list_update(
 			profile_name->visible = FALSE;
 			color_picture->animation.current_frame_index =
 				player_profile_number_of_available_primary_colors();
-			if (fields)
+			if (!fields)
+				player_profile_description_1749(description_fields, NULL);
+			else
 			{
 				empty_profile_label->visible = TRUE;
 				current_level_label->visible = FALSE;

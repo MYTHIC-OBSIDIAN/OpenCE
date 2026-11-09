@@ -90,10 +90,14 @@ the same kind of build as 2342's).
   description (the description is shown and hidden itself), the campaign
   levels' have no completion, difficulty or co-op markers, and the player
   profiles' have one text box where this build's have a container of
-  labelled fields (its own text is left as it is, the name and colour
-  filled in). The rest of 1749's lists and screens are laid out as these
-  functions expect (the descriptions, option menus, server list, pregame
-  screens and quarter-screen profile spinners). 1749's own code drew some of
+  labelled fields (the name and colour are filled in, and the text box
+  holds the profile's description as 1749's executable wrote it: each of
+  `profile_description_labels` over its value, a line each, the level
+  reached, the difficulty and the joystick and button sets, or for a
+  default profile its sets' long descriptions). The rest of 1749's lists
+  and screens are laid out as these functions expect (the descriptions,
+  option menus, server list, pregame screens and quarter-screen profile
+  spinners). 1749's own code drew some of
   these screens otherwise (its asserts name a wrapper of three children
   around the level and profile lists), which this build doesn't do.
 - **The executable's own tags.** 1749's executable loads the same levels
