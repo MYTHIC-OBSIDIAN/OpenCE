@@ -65,6 +65,15 @@ const char *platform_data_root(void)
 		{
 			snprintf(root, sizeof(root), "%s", environment);
 		}
+		/* halo1749.exe: the 1749 folder beside it, and nowhere else: this
+		build's maps are not 1749's (build_1749.c) */
+		else if (halo_build_1749())
+		{
+			snprintf(root, sizeof(root), "%s", halo_build_1749_root());
+			if (!has_maps(root))
+				platform_log("no maps/ folder found in %s: put build 1749's maps folder there "
+					"(or set paths.data in its config.toml)", root);
+		}
 		else if (has_maps("."))
 		{
 			snprintf(root, sizeof(root), ".");
@@ -276,6 +285,10 @@ const char *platform_save_root(void)
 
 		if (*environment)
 			snprintf(root, sizeof(root), "%s", environment);
+		/* halo1749.exe: its own, in its folder (build_1749.c): 1749's cache
+		files and profiles are not this build's */
+		else if (halo_build_1749())
+			snprintf(root, sizeof(root), "%s/savegame", halo_build_1749_root());
 #ifdef _WIN32
 		/* the Windows build (port/windows) keeps saves and profiles in a
 		savegame folder next to halo.exe, else in the roaming application

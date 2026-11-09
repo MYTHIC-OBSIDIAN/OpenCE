@@ -332,6 +332,14 @@ boolean custom_edition_scripts_convert(
 	byte *tag_cache,
 	unsigned long loaded_bytes);
 
+/* The same for the scripts of a map of build 1749 just loaded (halo1749.exe,
+port/linux/src/build_1749.c), whose scenario is scenario_definition (a
+struct scenario), in the tag cache at its own address; also declared for
+cache_files.c in halo_linux_source_fixups.h. */
+boolean build_1749_scripts_convert(
+	void *scenario_definition,
+	char const *map_name);
+
 /* ---------- prototypes/CUSTOM_EDITION_OBJECTS.C */
 
 /* Whether a Custom Edition map is running a multiplayer game whose vehicles
