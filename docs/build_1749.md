@@ -23,9 +23,9 @@ copies their own dump into the `1749` folder beside the executable:
 
 ## What differs from this build's maps
 
-The comparison is of 1749's `ui.map`, `a10.map`, `b30.map`, `c40.map` and
-`wizard.map` and its `cachebeta.exe` (`halobeta xbox 01.08.15.1749(CACHE)`,
-the same kind of build as 2342's).
+The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
+`d40`) and thirteen multiplayer maps, and its `cachebeta.exe`
+(`halobeta xbox 01.08.15.1749(CACHE)`, the same kind of build as 2342's).
 
 - **The tag cache's address.** 1749's maps were linked to a tag cache at
   `0x803AF000`, 36 KB above this build's `0x803A6000`. halo1749.exe puts its
@@ -42,13 +42,14 @@ the same kind of build as 2342's).
   fields this build reads later (weapons' zoom and pickup sounds, globals'
   night vision and co-op respawn effects, the HUD's checkpoint sound), and
   bitmap sequences of no bitmaps. `tools/map_validate --build-1749 map.map`
-  checks a map so. `a10.map`, `c40.map` and `wizard.map` pass as well, with
-  the same two kinds of correction (references left as zeros include the
-  dialogue's `vocalizations`, the skies' `indoor_fog_screen` and the sniper
-  rifle's split-screen mask).
+  checks a map so. Every level and multiplayer map passes, with the same two
+  kinds of correction (references left as zeros include the dialogue's
+  `vocalizations`, the skies' `indoor_fog_screen` and the sniper rifle's
+  split-screen mask).
 - **Tags that share their data.** 1749's tools wrote a tag the same as one of
   its group already written as that one: `a10.map`'s eleven collision models
-  of doors and others are one model of a single `<none>` material. This
+  of doors and others are one model of a single `<none>` material (`a50`,
+  `c10`, `d20` and `d40` have such tags too). This
   build's validator refuses a tag whose bytes another holds, so 1749's maps
   are checked with `tag_validate_build_1749_tags`
   ([tag_validate.c](../port/linux/game/tag_validate.c)): a tag whose root
@@ -100,6 +101,34 @@ the same kind of build as 2342's).
   spinners). 1749's own code drew some of
   these screens otherwise (its asserts name a wrapper of three children
   around the level and profile lists), which this build doesn't do.
+- **Difficulty.** 1749 has three difficulties, Normal, Hard and Impossible,
+  numbered from 0, where this build has four from Easy. The scripts name
+  them (`a10`'s opening runs the cryo bay's tutorial only on `normal`), and
+  their names are this build's numbers once loaded, so halo1749.exe plays
+  1749's as this build's 1 to 3: the difficulty list's item is the
+  difficulty after its index (`ui_widget_event_handler_functions.c`), and
+  the profile list names a difficulty from 1749's `difficulty_names`
+  before it. 1749's table of the values each difficulty scales (the
+  globals' `difficulty_information`) has three columns to a row where this
+  build's has four, and is read so (`game_globals.c`). 1749's executable
+  read only its rows of the enemies' damage, vitality, shields and
+  recharge, the AI's aim and fire, grenades and upgrades, left the rest
+  zero, and gave allies, and everyone in multiplayer, the enemies' values
+  on Normal: halo1749.exe does the same, and the rows it didn't read leave
+  what they scale as it is (homing against the player and the melee delay).
+  Every other name the scripts use (teams, AI states, actor types, HUD
+  corners) is numbered as this build's.
+- **Controller sets.** 1749's menus have two joystick sets, DEFAULT and
+  LEGACY (its "flight stick" set, and the layout `a10`'s help describes for
+  it), stored as 0 and 1: halo1749.exe plays LEGACY as this build's legacy
+  set and names this build's sets with 1749's two. Its three button sets are
+  this build's first three.
+- **The menus' handlers.** The event handlers that walk a menu's items do so
+  in the order of 1749's items, but for the advanced controls, which have no
+  flight stick item in 1749: halo1749.exe passes over it, as 1749's
+  executable did. 1749's Slayer options list kill penalty before kill in
+  order where its executable (and this build) read them the other way: so
+  did 1749, and halo1749.exe keeps it.
 - **The executable's own tags.** 1749's executable loads the same levels
   (`a10` to `d40`, and the multiplayer maps of `levels\test`) and menus as
   this build's. This build also loads a few that 1749's `ui.map` lacks (the

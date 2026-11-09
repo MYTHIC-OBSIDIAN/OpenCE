@@ -163,6 +163,32 @@ char const *material_get_name(
 
 /* ---------- private code */
 
+/* port: build 1749's difficulty table (halo1749.exe, port/linux/src/
+build_1749.c): its rows numbered as this build's, but three columns to a
+row, Normal, Hard and Impossible (1749 had no Easy), where this build's has
+four. 1749's executable read only the rows of the enemies' damage,
+vitality, shields and recharge, the AI's aim and fire, grenades and
+upgrades, and left the rest zero: this build's reads of the rest scale
+what 1749 didn't, so those give the value that leaves it as it is (a
+zero Flood toughness already does) */
+static real game_difficulty_get_value_1749(
+	struct game_globals_difficulty_information const *difficulty_information,
+	short value_type,
+	short difficulty)
+{
+	switch (value_type)
+	{
+	case _game_difficulty_value_guidance_vs_player:
+	case _game_difficulty_value_melee_delay_scale:
+		return 1.0f;
+	case _game_difficulty_value_melee_delay_base:
+		return 0.0f;
+	}
+
+	return (&difficulty_information->values[0][0])[value_type * 3 +
+		PIN(difficulty - _game_difficulty_level_normal, 0, 2)];
+}
+
 static real game_difficulty_get_value_by_difficulty(
 	short value_type,
 	short difficulty)
@@ -187,7 +213,11 @@ static real game_difficulty_get_value_by_difficulty(
 			else
 				difficulty_level = MIN(difficulty, NUMBER_OF_GAME_DIFFICULTY_LEVELS - 1);
 
-			result = difficulty_information->values[value_type][difficulty_level];
+			/* port: build 1749's (above) */
+			if (halo_build_1749())
+				result = game_difficulty_get_value_1749(difficulty_information, value_type, difficulty_level);
+			else
+				result = difficulty_information->values[value_type][difficulty_level];
 		}
 	}
 
@@ -207,6 +237,15 @@ real game_difficulty_get_team_value(
 	short difficulty = game_difficulty_level_get();
 	short friend_value_type;
 
+	/* port: build 1749's executable gave the player's allies, and every
+	team in multiplayer, the enemies' values on Normal: its table has no
+	allies' rows */
+	if (halo_build_1749())
+	{
+		return game_difficulty_get_value_by_difficulty(value_type,
+			game_engine_running() || !game_team_is_enemy(_game_team_player, team_index) ?
+				_game_difficulty_level_normal : difficulty);
+	}
 	if (game_engine_running())
 		difficulty = _game_difficulty_level_normal;
 	else if (!game_team_is_enemy(_game_team_player, team_index))

@@ -3046,8 +3046,10 @@ static void warn_if_difficulty_will_nuke_saved_game(
 	if (persistant_game_data_info.valid == TRUE &&
 		_stricmp(persistant_game_data_info.map_name, main_get_map_name()) == 0)
 	{
+		/* port: in build 1749's menus, which have no Easy, an item's
+		difficulty is the index after it (halo1749.exe) */
 		warning_widget->visible =
-			difficulty_list->parameters.list.selected_list_item_index !=
+			difficulty_list->parameters.list.selected_list_item_index + (halo_build_1749() ? 1 : 0) !=
 				persistant_game_data_info.difficulty;
 	}
 	else
@@ -3560,13 +3562,26 @@ static void mutliplayer_settings_select_list_update_displayed_items(
 	return;
 }
 
+/* port: the string of a joystick set in the profile screens' lists:
+build 1749's (halo1749.exe) name two, DEFAULT and LEGACY, which are this
+build's standard and legacy sets (ui_widget_event_handler_functions.c's
+player_profile_initialize_controller_settings); this build's name each */
+static short joystick_preset_string_index(
+	short joystick_preset)
+{
+	if (halo_build_1749())
+		return joystick_preset == _joystick_preset_legacy || joystick_preset == _joystick_preset_legacy_south_paw;
+	return joystick_preset;
+}
+
 /* port: build 1749's profile list items (halo1749.exe's ui.map) have one
 text box for the profile's description, which 1749's executable wrote (as
 here, from its disassembly): for a default profile its joystick and button
 sets' long descriptions, for another each of profile_description_labels
 over its value, a line each (the level it has reached from map_list, its
-difficulty from difficulty_names, numbered as 1749's menus set it, and its
-joystick and button sets' short descriptions); none for an empty item */
+difficulty from difficulty_names, which begins at Normal, this build's 1,
+and its joystick and button sets' short descriptions); none for an empty
+item */
 static void player_profile_description_1749(
 	struct widget_instance *text_box,
 	struct player_profile *profile)
@@ -3599,7 +3614,7 @@ static void player_profile_description_1749(
 				0xFF,
 				L"%s%hs%s",
 				unicode_string_list_get_string(joystick_descriptions_tag_index,
-					profile->controller_settings.joystick_preset),
+					joystick_preset_string_index(profile->controller_settings.joystick_preset)),
 				"\r\n",
 				unicode_string_list_get_string(button_descriptions_tag_index,
 					profile->controller_settings.button_preset));
@@ -3641,12 +3656,13 @@ static void player_profile_description_1749(
 				"\r\n",
 				unicode_string_list_get_string(labels_tag_index, 1),
 				"\r\n",
-				unicode_string_list_get_string(difficulties_tag_index, difficulty != NONE ? difficulty : 0),
+				unicode_string_list_get_string(difficulties_tag_index,
+					(short)(difficulty != NONE ? MAX(difficulty - _game_difficulty_level_normal, 0) : 0)),
 				"\r\n",
 				unicode_string_list_get_string(labels_tag_index, 2),
 				"\r\n",
 				unicode_string_list_get_string(joystick_descriptions_tag_index,
-					profile->controller_settings.joystick_preset),
+					joystick_preset_string_index(profile->controller_settings.joystick_preset)),
 				"\r\n",
 				unicode_string_list_get_string(labels_tag_index, 3),
 				"\r\n",
@@ -4048,7 +4064,7 @@ static void player_profile_1wide_list_update(
 					{
 						wchar_t const *joystick_description = unicode_string_list_get_string(
 							joystick_descriptions_tag_index,
-							profile->controller_settings.joystick_preset);
+							joystick_preset_string_index(profile->controller_settings.joystick_preset));
 						wchar_t const *button_description = unicode_string_list_get_string(
 							button_descriptions_tag_index,
 							profile->controller_settings.button_preset);
@@ -4079,7 +4095,7 @@ static void player_profile_1wide_list_update(
 					{
 						wchar_t const *joystick_description = unicode_string_list_get_string(
 							joystick_descriptions_tag_index,
-							profile->controller_settings.joystick_preset);
+							joystick_preset_string_index(profile->controller_settings.joystick_preset));
 						wchar_t const *button_description = unicode_string_list_get_string(
 							button_descriptions_tag_index,
 							profile->controller_settings.button_preset);

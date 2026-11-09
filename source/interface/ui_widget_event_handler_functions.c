@@ -2604,6 +2604,15 @@ static boolean new_campaign_if_no_custom_player_profiles_exist(
 	return result;
 }
 
+/* port: the difficulty an item of the difficulty list is: its index, or in
+build 1749's menus (halo1749.exe), which have no Easy, the index after it
+(Normal is this build's 1: game_globals.c reads 1749's difficulty table so) */
+static short difficulty_list_index_difficulty(
+	short index)
+{
+	return halo_build_1749() ? index + 1 : index;
+}
+
 static boolean difficulty_set(
 	struct widget_instance *widget,
 	struct event_record *event,
@@ -2612,7 +2621,7 @@ static boolean difficulty_set(
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 787,
 		widget->data3C.selected_index >= 0 && widget->data3C.selected_index < 4,
 		"I don't think this is the difficulty list widget");
-	main_set_difficulty(widget->data3C.selected_index);
+	main_set_difficulty(difficulty_list_index_difficulty(widget->data3C.selected_index));
 	ui_play_audio_feedback_sound(2);
 	return TRUE;
 }
@@ -3230,19 +3239,24 @@ static boolean difficulty_menu_initialize(
 	if (persistant_game_data_info.valid == TRUE &&
 		_stricmp(persistant_game_data_info.map_name, main_get_map_name()) == 0)
 	{
-		difficulty_widget = widget_instance_get_nth_child(widget,
-			persistant_game_data_info.difficulty.value);
+		/* port: the saved game's difficulty's item (in 1749's menus, the one
+		before it: difficulty_list_index_difficulty) */
+		short index = (short)(halo_build_1749() ?
+			MAX(persistant_game_data_info.difficulty.value - 1, 0) : persistant_game_data_info.difficulty.value);
+
+		difficulty_widget = widget_instance_get_nth_child(widget, index);
 		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4865,
 			difficulty_widget != NULL, "failed to find 'difficulty' menu item");
-		widget->data3C.selected_index = persistant_game_data_info.difficulty.value;
+		widget->data3C.selected_index = index;
 		widget->focused_child = difficulty_widget;
 		return TRUE;
 	}
-	difficulty_widget = widget_instance_get_nth_child(widget, 1);
+	/* port: Normal, the first item of 1749's menus */
+	difficulty_widget = widget_instance_get_nth_child(widget, halo_build_1749() ? 0 : 1);
 	match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4871,
 		difficulty_widget != NULL, "failed to find 'difficulty' menu item");
 	widget->focused_child = difficulty_widget;
-	widget->data3C.selected_index = 1;
+	widget->data3C.selected_index = halo_build_1749() ? 0 : 1;
 	return TRUE;
 }
 
@@ -4144,6 +4158,16 @@ static boolean player_profile_initialize_controller_settings(
 		while (option_spinner && option_spinner->type != 2)
 			option_spinner = option_spinner->next;
 		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3803, option_spinner, "expected 'joystick config' option spinner list");
+		/* port: build 1749's menus (halo1749.exe) have two joystick sets,
+		DEFAULT and LEGACY, its executable's 0 and 1: this build's standard
+		and legacy sets (1749's "flight stick" set, and a10's help for it) */
+		if (halo_build_1749())
+		{
+			option_spinner->data3C.selected_index =
+				profile->controller_settings.joystick_preset == _joystick_preset_legacy ||
+				profile->controller_settings.joystick_preset == _joystick_preset_legacy_south_paw;
+		}
+		else
 		switch (profile->controller_settings.joystick_preset)
 		{
 		case _joystick_preset_standard:
@@ -4298,17 +4322,23 @@ static boolean player_profile_change_advanced_controller_settings(
 		default: error(2, "unknown option selected for controller vibration"); break;
 		}
 
-		list_item = list_item->next;
-		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4035, list_item, "expected 'flight stick controls' list item");
-		option_spinner = list_item->child;
-		while (option_spinner && option_spinner->type != 2)
-			option_spinner = option_spinner->next;
-		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4037, option_spinner, "expected 'flight stick controls' option spinner list");
-		switch (option_spinner->data3C.selected_index)
+		/* port: build 1749's advanced controls (halo1749.exe's ui.map, as its
+		executable expected) have no flight stick item: invert joystick, look
+		sensitivity, vibration and autocenter */
+		if (!halo_build_1749())
 		{
-		case 0: profile->controller_settings.flight_stick_aircraft_controls = TRUE; break;
-		case 1: profile->controller_settings.flight_stick_aircraft_controls = FALSE; break;
-		default: error(2, "unknown option selected for controller flight_stick_aircraft_controls"); break;
+			list_item = list_item->next;
+			match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4035, list_item, "expected 'flight stick controls' list item");
+			option_spinner = list_item->child;
+			while (option_spinner && option_spinner->type != 2)
+				option_spinner = option_spinner->next;
+			match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 4037, option_spinner, "expected 'flight stick controls' option spinner list");
+			switch (option_spinner->data3C.selected_index)
+			{
+			case 0: profile->controller_settings.flight_stick_aircraft_controls = TRUE; break;
+			case 1: profile->controller_settings.flight_stick_aircraft_controls = FALSE; break;
+			default: error(2, "unknown option selected for controller flight_stick_aircraft_controls"); break;
+			}
 		}
 
 		list_item = list_item->next;
@@ -4752,17 +4782,23 @@ static boolean player_profile_initialize_advanced_controller_settings(
 		default: option_spinner->data3C.selected_index = 0; break;
 		}
 
-		list_item = list_item->next;
-		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3895, list_item, "expected 'flight stick controls' list item");
-		option_spinner = list_item->child;
-		while (option_spinner && option_spinner->type != 2)
-			option_spinner = option_spinner->next;
-		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3897, option_spinner, "expected 'flight stick controls' option spinner list");
-		switch (profile->controller_settings.flight_stick_aircraft_controls)
+		/* port: build 1749's advanced controls (halo1749.exe's ui.map, as its
+		executable expected) have no flight stick item: invert joystick, look
+		sensitivity, vibration and autocenter */
+		if (!halo_build_1749())
 		{
-		case FALSE: option_spinner->data3C.selected_index = 1; break;
-		case TRUE: option_spinner->data3C.selected_index = 0; break;
-		default: option_spinner->data3C.selected_index = 0; break;
+			list_item = list_item->next;
+			match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3895, list_item, "expected 'flight stick controls' list item");
+			option_spinner = list_item->child;
+			while (option_spinner && option_spinner->type != 2)
+				option_spinner = option_spinner->next;
+			match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3897, option_spinner, "expected 'flight stick controls' option spinner list");
+			switch (profile->controller_settings.flight_stick_aircraft_controls)
+			{
+			case FALSE: option_spinner->data3C.selected_index = 1; break;
+			case TRUE: option_spinner->data3C.selected_index = 0; break;
+			default: option_spinner->data3C.selected_index = 0; break;
+			}
 		}
 
 		list_item = list_item->next;
@@ -4802,6 +4838,14 @@ static boolean player_profile_change_controller_settings(
 		while (option_spinner && option_spinner->type != 2)
 			option_spinner = option_spinner->next;
 		match_vassert("c:\\halo\\SOURCE\\interface\\ui_widget_event_handler_functions.c", 3943, option_spinner, "expected 'joystick config' option spinner list");
+		/* port: build 1749's two joystick sets (player_profile_initialize_
+		controller_settings) */
+		if (halo_build_1749())
+		{
+			profile->controller_settings.joystick_preset = (byte)(option_spinner->data3C.selected_index == 1 ?
+				_joystick_preset_legacy : _joystick_preset_standard);
+		}
+		else
 		switch (option_spinner->data3C.selected_index)
 		{
 		case _joystick_preset_standard: profile->controller_settings.joystick_preset = _joystick_preset_standard; break;
