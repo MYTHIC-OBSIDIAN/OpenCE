@@ -62,7 +62,11 @@ the same kind of build as 2342's).
   (`build_1749_scripts_convert`, in
   [custom_edition_scripts.c](../port/linux/game/custom_edition_scripts.c),
   as Custom Edition maps' are). A function this build lacks would do
-  nothing, and is logged. The value types are numbered alike: every call's
+  nothing, and is logged. 1749's array of script nodes holds 16,384, where
+  this build's holds 19,001: halo1749.exe takes a map's array of either
+  size as sound (`hs_scenario_syntax_maximum_count` in `hs.c`, and the
+  validator's check of the nodes), where it would otherwise run none of a
+  1749 map's scripts. The value types are numbered alike: every call's
   type in b30 is its function's, or that of where it is used. `a10.map`,
   `c40.map` and `ui.map` call no function this build lacks either.
 - **Engine globals that are functions here.** `a10.map`'s cryo bay sets the

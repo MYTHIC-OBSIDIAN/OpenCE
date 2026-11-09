@@ -12846,16 +12846,27 @@ boolean hs_scenario_merge(
 	return success;
 }
 
+/* port: the nodes a map's array holds: build 1749's maps' are of 16384
+(halo1749.exe, port/linux/src/build_1749.c) */
+#define MAXIMUM_HS_SYNTAX_NODES_PER_1749_SCENARIO 16384
+static long hs_scenario_syntax_maximum_count(
+	void)
+{
+	return halo_build_1749() ? MAXIMUM_HS_SYNTAX_NODES_PER_1749_SCENARIO : MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO;
+}
+
 /* port: the scenario's script data as the map holds it, the header of its
 data array too (which hs_scenario_postprocess and the data array code go by,
 the nodes' count above all): inside the tag cache, and the data array of
 script nodes it has room for. The shipped maps' all are, of 19001 nodes
-(their names differ: a30's is "static script node"). */
+(1749's, of 16384: hs_scenario_syntax_maximum_count; their names differ:
+a30's is "static script node"). */
 static boolean hs_scenario_syntax_data_valid(
 	struct scenario const *scenario)
 {
+	long const maximum_count = hs_scenario_syntax_maximum_count();
 	long const syntax_data_size =
-		sizeof(struct data_array)+MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO*sizeof(struct hs_syntax_node);
+		sizeof(struct data_array)+maximum_count*sizeof(struct hs_syntax_node);
 	byte const *address = (byte const *)scenario->hs_syntax_data.address;
 	struct data_array const *data = (struct data_array const *)address;
 
@@ -12869,7 +12880,7 @@ static boolean hs_scenario_syntax_data_valid(
 	}
 
 	return data->signature == 'd@t@' &&
-		data->maximum_count == MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO &&
+		data->maximum_count == maximum_count &&
 		data->size == sizeof(struct hs_syntax_node) &&
 		data->valid &&
 		data->count >= 0 &&
@@ -13376,7 +13387,7 @@ static void hs_allocate(
 	/* port: as the map holds it only when it is sound */
 	if (scenario &&
 		scenario->hs_syntax_data.size ==
-			sizeof(struct data_array)+MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO*sizeof(struct hs_syntax_node) &&
+			sizeof(struct data_array)+hs_scenario_syntax_maximum_count()*sizeof(struct hs_syntax_node) &&
 		hs_scenario_syntax_data_valid(scenario))
 	{
 		return;

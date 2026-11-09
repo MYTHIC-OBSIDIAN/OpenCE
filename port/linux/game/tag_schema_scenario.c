@@ -73,6 +73,8 @@ enum
 	/* hs.c */
 	MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO = 19001,
 	HS_SYNTAX_DATA_SIZE = 0x38 + MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO * 0x14,
+	/* build 1749's maps' (tag_validate_build_1749) */
+	MAXIMUM_HS_SYNTAX_NODES_PER_1749_SCENARIO = 16384,
 	HS_SYNTAX_DATA_SIGNATURE = 'd@t@',
 	/* hs.c: the map's globals share the 0x400 globals with the game's 443
 	(hs_globals_external.c) */
@@ -470,12 +472,16 @@ static boolean scenario_check_scripts(
 	long walk_count;
 	long index;
 	char const *error = NULL;
+	/* (1749's maps' arrays are of fewer nodes: hs.c's
+	hs_scenario_syntax_maximum_count) */
+	long maximum_count = tag_validate_build_1749(validation) ?
+		MAXIMUM_HS_SYNTAX_NODES_PER_1749_SCENARIO : MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO;
 
 	/* (hs.c finds a header that is not its own damaged, and runs no
 	scripts) */
-	if (scenario->hs_syntax_data.size != HS_SYNTAX_DATA_SIZE ||
+	if (scenario->hs_syntax_data.size != 0x38 + maximum_count * 0x14 ||
 		nodes->signature != HS_SYNTAX_DATA_SIGNATURE ||
-		nodes->maximum_count != MAXIMUM_HS_SYNTAX_NODES_PER_SCENARIO ||
+		nodes->maximum_count != maximum_count ||
 		nodes->size != sizeof(struct hs_syntax_node) ||
 		nodes->count < 0 || nodes->count > nodes->maximum_count)
 	{

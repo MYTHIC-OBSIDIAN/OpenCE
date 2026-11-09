@@ -211,9 +211,10 @@ static struct
 	struct tag_validate_file_range file_ranges[MAXIMUM_TAG_VALIDATE_FILE_RANGES];
 	short file_range_count;
 	boolean custom_edition;
-	/* whether a tag's root may be the same bytes as an earlier tag's of its
-	group (build 1749's maps: tag_validate_build_1749_tags) */
-	boolean shared_roots;
+	/* whether the tags are build 1749's (tag_validate_build_1749_tags): a
+	tag's root may be the same bytes as an earlier tag's of its group, and
+	the scripts' syntax data is 1749's size (tag_validate_build_1749) */
+	boolean build_1749;
 	char map_name[64];
 	long corrections;
 } tag_validate_globals;
@@ -1638,7 +1639,7 @@ static boolean shared_root_taken(
 
 	/* (only the tags' roots are claimed yet: one of the same group at the
 	same place holds the same bytes) */
-	if (!tag_validate_globals.shared_roots || !tag_validate_claimed(instance->base_address))
+	if (!tag_validate_globals.build_1749 || !tag_validate_claimed(instance->base_address))
 		return FALSE;
 	for (earlier_index = 0; earlier_index < absolute_index; earlier_index++)
 	{
@@ -1811,13 +1812,13 @@ static boolean validate_xbox_tags(
 	long tag_data_size,
 	long file_length,
 	char const *map_name,
-	boolean shared_roots)
+	boolean build_1749)
 {
 	struct tag_validate_header *header = tag_header;
 	struct tag_validation validation;
 
 	validation_begin(&validation, tag_header, tag_data_size, TAG_CACHE_SIZE, FALSE, map_name);
-	tag_validate_globals.shared_roots = shared_roots;
+	tag_validate_globals.build_1749 = build_1749;
 	tag_validate_globals.file_ranges[0].offset = 0;
 	tag_validate_globals.file_ranges[0].size = file_length < 0 ? 0 : (unsigned long)file_length;
 	tag_validate_globals.file_range_count = 1;
@@ -2121,6 +2122,14 @@ boolean tag_validate_custom_edition(
 	(void)validation;
 
 	return tag_validate_globals.custom_edition;
+}
+
+boolean tag_validate_build_1749(
+	struct tag_validation *validation)
+{
+	(void)validation;
+
+	return tag_validate_globals.build_1749;
 }
 
 boolean tag_validate_contains(

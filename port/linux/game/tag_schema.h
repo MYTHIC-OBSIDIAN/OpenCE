@@ -397,6 +397,10 @@ void *tag_validate_root(
 /* whether the tags being checked are a Custom Edition map's */
 boolean tag_validate_custom_edition(
 	struct tag_validation *validation);
+/* whether the tags being checked are a map of build 01.08.15.1749's
+(tag_validate_build_1749_tags) */
+boolean tag_validate_build_1749(
+	struct tag_validation *validation);
 /* whether size bytes at address are in the tags (or the bsp) being checked */
 boolean tag_validate_contains(
 	struct tag_validation *validation,
