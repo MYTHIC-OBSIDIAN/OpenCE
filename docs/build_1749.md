@@ -129,6 +129,21 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   executable did. 1749's Slayer options list kill penalty before kill in
   order where its executable (and this build) read them the other way: so
   did 1749, and halo1749.exe keeps it.
+- **No checkpoint or loading message.** 1749's HUD globals (`ui\hud\default`)
+  end at the carnage report's bitmap: what follows in this build's (the
+  item messages to show while loading, when done, at a checkpoint and after
+  it, and the checkpoint's sound) is padding in 1749's, all zero, and item
+  message 0 of 1749's `hud_item_messages` is "Picked up a flamethrower",
+  which this build's code showed at every checkpoint. Those strings have
+  nothing about loading or checkpoints, so 1749 showed and played nothing
+  there: halo1749.exe does the same (`hud_load` and `hud_autosave` in
+  `hud.c`).
+- **Weapons the player can't carry.** A unit picks up a weapon only if its
+  animations have that weapon's label, in 1749's executable as in this
+  build's. 1749's cyborg has `ar`, `sg`, `sr`, `pr`, `pb`, `f` (rifles),
+  `hp`, `pp`, `ne`, `b` (pistols), `rl` and `ft`, but not the fuel rod
+  gun's `fr` nor the energy sword's `fb`, so in `c10` and `d20` the fuel rod
+  guns on the floor stay there, as they did in 1749.
 - **The executable's own tags.** 1749's executable loads the same levels
   (`a10` to `d40`, and the multiplayer maps of `levels\test`) and menus as
   this build's. This build also loads a few that 1749's `ui.map` lacks (the
