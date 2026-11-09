@@ -2,3 +2,6 @@
 which Explorer and the taskbar show and SDL's windows take, as the first icon
 of the executable */
 1 ICON "opence-icon.ico"
+/* build 1749's (halo1749.exe, docs/build_1749.md: port/windows/build-1749-icon.ico, Halo Custom Edition's), which
+tools/pe_icons.py makes the first in halo1749.exe, a copy of halo.exe (tools/ci_build.py) */
+2 ICON "build-1749-icon.ico"

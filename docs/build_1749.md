@@ -122,6 +122,14 @@ keyboard still stands in for a controller). The display's own settings
 (window, resolution, vsync, anti-aliasing) and the controls are the
 player's.
 
+## Icon
+
+halo1749.exe's icon is Halo Custom Edition's (`port/windows/build-1749-icon.ico`). halo.exe holds it
+as its second icon (`port/windows/halo.rc`), and when CI makes halo1749.exe from halo.exe it makes that
+icon the first (`tools/pe_icons.py`), which Explorer, the taskbar and the window show. Only the two
+entries of the resource directory change: the code is halo.exe's, so `halo.pdb` still reads its
+crashes.
+
 ## Build numbers
 
 halo1749.exe gives the game's build as 1749's executable does

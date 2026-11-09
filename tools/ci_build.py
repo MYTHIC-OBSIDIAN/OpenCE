@@ -36,6 +36,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pe_icons import swap_icons  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 
 # what each port's build leaves, and what goes into dist/
@@ -113,8 +116,10 @@ def main() -> int:
         # halo1749.exe: the same program, which by its name runs as Halo's
         # build 01.08.15.1749 on that build's maps, from the 1749 folder
         # beside it (port/linux/src/build_1749.c, docs/build_1749.md); the
-        # folder ships with only a note of what goes in it
+        # folder ships with only a note of what goes in it. Its icon is build
+        # 1749's: halo.exe's second, made its first (tools/pe_icons.py)
         shutil.copy2(ROOT / "build/windows/halo.exe", dist / "halo1749.exe")
+        swap_icons(dist / "halo1749.exe")
         (dist / "1749").mkdir()
         shutil.copy2(ROOT / "port/assets/build_1749/README.txt", dist / "1749" / "README.txt")
         print(f"halo1749.exe, 1749/README.txt -> {dist.relative_to(ROOT)}", flush=True)

@@ -78,3 +78,9 @@ until it is redrawn.
 
 The PC version's `ui\gamespy` and `ui\ticker` fonts are drawn with `ui\small_ui`, which
 the Xbox's map has.
+
+## Icons
+
+`port/windows/build-1749-icon.ico` is Halo Custom Edition's own icon (its 12 images, 16 to 48 pixels), not
+a redraw: halo1749.exe's (docs/build_1749.md), chosen for it by the project. halo.exe's own,
+`port/windows/opence-icon.ico`, is pixel art.
