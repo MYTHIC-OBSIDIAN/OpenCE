@@ -34,7 +34,8 @@ maps are refused, as the game refuses them.
 
 With --build-1749, the maps are build 01.08.15.1749's, read at the tag
 cache address they were linked to (0x803AF000), as halo1749.exe reads them
-(port/linux/src/build_1749.c); their scripts are not checked here.
+(port/linux/src/build_1749.c), whose tags may share their roots
+(tag_validate_build_1749_tags); their scripts are not checked here.
 
 usage: map_validate [--build-1749] [--strict] [--quiet] [--maps folder] [--fuzz iterations [--seed n] [--log file]] map.map...
 */
@@ -56,6 +57,9 @@ usage: map_validate [--build-1749] [--strict] [--quiet] [--maps folder] [--fuzz 
 #define TAG_CACHE_BASE_ADDRESS_1749 0x803AF000UL
 static unsigned long tag_cache_base_address = TAG_CACHE_BASE_ADDRESS_STOCK;
 #define TAG_CACHE_BASE_ADDRESS tag_cache_base_address
+/* (1749's maps' tags may share their roots: tag_validate_build_1749_tags) */
+#define TAG_VALIDATE_TAGS (tag_cache_base_address == TAG_CACHE_BASE_ADDRESS_1749 ? \
+	tag_validate_build_1749_tags : tag_validate_tags)
 
 /* ---------- constants */
 
@@ -137,6 +141,7 @@ typedef char verify_scenario_structure_bsp_reference_size[
 /* ---------- the validator's (port/linux/game/tag_validate.c) */
 
 unsigned char tag_validate_tags(void *tag_header, long tag_data_size, long file_length, char const *map_name);
+unsigned char tag_validate_build_1749_tags(void *tag_header, long tag_data_size, long file_length, char const *map_name);
 unsigned char tag_validate_structure_bsp(long tag_index, void *base, long size);
 long tag_validate_corrections(void);
 unsigned char tag_validate_claimed(void const *address);
@@ -275,7 +280,7 @@ static int map_check(struct cache_file_header const *header, unsigned char const
 	*corrections = 0;
 	memset(tag_cache, 0xCD, TAG_CACHE_SIZE);
 	memcpy(tag_cache, bytes + header->tag_data_offset, header->tag_data_size);
-	if (!tag_validate_tags(tag_cache, header->tag_data_size, header->file_length, name))
+	if (!TAG_VALIDATE_TAGS(tag_cache, header->tag_data_size, header->file_length, name))
 		return 1;
 	*corrections = tag_validate_corrections();
 
@@ -519,7 +524,7 @@ static int map_fuzz(char const *path, unsigned char *tag_cache, unsigned long se
 				}
 			}
 			/* (the tags as corrected, checked again: nothing more to correct) */
-			if (!tag_validate_tags(tag_cache, header.tag_data_size, header.file_length, name) ||
+			if (!TAG_VALIDATE_TAGS(tag_cache, header.tag_data_size, header.file_length, name) ||
 				(again = tag_validate_corrections()) != 0)
 			{
 				printf("%s: fuzz seed %lu: the corrected tags are not clean when checked again:\n", name, fuzz_seed);
@@ -528,7 +533,7 @@ static int map_fuzz(char const *path, unsigned char *tag_cache, unsigned long se
 				quiet = 0;
 				map_check(&header, bytes, tag_cache, name, &corrections);
 				printf("checked again:\n");
-				tag_validate_tags(tag_cache, header.tag_data_size, header.file_length, name);
+				TAG_VALIDATE_TAGS(tag_cache, header.tag_data_size, header.file_length, name);
 				quiet = 1;
 			}
 		}

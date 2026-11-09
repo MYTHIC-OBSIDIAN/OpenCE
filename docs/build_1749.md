@@ -23,8 +23,9 @@ copies their own dump into the `1749` folder beside the executable:
 
 ## What differs from this build's maps
 
-The comparison is of 1749's `ui.map` and `b30.map` and its `cachebeta.exe`
-(`halobeta xbox 01.08.15.1749(CACHE)`, the same kind of build as 2342's).
+The comparison is of 1749's `ui.map`, `a10.map`, `b30.map`, `c40.map` and
+`wizard.map` and its `cachebeta.exe` (`halobeta xbox 01.08.15.1749(CACHE)`,
+the same kind of build as 2342's).
 
 - **The tag cache's address.** 1749's maps were linked to a tag cache at
   `0x803AF000`, 36 KB above this build's `0x803A6000`. halo1749.exe puts its
@@ -41,7 +42,19 @@ The comparison is of 1749's `ui.map` and `b30.map` and its `cachebeta.exe`
   fields this build reads later (weapons' zoom and pickup sounds, globals'
   night vision and co-op respawn effects, the HUD's checkpoint sound), and
   bitmap sequences of no bitmaps. `tools/map_validate --build-1749 map.map`
-  checks a map so.
+  checks a map so. `a10.map`, `c40.map` and `wizard.map` pass as well, with
+  the same two kinds of correction (references left as zeros include the
+  dialogue's `vocalizations`, the skies' `indoor_fog_screen` and the sniper
+  rifle's split-screen mask).
+- **Tags that share their data.** 1749's tools wrote a tag the same as one of
+  its group already written as that one: `a10.map`'s eleven collision models
+  of doors and others are one model of a single `<none>` material. This
+  build's validator refuses a tag whose bytes another holds, so 1749's maps
+  are checked with `tag_validate_build_1749_tags`
+  ([tag_validate.c](../port/linux/game/tag_validate.c)): a tag whose root
+  starts where an earlier tag of its group's does is taken as the same bytes,
+  walked once, through the earlier tag. Anything else that overlaps is still
+  refused, and this build's maps are checked as before.
 - **The scripts.** 1749 numbers its script functions otherwise: 614 of
   b30.map's 1,209 calls (89 functions) have 1749's numbers. Every function
   b30 calls is this build's, by name, and the scripts keep the names, so

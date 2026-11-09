@@ -298,6 +298,15 @@ boolean tag_validate_tags(
 	long file_length,
 	char const *map_name);
 
+/* the tags of a map of build 01.08.15.1749 (halo1749.exe), as
+tag_validate_tags checks them, but a tag's root may be the same bytes as an
+earlier tag's of its group, as 1749's tools wrote some */
+boolean tag_validate_build_1749_tags(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name);
+
 /* the tags of a Custom Edition map, as custom_edition_cache_load loaded and
 custom_edition_cache_convert converted them (loaded_size bytes at
 tag_header, the start of a tag cache of tag_cache_size bytes), whose bitmap

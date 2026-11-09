@@ -211,6 +211,9 @@ static struct
 	struct tag_validate_file_range file_ranges[MAXIMUM_TAG_VALIDATE_FILE_RANGES];
 	short file_range_count;
 	boolean custom_edition;
+	/* whether a tag's root may be the same bytes as an earlier tag's of its
+	group (build 1749's maps: tag_validate_build_1749_tags) */
+	boolean shared_roots;
 	char map_name[64];
 	long corrections;
 } tag_validate_globals;
@@ -249,6 +252,16 @@ static char const shared_extent_block;
 
 static char const tag_validate_empty_name[] = "";
 
+/* Shared roots: build 01.08.15.1749's tools wrote a tag the same as one
+of its group already written as that one (a10.map: eleven collision
+models, the doors' and others', are one model of a single '<none>'
+material). A tag whose root starts where an earlier tag's of its group
+does is taken as the same bytes, walked once, through the earlier tag; a
+runtime value written to them is written to both, as in 1749. Only for
+1749's maps: anything else that overlaps is still refused. (a bit for
+each tag in the table) */
+static unsigned long tag_validate_shared_roots[(UNSIGNED_SHORT_MAX + 1) / CLAIM_BITS];
+
 /* ---------- prototypes */
 
 static void validate_element(struct tag_validation *validation, byte *base,
@@ -260,6 +273,14 @@ static void validation_begin(struct tag_validation *validation, void *tag_header
 static void shared_extents_forget(unsigned long first, unsigned long size);
 
 /* ---------- private code */
+
+/* whether the tag at absolute_index shares an earlier tag's root (shared
+roots, above) */
+static boolean shared_root(
+	long absolute_index)
+{
+	return (tag_validate_shared_roots[absolute_index / CLAIM_BITS] & (1UL << (absolute_index % CLAIM_BITS))) != 0;
+}
 
 static struct tag_schema_group const *schema_group_get(
 	unsigned long group_tag)
@@ -1606,6 +1627,34 @@ void tag_validate_custom_edition_note_structure_bsp(
 
 /* ---------- public code */
 
+/* (build 1749's maps) whether the tag at absolute_index has its root where
+an earlier tag of its group has its own, claimed: the same bytes */
+static boolean shared_root_taken(
+	struct tag_validate_instance const *instances,
+	long absolute_index)
+{
+	struct tag_validate_instance const *instance = &instances[absolute_index];
+	long earlier_index;
+
+	/* (only the tags' roots are claimed yet: one of the same group at the
+	same place holds the same bytes) */
+	if (!tag_validate_globals.shared_roots || !tag_validate_claimed(instance->base_address))
+		return FALSE;
+	for (earlier_index = 0; earlier_index < absolute_index; earlier_index++)
+	{
+		struct tag_validate_instance const *earlier = &instances[earlier_index];
+
+		if (earlier->base_address == instance->base_address &&
+			earlier->group_tag == instance->group_tag &&
+			!shared_root(earlier_index))
+		{
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
 /* the tags at tag_header (tag_data_size bytes of a tag cache), whose header
 the caller has checked and claimed: each tag's table entry, then every tag
 through its schema, then every tag's checks */
@@ -1615,6 +1664,9 @@ static boolean validate_tag_table(
 	long tag_count)
 {
 	long absolute_index;
+	long shared_roots = 0;
+
+	memset(tag_validate_shared_roots, 0, sizeof(tag_validate_shared_roots));
 
 	/* the tag table: each tag's index, name, groups and root */
 	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
@@ -1663,6 +1715,14 @@ static boolean validate_tag_table(
 			continue;
 		}
 		if (group && group->definition &&
+			region_contains(validation, instance->base_address, group->definition->size) &&
+			shared_root_taken(instances, absolute_index))
+		{
+			tag_validate_shared_roots[absolute_index / CLAIM_BITS] |= 1UL << (absolute_index % CLAIM_BITS);
+			shared_roots++;
+			continue;
+		}
+		if (group && group->definition &&
 			(!region_contains(validation, instance->base_address, group->definition->size) ||
 				!claim(instance->base_address, group->definition->size)))
 		{
@@ -1672,11 +1732,18 @@ static boolean validate_tag_table(
 		}
 	}
 
-	/* every tag through its schema, then every tag's checks */
+	/* every tag through its schema, then every tag's checks (a tag sharing
+	another's root: walked through that one) */
 	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
-		validate_instance(validation, &instances[absolute_index], _pass_values);
+	{
+		if (!shared_root(absolute_index))
+			validate_instance(validation, &instances[absolute_index], _pass_values);
+	}
 	for (absolute_index = 0; absolute_index < tag_count && !validation->refused; absolute_index++)
-		validate_instance(validation, &instances[absolute_index], _pass_checks);
+	{
+		if (!shared_root(absolute_index))
+			validate_instance(validation, &instances[absolute_index], _pass_checks);
+	}
 
 	/* each tag's name, now that every root, block and data is claimed: a
 	name in any of their bytes could lose its terminator to what is written
@@ -1700,6 +1767,16 @@ static boolean validate_tag_table(
 	}
 
 	tag_validate_globals.corrections = validation->corrections;
+
+	if (!validation->refused && shared_roots)
+	{
+		char message[MAXIMUM_MESSAGE_LENGTH];
+
+		snprintf(message, sizeof(message),
+			"the map '%s' has %ld tags that share the data of another of their group, as 1749's tools built them",
+			tag_validate_globals.map_name, shared_roots);
+		tag_validate_report(message);
+	}
 
 	return !validation->refused;
 }
@@ -1727,16 +1804,20 @@ static void validation_begin(
 	return;
 }
 
-boolean tag_validate_tags(
+/* an Xbox map's tags (tag_validate_tags), and those of build 1749's, whose
+tags may share their roots (shared roots, above) */
+static boolean validate_xbox_tags(
 	void *tag_header,
 	long tag_data_size,
 	long file_length,
-	char const *map_name)
+	char const *map_name,
+	boolean shared_roots)
 {
 	struct tag_validate_header *header = tag_header;
 	struct tag_validation validation;
 
 	validation_begin(&validation, tag_header, tag_data_size, TAG_CACHE_SIZE, FALSE, map_name);
+	tag_validate_globals.shared_roots = shared_roots;
 	tag_validate_globals.file_ranges[0].offset = 0;
 	tag_validate_globals.file_ranges[0].size = file_length < 0 ? 0 : (unsigned long)file_length;
 	tag_validate_globals.file_range_count = 1;
@@ -1765,6 +1846,24 @@ boolean tag_validate_tags(
 	}
 
 	return validate_tag_table(&validation, header->instances, header->tag_count);
+}
+
+boolean tag_validate_tags(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name)
+{
+	return validate_xbox_tags(tag_header, tag_data_size, file_length, map_name, FALSE);
+}
+
+boolean tag_validate_build_1749_tags(
+	void *tag_header,
+	long tag_data_size,
+	long file_length,
+	char const *map_name)
+{
+	return validate_xbox_tags(tag_header, tag_data_size, file_length, map_name, TRUE);
 }
 
 boolean tag_validate_custom_edition_tags(

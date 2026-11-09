@@ -1304,8 +1304,9 @@ long scenario_tags_load(
 			/* port: and every tag checked against its group's schema before
 			anything reads it (port/linux/game/tag_validate.c): a map whose
 			tags' pointers cannot be trusted is refused; what can be
-			corrected is */
-			if (!tag_validate_tags(
+			corrected is. (1749's maps may have tags that share their
+			roots) */
+			if (!(halo_build_1749() ? tag_validate_build_1749_tags : tag_validate_tags)(
 				tag_cache_base_address,
 				cache_file_globals.header.tag_data_size,
 				cache_file_globals.header.file_length,
