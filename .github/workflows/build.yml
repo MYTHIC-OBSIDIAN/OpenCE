@@ -16,6 +16,10 @@ name: Build
 # release, the newest marked latest, so that
 # https://github.com/<repository>/releases/latest/download/halo-windows-release.zip
 # always gives the latest build; the last five are kept.
+#
+# The build-1749 branch (halo1749.exe, docs/build_1749.md) is released apart:
+# 1749-build-<n>, numbered from 1 on its own, never marked latest (the latest
+# release stays the standard build's); its last five are kept too.
 on:
   push:
     paths-ignore:
@@ -125,7 +129,7 @@ jobs:
     # but the newest five build-* releases go, tags and all. Only for main
     # and lan-digsite.
     needs: [windows]
-    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lan-digsite' }}
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lan-digsite' || github.ref == 'refs/heads/build-1749' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -185,14 +189,24 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           tag="build-$GITHUB_RUN_NUMBER"
+          title="Build $GITHUB_RUN_NUMBER (${GITHUB_SHA:0:7})"
+          latest="--latest"
+          # (build 1749's own line: the next of its numbers, not the run's)
+          if [ "$GITHUB_REF" = "refs/heads/build-1749" ]; then
+            last="$(gh release list --limit 100 --json tagName \
+              --jq '[.[] | .tagName | select(startswith("1749-build-")) | ltrimstr("1749-build-") | tonumber] | max // 0')"
+            tag="1749-build-$((last + 1))"
+            title="1749 Build $((last + 1)) (${GITHUB_SHA:0:7})"
+            latest="--latest=false"
+          fi
           subject="$(printf '%s' "${MESSAGE:-manual run}" | head -n 1)"
           # (the network version, which a dedicated server's server.auto_update
           # reads: a new one is started once the game being played is over)
           network_version="$(sed -n 's/^#define HALO_PORT_NETWORK_VERSION \([0-9]*\).*/\1/p' port/linux/include/halo_port_limits.h)"
           printf '%s\n\nCommit: %s\nBuild: %s\nNetwork version: %s\n\nThe release builds are for playing; the debug builds stop at the first failed assertion and log it.\n' \
             "$subject" "$COMMIT_URL" "$RUN_URL" "$network_version" > notes.md
-          gh release create "$tag" release/* --target "$GITHUB_SHA" --latest \
-            --title "Build $GITHUB_RUN_NUMBER (${GITHUB_SHA:0:7})" --notes-file notes.md
+          gh release create "$tag" release/* --target "$GITHUB_SHA" "$latest" \
+            --title "$title" --notes-file notes.md
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       # The Windows builds' executables and PDBs to Sentry, which turns the
@@ -225,10 +239,26 @@ jobs:
             artifacts/halo-windows-release artifacts/halo-windows-release-symbols \
             artifacts/halo-windows-debug artifacts/halo-windows-debug-symbols
 
+      # The latest release stays the newest standard build. build-91 was this
+      # line's first build (f020139), published as a standard one before the
+      # line had numbers of its own; it is 1749-build-1 now, and goes.
+      - name: Keep the standard build latest
+        if: ${{ github.ref == 'refs/heads/build-1749' }}
+        run: |
+          if gh release view build-91 --json targetCommitish --jq .targetCommitish 2>/dev/null | grep -q '^f020139'; then
+            gh release delete build-91 --cleanup-tag --yes
+          fi
+          newest="$(gh release list --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("build-"))] | sort_by(.createdAt) | last | .tagName // empty')"
+          if [ -n "$newest" ]; then gh release edit "$newest" --latest; fi
+
       - name: Keep the last five
         run: |
+          # (of this line's releases: build-* or 1749-build-*)
+          prefix="build-"
+          if [ "$GITHUB_REF" = "refs/heads/build-1749" ]; then prefix="1749-build-"; fi
           gh release list --limit 100 --json tagName,createdAt \
-            --jq '[.[] | select(.tagName | startswith("build-"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+            --jq "[.[] | select(.tagName | startswith(\"$prefix\"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName" |
           while read -r tag; do
             gh release delete "$tag" --cleanup-tag --yes
           done
