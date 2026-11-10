@@ -86,6 +86,7 @@ symbols in this file:
 #include "game/game_engine_playlist.h"
 #include "text/text_group.h"
 #include "tag_files/tag_groups.h"
+#include "build_1749_variants.h" /* port: port/linux/game/build_1749_variants.c */
 /* the saved game file checksum is an XDK content signature. */
 #include <xtl.h>
 
@@ -578,16 +579,28 @@ static void playlist_profile_create_default_profiles_on_disk(
 	if (string_list_index != NONE)
 	{
 		long profile_index;
+		/* port: build 1749's own game types, as many as its menus name
+		(build_1749_variants.c): under 1749's names, this build's had been
+		other game types (its "Slayer" was Endurance) */
+		long profile_count = halo_build_1749()
+			? MIN(NUMBER_OF_BUILD_1749_VARIANTS,
+				unicode_string_list_definition_get(string_list_index)->strings.count)
+			: NUMBER_OF_DEFAULT_PLAYLIST_PROFILES;
 
 		for (profile_index = 0;
-			profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES;
+			profile_index < profile_count;
 			profile_index++)
 		{
 			wchar_t const *display_name;
 			boolean file_written = FALSE;
 
-			variant = *playlist_profile_default_data.default_variant_building_functions[
-				profile_index](&temporary);
+			if (halo_build_1749())
+				variant = *build_1749_variant(&temporary, profile_index);
+			else
+			{
+				variant = *playlist_profile_default_data.default_variant_building_functions[
+					profile_index](&temporary);
+			}
 
 			_snprintf(path, MAXIMUM_FILENAME_LENGTH, "z:\\saved\\playlists\\default_playlist\\%02d", profile_index);
 			path[MAXIMUM_FILENAME_LENGTH] = 0;

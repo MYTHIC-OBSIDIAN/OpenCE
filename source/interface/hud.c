@@ -856,9 +856,14 @@ void hud_load(
 		: hud_globals->loading_end_index;
 
 	scripted_hud_messages_clear();
-	/* port: not in build 1749, whose hud globals have no loading messages
-	(hud_autosave) */
-	if (string_index != NONE && !halo_build_1749())
+	/* port: build 1749's own text (hud_autosave) */
+	if (halo_build_1749())
+	{
+		hud_print_message(
+			local_player_get_next(NONE),
+			load ? L"loading..." : L"loading... done");
+	}
+	else if (string_index != NONE)
 	{
 		hud_print_message(
 			local_player_get_next(NONE),
@@ -881,11 +886,23 @@ void hud_autosave(
 	/* port: build 1749's hud globals (halo1749.exe's maps) end at the
 	carnage report's bitmap: the loading and checkpoint messages' indices and
 	the checkpoint's sound that follow it here are padding there, zero, and
-	item message 0 is "Picked up a flamethrower". 1749 says nothing and plays
-	nothing at a checkpoint or a load: its hud_item_messages have no such
-	strings */
+	item message 0 is "Picked up a flamethrower". 1749's executable had the
+	text built in, and no sound */
 	if (halo_build_1749())
+	{
+		for (local_player_index = 0;
+			local_player_index < MAXIMUM_LOCAL_PLAYERS;
+			local_player_index++)
+		{
+			if (local_player_get_player_index(local_player_index) != NONE)
+			{
+				hud_print_message(
+					local_player_index,
+					active ? L"Checkpoint..." : L"Checkpoint... done");
+			}
+		}
 		return;
+	}
 
 	if (active && hud_globals->checkpoint_sound.index != NONE)
 	{

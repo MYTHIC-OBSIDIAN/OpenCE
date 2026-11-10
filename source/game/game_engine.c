@@ -569,6 +569,7 @@ symbols in this file:
 #include "networking/network_server_manager.h"
 #include "networking/network_game_manager.h"
 #include "network_coop.h" /* port: port/linux/game/network_coop.c */
+#include "build_1749_variants.h" /* port: port/linux/game/build_1749_variants.c */
 #include "network_votekick.h" /* port: port/linux/game/network_votekick.c */
 #include "network_voice.h" /* port: port/linux/game/network_voice.c */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
@@ -6211,6 +6212,10 @@ struct game_variant *build_game_variant_slayer(
 {
 	struct game_variant result = { 0 };
 
+	/* port: build 1749's own Slayer (build_1749_variants.c) */
+	if (halo_build_1749())
+		return build_1749_variant(variant, _build_1749_variant_slayer);
+
 	result.game_engine_index = game_engine_slayer;
 	SET_FLAG(result.universal_variant.flags, _game_variant_draw_object_in_motion_sensor_bit, TRUE);
 	SET_FLAG(result.universal_variant.flags, _game_variant_allow_friendly_navpoints_bit, TRUE);
@@ -7224,7 +7229,16 @@ struct game_variant *game_engine_get_variant_by_name(
 
 	csmemset(&result, 0, sizeof(result));
 
-	if (csstrcmp(name, "race") == 0)
+	/* port: build 1749's own game types, which have names of their own
+	(build_1749_variants.c) */
+	if (halo_build_1749())
+	{
+		long index = build_1749_variant_index(name);
+
+		if (index != NONE)
+			build_1749_variant(&result, index);
+	}
+	else if (csstrcmp(name, "race") == 0)
 		result = *build_game_variant_race(&temporary);
 	else if (csstrcmp(name, "team_race") == 0)
 		result = *build_game_variant_team_race(&temporary);

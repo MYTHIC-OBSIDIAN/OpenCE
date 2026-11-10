@@ -207,6 +207,31 @@ static wchar_t *const fallback_multiplayer_game_text_strings[] =
 typedef char fallback_multiplayer_game_text_string_count_check[
 	NUMBEROF(fallback_multiplayer_game_text_strings) == 184 - FIRST_FALLBACK_MULTIPLAYER_GAME_TEXT_STRING ? 1 : -1];
 
+/* port: build 1749's ui\multiplayer_game_text holds 26 strings: its
+executable had the rest built in, like the NTSC release's, mostly as the
+PAL maps' English. These are where its own differ (1749betaP.xbe's game
+engine messages and texts), and the ones it had none of, which it never
+showed: empty here */
+static struct
+{
+	short string_index;
+	wchar_t const *string;
+} const build_1749_multiplayer_game_text_strings[] =
+{
+	{ 64, L"You are in %s place with %s %s" },
+	{ 80, L"" },	/* "%s quit" */
+	{ 86, L"Slaughterhouse!" },	/* ten kills in a row, "Running Riot!" */
+	{ 92, L"Slaughterhouse! (%d)" },
+	{ 99, L"Player quit out of game" },
+	{ 100, L"" },	/* "Hold BACK for score": 1749's game engine has no such message */
+	{ 167, L"" },	/* "You scored a flag!" */
+	{ 168, L"" },	/* "Ally %s scored a flag!" */
+	{ 169, L"" },	/* "Enemy %s scored a flag!" */
+	{ 171, L"Ally %s completed lap %d." },
+	{ 172, L"Enemy completed a lap." },
+	{ 183, L"" },	/* "You were telefragged" */
+};
+
 /* the built-in string for a string list too short to hold string_index,
 or NULL */
 static wchar_t *fallback_string(long tag_index, short string_index)
@@ -224,6 +249,16 @@ static wchar_t *fallback_string(long tag_index, short string_index)
 		csstrcasecmp(tag_name, MULTIPLAYER_GAME_TEXT_TAG_NAME))
 	{
 		return NULL;
+	}
+	if (halo_build_1749())
+	{
+		short index;
+
+		for (index = 0; index < (short)NUMBEROF(build_1749_multiplayer_game_text_strings); index++)
+		{
+			if (build_1749_multiplayer_game_text_strings[index].string_index == string_index)
+				return (wchar_t *)build_1749_multiplayer_game_text_strings[index].string;
+		}
 	}
 	return fallback_multiplayer_game_text_strings[fallback_index];
 }

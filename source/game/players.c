@@ -1587,7 +1587,9 @@ void network_player_show_pickup(
 			case _equipment_powerup_health: player_health_pack_screen_effect(player_index); break;
 			case _equipment_powerup_active_camouflage: player_active_camo_screen_effect(player_index); break;
 			}
-			hud_picked_up_powerup(player->local_player_index, definition_index);
+			/* port: (not in build 1749, as player_handle_powerup_equipment) */
+			if (!halo_build_1749())
+				hud_picked_up_powerup(player->local_player_index, definition_index);
 			equipment_definition_handle_pickup(definition_index);
 		}
 		break;
@@ -4472,9 +4474,15 @@ static void player_handle_powerup_equipment(
 	}
 
 	equipment = equipment_get(equipment_index);
-	hud_picked_up_powerup(
-		(unsigned short)player->local_player_index,
-		equipment->definition_index);
+	/* port: build 1749's executable named only the powerups swapped for
+	(player_handle_action), and its powerups' messages are none, item
+	message 0 ("Picked up a flamethrower") */
+	if (!halo_build_1749())
+	{
+		hud_picked_up_powerup(
+			(unsigned short)player->local_player_index,
+			equipment->definition_index);
+	}
 	player_network_picked_up(player, player_index, _network_pickup_powerup, equipment->definition_index, 0);
 	if (player->local_player_index != NONE)
 		equipment_handle_pickup(equipment_index);

@@ -137,15 +137,36 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   executable did. 1749's Slayer options list kill penalty before kill in
   order where its executable (and this build) read them the other way: so
   did 1749, and halo1749.exe keeps it.
-- **No checkpoint or loading message.** 1749's HUD globals (`ui\hud\default`)
-  end at the carnage report's bitmap: what follows in this build's (the
-  item messages to show while loading, when done, at a checkpoint and after
-  it, and the checkpoint's sound) is padding in 1749's, all zero, and item
-  message 0 of 1749's `hud_item_messages` is "Picked up a flamethrower",
-  which this build's code showed at every checkpoint. Those strings have
-  nothing about loading or checkpoints, so 1749 showed and played nothing
-  there: halo1749.exe does the same (`hud_load` and `hud_autosave` in
-  `hud.c`).
+- **Text built into 1749's executable.** 1749's HUD globals
+  (`ui\hud\default`) end at the carnage report's bitmap: what follows in
+  this build's (the item messages to show while loading, when done, at a
+  checkpoint and after it, and the checkpoint's sound) is padding in 1749's,
+  all zero, and item message 0 of 1749's `hud_item_messages` is "Picked up
+  a flamethrower", which this build's code showed at every checkpoint.
+  1749's executable had the text built in, "loading...", "loading...
+  done", "Checkpoint..." and "Checkpoint... done", and no sound: so does
+  halo1749.exe (`hud_load` and `hud_autosave` in `hud.c`). Its
+  `ui\multiplayer_game_text` holds 26 strings, and the executable had the
+  rest built in, as the NTSC release's did: halo1749.exe takes the PAL
+  maps' English where 1749's is the same and 1749's own where it isn't
+  ("Slaughterhouse!" for ten kills in a row, "Player quit out of game", "You
+  are in %s place with %s %s"), and shows nothing where 1749 had no
+  message ("Hold BACK for score", a flag scored, a telefrag, "%s quit")
+  (`text_group.c`).
+- **No message for a powerup walked over.** 1749's powerups have no item
+  message of their own (theirs is 0, the flamethrower's), and its
+  executable named a powerup only when it was swapped for: halo1749.exe
+  names none walked over (`players.c`).
+- **1749's game types.** 1749's executable built twenty game types of its
+  own (`port/linux/game/build_1749_variants.c`, from its builders): Dark
+  Stalker, Race, Team Race, Rally, Slayer, Team Slayer, Killer,
+  Elimination, Hunter, Stalker, Team Oddball, Accumulation, Magic,
+  Oddball, Crazy Ball, Assault, Capture the Flag, King of the Hill, Team
+  King of the Hill and Iron CTF, which its menus name in that order but
+  for Iron CTF. halo1749.exe had built this build's 26 under 1749's names,
+  so its "Slayer" was Endurance (five lives and odd man out, whose message
+  came at each death): it now makes the menus' default game types, the
+  game types by name, and a new game type's start (Slayer) 1749's.
 - **Swapping weapons on the press.** This build swaps for a weapon on the
   ground when the action button has been held for the globals'
   `minimum_weapon_swap_ticks`. 1749's globals have no such field (it is
