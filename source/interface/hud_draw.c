@@ -885,6 +885,16 @@ static void hud_draw_multitexture_overlay(
 				fraction);
 		}
 
+		/* port: build 1749's tags fade by 0 to 255 (its sniper rifle's
+		scope ticks fade in to 255 as it zooms), which its executable drew
+		as full; read as this build's 0 to 1, 255 packed into an alpha of
+		1/255 and the ticks were never seen */
+		if (halo_build_1749() &&
+			effector->destination_type == _hud_multitexture_overlay_effector_type_alpha)
+		{
+			dest_value = PIN(dest_value, 0.0f, 1.0f);
+		}
+
 		switch (effector->destination)
 		{
 		case _hud_multitexture_overlay_effector_destination_geometry_offset:

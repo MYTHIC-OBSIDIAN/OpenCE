@@ -217,6 +217,12 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     damage) brings the instant death cry, major pain four times in five,
     minor pain two in five, speaking or not, and the waits between them are
     45 and 15 ticks.
+- **The sniper scope's side ticks.** 1749's sniper rifle HUD has two blue
+  tick scales at the sides of the scope, which follow the view's pitch and
+  fade in as it zooms. Their fade runs from 0 to 255 in 1749's tags, which
+  its executable drew as full, where this build's run 0 to 1: read so, 255
+  was packed into an alpha of 1/255 and the ticks never showed.
+  halo1749.exe holds a HUD fade to 0 to 1 (`hud_draw.c`).
 - **The AI.** halo1749.exe's AI is being compared with 1749's executable,
   function by function; where they differ it acts as 1749's did:
   - A melee charge closes to within 4 world units of its target and goes
