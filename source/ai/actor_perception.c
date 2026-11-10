@@ -1160,6 +1160,61 @@ boolean actor_perception_desire_prop(
 	{
 		desire = TRUE;
 	}
+	else if (halo_build_1749())
+	{
+		/* port: build 1749 (inline in 0x30200 and 0x30b30): a body is
+		wanted only near an actor at peace (8 units, or 4 in combat) and
+		never an enemy's, whatever the encounter is doing; nothing ranks
+		a pursuit coordinator's friends closer */
+		if (!(distance_squared < 1600.0f))
+		{
+			desire = FALSE;
+		}
+		else if (dead)
+		{
+			if (suicide_radius > 0.0f)
+			{
+				desire = TRUE;
+			}
+			else if (enemy ||
+				actor_action_class(actor_index) > _action_class_passive ||
+				!(distance_squared <
+					(actor->state.mode >= _actor_mode_combat ? 16.0f : 64.0f)))
+			{
+				desire = FALSE;
+			}
+			else
+			{
+				desire = TRUE;
+				if (actor->meta.encounter_index != NONE)
+				{
+					struct encounter_datum *encounter =
+						encounter_get(actor->meta.encounter_index);
+					struct unit_datum *unit = unit_get(unit_index);
+					long ignore_time = MAX(
+						encounter->corpse_ignore_time,
+						actor->emotions.corpse_ignore_time);
+
+					if (ignore_time != NONE &&
+						(unit->unit.time_of_death == NONE ||
+							unit->unit.time_of_death < ignore_time))
+					{
+						desire = FALSE;
+					}
+				}
+			}
+		}
+		else if (enemy)
+		{
+			desire = TRUE;
+			too_far = distance_squared > 36.0f;
+		}
+		else
+		{
+			desire = distance_squared < 225.0f;
+			too_far = actor->state.combat_status >= 4 || distance_squared > 16.0f;
+		}
+	}
 	else if (distance_squared > 1600.0f)
 	{
 		desire = FALSE;

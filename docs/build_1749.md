@@ -341,6 +341,12 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     turn is kept within the upper bound, raised by the avoidance's
     urgency, and once past the lower bound held at the largest turn seen
     (`actor_move_calculate_movement`).
+  - Who an actor keeps track of. An actor at peace keeps track of a
+    friend's body within 8 units (4 in combat), never an enemy's body,
+    whatever its encounter is doing; this build tracked enemy bodies for
+    five seconds and any body within 15 units while the encounter was
+    idle. A pursuit coordinator's friends don't count as closer
+    (`actor_perception_desire_prop`).
   - Chatter. 1749 replies from its own table of 39 replies (this build's
     has 45), mostly less often, with no reply delays and no timers that
     stop a reply being repeated. Repliers are sought within 7 units (this
