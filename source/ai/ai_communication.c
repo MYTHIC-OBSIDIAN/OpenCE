@@ -1002,6 +1002,19 @@ short const communication_speech_priorities[NUMBER_OF_COMMUNICATION_PRIORITIES] 
 	0, 3, 3, 3, 4, 5, 5, 8,
 };
 
+/* port: build 1749's (0x231d80: 0, 1, 1, 3, 3, 4, 4, 7 in its unit speech
+priorities, which have no communicate): filler and chatter at idle,
+communicate at talk */
+static short const communication_speech_priorities_build_1749[NUMBER_OF_COMMUNICATION_PRIORITIES] =
+{
+	0, 1, 1, 3, 3, 5, 5, 8,
+};
+
+#define COMMUNICATION_SPEECH_PRIORITY(priority) \
+	(halo_build_1749() ? \
+		communication_speech_priorities_build_1749[(priority)] : \
+		communication_speech_priorities[(priority)])
+
 real const communication_notification_delays[NUMBER_OF_COMMUNICATION_PRIORITIES] =
 {
 	0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.3f,
@@ -2217,9 +2230,10 @@ static short ai_communication_consider_speech(
 	{
 		elapsed_time = game_time_get() - last_speech_time;
 		speech_time = (short)(elapsed_time < 0 ? 0 : elapsed_time);
+		/* port: build 1749 (0x3d780) added no delay here */
 		timer_tolerance = (short)(long)(
 			communication_timer_tolerances[communication_priority][0][2] * 30.0f +
-			(real)delay_ticks);
+			(halo_build_1749() ? 0.0f : (real)delay_ticks));
 		if (speech_time <= timer_tolerance)
 		{
 			play_type = _unit_play_speech_none;
@@ -2234,7 +2248,8 @@ static short ai_communication_consider_speech(
 					timer_tolerance - delay_ticks);
 			}
 		}
-		else if (speech_time < timer_tolerance + 60)
+		/* port: and did not fade the weight back in */
+		else if (!halo_build_1749() && speech_time < timer_tolerance + 60)
 		{
 			*weight =
 				(real)(speech_time - timer_tolerance) *
@@ -4716,7 +4731,7 @@ static long ai_communication_find_actor_to_reply_to_player(
 				reply->original_damage_category == damage_category))
 			{
 				short speech_priority =
-					communication_speech_priorities[reply->communication_priority];
+					COMMUNICATION_SPEECH_PRIORITY(reply->communication_priority);
 
 				if (ai_debug.communication_focus_enable &&
 					BIT_VECTOR_TEST_FLAG(
@@ -4981,7 +4996,7 @@ void ai_communication_finished(
 					actor_get(unit->unit.actor_index);
 				long reply_unit_index = NONE;
 				short speech_priority =
-					communication_speech_priorities[reply->communication_priority];
+					COMMUNICATION_SPEECH_PRIORITY(reply->communication_priority);
 				any_replies = TRUE;
 
 				if (ai_debug.print_communication)
@@ -6427,6 +6442,7 @@ void ai_communication_event(
 				boolean disabled = FALSE;
 				short delay = 0;
 				short reason = NONE;
+				real talk_tolerance;
 
 				if (communication_timer_tolerances[priority][distance_group][0] > 0.0f)
 				{
@@ -6441,10 +6457,17 @@ void ai_communication_event(
 						delay = MAX(delay, remaining);
 					}
 				}
-				if (communication_timer_tolerances[priority][distance_group][1] > 0.0f)
+				/* port: build 1749 (0x231de8) waited 3 seconds after talk
+				for a talk-priority (3) line near a player, not 2 */
+				talk_tolerance =
+					halo_build_1749() && priority == 3 && distance_group == 1 ?
+						3.0f :
+						communication_timer_tolerances[priority][distance_group][1];
+
+				if (talk_tolerance > 0.0f)
 				{
 					short remaining = (short)(
-						communication_timer_tolerances[priority][distance_group][1] * TICKS_PER_SECOND -
+						talk_tolerance * TICKS_PER_SECOND -
 						time_since_talk[team_index]);
 
 					if (remaining > 0)
@@ -6472,7 +6495,10 @@ void ai_communication_event(
 				 * is written below (still zero from the clear), so a positive
 				 * minimum tolerance re-enables every disabled slot; comparing
 				 * `delay` was probably intended. */
+				/* port: build 1749 (0x41290) had no minimum delays, so its
+				timers held back talk, communicate and shout lines too */
 				if (disabled &&
+					!halo_build_1749() &&
 					communication_timer_tolerances[priority][distance_group][4] > 0.0f &&
 					speech_delay[team_index][priority][distance_group] <
 						communication_timer_tolerances[priority][distance_group][4] * TICKS_PER_SECOND)
@@ -6643,7 +6669,7 @@ void ai_communication_event(
 			}
 			else
 			{
-				short speech_priority = communication_speech_priorities[communication_priority];
+				short speech_priority = COMMUNICATION_SPEECH_PRIORITY(communication_priority);
 				long protagonist_actor_index = NONE;
 				long protagonist_unit_index = NONE;
 				struct actor_datum *protagonist_actor = NULL;
@@ -7021,7 +7047,10 @@ void ai_communication_event(
 							{
 								candidate_delay = speech_delay[communication_team][communication_priority][near_player];
 
-								if (communication_priority < _ai_communication_priority_exclaim)
+								/* port: build 1749 (0x41d89) held back exclamations
+								too */
+								if (halo_build_1749() ||
+									communication_priority < _ai_communication_priority_exclaim)
 								{
 									struct dialogue_event_status *event = &global_dialogue_events[
 										dialogue_index * NUMBER_OF_AI_COMMUNICATION_TEAMS +
@@ -7195,7 +7224,9 @@ void ai_communication_event(
 								protagonist_unit_index,
 								animation_type);
 
-							if (animation_impulse && protagonist_actor_index != NONE)
+							/* port: build 1749 (0x42024) let any actor signal */
+							if (animation_impulse && protagonist_actor_index != NONE &&
+								!halo_build_1749())
 							{
 								match_assert(
 									"c:\\halo\\SOURCE\\ai\\ai_communication.c",

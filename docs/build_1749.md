@@ -366,6 +366,15 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     once; the search lines repeat sooner (0 to 5 seconds, not 8 to 25),
     and uncovering and cover lines may repeat at once
     (`global_dialogue_table_build_1749`).
+  - How often actors talk. The timers that keep a team from talking over
+    itself hold back talk, communicate and shout lines too (this build's
+    minimum delays let those through every time), and a talk line near a
+    player waits 3 seconds after the last talk, not 2. Exclamations are
+    also weighted down when said recently. A unit that spoke recently is
+    not faded back in over two seconds, and filler and chatter are spoken
+    at idle priority, communicate at talk priority (1749's unit speech has
+    no communicate priority). Any actor may make a hand signal, even one
+    asleep or mid-dive (`ai_communication.c`).
   - Following a path. A step is passed once its point still lies ahead
     along the next step and the actor is within a quarter unit of that
     step's line; a path always ends when its last step is reached; and a
