@@ -766,7 +766,28 @@ boolean projectile_update(
 			real_vector3d target_vector;
 			real_vector3d rotation_axis;
 
-			if (TEST_FLAG(_object_mask_unit, target->object.type) &&
+			/* port: build 1749 slowed homing at a player's biped outside
+			multiplayer by its own numbers, half on Normal and three quarters
+			on Hard (this build's 1 and 2), not by the globals' table */
+			if (halo_build_1749())
+			{
+				if (target->object.type == _object_type_biped &&
+					unit_get(projectile->projectile.target_object_index)->unit.player_index != NONE &&
+					!game_engine_running())
+				{
+					short difficulty = game_difficulty_level_get();
+
+					if (difficulty == 1)
+					{
+						angular_velocity *= 0.5f;
+					}
+					else if (difficulty == 2)
+					{
+						angular_velocity *= 0.75f;
+					}
+				}
+			}
+			else if (TEST_FLAG(_object_mask_unit, target->object.type) &&
 				unit_get(projectile->projectile.target_object_index)->unit.player_index != NONE)
 			{
 				angular_velocity *= game_difficulty_get_value(_game_difficulty_value_guidance_vs_player);

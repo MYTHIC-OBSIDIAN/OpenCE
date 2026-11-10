@@ -123,7 +123,8 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   recharge, the AI's aim and fire, grenades and upgrades, left the rest
   zero, and gave allies, and everyone in multiplayer, the enemies' values
   on Normal: halo1749.exe does the same, and the rows it didn't read leave
-  what they scale as it is (homing against the player and the melee delay).
+  what they scale as it is (homing against the player and the melee delay
+  had numbers of their own, below).
   Every other name the scripts use (teams, AI states, actor types, HUD
   corners) is numbered as this build's.
 - **Controller sets.** 1749's menus have two joystick sets, DEFAULT and
@@ -231,6 +232,9 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     (`actor_firing_position.c`, `path_obstacle_avoidance.c`).
   - A vehicle the scripts make enterable is so within 5 world units, not 8
     (`ai_script.c`).
+  - Homing projectiles turn at a player's biped, outside multiplayer, at
+    half their rate on Normal and three quarters on Hard, by 1749's own
+    numbers rather than the globals' row (`projectiles.c`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield
