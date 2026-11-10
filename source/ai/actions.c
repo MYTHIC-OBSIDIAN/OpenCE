@@ -2081,6 +2081,16 @@ boolean actor_action_test_grenade(
 		return FALSE;
 	}
 
+	/* port: (build 1749 throws only a grenade its unit has) */
+	if (halo_build_1749() &&
+		!unit_get_grenade_count(
+			actor->meta.unit_index,
+			unit_get_current_grenade_type(actor->meta.unit_index)))
+	{
+		debug_info->grenade_decision = 3;
+		return FALSE;
+	}
+
 	if (actor->meta.encounter_index != NONE)
 	{
 		struct encounter_datum *encounter =

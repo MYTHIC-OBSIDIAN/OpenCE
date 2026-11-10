@@ -139,7 +139,10 @@ void action_charge_begin(
 {
 	struct actor_datum *actor = actor_get(actor_index);
 
-	if (actor->state.action_data.charge.goal == _charge_goal_vehicle_strafing &&
+	/* port: (in build 1749 the attempts count up to a special pass:
+	actor_combat_special_fire_build_1749) */
+	if (!halo_build_1749() &&
+		actor->state.action_data.charge.goal == _charge_goal_vehicle_strafing &&
 		actor_combat_get_firing_variant_definition(actor_index)->ranged_combat.special_fire_situation ==
 			_actor_special_fire_situation_strafing)
 	{

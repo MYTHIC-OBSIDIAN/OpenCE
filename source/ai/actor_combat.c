@@ -338,6 +338,94 @@ static boolean actor_combat_enable_special_fire_situation(
 	return result;
 }
 
+/* port: build 1749's choice of special fire (overcharge or the
+secondary trigger). It looks at the situation whenever it is not already
+bursting or firing wildly; once the delay since its last look has run
+out, it looks again and fires specially by its variant's chance. A
+strafing pass fires specially only at a target in a vehicle, while
+charging it in a vehicle's gun, and only after three looks that did not
+(special_fire_deny_attempts counts them here). Its difficulty never
+changes the delay or the chance. */
+static void actor_combat_special_fire_build_1749(
+	long actor_index,
+	long weapon_index)
+{
+	struct actor_datum *actor = actor_get(actor_index);
+	struct actor_variant_definition *firing_variant_definition =
+		actor_combat_get_firing_variant_definition(actor_index);
+	short special_fire_mode = firing_variant_definition->ranged_combat.special_fire_mode;
+	boolean special_fire = FALSE;
+
+	if (special_fire_mode > _actor_special_fire_mode_none &&
+		actor->control.fire_state != _actor_fire_state_bursting &&
+		actor->control.fire_state != _actor_fire_state_wild)
+	{
+		switch (firing_variant_definition->ranged_combat.special_fire_situation)
+		{
+		case _actor_special_fire_situation_enemy_visible:
+			special_fire =
+				actor->control.current_fire_target_type == _actor_fire_target_prop &&
+				actor->target.target_type >= _actor_target_clear_line_of_sight_enemy;
+			break;
+
+		case _actor_special_fire_situation_enemy_out_of_sight:
+			special_fire =
+				actor->control.current_fire_target_type == _actor_fire_target_none &&
+				actor->target.target_type >= _actor_target_uninspected_orphan &&
+				actor->target.target_really_alive &&
+				actor->target.since_any_target_visible_timer >= 75;
+			break;
+
+		case _actor_special_fire_situation_strafing:
+			if (actor->control.current_fire_target_type == _actor_fire_target_prop)
+			{
+				struct prop_datum *prop = prop_get(actor->control.current_fire_target_prop_index);
+
+				special_fire =
+					actor->target.target_type >= _actor_target_clear_line_of_sight_enemy &&
+					actor->input.vehicle_gunner &&
+					actor->state.action == _actor_action_charge &&
+					prop->vehicle_index != NONE &&
+					actor->control.special_fire_deny_attempts >= 3;
+			}
+			break;
+		}
+
+		if (special_fire)
+		{
+			struct weapon_definition *weapon_definition =
+				weapon_definition_get(weapon_get(weapon_index)->definition_index);
+
+			special_fire = special_fire_mode == _actor_special_fire_mode_secondary ?
+				weapon_definition->weapon.triggers.count > 1 :
+				weapon_definition->weapon.triggers.count > 0;
+		}
+	}
+
+	if (actor->control.special_fire_delay <= 0 && special_fire)
+	{
+		real special_fire_delay =
+			real_random_range(0.0f, 1.5f) + firing_variant_definition->ranged_combat.special_fire_delay;
+
+		actor->control.special_fire_delay = (short)(special_fire_delay*TICKS_PER_SECOND);
+		if (real_seed_random(get_global_random_seed_address()) <
+			firing_variant_definition->ranged_combat.special_fire_chance)
+		{
+			actor->control.special_fire_deny_attempts = 0;
+			if (special_fire_mode == _actor_special_fire_mode_overcharge)
+				actor->control.overcharging_weapon = TRUE;
+			else if (special_fire_mode == _actor_special_fire_mode_secondary)
+				actor->control.next_burst_secondary = TRUE;
+		}
+		else
+		{
+			actor->control.special_fire_deny_attempts++;
+		}
+	}
+
+	return;
+}
+
 void actor_combat_fire_wildly(
 	long actor_index,
 	short fire_ticks)
@@ -1204,7 +1292,10 @@ static void actor_start_burst(
 	struct actor_firing_pattern *firing_pattern;
 	real new_target_time;
 
+	/* port: (build 1749 fires the secondary burst it chose whatever the
+	target) */
 	if (actor->control.next_burst_secondary &&
+		!halo_build_1749() &&
 		!actor_combat_allow_special_fire_situation(
 			actor_index,
 			firing_variant_definition->ranged_combat.special_fire_situation))
@@ -1722,7 +1813,10 @@ void actor_combat_update(
 
 	if (actor->orders.combat.throw_grenade)
 	{
-		if (actor_variant_definition->grenade_combat.grenade_type != NONE &&
+		/* port: (build 1749 gives an actor no grenade it lacks: one with
+		none never decides to throw, actor_action_test_grenade) */
+		if (!halo_build_1749() &&
+			actor_variant_definition->grenade_combat.grenade_type != NONE &&
 			!unit_get_grenade_count(
 				actor->meta.unit_index,
 				actor_variant_definition->grenade_combat.grenade_type))
@@ -1760,7 +1854,12 @@ void actor_combat_update(
 			173,
 			weapon_index != NONE);
 
-		if (firing_variant_definition->ranged_combat.special_fire_mode > _actor_special_fire_mode_none &&
+		/* port: (actor_combat_special_fire_build_1749) */
+		if (halo_build_1749())
+		{
+			actor_combat_special_fire_build_1749(actor_index, weapon_index);
+		}
+		else if (firing_variant_definition->ranged_combat.special_fire_mode > _actor_special_fire_mode_none &&
 			actor->control.fire_state != _actor_fire_state_bursting &&
 			actor->control.fire_state != _actor_fire_state_wild &&
 			actor->control.special_fire_delay <= 0 &&

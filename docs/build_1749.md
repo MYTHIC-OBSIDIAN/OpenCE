@@ -311,6 +311,15 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     ('bipd') made every actor stop to fire, panic with its group, never
     shoot corpses and more. 1749 has none of these flags, so halo1749.exe
     clears that word as a map loads (`cache_files.c`).
+  - Special fire (overcharge or the secondary trigger). It is chosen by
+    the variant's chance once its delay runs out, whatever the difficulty.
+    A strafing pass fires specially only at a target in a vehicle, while
+    charging it, and only after three tries that did not; a secondary
+    burst once chosen is fired whatever the target
+    (`actor_combat_special_fire_build_1749`).
+  - Grenades. An actor whose unit has no grenades never decides to throw
+    one, and none is given to it when it does (`actions.c`,
+    `actor_combat.c`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield
