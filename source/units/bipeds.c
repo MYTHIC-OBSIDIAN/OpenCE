@@ -2688,10 +2688,13 @@ static void biped_update_physics(
 			real_plane3d plane;
 			real_plane3d best_plane;
 			real best_velocity_dot;
+			real_point3d best_closest_point;
+			real_plane3d support_plane;
 			real_point3d point;
 			real distance;
 
 			bsp3d_get_plane_from_designator(&bsp->bsp3d, surface->plane_designator, &plane);
+			support_plane = plane;
 			distance = -(plane.n.i * clipped_position.x +
 				plane.n.j * clipped_position.y +
 				plane.n.k * clipped_position.z -
@@ -2791,6 +2794,7 @@ static void biped_update_physics(
 								best_surface_index = neighbor_surface_index;
 								best_plane = plane;
 								best_velocity_dot = velocity_dot;
+								best_closest_point = closest_point;
 							}
 						}
 					}
@@ -2801,6 +2805,58 @@ static void biped_update_physics(
 			while (edge_index != surface->first_edge_index);
 
 			if (best_surface_index != NONE &&
+				best_distance_squared <= (physics->width * 2.f) * (physics->width * 2.f) &&
+				best_velocity_dot <= 1.6f / TICKS_PER_SECOND &&
+				halo_build_1749())
+			{
+				/* port: build 1749 (0x18d43e) moved the biped on over the edge
+				to the climbable surface beyond (the top of a ladder), as far as
+				the edge's nearest point, kept what it hit there as its
+				collisions, and turned its velocity from the surface it left to
+				the new one, losing it the sharper the turn */
+				real_vector3d edge_move;
+				real_point3d moved_position;
+				real_vector3d moved_velocity;
+				short moved_collision_count;
+
+				vector_from_points3d(&point, &best_closest_point, &edge_move);
+				moved_collision_count = collision_move_pill(
+					collision_flags,
+					&clipped_position,
+					&edge_move,
+					physics->height,
+					physics->width,
+					physics->biped_index,
+					&moved_position,
+					&moved_velocity,
+					16,
+					collisions);
+				if (moved_collision_count > 0)
+				{
+					real_vector3d axis;
+
+					collision_count = moved_collision_count;
+					clipped_position = moved_position;
+					cross_product3d(&support_plane.n, &best_plane.n, &axis);
+					if (normalize3d(&axis) > 0.f)
+					{
+						real edge_cosine = dot_product3d(&best_plane.n, &support_plane.n);
+						real edge_sine = square_root(MAX(0.f, 1.f - edge_cosine * edge_cosine));
+						real scale;
+
+						rotate_vector_about_axis(&clipped_velocity, &axis, edge_sine, edge_cosine);
+						if (edge_cosine > 0.70710677f)
+							scale = 1.f;
+						else if (edge_cosine < -0.70710677f)
+							scale = 0.f;
+						else
+							scale = (edge_cosine + 0.70710677f) * 0.70710677f;
+						scale_vector3d(&clipped_velocity, scale, &clipped_velocity);
+					}
+					physics->stick_surface_index = best_surface_index;
+				}
+			}
+			else if (best_surface_index != NONE &&
 				best_distance_squared <= (physics->width * 2.f) * (physics->width * 2.f) &&
 				best_velocity_dot <= 1.6f / TICKS_PER_SECOND)
 			{

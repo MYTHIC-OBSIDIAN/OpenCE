@@ -194,6 +194,17 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   (0.2–0.75 for a ghost), and turns the vehicle for its 30 ticks however
   upright it gets, about the plain axis, without touching its velocity.
   halo1749.exe does the same (`vehicle_update`).
+- **Stepping off a ladder.** When a biped walks off the edge of the
+  surface it stands on onto a steep surface beyond (the top or bottom of a
+  ladder), this build snapped it onto that surface's plane, took the
+  velocity it had off the plane and faked a collision to hold it there.
+  1749's executable instead moves the biped on, as an ordinary collision
+  move, to the nearest point of the edge it is crossing, keeps what that
+  move hit as its collisions, and turns its velocity from the old
+  surface's plane onto the new one, keeping all of it up to a 45 degree
+  bend, none past 135, and a share in between. If the move hits nothing
+  the biped is not stuck to the new surface. halo1749.exe does the same
+  (`biped_update_physics`).
 - **Vehicle physics.** Compared function by function with 1749's
   `physics.c` and `vehicles.c`, these differ, and halo1749.exe does as
   1749 does:
