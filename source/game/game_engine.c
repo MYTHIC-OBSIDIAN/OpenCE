@@ -1111,7 +1111,19 @@ static void game_engine_generate_title_string(
 		"c:\\halo\\SOURCE\\game\\game_engine.c",
 		0x36E,
 		title_string);
-	if (global_variant.universal_variant.lives > 0)
+	/* port: build 1749's lives, built into its executable: ": 2 lives
+	left", for every count */
+	if (global_variant.universal_variant.lives > 0 && halo_build_1749())
+	{
+		usnprintf(
+			life_string,
+			NUMBEROF(life_string),
+			L": %d lives left",
+			global_variant.universal_variant.lives - player_get(player_index)->statistics.deaths);
+		life_string[NUMBEROF(life_string) - 1] = 0;
+		secondary_string = life_string;
+	}
+	else if (global_variant.universal_variant.lives > 0)
 	{
 		struct player_datum *player = player_get(player_index);
 		long remaining_lives =
@@ -1186,7 +1198,9 @@ static void game_engine_generate_title_string(
 		secondary_string = time_left_string;
 	}
 
-	if (game_engine_globals.postgame_state == game_engine_mode_postgame_delay)
+	/* port: (not build 1749's, whose executable has no "You won" or "Game
+	ends in a draw": its title is the score to the end) */
+	if (game_engine_globals.postgame_state == game_engine_mode_postgame_delay && !halo_build_1749())
 	{
 		long did_player_win = game_engine_did_player_win(player_index);
 		boolean has_teams = game_engine_has_teams();
@@ -2977,6 +2991,20 @@ void game_engine_post_rasterize_post_game(
 			-render.camera.viewport_bounds.y0);
 		draw_string_set_tab_stops(NULL, 0);
 		draw_string_set_color(&prompt_color);
+
+		/* port: build 1749's own line, built into its executable, for every
+		machine (game_engine_update_non_deterministic) */
+		if (halo_build_1749())
+		{
+			draw_string_and_hack_in_icons(
+				&bounds,
+				NULL,
+				NULL,
+				0,
+				L"%x-button : next game     %a-button : replay     %b-button : quit",
+				FALSE);
+			return;
+		}
 
 		server = global_network_game_server_get();
 		if (server)
@@ -5356,6 +5384,17 @@ void game_engine_update_non_deterministic(
 			else if (test_any_gamepad_button(1) || test_any_gamepad_button(13))
 			{
 				network_game_abort();
+			}
+			/* port: build 1749's X, "next game": the host takes its
+			playlist's next stage, the map and game type the pregame then
+			has (1749betaP.xbe's game_engine_update) */
+			else if (halo_build_1749() && test_any_gamepad_button(2))
+			{
+				if (global_network_game_server_get())
+				{
+					game_engine_playlist_next(10, 10, 4);
+					game_engine_playlist_begin();
+				}
 			}
 			break;
 		}

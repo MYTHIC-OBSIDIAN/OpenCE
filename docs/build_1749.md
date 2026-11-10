@@ -186,6 +186,15 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   free seats. It flips an overturned vehicle whoever is at its wheel.
   halo1749.exe does the same (`unit_find_nearby_seat`,
   `player_examine_nearby_vehicle`).
+- **The end of a game.** 1749's carnage report has its own line, "X:
+  next game, A: replay, B: quit", for every machine: A takes the host back
+  to the pregame (as this build's does), B leaves, and X has the host take
+  its playlist's next stage (`build_1749_playlist_next`). Its title is the
+  score to the end, with ": 2 lives left" where the game has lives, and no
+  "You won" or "Game ends in a draw". In the pregame a game type is named by
+  its engine alone (1749's text has no Assault, Rally or Juggernaut), and
+  there are no "waiting for" or "teams ready" directions
+  (`game_engine.c`, `ui_widget_game_data_input_functions.c`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield

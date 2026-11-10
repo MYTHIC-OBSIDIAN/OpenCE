@@ -2525,6 +2525,18 @@ static void multiplayer_game_set_text_box_for_game_ruleset(
 		"expected text box widget for mp game settings text");
 
 	game = network_game_get_game();
+	/* port: build 1749's names its engine only (its ui\multiplayer_game_text
+	has no Assault, Rally, Juggernaut or the like: 1749betaP.xbe) */
+	if (game && halo_build_1749())
+	{
+		long engine = game->variant.game_engine_index;
+
+		widget->parameters.text_box.string_list_index = (short)(
+			engine >= game_engine_ctf && engine <= game_engine_race ?
+				_multiplayer_game_text_string_capture_the_flag + engine - game_engine_ctf :
+				_multiplayer_game_text_string_unknown_game_type);
+		return;
+	}
 	if (game)
 	{
 		switch (game->variant.game_engine_index)
@@ -2935,6 +2947,14 @@ static void multiplayer_game_directions(
 		0xBAD,
 		widget->type == _ui_widget_type_text_box,
 		"expected text box widget for team game directions");
+
+	/* port: build 1749 has no directions (its multiplayer text has no
+	"waiting for" or "teams ready") */
+	if (halo_build_1749())
+	{
+		widget->visible = FALSE;
+		return;
+	}
 
 	if (server)
 	{
