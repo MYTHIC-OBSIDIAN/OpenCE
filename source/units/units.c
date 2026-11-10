@@ -5226,7 +5226,10 @@ short unit_find_nearby_seat(
 					{
 						seat_state = _unit_nearby_seat_available;
 					}
-					else if (occupant_unit_index != NONE)
+					/* port: build 1749 has no eviction (its action results
+					have none, 1749betaP.xbe): a seat another unit holds
+					is not the player's, and its free seats are offered */
+					else if (occupant_unit_index != NONE && !halo_build_1749())
 					{
 						struct unit_datum *occupant = unit_get(occupant_unit_index);
 

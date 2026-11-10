@@ -4178,8 +4178,9 @@ static void player_examine_nearby_vehicle(
 				}
 			}
 		}
+		/* port: (build 1749 flips a vehicle whoever drives it) */
 		else if (!TEST_FLAG(vehicle->vehicle.flags, _vehicle_upending_bit) &&
-			vehicle->unit.driver_object_index == NONE)
+			(vehicle->unit.driver_object_index == NONE || halo_build_1749()))
 		{
 			player_set_action_result(
 				player_index,
