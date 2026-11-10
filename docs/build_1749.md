@@ -304,6 +304,13 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     40-unit sight). Light, fog and what the actor knows
     change nothing, and nothing seen is unmistakable
     (`actor_visibility_at_point`).
+  - Hearing. An actor hears anything it hears at all fully, never
+    unmistakably (`actor_audibility_at_point`).
+  - Actor flags. 1749's actor tags hold the actor's unit reference where
+    this build's hold a second word of flags. Read as flags, its group
+    ('bipd') made every actor stop to fire, panic with its group, never
+    shoot corpses and more. 1749 has none of these flags, so halo1749.exe
+    clears that word as a map loads (`cache_files.c`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield

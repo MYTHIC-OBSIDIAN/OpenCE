@@ -133,6 +133,7 @@ symbols in this file:
 #include "texture_cache.h"
 #include "interface/ui_widget.h"
 #include "scenario/scenario_definitions.h"
+#include "ai/actor_definitions.h" /* port: build_1749_actor_definitions_convert */
 #include "sound/sound_manager.h"
 #include "tag_schema.h"
 #include "custom_edition_cache.h" /* port: port/linux/game/custom_edition_cache.c */
@@ -1330,6 +1331,23 @@ long scenario_tags_load(
 					cache_file_close();
 
 					return NONE;
+				}
+
+				/* port: 1749's actor tags have the actor's unit reference
+				where this build's have their second word of flags: its
+				group, 'bipd', read as those flags, made every actor stop
+				to fire, panic in groups, never shoot corpses and the rest.
+				1749 has none of those flags */
+				{
+					long tag_index;
+
+					for (tag_index = 0; tag_index < loaded_header->tag_count; tag_index++)
+					{
+						struct cache_file_tag_instance *instance = &loaded_header->tag_instances[tag_index];
+
+						if (instance->group_tag == ACTOR_DEFINITION_TAG && instance->base_address)
+							((struct actor_definition *)instance->base_address)->flags2 = 0;
+					}
 				}
 			}
 

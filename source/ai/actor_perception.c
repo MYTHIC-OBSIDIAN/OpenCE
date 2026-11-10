@@ -2776,8 +2776,9 @@ short actor_audibility_at_point(
 						audible_distance,
 						square_root(distance_squared));
 
+				/* port: (build 1749 hears nothing as unmistakable) */
 				if (audible_distance < maximum_distance)
-					result = (source_type >= 3) + 2;
+					result = halo_build_1749() ? 2 : (source_type >= 3) + 2;
 			}
 		}
 
