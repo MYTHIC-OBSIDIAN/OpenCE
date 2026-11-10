@@ -1027,6 +1027,29 @@ void encounter_update_status(
 	if (real_enemy_targeted)
 		encounter->enemy_traitor = FALSE;
 
+	if (halo_build_1749())
+	{
+		/* port: build 1749 (0x54d3a) kept an encounter up while any of its
+		actors knew of a living enemy, and stood it down at once otherwise:
+		no memory timers and no post-combat */
+		if (encounter->enemy_alive)
+		{
+			encounter->stand_down = FALSE;
+		}
+		else
+		{
+			if (!encounter->stand_down)
+				encounter_stand_down(encounter_index);
+			if (!encounter->enemy_target)
+			{
+				encounter->enemy_visible_timer = NONE;
+				encounter->enemy_alive_timer = NONE;
+			}
+		}
+		encounter->post_combat = FALSE;
+		goto strength;
+	}
+
 	stay_active = encounter->enemy_visible ||
 		(encounter->enemy_visible_timer != NONE && encounter->enemy_visible_timer < ENCOUNTER_ENEMY_RECENT_TICKS) ||
 		((encounter->enemy_alive || (encounter->enemy_alive_timer != NONE && encounter->enemy_alive_timer < ENCOUNTER_ENEMY_RECENT_TICKS)) &&
@@ -1067,6 +1090,7 @@ void encounter_update_status(
 		encounter_stand_down(encounter_index);
 	}
 
+strength:
 	if (encounter->original_count > 0)
 	{
 		encounter->current_strength_fraction = MAX(
@@ -2036,6 +2060,10 @@ void encounter_stand_down(
 	encounter->stand_down = TRUE;
 	encounter->enemies_defeated = 0;
 	encounter_clear_pursuit(encounter_index);
+	/* port: build 1749 (0x53cef) ignored the bodies of those killed before
+	it stood down */
+	if (halo_build_1749())
+		encounter->corpse_ignore_time = game_time_get();
 
 	encounter_actor_iterator_new(&iterator, encounter_index);
 	while ((actor = encounter_actor_iterator_next(&iterator)) != NULL)

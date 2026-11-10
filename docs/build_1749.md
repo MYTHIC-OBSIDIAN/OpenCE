@@ -374,7 +374,13 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     not faded back in over two seconds, and filler and chatter are spoken
     at idle priority, communicate at talk priority (1749's unit speech has
     no communicate priority). Any actor may make a hand signal, even one
-    asleep or mid-dive (`ai_communication.c`).
+    asleep or in the middle of a dive or similar (`ai_communication.c`).
+  - Standing down. An encounter stays up as long as any of its actors
+    knows of a living enemy, however long since it was seen, and stands
+    down as soon as none does; this build stood down 15 seconds after
+    losing sight of its enemies and went through post-combat first.
+    Bodies of those killed before the stand-down are then ignored
+    (`encounter_update_status`, `encounter_stand_down`).
   - Following a path. A step is passed once its point still lies ahead
     along the next step and the actor is within a quarter unit of that
     step's line; a path always ends when its last step is reached; and a
