@@ -3362,10 +3362,13 @@ boolean actor_action_try_to_throw_grenade(
 				actor->control.grenade_current_target.y -
 				actor->input.position.body_position.y;
 
-			if (normalize2d(&to_target) > 0.0f &&
+			/* port: build 1749 (0x1b6d0) threw at once, without first
+			turning to face the target */
+			if (halo_build_1749() ||
+				(normalize2d(&to_target) > 0.0f &&
 				!(actor->input.facing_vector.j * to_target.j +
 					to_target.i * actor->input.facing_vector.i <
-					ACTOR_GRENADE_THROW_MINIMUM_COSINE))
+					ACTOR_GRENADE_THROW_MINIMUM_COSINE)))
 			{
 				long encounter_index;
 

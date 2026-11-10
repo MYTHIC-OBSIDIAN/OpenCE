@@ -1612,7 +1612,10 @@ static void actor_input_update(
 						vehicle_definition->flags,
 						_vehicle_ai_driver_nondirectional_bit))
 					{
+						/* port: build 1749 (0x39189) had no hovering
+						driver; nondirectional vehicles all drove alike */
 						actor->input.vehicle_driver_type =
+							!halo_build_1749() &&
 							TEST_FLAG(vehicle_definition->flags, _vehicle_ai_driver_hovering_bit)
 								? _actor_vehicle_driver_hovering_ground
 								: _actor_vehicle_driver_nondirectional_ground;
@@ -2347,6 +2350,8 @@ long actor_new(
 					actor->control.vector_avoidance_clear_times,
 					NONE,
 					sizeof(actor->control.vector_avoidance_clear_times));
+				/* port: build 1749's clear timers live beside the actor */
+				actor_move_reset_build_1749_avoidance(actor_index);
 				actor->control.vector_avoidance_current_direction = NONE;
 				actor->control.vector_avoidance_sharp_turn_timer = NONE;
 				actor->control.secondary_look_type = _secondary_look_none;

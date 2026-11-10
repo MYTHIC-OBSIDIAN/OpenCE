@@ -460,7 +460,77 @@ struct vector_avoidance_ray avoidance_rays[VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS
 real_vector3d avoidance_directions[VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS];
 struct vector_avoidance_ray sense_rays[9];
 
+/* port: build 1749's vector avoidance rays (built in actor_move_initialize
+0x29680): five sense rays and three rings of avoidance rays */
+#define BUILD_1749_SENSE_RAY_COUNT 5
+#define BUILD_1749_AVOID_RAY_COUNT 3
+
+static real const build_1749_sense_ray_length = 1.f;
+static real const build_1749_sense_ray_offset = 1.2f;
+static real const build_1749_sense_ray_divergence = 0.0872665f;
+static real const build_1749_sense_ray_offsets[BUILD_1749_SENSE_RAY_COUNT] =
+{
+	0.f,
+	1.f,
+	1.f,
+	1.f,
+	1.f,
+};
+static real const build_1749_sense_ray_angles[BUILD_1749_SENSE_RAY_COUNT] =
+{
+	0.f,
+	0.f,
+	1.5707964f,
+	3.1415927f,
+	4.712389f,
+};
+static real const build_1749_sense_ray_avoidance_weights[BUILD_1749_SENSE_RAY_COUNT][VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS] =
+{
+	{ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f },
+	{ -0.5f, -0.5f, 0.f, 0.7f, 1.f, 0.7f, 0.f, -0.5f },
+	{ 0.f, -0.5f, -0.5f, -0.5f, 0.f, 0.7f, 1.f, 0.7f },
+	{ 1.f, 0.7f, 0.f, -0.5f, -0.5f, -0.5f, 0.f, 0.7f },
+	{ 0.f, 0.7f, 1.f, 0.7f, 0.f, -0.5f, -0.5f, -0.5f },
+};
+static real const build_1749_avoidance_ray_length = 1.35f;
+static real const build_1749_avoidance_ray_offsets[BUILD_1749_AVOID_RAY_COUNT] =
+{
+	0.5f,
+	0.8f,
+	1.1f,
+};
+static real const build_1749_avoidance_ray_divergence[BUILD_1749_AVOID_RAY_COUNT] =
+{
+	0.2617994f,
+	0.5235988f,
+	0.8726646f,
+};
+static real const build_1749_avoid_ray_avoidance_weights[BUILD_1749_AVOID_RAY_COUNT] =
+{
+	0.8f,
+	1.2f,
+	1.2f,
+};
+static real const build_1749_avoid_ray_adjacent_fraction = 0.3f;
+
+static struct vector_avoidance_ray build_1749_sense_rays[BUILD_1749_SENSE_RAY_COUNT];
+static struct vector_avoidance_ray build_1749_avoidance_rays[VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS][BUILD_1749_AVOID_RAY_COUNT];
+/* 1749 kept three clear timers per direction in the actor; this build's
+actor has room for two, so they live beside it */
+static byte build_1749_avoidance_clear_times[MAXIMUM_NUMBER_OF_ACTORS][VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS][BUILD_1749_AVOID_RAY_COUNT];
+
 /* ---------- public code */
+
+void actor_move_reset_build_1749_avoidance(
+	long actor_index)
+{
+	csmemset(
+		build_1749_avoidance_clear_times[DATUM_INDEX_TO_ABSOLUTE_INDEX(actor_index)],
+		NONE,
+		sizeof(build_1749_avoidance_clear_times[0]));
+
+	return;
+}
 
 void actor_move_keep_moving_past_destination(
 	long actor_index)
@@ -721,12 +791,18 @@ static void actor_move_avoidance_setup(
 {
 	long object_indices[2048];
 	struct object_datum *object = object_get(avoidance_data->object_index);
+	/* port: build 1749 (0x28420) gathered vehicles and scenery, not
+	machines, out to its longer rays */
 	short object_count = objects_in_sphere(
 		_object_mask_biped,
-		_object_mask_sightblocking,
+		halo_build_1749()
+			? (FLAG(_object_type_vehicle) | FLAG(_object_type_scenery))
+			: _object_mask_sightblocking,
 		&object->object.location,
 		&avoidance_data->origin,
-		MAX(avoidance_ray_length, sense_ray_length) * avoidance_data->avoid_distance,
+		(halo_build_1749()
+			? MAX(build_1749_avoidance_ray_length, build_1749_sense_ray_length)
+			: MAX(avoidance_ray_length, sense_ray_length)) * avoidance_data->avoid_distance,
 		object_indices,
 		NUMBEROF(object_indices));
 	short object_number;
@@ -1023,6 +1099,54 @@ void actor_move_initialize(
 					divergence_sine,
 					&avoidance_rays[direction_index][avoidance_ray_index].divergence);
 				avoidance_rays[direction_index][avoidance_ray_index].divergence.i = divergence_cosine;
+			}
+		}
+	}
+
+	/* port: build 1749's rays */
+	{
+		real divergence_sine = sine(build_1749_sense_ray_divergence);
+		real divergence_cosine = cosine(build_1749_sense_ray_divergence);
+		short ray_index;
+
+		for (ray_index = 0; ray_index < BUILD_1749_SENSE_RAY_COUNT; ray_index++)
+		{
+			real ray_sine = sine(build_1749_sense_ray_angles[ray_index]);
+			real ray_cosine = cosine(build_1749_sense_ray_angles[ray_index]);
+			real offset = build_1749_sense_ray_offset*build_1749_sense_ray_offsets[ray_index];
+
+			build_1749_sense_rays[ray_index].length = build_1749_sense_ray_length;
+			build_1749_sense_rays[ray_index].offset.i = 0.f;
+			build_1749_sense_rays[ray_index].offset.j = offset*ray_cosine;
+			build_1749_sense_rays[ray_index].offset.k = offset*ray_sine;
+			build_1749_sense_rays[ray_index].divergence.i = divergence_cosine;
+			build_1749_sense_rays[ray_index].divergence.j = divergence_sine*ray_cosine;
+			build_1749_sense_rays[ray_index].divergence.k = divergence_sine*ray_sine;
+		}
+
+		for (ray_index = 0; ray_index < BUILD_1749_AVOID_RAY_COUNT; ray_index++)
+		{
+			real ring_sine = sine(build_1749_avoidance_ray_divergence[ray_index]);
+			real ring_cosine = cosine(build_1749_avoidance_ray_divergence[ray_index]);
+			real offset = build_1749_avoidance_ray_offsets[ray_index];
+			short direction_index;
+
+			for (direction_index = 0;
+				direction_index < VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS;
+				direction_index++)
+			{
+				struct vector_avoidance_ray *ray =
+					&build_1749_avoidance_rays[direction_index][ray_index];
+				real ray_sine = sine(avoidance_ray_angles[direction_index]);
+				real ray_cosine = cosine(avoidance_ray_angles[direction_index]);
+
+				ray->length = build_1749_avoidance_ray_length;
+				ray->offset.i = 0.f;
+				ray->offset.j = offset*ray_cosine;
+				ray->offset.k = offset*ray_sine;
+				ray->divergence.i = ring_cosine;
+				ray->divergence.j = ring_sine*ray_cosine;
+				ray->divergence.k = ring_sine*ray_sine;
 			}
 		}
 	}
@@ -1828,6 +1952,323 @@ static void actor_move_vector_avoidance(
 	return;
 }
 
+/* port: build 1749's vector avoidance (0x28950). It turns the movement
+vector itself rather than returning a rotation to blend in, and sets the
+emergency only when it steers. */
+static void actor_move_vector_avoidance_build_1749(
+	long actor_index,
+	real_vector3d *movement_vector,
+	real *emergency_amount)
+{
+	struct actor_datum *actor = actor_get(actor_index);
+	long object_index = actor->input.vehicle_index;
+	struct object_datum *object;
+	struct actor_debug_info *debug_info;
+	struct vector_avoidance_data avoidance_data;
+	real avoidance_weights[VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS];
+	byte (*clear_times)[BUILD_1749_AVOID_RAY_COUNT];
+	real_vector3d movement_direction;
+	real_vector3d local_movement_direction;
+	real maximum_sense_emergency = 0.f;
+	real best_weight;
+	real movement_direction_approximation = 0.f;
+	real movement_approximate_weight = 0.f;
+	real forward_dot = 1.f;
+	real weight_difference;
+	short best_avoidance_direction;
+	short direction_index;
+	short ray_index;
+
+	if (object_index == NONE)
+		object_index = actor->meta.unit_index;
+	if (object_index == NONE)
+		return;
+
+	object = object_get(object_index);
+	debug_info = &actor_debug_array[DATUM_INDEX_TO_ABSOLUTE_INDEX(actor_index)];
+	clear_times = build_1749_avoidance_clear_times[DATUM_INDEX_TO_ABSOLUTE_INDEX(actor_index)];
+
+	debug_info->field_19C = game_time_get();
+	avoidance_data.structure = global_structure_bsp_get();
+	avoidance_data.bsp = global_collision_bsp_get();
+	avoidance_data.object_index = object_index;
+	object_get_origin(object_index, &avoidance_data.origin);
+	avoidance_data.forward = object->object.forward;
+	avoidance_data.up = object->object.up;
+	cross_product3d(&object->object.up, &object->object.forward, &avoidance_data.left);
+	avoidance_data.avoid_distance = 7.f;
+	avoidance_data.avoid_width = 1.2f;
+	actor_move_avoidance_setup(&avoidance_data);
+
+	csmemset(avoidance_weights, 0, sizeof(avoidance_weights));
+
+	for (ray_index = 0; ray_index < BUILD_1749_SENSE_RAY_COUNT; ray_index++)
+	{
+		real_point3d ray_origin;
+		real_vector3d ray_direction;
+		real collision_t;
+		short avoidance_type = actor_move_test_avoidance_vector(
+			&avoidance_data,
+			&build_1749_sense_rays[ray_index],
+			&ray_origin,
+			&ray_direction,
+			&collision_t,
+			NULL);
+
+		debug_info->ray_origin[ray_index] = ray_origin;
+		debug_info->ray_direction[ray_index] = ray_direction;
+		debug_info->avoidance_type[ray_index] = avoidance_type;
+		debug_info->collision_t[ray_index] = collision_t;
+		if (avoidance_type > _actor_vector_avoidance_clear)
+		{
+			real sense_emergency = 1.f - collision_t;
+			real sense_weight = MIN(2.f*sense_emergency, 1.f);
+
+			for (direction_index = 0;
+				direction_index < VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS;
+				direction_index++)
+			{
+				avoidance_weights[direction_index] +=
+					build_1749_sense_ray_avoidance_weights[ray_index][direction_index]*sense_weight;
+			}
+			maximum_sense_emergency = MAX(maximum_sense_emergency, sense_emergency);
+		}
+	}
+
+	for (direction_index = 0;
+		direction_index < VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS;
+		direction_index++)
+	{
+		short avoid_ray_result[BUILD_1749_AVOID_RAY_COUNT];
+		real avoid_ray_t[BUILD_1749_AVOID_RAY_COUNT];
+		real direction_weight = 0.f;
+		boolean obstructed = FALSE;
+
+		for (ray_index = 0; ray_index < BUILD_1749_AVOID_RAY_COUNT; ray_index++)
+		{
+			real_point3d ray_origin;
+			real_vector3d ray_direction;
+
+			avoid_ray_result[ray_index] = actor_move_test_avoidance_vector(
+				&avoidance_data,
+				&build_1749_avoidance_rays[direction_index][ray_index],
+				&ray_origin,
+				&ray_direction,
+				&avoid_ray_t[ray_index],
+				&clear_times[direction_index][ray_index]);
+			if (ray_index < 2)
+			{
+				debug_info->field_6358[direction_index][ray_index] = ray_origin;
+				debug_info->field_6418[direction_index][ray_index] = ray_direction;
+				debug_info->field_62F8[direction_index][ray_index] = avoid_ray_result[ray_index];
+				debug_info->avoid_t[direction_index][ray_index] = avoid_ray_t[ray_index];
+			}
+		}
+
+		/* outermost ray first; a clear ray counts at least its full weight,
+		up to double once it has stayed clear long past the bias time */
+		for (ray_index = BUILD_1749_AVOID_RAY_COUNT - 1; ray_index >= 0; ray_index--)
+		{
+			real ray_weight = build_1749_avoid_ray_avoidance_weights[ray_index];
+
+			if (avoid_ray_result[ray_index] == _actor_vector_avoidance_clear)
+			{
+				real clear_fraction = 1.f;
+
+				if (!obstructed)
+				{
+					byte clear_time = clear_times[direction_index][ray_index];
+
+					if (clear_time >= avoid_ray_clear_bias_time)
+					{
+						clear_fraction = PIN(
+							2.f - (real)avoid_ray_clear_bias_time/(real)clear_time,
+							1.f,
+							2.f);
+					}
+				}
+				direction_weight += ray_weight*clear_fraction;
+			}
+			else
+			{
+				direction_weight -= ray_weight*MIN(2.f*(1.f - avoid_ray_t[ray_index]), 1.f);
+				obstructed = TRUE;
+			}
+		}
+
+		avoidance_weights[direction_index] += direction_weight;
+		avoidance_weights[(direction_index + VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS - 1) % VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS] +=
+			build_1749_avoid_ray_adjacent_fraction*direction_weight;
+		avoidance_weights[(direction_index + 1) % VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS] +=
+			build_1749_avoid_ray_adjacent_fraction*direction_weight;
+	}
+
+	best_weight = -REAL_MAX;
+	best_avoidance_direction = NONE;
+	for (direction_index = 0;
+		direction_index < VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS;
+		direction_index++)
+	{
+		if (avoidance_weights[direction_index] > best_weight)
+		{
+			best_weight = avoidance_weights[direction_index];
+			best_avoidance_direction = direction_index;
+		}
+	}
+	if (best_avoidance_direction == NONE)
+		best_avoidance_direction = 0;
+	csmemcpy(debug_info->field_64D8, avoidance_weights, sizeof(avoidance_weights));
+
+	movement_direction = *movement_vector;
+	local_movement_direction = *global_zero_vector3d;
+	if (normalize3d(&movement_direction) > 0.f)
+	{
+		local_movement_direction.i = 0.f;
+		forward_dot = dot_product3d(&avoidance_data.forward, &movement_direction);
+		local_movement_direction.j = dot_product3d(&avoidance_data.left, &movement_direction);
+		local_movement_direction.k = dot_product3d(&avoidance_data.up, &movement_direction);
+		if (normalize3d(&local_movement_direction) > 0.f)
+		{
+			/* the crossing where the side of the movement changes from
+			not-left to left of a direction */
+			short previous_index = VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS - 1;
+			real previous_cross =
+				local_movement_direction.k*avoidance_directions[previous_index].j -
+				local_movement_direction.j*avoidance_directions[previous_index].k;
+
+			for (direction_index = 0;
+				direction_index < VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS;
+				direction_index++)
+			{
+				real cross =
+					local_movement_direction.k*avoidance_directions[direction_index].j -
+					local_movement_direction.j*avoidance_directions[direction_index].k;
+
+				if (previous_cross*cross <= 0.f && cross > 0.f)
+				{
+					short current_index = direction_index == 0
+						? VECTOR_AVOIDANCE_NUMBER_OF_DIRECTIONS
+						: direction_index;
+
+					movement_direction_approximation =
+						((real)previous_index*cross - (real)current_index*previous_cross) /
+						(cross - previous_cross);
+					movement_approximate_weight =
+						(avoidance_weights[previous_index]*cross -
+							avoidance_weights[direction_index]*previous_cross) /
+						(cross - previous_cross);
+					break;
+				}
+
+				previous_index = direction_index;
+				previous_cross = cross;
+			}
+		}
+	}
+
+	weight_difference = best_weight - movement_approximate_weight;
+	debug_info->field_6524 = avoidance_data.forward;
+	debug_info->field_6530 = *movement_vector;
+	debug_info->field_6504 = movement_direction_approximation;
+	debug_info->field_64FC = best_weight;
+	debug_info->field_6500 = best_avoidance_direction;
+	debug_info->field_6508 = movement_approximate_weight;
+	debug_info->field_6510 = forward_dot;
+	debug_info->sign_no_danger = weight_difference;
+	debug_info->field_6550 = FALSE;
+
+	if (weight_difference > 5.f && forward_dot < -0.2f && best_weight > 4.f)
+	{
+		/* 1749 set the movement to the best direction in the vehicle's own
+		axes, without turning it into world space */
+		scale_vector3d(
+			&avoidance_directions[best_avoidance_direction],
+			7.f,
+			movement_vector);
+		*emergency_amount = PIN((4.f - movement_approximate_weight)*0.2f - 0.5f, 0.f, 1.f);
+		debug_info->field_653C = 5;
+		debug_info->field_6550 = TRUE;
+	}
+	else if (forward_dot < 0.5f)
+	{
+		if (weight_difference > 2.5f)
+		{
+			real direction_dot = dot_product3d(
+				&avoidance_directions[best_avoidance_direction],
+				&local_movement_direction);
+
+			if (direction_dot > 0.5f)
+			{
+				real emergency = PIN(weight_difference*0.4f - 0.5f, 0.f, 1.f);
+				real rotation_angle = emergency*1.0472f;
+
+				if (local_movement_direction.k*avoidance_directions[best_avoidance_direction].j -
+					local_movement_direction.j*avoidance_directions[best_avoidance_direction].k > 0.f)
+				{
+					rotation_angle = -rotation_angle;
+				}
+				rotate_vector_about_axis(
+					movement_vector,
+					&avoidance_data.forward,
+					sine(rotation_angle),
+					cosine(rotation_angle));
+				*emergency_amount = emergency;
+				debug_info->field_653C = 4;
+				debug_info->sign_rotated = rotation_angle;
+				debug_info->field_6550 = TRUE;
+			}
+			else
+			{
+				debug_info->sign_too_far_cosangle = direction_dot;
+				debug_info->field_653C = 3;
+			}
+		}
+		else
+		{
+			debug_info->field_653C = 2;
+		}
+	}
+	else if (maximum_sense_emergency > 0.f)
+	{
+		real emergency = MIN(maximum_sense_emergency*2.5f, 1.f);
+		real rotation_angle = emergency*1.0472f;
+		real_vector3d rotation_axis = *global_zero_vector3d;
+
+		point_from_line3d(
+			(real_point3d *)&rotation_axis,
+			&avoidance_data.left,
+			-avoidance_directions[best_avoidance_direction].k,
+			(real_point3d *)&rotation_axis);
+		point_from_line3d(
+			(real_point3d *)&rotation_axis,
+			&avoidance_data.up,
+			avoidance_directions[best_avoidance_direction].j,
+			(real_point3d *)&rotation_axis);
+		if (normalize3d(&rotation_axis) > 0.f)
+		{
+			rotate_vector_about_axis(
+				movement_vector,
+				&rotation_axis,
+				sine(rotation_angle),
+				cosine(rotation_angle));
+			*emergency_amount = emergency;
+		}
+		debug_info->field_6520 = rotation_angle;
+		debug_info->field_651C = maximum_sense_emergency;
+		debug_info->field_653C = 1;
+		debug_info->field_6550 = TRUE;
+	}
+	else
+	{
+		debug_info->field_653C = 0;
+	}
+
+	debug_info->avoidance_data = avoidance_data;
+	debug_info->field_654C = *emergency_amount;
+
+	return;
+}
+
 boolean actor_path_refresh(
 	long actor_index,
 	boolean new_destination,
@@ -2130,6 +2571,24 @@ void actor_destination_update(
 				{
 					step_reached = TRUE;
 				}
+				else if (halo_build_1749())
+				{
+					/* port: build 1749 (0x29de9) took a step whose point
+					still lay ahead along the next step, once the actor was
+					near the next step's line (next_step is not normalized,
+					as in 1749) */
+					real distance_along_step = dot_product2d(&actor_to_point, &next_step);
+
+					if (distance_along_step > 0.f)
+					{
+						point_from_line2d(
+							(real_point2d const *)&actor_to_point,
+							&next_step,
+							-distance_along_step,
+							(real_point2d *)&actor_to_point);
+						step_reached = magnitude_squared2d(&actor_to_point) < 0.25f*0.25f;
+					}
+				}
 				else if (actor->control.moving && actor->control.movement_thwarted)
 				{
 					real facing_dot = dot_product2d((real_vector2d const *)&actor->input.facing_vector, &next_step);
@@ -2170,7 +2629,8 @@ void actor_destination_update(
 				180,
 				final_step);
 
-			if (actor->control.path.path.steps_finish_path)
+			/* port: build 1749 (0x29e7a) always ended the path here */
+			if (halo_build_1749() || actor->control.path.path.steps_finish_path)
 			{
 				actor_path_clear(actor_index);
 			}
@@ -2211,7 +2671,9 @@ void actor_destination_update(
 			actor->control.path.path.valid = FALSE;
 		}
 	}
-	else if (actor->input.vehicle_driver_type == _actor_vehicle_driver_directional_flying)
+	/* port: build 1749 (0x29f65) had no pathless flying here */
+	else if (!halo_build_1749() &&
+		actor->input.vehicle_driver_type == _actor_vehicle_driver_directional_flying)
 	{
 		boolean reverse =
 			actor->control.vector_avoidance_rotation_emergency_instantaneous > 0.9f;
@@ -2480,8 +2942,13 @@ static void actor_move_calculate_movement(
 			if (actor->control.moving_forced_by_aiming)
 			{
 				facing_vector = actor->control.moving_forced_aim_direction;
-				if (actor->input.vehicle_driver_type > _actor_vehicle_driver_none)
+				/* port: build 1749 (0x2ab50) had no actor-facing case for
+				drivers */
+				if (!halo_build_1749() &&
+					actor->input.vehicle_driver_type > _actor_vehicle_driver_none)
+				{
 					face_actor_facing = TRUE;
+				}
 			}
 			else
 			{
@@ -2638,11 +3105,13 @@ static void actor_move_calculate_movement(
 			movement_distance_squared < destination_tolerance*destination_tolerance;
 	}
 
+	/* port: build 1749 (0x2ae50) did not slow down for its destination */
 	actor_get_stopping_distances(
 		actor_index,
 		&current_stopping_distance,
 		&maximum_stopping_distance);
-	if (!actor->control.path.destination_orders.keep_moving &&
+	if (!halo_build_1749() &&
+		!actor->control.path.destination_orders.keep_moving &&
 		movement_distance_squared < current_stopping_distance*current_stopping_distance)
 	{
 		real movement_distance = square_root(movement_distance_squared);
@@ -2716,7 +3185,65 @@ static void actor_move_calculate_movement(
 		oversteer_minimum_angle = 0.f;
 	}
 
-	if (steering_maximum_angle > 0.f || oversteer_maximum_angle > 0.f)
+	if (halo_build_1749())
+	{
+		/* port: build 1749's oversteer (0x2af46): only when facing exactly,
+		the turn is held to the upper bound, raised to upper*emergency, and
+		once past the lower bound kept at the largest turn seen */
+		if (actor->control.face_exactly &&
+			oversteer_maximum_angle > 0.f &&
+			facing_dot < 1.f)
+		{
+			real angle = arccosine(facing_dot);
+
+			if (angle > oversteer_maximum_angle)
+				angle = oversteer_maximum_angle;
+			if (rotation_emergency_amount > 0.f)
+				angle = MAX(angle, oversteer_maximum_angle*rotation_emergency_amount);
+
+			if (angle > oversteer_minimum_angle)
+			{
+				if (actor->control.face_exactly_oversteer_angle > angle)
+				{
+					real angle_adjustment =
+						actor->control.face_exactly_oversteer_angle - angle;
+					real_vector3d rotation_axis;
+
+					if (ai_debug.print_oversteer)
+					{
+						console_printf(
+							FALSE,
+							"steer %.4f - oversteer to %.4f",
+							angle,
+							actor->control.face_exactly_oversteer_angle);
+					}
+					cross_product3d(
+						&actor->input.facing_vector,
+						&facing_vector,
+						&rotation_axis);
+					if (normalize3d(&rotation_axis) > 0.f)
+					{
+						rotate_vector_about_axis(
+							&facing_vector,
+							&rotation_axis,
+							sine(angle_adjustment),
+							cosine(angle_adjustment));
+					}
+				}
+				else
+				{
+					actor->control.face_exactly_oversteer_angle = angle;
+					if (ai_debug.print_oversteer)
+						console_printf(FALSE, "steer %.4f (set oversteer)", angle);
+				}
+			}
+			else
+			{
+				actor->control.face_exactly_oversteer_angle = 0.f;
+			}
+		}
+	}
+	else if (steering_maximum_angle > 0.f || oversteer_maximum_angle > 0.f)
 	{
 		real angle;
 		real steering_angle;
@@ -3042,6 +3569,19 @@ void actor_move_update(
 		actor->control.vector_avoidance_rotation_emergency = 0.f;
 		actor->control.vector_avoidance_rotation_emergency_instantaneous = 0.f;
 	}
+	else if (halo_build_1749())
+	{
+		/* port: build 1749 (0x2b27e) turned the movement vector itself,
+		moving or not, and handed the emergency straight to steering */
+		if (actor->input.vehicle_driver_type ==
+			_actor_vehicle_driver_directional_flying)
+		{
+			actor_move_vector_avoidance_build_1749(
+				actor_index,
+				&actor->control.moving_towards_vector,
+				&rotation_emergency_amount);
+		}
+	}
 	else if (actor->input.vehicle_driver_type ==
 		_actor_vehicle_driver_directional_flying)
 	{
@@ -3129,7 +3669,12 @@ void actor_move_update(
 	if (movement_type == NONE)
 	{
 		movement_type = _actor_movement_type_combat;
-		if (actor->orders.move.flaming)
+		/* port: build 1749 also ran about flaming with a projectile
+		stuck to it */
+		if (actor->orders.move.flaming ||
+			(halo_build_1749() &&
+				actor->danger_zone.danger_type == _actor_danger_zone_projectile &&
+				actor->danger_zone.attached_to_us))
 		{
 			movement_type = _actor_movement_type_flaming;
 		}
@@ -3169,19 +3714,26 @@ void actor_move_update(
 		crouch = actor->orders.move.stationary_crouch;
 	}
 
-	if (actor->input.vehicle_driver_type > _actor_vehicle_driver_none)
+	/* port: build 1749 (0x2b351) took this branch for anyone in a
+	vehicle, drivers or not, and read only the oversteer bounds */
+	if (halo_build_1749()
+		? actor->input.vehicle_index != NONE
+		: actor->input.vehicle_driver_type > _actor_vehicle_driver_none)
 	{
 		struct vehicle_datum *vehicle =
 			vehicle_datum_get(actor->input.vehicle_index);
 		struct vehicle_definition *vehicle_definition =
 			vehicle_specific_definition_get(vehicle->definition_index);
 
-		steering_maximum_angle =
-			vehicle_definition->ai_steering_max_angle;
-		if (vehicle_definition->ai_steering_max_throttle > 0.f)
+		if (!halo_build_1749())
 		{
-			maximum_throttle =
-				vehicle_definition->ai_steering_max_throttle;
+			steering_maximum_angle =
+				vehicle_definition->ai_steering_max_angle;
+			if (vehicle_definition->ai_steering_max_throttle > 0.f)
+			{
+				maximum_throttle =
+					vehicle_definition->ai_steering_max_throttle;
+			}
 		}
 		oversteer_minimum_angle =
 			vehicle_definition->ai_oversteer_angle_lower_bound;
@@ -3240,9 +3792,11 @@ void actor_move_update(
 			{
 				real_vector3d stuck_direction;
 
-				if (vehicle_stuck(
-					actor->input.vehicle_index,
-					&stuck_direction))
+				/* port: build 1749 had no stuck check here */
+				if (!halo_build_1749() &&
+					vehicle_stuck(
+						actor->input.vehicle_index,
+						&stuck_direction))
 				{
 					actor->control.moving = FALSE;
 					actor->control.free_facing_vector = FALSE;
@@ -3267,8 +3821,9 @@ void actor_move_update(
 		default:
 			actor->control.moving = FALSE;
 			actor->control.moving_facing_direction = 0;
+			/* port: build 1749 freed only gunners' facing */
 			actor->control.free_facing_vector =
-				actor->meta.type == _actor_mounted_weapon ||
+				(!halo_build_1749() && actor->meta.type == _actor_mounted_weapon) ||
 				actor->input.vehicle_gunner;
 			crouch = FALSE;
 			break;
@@ -3279,19 +3834,24 @@ void actor_move_update(
 		actor->control.moving = FALSE;
 		actor->control.moving_facing_direction = 0;
 		actor->control.free_facing_vector =
-			actor->meta.type == _actor_mounted_weapon ||
+			(!halo_build_1749() && actor->meta.type == _actor_mounted_weapon) ||
 			actor->input.vehicle_gunner;
-		actor->control.optional_facing_vector = FALSE;
+		/* port: build 1749 left the facing optional here and below */
+		if (!halo_build_1749())
+			actor->control.optional_facing_vector = FALSE;
 		crouch = FALSE;
 	}
 	else if (actor->orders.move.animation.impulse != NONE)
 	{
 		actor->control.moving = FALSE;
 		actor->control.free_facing_vector = FALSE;
-		actor->control.optional_facing_vector = FALSE;
+		if (!halo_build_1749())
+			actor->control.optional_facing_vector = FALSE;
 		crouch = FALSE;
 	}
-	else if (actor->output.movement_type == _actor_movement_type_asleep)
+	/* port: build 1749 had no asleep or grenade-throw branches here */
+	else if (!halo_build_1749() &&
+		actor->output.movement_type == _actor_movement_type_asleep)
 	{
 		actor->control.moving = FALSE;
 		actor->control.free_facing_vector = FALSE;
@@ -3305,7 +3865,7 @@ void actor_move_update(
 		actor->control.free_facing_vector = TRUE;
 		crouch = FALSE;
 	}
-	else if (actor->control.grenade_trying_to_throw)
+	else if (!halo_build_1749() && actor->control.grenade_trying_to_throw)
 	{
 		real_vector3d grenade_direction;
 

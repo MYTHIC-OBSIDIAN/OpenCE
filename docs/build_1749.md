@@ -319,7 +319,33 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     (`actor_combat_special_fire_build_1749`).
   - Grenades. An actor whose unit has no grenades never decides to throw
     one, and none is given to it when it does (`actions.c`,
-    `actor_combat.c`).
+    `actor_combat.c`). It throws as soon as it decides to, without first
+    turning to face the target (`actor_action_try_to_throw_grenade`).
+  - Steering round things (flying vehicles: banshees, dropships). 1749
+    looks 7 units ahead along five sense rays and three rings of eight
+    avoidance rays (this build: 12 units, nine and two), and counts
+    vehicles and scenery but not machines. It turns the vehicle's
+    movement itself, up to 60 degrees, and hands how urgent that is
+    straight to the steering, where this build works out a rotation and
+    blends it in over several ticks. In a tight spot facing away from
+    the clearest way, it sets the movement to that way in the vehicle's
+    own axes, as 1749 did (`actor_move_vector_avoidance_build_1749`).
+  - Moving. An actor with a projectile stuck to it runs about as if on
+    fire. Anyone in a vehicle, passengers too, takes the vehicle branch,
+    which reads only the vehicle's oversteer bounds (no steering limit or
+    throttle limit), has no hovering drivers and no stuck check for
+    fliers. Only gunners turn freely in a vehicle. Asleep actors and
+    actors about to throw a grenade are not held facing
+    (`actor_move_update`). Actors don't slow down as they near their
+    destination. Oversteer acts only when an actor must face exactly: the
+    turn is kept within the upper bound, raised by the avoidance's
+    urgency, and once past the lower bound held at the largest turn seen
+    (`actor_move_calculate_movement`).
+  - Following a path. A step is passed once its point still lies ahead
+    along the next step and the actor is within a quarter unit of that
+    step's line; a path always ends when its last step is reached; and a
+    flier with no path stops rather than flying on ahead
+    (`actor_destination_update`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield

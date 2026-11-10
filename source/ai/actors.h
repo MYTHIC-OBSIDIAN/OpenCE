@@ -1264,6 +1264,9 @@ void actor_combat_update(
 
 void actor_move_initialize(
 	void);
+/* port: clears build 1749's per-actor avoidance clear timers */
+void actor_move_reset_build_1749_avoidance(
+	long actor_index);
 boolean actor_move_force_stop(
 	long actor_index);
 boolean actor_move_animation_busy(
