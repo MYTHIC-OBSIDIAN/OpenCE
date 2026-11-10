@@ -778,6 +778,8 @@ enum
 {
 	_damage_definition_pings_resistant_units_bit = 2,
 	_damage_definition_does_not_ping_units_bit = 4,
+	/* port: (build 1749's flaming death, unit_damage_aftermath) */
+	_damage_definition_causes_flaming_death_bit = 7,
 };
 
 /* ---------- macros */
@@ -6635,7 +6637,9 @@ static void unit_ping_animation(
 		damage_direction = _unit_damage_direction_right;
 	}
 
-	if (game_engine_running() &&
+	/* port: (not in build 1749) */
+	if (!halo_build_1749() &&
+		game_engine_running() &&
 		damage_part==_unit_damage_part_head &&
 		hard_ping &&
 		killed)
@@ -6840,7 +6844,20 @@ static void unit_ping_animation(
 					_unit_animation_postpone_weapon_ik_until_interpolation_ends_bit,
 					TRUE);
 
-				if (killed)
+				/* port: build 1749 dropped a dying unit's weapon at a random
+				frame always, an instant or feigned death's too */
+				if (killed && halo_build_1749())
+				{
+					animation = TAG_BLOCK_GET_ELEMENT(
+						&animation_graph->animations,
+						animation_index,
+						struct animation);
+					quarter_frame_count = animation->frame_count>>2;
+					unit->unit.weapon_drop_delay_ticks = (char)random_range(
+						quarter_frame_count,
+						(animation->frame_count>>1) + quarter_frame_count);
+				}
+				else if (killed)
 				{
 					if (!suppress_random_death_frame && !feign_death)
 					{
@@ -6996,6 +7013,8 @@ void unit_damage_aftermath(
 	boolean lethal;
 	boolean feigned;
 	boolean instantaneous;
+	/* port: build 1749's flaming death */
+	boolean flaming = FALSE;
 
 	unit = unit_get(unit_index);
 	unit_definition = unit_definition_get(unit->definition_index);
@@ -7088,11 +7107,27 @@ void unit_damage_aftermath(
 		}
 	}
 
+	/* port: build 1749 set a unit that runs around flaming to burn to death
+	(unit_start_flaming_to_death) when damage that causes a flaming death
+	(the flamethrower's) killed it, if it was out of its seat or could get
+	out; it lived on until it burned, and had no ping */
+	if (halo_build_1749() &&
+		lethal &&
+		TEST_FLAG(damage_definition->flags, _damage_definition_causes_flaming_death_bit) &&
+		TEST_FLAG(unit_definition->unit.flags, _unit_runs_around_flaming_bit) &&
+		(unit->object.parent_object_index == NONE || unit_try_and_exit_seat(unit_index)))
+	{
+		unit_start_flaming_to_death(unit_index, damage_data->owner_object_index);
+		lethal = FALSE;
+		flaming = TRUE;
+	}
+
 	instantaneous =
 		lethal &&
 		damage_definition->instantaneous_acceleration >= 2.f;
 
-	if (!lethal &&
+	if (!flaming &&
+		!lethal &&
 		TEST_FLAG(unit->unit.flags, _unit_feign_death_allowed_bit) &&
 		unit_definition->unit.feign_death_threshold > 0.f &&
 		unit_definition->unit.feign_death_time > 0.f &&
@@ -7115,7 +7150,8 @@ void unit_damage_aftermath(
 			unit->unit.feign_death_timer > 0);
 	}
 
-	if (!TEST_FLAG(
+	if (!flaming &&
+		!TEST_FLAG(
 			damage_data->flags,
 			_damage_silent_bit) &&
 		(lethal ||
@@ -7224,16 +7260,33 @@ void unit_damage_aftermath(
 			unit_index,
 			damage_data,
 			lethal | feigned,
-			TEST_FLAG(
-				damage_flags,
-				_object_being_damaged_killed_instantly_bit),
+			/* port: build 1749's instant death scream was a hit of a
+			material's three times the damage (a head's), not an instant
+			kill */
+			halo_build_1749() ?
+				body_damage_multiplier >= 3.f :
+				TEST_FLAG(
+					damage_flags,
+					_object_being_damaged_killed_instantly_bit),
 			body_damage,
 			shield_damage);
 	}
 
 	if (body_damage > 0.f || shield_damage > 0.f)
 	{
-		unit_unzoom(unit_index);
+		/* port: build 1749 unzoomed a unit that was hit without the weapon's
+		zoom out sound */
+		if (halo_build_1749())
+		{
+			unit->unit.current_zoom_level = NONE;
+			unit->unit.desired_zoom_level = NONE;
+			unit->unit.integrated_night_vision_power = 0.f;
+			player_control_unzoom(unit_index);
+		}
+		else
+		{
+			unit_unzoom(unit_index);
+		}
 	}
 
 	if (unit->object.type == _object_type_biped)
@@ -8921,6 +8974,8 @@ void unit_cause_melee_damage(
 		}
 
 		damage_effect_index = unit_definition->unit.melee_damage.index;
+		/* port: (build 1749's was the unit's own always) */
+		if (!halo_build_1749())
 		{
 			long weapon_index = unit_inventory_get_weapon(
 				unit_index,
@@ -8945,6 +9000,9 @@ void unit_cause_melee_damage(
 			struct damage_data damage_data;
 
 			damage_data_new(&damage_data, damage_effect_index);
+			/* port: build 1749's blow opened the machines it reached that
+			open to a melee attack (area_of_effect_cause_damage_to_object) */
+			SET_FLAG(damage_data.flags, _damage_build_1749_melee_bit, halo_build_1749());
 			damage_data.location = unit->object.location;
 			damage_data.owner_object_index = unit_index;
 			damage_data.owner_team_index = unit->object.owner_team_index;
@@ -9100,7 +9158,9 @@ void unit_cause_player_melee_damage(
 						if (best_object_index==NONE)
 						{
 							hit_material_type = collision.material_type;
-							if (TEST_FLAG(
+							/* port: (build 1749's broke no breakable surface) */
+							if (!halo_build_1749() &&
+								TEST_FLAG(
 								collision.flags,
 								_collision_result_breakable_surface_bit))
 							{
@@ -9116,6 +9176,24 @@ void unit_cause_player_melee_damage(
 					{
 						long hit_object_index = collision.object_index;
 						struct object_datum *hit_object = object_get(hit_object_index);
+
+						/* port: build 1749 hit the object itself, not what it
+						rode in, and the nearest object, unless it was a
+						biped's to a nearer object that was not */
+						if (halo_build_1749())
+						{
+							if (best_object_index==NONE ||
+								best_object_fraction>collision.t ||
+								(hit_object->object.type==_object_type_biped &&
+								best_object_type!=_object_type_biped))
+							{
+								best_object_index = hit_object_index;
+								best_object_type = hit_object->object.type;
+								hit_material_type = collision.material_type;
+								best_object_fraction = collision.t;
+							}
+							break;
+						}
 
 						if (hit_object->object.type!=_object_type_weapon &&
 							hit_object->object.parent_object_index!=NONE)
@@ -9204,7 +9282,8 @@ void unit_cause_player_melee_damage(
 			}
 		}
 
-		if (best_object_index!=NONE)
+		/* port: (build 1749's blow pushed no vehicle) */
+		if (best_object_index!=NONE && !halo_build_1749())
 		{
 			struct object_datum *best_object = object_get(best_object_index);
 
@@ -9237,6 +9316,14 @@ void unit_cause_player_melee_damage(
 			damage_data.epicenter = unit->object.bounding_sphere_center;
 			damage_data.direction = unit->unit.aiming_vector;
 			damage_data.material_type = hit_material_type;
+			/* port: build 1749's blow came from the head, with no direction
+			(the body it killed flew up, object_damage_aftermath) */
+			if (halo_build_1749())
+			{
+				damage_data.epicenter = ray_origin;
+				csmemset(&damage_data.direction, 0, sizeof(damage_data.direction));
+				damage_data.material_type = NONE;
+			}
 
 			if (best_object_index==NONE)
 			{
@@ -9253,7 +9340,8 @@ void unit_cause_player_melee_damage(
 				struct object_datum *best_object = object_get(best_object_index);
 				struct game_globals_player_information *player_information;
 
-				if (best_object->object.type==_object_type_machine)
+				/* port: (build 1749's opened none) */
+				if (best_object->object.type==_object_type_machine && !halo_build_1749())
 				{
 					machine_try_to_open_with_damage(best_object_index);
 				}
@@ -9285,7 +9373,8 @@ void unit_cause_player_melee_damage(
 					damage_data.scale = 1.5f;
 				}
 
-				if (object_get(best_object_index)->object.type==_object_type_biped)
+				/* port: build 1749's hurt whatever it hit */
+				if (object_get(best_object_index)->object.type==_object_type_biped || halo_build_1749())
 				{
 					object_cause_damage(
 						&damage_data,

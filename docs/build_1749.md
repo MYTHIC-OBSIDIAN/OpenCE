@@ -195,6 +195,27 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   its engine alone (1749's text has no Assault, Rally or Juggernaut), and
   there are no "waiting for" or "teams ready" directions
   (`game_engine.c`, `ui_widget_game_data_input_functions.c`).
+- **Damage.** 1749's executable dealt damage by older rules, which
+  halo1749.exe follows (`damage.c`, `units.c`, `unit_dialogue.c`):
+  - A headshot from a weapon that can cause one kills any body, a player's
+    in the campaign too; there is no multiplayer headshot (double damage).
+  - A fall hurts the player as the difficulty scales any damage; a vehicle
+    takes damage with no driver ("only hurt while occupied" is unknown).
+  - A vehicle with no child damage fraction passes no hit to its riders.
+  - The flamethrower sets a unit that runs around flaming (grunts, jackals)
+    alight: it runs, burning, and dies when it has burned.
+  - A player's melee hurts what it hits, vehicles and scenery too, the
+    nearest object (a biped before anything else), and the rider rather
+    than his vehicle. It comes from the head with no direction, so the body
+    it kills flies up. It pushes no vehicle, breaks no glass and opens no
+    door; an AI's blow, always its own, opens a door that opens to a melee
+    attack.
+  - A shield cut short while charging goes on sounding charging until it is
+    full. A unit hit while zoomed unzooms without the zoom out sound.
+  - The AI's pain and death cries: a hit on the head (three times the
+    damage) brings the instant death cry, major pain four times in five,
+    minor pain two in five, speaking or not, and the waits between them are
+    45 and 15 ticks.
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield

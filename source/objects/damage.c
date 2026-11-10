@@ -122,6 +122,7 @@ symbols in this file:
 #include "main/console.h"
 #include "math/periodic_functions.h"
 #include "damage_effect_definitions.h"
+#include "devices/device_machines.h" /* port: build 1749's melee (machine_try_to_open_with_damage) */
 #include "object_definitions.h"
 #include "object_types.h"
 #include "physics/breakable_surfaces.h"
@@ -838,7 +839,9 @@ static void object_damage_shield(
 
 	(void)damage;
 
-	if (!game_engine_running() &&
+	/* port: build 1749 scaled a fall's damage to the player by the
+	difficulty, as any other */
+	if (!halo_build_1749() && !game_engine_running() &&
 		damage_definition->category == _damage_category_falling &&
 		object->object.owner_team_index == _game_team_player)
 	{
@@ -1181,14 +1184,17 @@ static void object_damage_body(
 	real inverse_maximum_body_vitality;
 	real actual_damage;
 
-	if (TEST_FLAG(damage_resistance->flags, _damage_resistance_only_hurt_while_occupied_bit) &&
+	/* port: (build 1749 had no "only hurt while occupied") */
+	if (!halo_build_1749() &&
+		TEST_FLAG(damage_resistance->flags, _damage_resistance_only_hurt_while_occupied_bit) &&
 		object->object.type == _object_type_vehicle &&
 		unit_get(object_index)->unit.driver_object_index == NONE)
 	{
 		damage_amount = 0.f;
 	}
 
-	if (!game_engine_running() &&
+	/* port: (nor in build 1749, object_damage_shield) */
+	if (!halo_build_1749() && !game_engine_running() &&
 		damage_definition->category == _damage_category_falling &&
 		object->object.owner_team_index == _game_team_player)
 	{
@@ -1233,7 +1239,18 @@ static void object_damage_body(
 
 	if (!TEST_FLAG(object->object.damage_flags, _object_cannot_take_damage_bit))
 	{
-		if (damage_amount > 0.f && TEST_FLAG(damage_material->flags, _damage_material_head_bit))
+		/* port: build 1749's headshot killed any body, a player's in the
+		campaign too, and said nothing of it (no killed instantly, no hard
+		ping); it had no multiplayer headshot */
+		if (halo_build_1749())
+		{
+			if (damage_amount > 0.f && TEST_FLAG(damage_material->flags, _damage_material_head_bit) &&
+				TEST_FLAG(damage_definition->flags, _damage_can_cause_headshots_bit))
+			{
+				object->object.body_vitality = 0.f;
+			}
+		}
+		else if (damage_amount > 0.f && TEST_FLAG(damage_material->flags, _damage_material_head_bit))
 		{
 			if (TEST_FLAG(damage_definition->flags, _damage_can_cause_headshots_bit))
 			{
@@ -1591,8 +1608,14 @@ void object_cause_damage(
 			damaged_object_count++;
 		}
 
+		/* port: in build 1749 not with no child damage fraction (unless the
+		damage is next to none): its riders took no hit and had no effect
+		of it */
 		if (!TEST_FLAG(damage->flags, _damage_area_of_effect_bit) &&
-			object->object.type == _object_type_vehicle)
+			object->object.type == _object_type_vehicle &&
+			(!halo_build_1749() ||
+				unit_definition_get(object->definition_index)->unit.child_damage_fraction > _real_epsilon ||
+				total_damage < _real_epsilon))
 		{
 			struct unit_datum *vehicle = unit_get(object_index);
 			struct unit_definition const *vehicle_definition =
@@ -1792,10 +1815,11 @@ void object_cause_damage(
 						being_damaged_flags,
 						_object_being_damaged_body_depleted_bit,
 						TRUE);
+					/* port: (not in build 1749) */
 					SET_FLAG(
 						being_damaged_flags,
 						_object_being_damaged_killed_instantly_bit,
-						TRUE);
+						!halo_build_1749());
 				}
 
 				if (friendly_damage != _friendly_damage_none &&
@@ -2038,7 +2062,9 @@ void object_damage_update(
 				FLAG(_object_die_act_of_god_no_statistics_bit));
 	}
 
-	if (objects_update_shields(object_index))
+	/* port: build 1749 cleared it only when the shield was full: a recharge
+	cut short went on sounding charging until then */
+	if (!halo_build_1749() && objects_update_shields(object_index))
 		SET_FLAG(object->object.damage_flags, _object_shield_charging_bit, FALSE);
 	damage_flags = object->object.damage_flags;
 	if (objects_update_shields(object_index) &&
@@ -2408,7 +2434,9 @@ static void area_of_effect_cause_damage_to_object(
 	global_current_collision_users[global_current_collision_user_depth++] =
 		_collision_user_area_damage;
 
+	/* port: (build 1749 tested the one line to the object) */
 	if (can_damage &&
+		!halo_build_1749() &&
 		TEST_FLAG(_object_mask_unit, object->object.type) &&
 		damage_effect->damage.area_of_effect_core_radius > _real_epsilon)
 	{
@@ -2521,7 +2549,9 @@ static void area_of_effect_cause_damage_to_object(
 		can_damage = FALSE;
 	}
 
+	/* port: (build 1749 had no infection form pop) */
 	if (can_damage &&
+		!halo_build_1749() &&
 		TEST_FLAG(damage_effect->damage.flags, _damage_infection_form_pop_bit))
 	{
 		can_damage = FALSE;
@@ -2599,6 +2629,14 @@ static void area_of_effect_cause_damage_to_object(
 				NONE,
 				NULL);
 				did_damage = TRUE;
+		}
+
+		/* port: build 1749's unit blow opened a machine that opens to a
+		melee attack (unit_cause_melee_damage) */
+		if (TEST_FLAG(damage->flags, _damage_build_1749_melee_bit) &&
+			object->object.type == _object_type_machine)
+		{
+			machine_try_to_open_with_damage(object_index);
 		}
 
 		if (object_definition->object.collision_model.index != NONE)

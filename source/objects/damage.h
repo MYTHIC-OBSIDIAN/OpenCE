@@ -40,6 +40,14 @@ enum
 	NUMBER_OF_DAMAGE_DATA_FLAGS,
 };
 
+/* port: a unit's blow in build 1749, which opened the machines that open to a
+melee attack (area_of_effect_cause_damage_to_object); past the flags, so the
+network never sends it */
+enum
+{
+	_damage_build_1749_melee_bit = NUMBER_OF_DAMAGE_DATA_FLAGS,
+};
+
 /* ---------- macros */
 
 /* ---------- structures */

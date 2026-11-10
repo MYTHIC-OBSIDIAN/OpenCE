@@ -809,7 +809,14 @@ boolean unit_make_damage_sound(
 			}
 
 			involuntary_vocalization = TRUE;
-			if (vocalization_type != _vocalization_death_quiet)
+			/* port: build 1749 told the AI of every death's scream, a quiet
+			death's louder (4) than the others (1) */
+			if (halo_build_1749())
+			{
+				unit_effect_type = _unit_dialogue_ai_unit_effect_death_scream;
+				unit_effect_volume = vocalization_type == _vocalization_death_quiet ? 4 : 1;
+			}
+			else if (vocalization_type != _vocalization_death_quiet)
 			{
 				unit_effect_type = _unit_dialogue_ai_unit_effect_death_scream;
 				unit_effect_volume = vocalization_type == _vocalization_death_instant ? 4 : 1;
@@ -822,15 +829,21 @@ boolean unit_make_damage_sound(
 				involuntary_vocalization = TRUE;
 				vocalization_type = _vocalization_pain_falling;
 			}
-			else if (took_major_body_damage)
+			/* port: in build 1749 four times in five */
+			else if (took_major_body_damage &&
+				(!halo_build_1749() || real_seed_random(get_global_random_seed_address()) < 0.8f))
 			{
 				involuntary_vocalization = TRUE;
 				vocalization_type = _vocalization_pain_body_major;
 			}
 			else if (unit->unit.speech.damage_minor_timer == 0 &&
 				unit->unit.speech.damage_minor_sounds < 3 &&
-				(unit->unit.speech.current.priority == _unit_speech_none ||
-					real_seed_random(get_global_random_seed_address()) < 0.4f))
+				/* port: in build 1749 two times in five, whether or not the
+				unit was speaking */
+				(halo_build_1749() ?
+					real_seed_random(get_global_random_seed_address()) < 0.4f :
+					(unit->unit.speech.current.priority == _unit_speech_none ||
+						real_seed_random(get_global_random_seed_address()) < 0.4f)))
 			{
 				vocalization_type = took_body_damage ?
 					_vocalization_pain_body :
@@ -867,14 +880,15 @@ boolean unit_make_damage_sound(
 				unit_speak(unit_index, play_type, &speech_item);
 				spoke = TRUE;
 
+				/* port: build 1749's waits were 45 and 15 ticks */
 				if (took_major_body_damage)
 				{
-					unit->unit.speech.damage_major_timer = 60;
+					unit->unit.speech.damage_major_timer = halo_build_1749() ? 45 : 60;
 				}
 				else
 				{
 					unit->unit.speech.damage_minor_sounds++;
-					unit->unit.speech.damage_minor_timer = 30;
+					unit->unit.speech.damage_minor_timer = halo_build_1749() ? 15 : 30;
 					unit->unit.speech.damage_minor_decay_timer = 22;
 				}
 			}
