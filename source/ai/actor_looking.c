@@ -494,8 +494,15 @@ boolean actor_look_secondary(
 		135,
 		(type >= 0) && (type < NUMBER_OF_SECONDARY_LOOK_TYPES));
 
-	if (actor->state.mode <= _actor_mode_asleep && type < _secondary_look_scripted)
+	/* port: build 1749 (0x25430) had no detonation look, and let a
+	sleeping actor look */
+	if (halo_build_1749() && type == _secondary_look_detonation)
 		return FALSE;
+	if (!halo_build_1749() &&
+		actor->state.mode <= _actor_mode_asleep && type < _secondary_look_scripted)
+	{
+		return FALSE;
+	}
 	if (actor->control.secondary_look_type > type)
 		return FALSE;
 
@@ -539,7 +546,19 @@ boolean actor_look_secondary(
 	if (actor->state.mode < _actor_mode_combat || !actor->state.combat_status)
 		duration *= 2.0f;
 
-	if (definition->looking.event_look_modifier_lower_bound != 0.0f ||
+	if (halo_build_1749())
+	{
+		/* port: build 1749 drew the modifier between the bounds as they
+		stood and used it when positive */
+		real modifier = real_seed_random_range(
+			get_global_random_seed_address(),
+			definition->looking.event_look_modifier_lower_bound,
+			definition->looking.event_look_modifier_upper_bound);
+
+		if (modifier > 0.0f)
+			duration *= modifier;
+	}
+	else if (definition->looking.event_look_modifier_lower_bound != 0.0f ||
 		definition->looking.event_look_modifier_upper_bound != 0.0f)
 	{
 		real lower_bound = MAX(definition->looking.event_look_modifier_lower_bound, 0.5f);

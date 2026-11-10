@@ -375,6 +375,11 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     at idle priority, communicate at talk priority (1749's unit speech has
     no communicate priority). Any actor may make a hand signal, even one
     asleep or in the middle of a dive or similar (`ai_communication.c`).
+  - Glancing at things. 1749 has no glance at a detonation (its look
+    types have no such entry), lets a sleeping actor glance, and draws an
+    actor's glance-length modifier straight from its tag's bounds, used
+    when positive, where this build held it within half and double
+    (`actor_look_secondary`).
   - Standing down. An encounter stays up as long as any of its actors
     knows of a living enemy, however long since it was seen, and stands
     down as soon as none does; this build stood down 15 seconds after
