@@ -146,6 +146,13 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   nothing about loading or checkpoints, so 1749 showed and played nothing
   there: halo1749.exe does the same (`hud_load` and `hud_autosave` in
   `hud.c`).
+- **Swapping weapons on the press.** This build swaps for a weapon on the
+  ground when the action button has been held for the globals'
+  `minimum_weapon_swap_ticks`. 1749's globals have no such field (it is
+  padding there, zero), and its executable swapped as the button went down,
+  without reloading: halo1749.exe does the same (`player_control.c`,
+  `players.c`). Read as zero, the swap had fired with no button held, once,
+  and never again.
 - **Weapons the player can't carry.** A unit picks up a weapon only if its
   animations have that weapon's label, in 1749's executable as in this
   build's. 1749's cyborg has `ar`, `sg`, `sr`, `pr`, `pb`, `f` (rifles),

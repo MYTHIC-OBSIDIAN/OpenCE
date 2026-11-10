@@ -1501,11 +1501,18 @@ static void get_local_player_input_blob(
 				{
 					SET_FLAG(input->unit_control_flags, UNIT_CONTROL_PORT_ACTION_ONLY_BIT, TRUE);
 				}
+				/* port: build 1749's globals have no hold for a swap (its
+				player control's minimum_weapon_swap_ticks is padding, zero):
+				the bit was set with no button held, so the player swapped as
+				he came by a weapon, once, and never again (players.c's
+				swapped_weapons waits for it to clear). 1749's executable
+				swapped as the action button went down (its
+				player_handle_action), as a hold of one tick does here */
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_swap_weapons_bit,
 					effective_buttons[_button_action_reload] >=
-						constants->minimum_weapon_swap_ticks);
+						(halo_build_1749() ? 1 : constants->minimum_weapon_swap_ticks));
 				SET_FLAG(
 					input->unit_control_flags,
 					_unit_control_integrated_light_bit,

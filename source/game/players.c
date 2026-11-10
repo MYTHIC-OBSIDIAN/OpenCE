@@ -4896,11 +4896,14 @@ void players_update_before_game(
 				{
 					network_player_log_idle_action(iterator.datum_index, action->control_flags);
 					/* port: not for the keyboard's action key, which only acts
-					(units.h, UNIT_CONTROL_PORT_ACTION_ONLY_BIT) */
+					(units.h, UNIT_CONTROL_PORT_ACTION_ONLY_BIT); nor in build
+					1749 for the press that swaps weapons (player_control.c),
+					which its player_handle_action took as acting */
 					if (TEST_FLAG(action->control_flags, _unit_control_action_bit) &&
 						unit->object.parent_object_index == NONE &&
 						!player_handle_action(iterator.datum_index) &&
-						!TEST_FLAG(action->control_flags, UNIT_CONTROL_PORT_ACTION_ONLY_BIT))
+						!TEST_FLAG(action->control_flags, UNIT_CONTROL_PORT_ACTION_ONLY_BIT) &&
+						!(halo_build_1749() && player->action_result == _player_action_result_swap_for_weapon))
 					{
 						SET_FLAG(action->control_flags, _unit_control_weapon_reload_bit, TRUE);
 					}
