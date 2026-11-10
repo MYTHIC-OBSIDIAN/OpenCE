@@ -325,6 +325,9 @@ enum
 	/* port: the thread's stack overflowed (hs_stack_overflow); hs_thread_main
 	ends it */
 	_hs_thread_stack_overflow_bit,
+	/* port: a static script's thread that ends once run, as a startup
+	script's (build 1749's a30 intro: hs_runtime_initialize_for_new_map) */
+	_hs_thread_run_once_bit,
 	_hs_global_external_bit = 15,
 };
 
@@ -859,6 +862,27 @@ void hs_runtime_initialize_for_new_map(
 			{
 				if (hs_thread_new(_hs_thread_type_script, script_index)==NONE)
 					error(_error_immediate, "ran out of script threads.");
+			}
+		}
+
+		/* port: build 1749's a30 (Halo) has its opening cutscene,
+		cutscene_intro, but no script runs it, and mission_lz waits for the
+		conversation it ends with (intro_1), so the landing zone's mission
+		never went on. halo1749.exe runs it as the level starts, once, as
+		the other levels' startup scripts run theirs */
+		if (halo_build_1749() && !csstrcasecmp(tag_get_name(global_scenario_index), "levels\\a30\\a30"))
+		{
+			short intro_index = hs_find_script_by_name("cutscene_intro");
+
+			if (intro_index!=NONE &&
+				TAG_BLOCK_GET_ELEMENT(&scenario->hs_scripts, intro_index, struct hs_script)->script_type==
+					_hs_script_static &&
+				!hs_scenario_script_disabled(intro_index))
+			{
+				long intro_thread_index = hs_thread_new(_hs_thread_type_script, intro_index);
+
+				if (intro_thread_index!=NONE)
+					SET_FLAG(hs_thread_get(intro_thread_index)->flags, _hs_thread_run_once_bit, TRUE);
 			}
 		}
 	}
@@ -2669,7 +2693,8 @@ static void hs_thread_main(
 			thread->script_index,
 			struct hs_script);
 		match_hs_assert("c:\\halo\\SOURCE\\hs\\hs_runtime.c", 0x2ba, thread_index,
-			script->script_type!=_hs_script_static &&
+			(script->script_type!=_hs_script_static ||
+				TEST_FLAG(thread->flags, _hs_thread_run_once_bit)) &&
 			script->script_type!=_hs_script_stub,
 			"found a static script at toplevel.");
 		/* port: a script that doesn't run (hs_scenario_functions_check)
@@ -2751,7 +2776,8 @@ static void hs_thread_main(
 		if (thread->type==_hs_thread_type_script)
 		{
 			if (script->script_type==_hs_script_startup ||
-				script->script_type==_hs_script_dormant)
+				script->script_type==_hs_script_dormant ||
+				TEST_FLAG(thread->flags, _hs_thread_run_once_bit))
 			{
 				thread->sleep_until = NONE;
 			}

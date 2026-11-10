@@ -174,6 +174,12 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   does the same (`build_1749_playlist_next`): it had played Derelict with no
   game type at all, so nothing the game type runs (teleporters among it)
   worked.
+- **Halo's opening cutscene.** 1749's `a30` has its opening cutscene,
+  `cutscene_intro` (the lifeboat's fall, "Arrival"), but none of its
+  scripts runs it, and `mission_lz` waits for the conversation it ends with
+  (`intro_1`), so without it the landing zone's mission never goes on.
+  halo1749.exe runs it once as the level starts, as the other levels'
+  startup scripts run theirs (`hs_runtime_initialize_for_new_map`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield
