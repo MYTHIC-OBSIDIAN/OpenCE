@@ -1580,8 +1580,9 @@ void network_player_show_pickup(
 	case _network_pickup_powerup:
 		if (tag_index_is_group(definition_index, EQUIPMENT_DEFINITION_TAG))
 		{
-			/* (as player_handle_powerup_equipment shows its player) */
-			switch (equipment_definition_get(definition_index)->equipment.powerup_type)
+			/* (as player_handle_powerup_equipment shows its player: build 1749
+			shows nothing) */
+			switch (halo_build_1749() ? NONE : equipment_definition_get(definition_index)->equipment.powerup_type)
 			{
 			case _equipment_powerup_overshield: player_over_shield_screen_effect(player_index); break;
 			case _equipment_powerup_health: player_health_pack_screen_effect(player_index); break;
@@ -1589,8 +1590,10 @@ void network_player_show_pickup(
 			}
 			/* port: (not in build 1749, as player_handle_powerup_equipment) */
 			if (!halo_build_1749())
+			{
 				hud_picked_up_powerup(player->local_player_index, definition_index);
-			equipment_definition_handle_pickup(definition_index);
+				equipment_definition_handle_pickup(definition_index);
+			}
 		}
 		break;
 	}
@@ -3842,7 +3845,9 @@ boolean player_handle_powerup(
 	match_assert("c:\\halo\\SOURCE\\game\\players.c", 0xAEE,
 		powerup_type>=0 && powerup_type<NUMBER_OF_PLAYER_POWERUPS);
 
-	if (powerup_type == _player_powerup_active_camouflage)
+	/* port: build 1749's took camouflage while camouflaged too, adding its
+	time (1749betaP.xbe) */
+	if (powerup_type == _player_powerup_active_camouflage && !halo_build_1749())
 	{
 		long unit_index = player->unit_index;
 
@@ -4434,17 +4439,22 @@ static void player_handle_powerup_equipment(
 		players_globals->double_speed_ticks += duration;
 		game_set_players_are_double_speed(TRUE);
 	}
+	/* port: build 1749's (1749betaP.xbe) flashed the screen for no
+	powerup, played no pickup sound, and took an overshield whether or not
+	the shield could take it */
 	else if (powerup_type == _equipment_powerup_overshield)
 	{
-		if (!object_double_charge_shield(player->unit_index))
+		if (!object_double_charge_shield(player->unit_index) && !halo_build_1749())
 			return;
-		player_over_shield_screen_effect(player_index);
+		if (!halo_build_1749())
+			player_over_shield_screen_effect(player_index);
 	}
 	else if (powerup_type == _equipment_powerup_health)
 	{
 		if (!object_restore_body(player->unit_index))
 			return;
-		player_health_pack_screen_effect(player_index);
+		if (!halo_build_1749())
+			player_health_pack_screen_effect(player_index);
 	}
 	else
 	{
@@ -4469,7 +4479,7 @@ static void player_handle_powerup_equipment(
 
 		if (!player_handle_powerup(player_index, (short)powerup_index, duration))
 			return;
-		if ((short)powerup_index == 0)
+		if ((short)powerup_index == 0 && !halo_build_1749())
 			player_active_camo_screen_effect(player_index);
 	}
 
@@ -4484,7 +4494,7 @@ static void player_handle_powerup_equipment(
 			equipment->definition_index);
 	}
 	player_network_picked_up(player, player_index, _network_pickup_powerup, equipment->definition_index, 0);
-	if (player->local_player_index != NONE)
+	if (player->local_player_index != NONE && !halo_build_1749())
 		equipment_handle_pickup(equipment_index);
 	object_delete(equipment_index);
 

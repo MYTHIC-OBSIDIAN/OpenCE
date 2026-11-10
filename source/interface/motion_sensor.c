@@ -852,6 +852,10 @@ static char blip_type_get(
 		return _blip_type_enemy;
 
 	unit = unit_get(object_index);
+	/* port: build 1749 has one kind of vehicle blip, green, whoever drives
+	(motion_sensor_blip_draw's colour; 1749betaP.xbe) */
+	if (halo_build_1749() && vehicle_try_and_get(object_index))
+		return _blip_type_vehicle_friend;
 	if (vehicle_try_and_get(object_index))
 	{
 		struct unit_datum *vehicle = vehicle_get(object_index);
@@ -1104,6 +1108,14 @@ static void render_blip(
 			(real_vector2d *)&blip_position);
 
 		blip_color = &blip_colors[blip_type];
+		/* port: build 1749's vehicles are green (blip_type_get) */
+		if (halo_build_1749() &&
+			(blip_type == _blip_type_vehicle_friend || blip_type == _blip_type_vehicle_enemy))
+		{
+			static real_rgb_color const build_1749_vehicle_color = { 0.f, 1.f, 0.f };
+
+			blip_color = &build_1749_vehicle_color;
+		}
 		pulse_scale = 1.0f;
 		blip_draw_size = blip_size_get(blip_size_type);
 		if (blip_type == _blip_type_custom)

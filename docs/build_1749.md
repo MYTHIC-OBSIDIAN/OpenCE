@@ -174,6 +174,15 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   does the same (`build_1749_playlist_next`): it had played Derelict with no
   game type at all, so nothing the game type runs (teleporters among it)
   worked.
+- **Powerups.** 1749's executable flashed the screen for no powerup (no
+  white flash for a health pack, none for an overshield or camouflage),
+  played no pickup sound, took an overshield whether or not the shield
+  could take more, and took camouflage while camouflaged, adding its time.
+  halo1749.exe does the same (`player_handle_powerup_equipment`,
+  `player_handle_powerup` in `players.c`).
+- **Green vehicles on the motion tracker.** 1749's tracker has one kind of
+  vehicle blip, green, whoever is in it, where this build's shows a vehicle
+  yellow or red by its driver's team (`motion_sensor.c`).
 - **No message for a powerup walked over.** 1749's powerups have no item
   message of their own (theirs is 0, the flamethrower's), and its
   executable named a powerup only when it was swapped for: halo1749.exe
