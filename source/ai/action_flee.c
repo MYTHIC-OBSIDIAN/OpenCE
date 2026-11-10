@@ -371,7 +371,9 @@ boolean action_flee_setup(
 			actor_situation_try_new_target(actor_index, panic_prop_index);
 		}
 
-		if (action_flee_blind_panic(panic_type) &&
+		/* port: (build 1749 never stood still in a blind panic) */
+		if (!halo_build_1749() &&
+			action_flee_blind_panic(panic_type) &&
 			real_seed_random(get_global_random_seed_address()) < 0.4f)
 		{
 			state_data->flee_stationary_ticks = 45;
@@ -590,7 +592,9 @@ boolean action_flee_perform(
 		}
 		else
 		{
-			if (state_data->flee_firing_position_index == NONE)
+			/* port: build 1749 took the firing position it was at as
+			its flee position whether or not it had one */
+			if (state_data->flee_firing_position_index == NONE && !halo_build_1749())
 			{
 				state_data->find_new_flee_position = TRUE;
 			}
@@ -681,7 +685,10 @@ boolean action_flee_perform(
 		}
 	}
 
-	if (action_flee_blind_panic(state_data->panic_type))
+	/* port: in build 1749 only a unit burning to death screamed again */
+	if (halo_build_1749() ?
+		state_data->panic_type == _actor_panic_burning_to_death :
+		action_flee_blind_panic(state_data->panic_type))
 	{
 		long unit_index = actor->meta.unit_index;
 
@@ -698,7 +705,39 @@ boolean action_flee_perform(
 	{
 		long now = game_time_get();
 
-		if (!state_data->communicated_flee ||
+		/* port: build 1749 cried out once, with no information, and
+		had no idle flee cries */
+		if (halo_build_1749())
+		{
+			if (!state_data->communicated_flee)
+			{
+				if (state_data->panic_type == _actor_panic_burning_to_death ||
+					state_data->panic_type == _actor_panic_melee_attached_to_us)
+				{
+					unit_scream(actor->meta.unit_index, _unit_scream_burning_to_death);
+				}
+				else if (state_data->panic_type == _actor_panic_grenade_attached_to_us ||
+					state_data->panic_type == _actor_panic_delayed_projectile_attached_to_us)
+				{
+					unit_scream(actor->meta.unit_index, _unit_scream_grenade_attached_to_us);
+				}
+				else
+				{
+					ai_communication_event(
+						state_data->panic_type == _actor_panic_friend_leader_type_killed ?
+							_ai_communication_flee_leader_died : _ai_communication_flee,
+						actor->meta.unit_index,
+						state_data->flee_prop_index != NONE ?
+							prop_get(state_data->flee_prop_index)->unit_index : NONE,
+						NONE,
+						NONE,
+						NONE,
+						NULL);
+				}
+				state_data->communicated_flee = TRUE;
+			}
+		}
+		else if (!state_data->communicated_flee ||
 			state_data->last_communication_time + 2*TICKS_PER_SECOND >= now)
 		{
 			if (state_data->panic_type == _actor_panic_burning_to_death ||

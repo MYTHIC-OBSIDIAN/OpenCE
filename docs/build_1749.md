@@ -216,6 +216,21 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     damage) brings the instant death cry, major pain four times in five,
     minor pain two in five, speaking or not, and the waits between them are
     45 and 15 ticks.
+- **The AI.** halo1749.exe's AI is being compared with 1749's executable,
+  function by function; where they differ it acts as 1749's did:
+  - A melee charge closes to within 4 world units of its target and goes
+    if it can move there (`action_charge.c`). It is not made at a target
+    in a vehicle or a swarm, whatever the weapon; between attacks only an
+    armed, unberserk actor waits, by its own time at any difficulty; with
+    charging disabled the margin is half a unit (`actions.c`).
+  - A flying vehicle strafes a target within its combat range, and stops
+    only within its stop range (`actions.c`).
+  - Fleeing: no standing still in a blind panic, one cry at the start (only
+    the burning cry again), no idle flee cries (`action_flee.c`).
+  - A path keeps clear of no danger zone, and its attractor is no obstacle
+    (`actor_firing_position.c`, `path_obstacle_avoidance.c`).
+  - A vehicle the scripts make enterable is so within 5 world units, not 8
+    (`ai_script.c`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield

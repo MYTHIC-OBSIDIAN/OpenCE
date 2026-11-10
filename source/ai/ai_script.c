@@ -1762,7 +1762,8 @@ struct ai_vehicle_enterable *ai_scripting_find_vehicle_enterable(
 			{
 				csmemset(vehicle_enterable, 0, sizeof(*vehicle_enterable));
 				vehicle_enterable->vehicle_index = vehicle_index;
-				vehicle_enterable->radius = 8.0f;
+				/* port: build 1749's default was 5 world units */
+				vehicle_enterable->radius = halo_build_1749() ? 5.f : 8.0f;
 				ai_globals->enterable_vehicle_count++;
 			}
 		}

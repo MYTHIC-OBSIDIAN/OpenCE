@@ -2265,7 +2265,9 @@ boolean actor_action_handle_combat_selection(
 			}
 		}
 
-		if (!actor_has_ranged_weapon(actor_index) ||
+		/* port: in build 1749 not a target in a vehicle or a swarm, whatever
+		the weapon */
+		if ((!actor_has_ranged_weapon(actor_index) && !halo_build_1749()) ||
 			(prop->vehicle_index == NONE && !prop->swarm))
 		{
 			if (actor->state.action != _actor_action_charge ||
@@ -2296,10 +2298,23 @@ boolean actor_action_handle_combat_selection(
 
 					charge_delay = actor->emotions.berserk ?
 						0.0f : definition->berserk.melee_attack_delay_timer;
-					charge_delay = game_difficulty_get_value(
-						_game_difficulty_value_melee_delay_scale) * charge_delay +
-						game_difficulty_get_value(
-							_game_difficulty_value_melee_delay_base);
+					/* port: build 1749 waited between melee attacks only
+					with a ranged weapon, not underwater nor berserk, and
+					by the actor's own time, whatever the difficulty */
+					if (halo_build_1749())
+					{
+						charge_delay = actor_has_ranged_weapon(actor_index) &&
+							!actor->input.underwater &&
+							!actor->emotions.berserk ?
+								definition->berserk.melee_attack_delay_timer : 0.f;
+					}
+					else
+					{
+						charge_delay = game_difficulty_get_value(
+							_game_difficulty_value_melee_delay_scale) * charge_delay +
+							game_difficulty_get_value(
+								_game_difficulty_value_melee_delay_base);
+					}
 					charge_range = use_berserk_range ?
 						variant_definition->ranged_combat.berserk_melee_range :
 						variant_definition->ranged_combat.melee_range;
@@ -2318,7 +2333,8 @@ boolean actor_action_handle_combat_selection(
 									0.0f,
 									definition->berserk.melee_attack_range);
 
-								if (prop_distance > point_blank_range + 0.8f)
+								/* port: (build 1749's margin was half a world unit) */
+								if (prop_distance > point_blank_range + (halo_build_1749() ? 0.5f : 0.8f))
 									in_range = FALSE;
 							}
 
@@ -2386,9 +2402,14 @@ boolean actor_action_handle_combat_selection(
 			{
 				boolean begin_charge = FALSE;
 
+				/* port: build 1749 strafed a target within its combat
+				range */
 				if (actor->input.vehicle_driver_type ==
 						_actor_vehicle_driver_directional_flying &&
-					prop_distance > firing_variant->ranged_combat.melee_range &&
+					(halo_build_1749() ?
+						prop_distance > firing_variant->ranged_combat.combat_range_lower_bound &&
+						prop_distance < firing_variant->ranged_combat.combat_range_upper_bound :
+						prop_distance > firing_variant->ranged_combat.melee_range) &&
 					!prop->line_of_sight)
 				{
 					begin_charge = TRUE;
@@ -2467,7 +2488,14 @@ boolean actor_action_handle_combat_selection(
 						struct vehicle_definition *vehicle_definition =
 							vehicle_specific_definition_get(vehicle->definition_index);
 
-						if (actor->control.path.at_destination &&
+						/* port: build 1749 stopped strafing only within the
+						stop range */
+						if (halo_build_1749())
+						{
+							desires_charge = !(prop_distance <
+								vehicle_definition->ai_strafing_stop_range);
+						}
+						else if (actor->control.path.at_destination &&
 							actor->control.path.destination_orders.destination_type ==
 								_destination_prop &&
 							actor->control.path.destination_orders.prop.prop_index ==

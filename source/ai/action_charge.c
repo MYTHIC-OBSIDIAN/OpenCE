@@ -1024,9 +1024,21 @@ boolean action_charge_setup(
 						target_range = action_charge_find_target_range(actor_index, goal, state_data);
 						state_data->acceptable_target_range = target_range;
 						minimum_move_range = goal == _charge_goal_melee_leaping ? 4.f : 1.5f;
+						/* port: build 1749 moved to within 4 world units of
+						its target for any melee, and charged if it could
+						move there, without keeping on past it or testing
+						the destination */
+						if (halo_build_1749())
+						{
+							minimum_move_range = 4.f;
+						}
 						move_range = MAX(minimum_move_range, target_range);
 
-						if (actor_move_to_prop(actor_index, actor->target.target_prop_index, move_range))
+						if (halo_build_1749())
+						{
+							valid = actor_move_to_prop(actor_index, actor->target.target_prop_index, move_range);
+						}
+						else if (actor_move_to_prop(actor_index, actor->target.target_prop_index, move_range))
 						{
 							actor_move_keep_moving_past_destination(actor_index);
 							valid = action_charge_valid_melee_destination(actor_index, goal, &prop->center_of_mass);

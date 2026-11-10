@@ -2259,7 +2259,9 @@ short actor_select_firing_position(
 						object_index,
 						evaluation_context->attractor_weight);
 				}
-				else if (actor->danger_zone.danger_type>_actor_danger_zone_none &&
+				/* port: (build 1749's path kept clear of no danger zone) */
+				else if (!halo_build_1749() &&
+					actor->danger_zone.danger_type>_actor_danger_zone_none &&
 					!TEST_FLAG(definition->flags2, _actor_definition_flags2_pathfinding_ignores_danger_bit))
 				{
 					path_input_set_attractor(

@@ -954,7 +954,8 @@ boolean path_avoid_obstacles(
 			obstacles_new(obstacles);
 			obstacles_get_discs_in_sphere(obstacles, start_point, 4.f, &movement_direction,
 				state->input.ignore_source_object_index, state->input.ignore_target_object_index);
-			if (state->input.attractor_valid)
+			/* port: (build 1749's attractor was no obstacle) */
+			if (state->input.attractor_valid && !halo_build_1749())
 			{
 				obstacles_add_disc(obstacles, state->input.attractor_object_index, FLAG(_disc_optional_bit),
 					&state->input.attractor_point, state->input.attractor_radius);
