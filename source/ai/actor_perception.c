@@ -2390,6 +2390,90 @@ static short actor_emotion_get_unopposable_enemy(
 
 
 
+/* port: build 1749's sight. An actor sees within a box ahead of its eyes
+that widens with distance: its actor's vision distance long, and as wide
+and high as the two vision values of its tag (this build's central and
+maximum vision angles) plus the distance times two more (its peripheral
+distance and the word after it). It sees fully within half of that, and
+the whole only once in combat; out of combat the box is half as long and
+wide. Without the box (an actor of a swarm, or a test of the distance
+alone) it is the distance alone. Light, fog and what the actor knows
+change nothing, and what is partly hidden from it it sees only partly. */
+static short actor_visibility_at_point_build_1749(
+	long actor_index,
+	struct actor_position_data const *position,
+	real_point3d const *target_position,
+	short line_of_sight,
+	boolean use_box)
+{
+	struct actor_datum *actor;
+	struct actor_definition *definition;
+	struct actor_variant_definition *firing_variant;
+	real maximum_distance;
+	real scale;
+	real full_scale;
+	real_vector3d direction;
+	short result = _actor_perception_none;
+
+	if (line_of_sight != _ai_line_of_sight_clear &&
+		line_of_sight != _ai_line_of_sight_occluded)
+	{
+		return _actor_perception_none;
+	}
+
+	actor = actor_get(actor_index);
+	definition = actor_definition_get(actor->meta.definition_index);
+	firing_variant = actor_combat_get_firing_variant_definition(actor_index);
+	maximum_distance = definition->perception.maximum_vision_distance;
+	if (firing_variant->ranged_combat.modified_vision_range > 0.0f)
+		maximum_distance = firing_variant->ranged_combat.modified_vision_range;
+	scale = actor->state.mode >= _actor_mode_combat ? 1.0f : 0.5f;
+	full_scale = scale*0.5f;
+
+	vector_from_points3d(&position->head_position, target_position, &direction);
+	if (use_box && !actor->meta.swarm)
+	{
+		real ahead = dot_product3d(&direction, &actor->input.looking_vector);
+		real across = (real)fabs(dot_product3d(&direction, &actor->input.looking_left_vector));
+		real up = (real)fabs(dot_product3d(&direction, &actor->input.looking_up_vector));
+		real width = ahead*definition->perception.peripheral_distance+
+			definition->perception.central_vision_angle;
+		real height = ahead*(*(real const *)&definition->perception.unused4)+
+			definition->perception.maximum_vision_angle;
+
+		if (ahead<0.0f)
+		{
+			result = _actor_perception_none;
+		}
+		else if (ahead<=maximum_distance*full_scale &&
+			across<width*full_scale &&
+			up<height*full_scale)
+		{
+			result = _actor_perception_full;
+		}
+		else if (ahead<maximum_distance*scale &&
+			across<width*scale &&
+			up<height*scale)
+		{
+			result = _actor_perception_partial;
+		}
+	}
+	else
+	{
+		real distance = magnitude3d(&direction);
+
+		if (distance<maximum_distance*full_scale)
+			result = _actor_perception_full;
+		else if (distance<maximum_distance*scale)
+			result = _actor_perception_partial;
+	}
+
+	if (result==_actor_perception_full && line_of_sight==_ai_line_of_sight_occluded)
+		result = _actor_perception_partial;
+
+	return result;
+}
+
 short actor_visibility_at_point(
 	long actor_index,
 	struct actor_position_data const *position,
@@ -2401,6 +2485,17 @@ short actor_visibility_at_point(
 	short perception_knowledge)
 {
 	long result = 0;
+
+	/* port: (actor_visibility_at_point_build_1749) */
+	if (halo_build_1749())
+	{
+		return actor_visibility_at_point_build_1749(
+			actor_index,
+			position,
+			target_position,
+			line_of_sight,
+			use_maximum_distance);
+	}
 
 	if (line_of_sight == 0 || line_of_sight == 1)
 	{
@@ -6162,6 +6257,44 @@ static boolean actor_perception_assess_suicide_danger(
 	return result;
 }
 
+/* port: build 1749's acknowledgement (actor_perception_update) */
+static short actor_perception_update_build_1749_acknowledgement(
+	struct actor_datum *actor,
+	struct actor_definition *definition,
+	struct prop_datum *prop)
+{
+	short new_state = NONE;
+
+	if (prop->state == _prop_state_unacknowledged)
+	{
+		if (prop->perception > _actor_perception_none)
+		{
+			new_state = _prop_state_becoming_acknowledged;
+			prop->awareness = 0.0f;
+		}
+	}
+	else if (prop->perception == _actor_perception_none)
+	{
+		prop->awareness = 0.0f;
+	}
+	else if (prop->perception == _actor_perception_partial)
+	{
+		prop->awareness += actor->state.combat_status > _actor_combat_status_none ?
+			definition->perception.runtime_awareness_delta_combat :
+			definition->perception.non_combat_awareness_time;
+		if (prop->awareness >= 1.0f)
+		{
+			new_state = _prop_state_acknowledged;
+		}
+	}
+	else
+	{
+		new_state = _prop_state_acknowledged;
+	}
+
+	return new_state;
+}
+
 void actor_perception_update(
 	long actor_index)
 {
@@ -6462,7 +6595,24 @@ void actor_perception_update(
 			}
 		}
 
-		switch (prop->state)
+		/* port: build 1749 has no acknowledgement speeds. An actor
+		acknowledges what it sees fully at once, and what it sees partly
+		over its actor's awareness time, the shorter one once it is wary.
+		Its tags keep those two awareness deltas where this build's keep
+		the non-combat awareness time and the combat delta, and leave the
+		guard and non-combat deltas this build would read at zero, so an
+		actor that was not already searching never noticed the player
+		(actor_perception_update_build_1749_acknowledgement) */
+		if (halo_build_1749() &&
+			(prop->state == _prop_state_unacknowledged ||
+				prop->state == _prop_state_becoming_acknowledged))
+		{
+			new_state = actor_perception_update_build_1749_acknowledgement(
+				actor,
+				definition,
+				prop);
+		}
+		else switch (prop->state)
 		{
 		case _prop_state_unacknowledged:
 			if (prop->perception <= _actor_perception_none)

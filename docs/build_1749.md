@@ -286,6 +286,24 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   - Homing projectiles turn at a player's biped, outside multiplayer, at
     half their rate on Normal and three quarters on Hard, by 1749's own
     numbers rather than the globals' row (`projectiles.c`).
+  - Noticing. This build lets an actor notice what it perceives at a
+    speed from a table of what it knows by how well it perceives. Each
+    speed is an awareness rate in the actor's tag. 1749's tags keep only
+    two rates, at the place of this build's non-combat awareness time and
+    combat rate. The guard and non-combat rates this build reads are zero,
+    so an actor not already searching never noticed the player and woke
+    only when shot. 1749 has no table. An actor notices at once what it
+    sees or hears fully. It notices what it sees partly over the first of
+    its two rates, or the second once it is wary (`actor_perception_update`).
+  - Sight. 1749's actors see within a box ahead of their eyes that widens
+    with distance (its tag's vision distance, and two widths and two
+    slopes where this build reads vision angles). They see fully within
+    its nearer half, or partly if half hidden. Out of combat the box is
+    half as long and wide, so an actor not yet fighting sees a player
+    fully only within about 10 world units ahead of it (with the usual
+    40-unit sight). Light, fog and what the actor knows
+    change nothing, and nothing seen is unmistakable
+    (`actor_visibility_at_point`).
 - **Powerups.** 1749's executable flashed the screen for no powerup (no
   white flash for a health pack, none for an overshield or camouflage),
   played no pickup sound, took an overshield whether or not the shield
