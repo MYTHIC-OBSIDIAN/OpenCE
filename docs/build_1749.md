@@ -209,6 +209,12 @@ keyboard still stands in for a controller). The display's own settings
 (window, resolution, vsync, anti-aliasing) and the controls are the
 player's.
 
+The picture is always the Xbox's 4:3: the game draws 640 wide, as the Xbox
+did, whatever the display's or window's shape, and a wider one shows it
+pillarboxed in black (`screen_mode_choose` in
+[d3d8_gl.c](../port/linux/src/d3d8_gl.c)). The view is 1749's, not widened,
+and the HUD and menus keep their places.
+
 ## Icon
 
 halo1749.exe's icon is Halo Custom Edition's (`port/windows/build-1749-icon.ico`). halo.exe holds it

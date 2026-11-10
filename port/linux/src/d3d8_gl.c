@@ -180,12 +180,16 @@ static void screen_mode_choose(long *width, float scale[2])
 	{
 		long wanted = (SCREEN_HEIGHT * display_width + display_height / 2) / display_height;
 
+		/* halo1749.exe: always the Xbox's 4:3, 640 wide, whatever the
+		display's shape (pillarboxed, as below) */
+		if (halo_build_1749())
+			wanted = 640;
 		*width = wanted < 640 ? 640 : wanted > SCREEN_MAXIMUM_WIDTH ? SCREEN_MAXIMUM_WIDTH : wanted & ~1L;
 		scale[0] = (float)display_width / (float)*width;
 		scale[1] = (float)display_height / (float)SCREEN_HEIGHT;
 		/* a display narrower or wider than the game can be: the picture
 		keeps its shape and the display blit letterboxes it */
-		if (*width != wanted && *width != (wanted & ~1L))
+		if (halo_build_1749() || (*width != wanted && *width != (wanted & ~1L)))
 			scale[0] = scale[1] = scale[0] < scale[1] ? scale[0] : scale[1];
 		/* display.resolution_scaling's "75%", "50%" or "25%": that part of
 		the resolution each way, which the display blit scales up */
