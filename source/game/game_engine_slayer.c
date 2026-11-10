@@ -596,6 +596,12 @@ static void slayer_player_update(
 {
 	struct player_datum *player = player_get(index);
 
+	/* port: build 1749's slayer shows the score all the time ("first place
+	kills 3 of 25"), as race does here: its player update sets the message
+	each tick (1749betaP.xbe) */
+	if (halo_build_1749())
+		game_engine_state_message(index, _game_engine_message_show_score, index);
+
 	if (game_engine_get_variant()->game_engine_variant.slayer.no_kill_penalty &&
 		player->speed_multiplier > 1.0f)
 	{

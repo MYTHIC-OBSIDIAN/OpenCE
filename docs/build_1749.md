@@ -153,6 +153,13 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   are in %s place with %s %s"), and shows nothing where 1749 had no
   message ("Hold BACK for score", a flag scored, a telefrag, "%s quit")
   (`text_group.c`).
+- **The game types' own text.** 1749's game engines show their text as
+  this build's do, with three differences in when (1749betaP.xbe's
+  engines): Slayer shows the score all the time ("first place kills 3 of
+  25", as Race does here), there is no "Hold BACK for score" over a game's
+  first 15 seconds, and Oddball shows the time with the ball whatever the
+  ball (Hunter's and Stalker's too). halo1749.exe does the same
+  (`game_engine_slayer.c`, `game_engine.c`, `game_engine_oddball.c`).
 - **No message for a powerup walked over.** 1749's powerups have no item
   message of their own (theirs is 0, the flamethrower's), and its
   executable named a powerup only when it was swapped for: halo1749.exe

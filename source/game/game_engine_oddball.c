@@ -488,7 +488,10 @@ static void oddball_add_time_with_ball(
 {
 	struct player_datum *player = player_get(player_index);
 
-	if (game_engine_get_variant()->game_engine_variant.oddball.oddball_ball_type == _oddball_normal)
+	/* port: build 1749 shows the time with the ball whatever the ball
+	(1749betaP.xbe: Hunter's and Stalker's too) */
+	if (game_engine_get_variant()->game_engine_variant.oddball.oddball_ball_type == _oddball_normal ||
+		halo_build_1749())
 	{
 		game_engine_state_message(
 			player_index,

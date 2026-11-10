@@ -9558,7 +9558,9 @@ boolean game_engine_get_state_message(
 				message,
 				message_character_count);
 		}
-		else if (game_time_get() < 15 * TICKS_PER_SECOND)
+		/* port: not in build 1749, whose game engine has no such message:
+		the game type's own (slayer's score) shows from the start */
+		else if (game_time_get() < 15 * TICKS_PER_SECOND && !halo_build_1749())
 		{
 			result = multiplayer_message_internal(
 				player_index,
