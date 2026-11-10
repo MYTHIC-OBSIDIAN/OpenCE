@@ -250,7 +250,9 @@ static boolean action_vehicle_desirable(
 		}
 	}
 
-	if (!already_inside && vehicle->object.up.k < 0.5f)
+	/* port: build 1749 (0x19300) gave up on a vehicle tilted past about
+	37 degrees, not 60 */
+	if (!already_inside && vehicle->object.up.k < (halo_build_1749() ? 0.8f : 0.5f))
 	{
 		desirable = FALSE;
 	}
@@ -390,9 +392,11 @@ static boolean action_vehicle_evaluate_seat(
 					distance_to_seat < 1.1f && facing_dot > 0.0f;
 				seat_weight = 10.0f / (distance_to_seat + 1.0f);
 
-				if (TEST_FLAG(
-					variant_definition->flags,
-					_actor_variant_definition_prefer_passenger_seat_bit))
+				/* port: build 1749 (0x196d8) always preferred gunner seats */
+				if (!halo_build_1749() &&
+					TEST_FLAG(
+						variant_definition->flags,
+						_actor_variant_definition_prefer_passenger_seat_bit))
 				{
 					if (!unit_seat_is_gunner(vehicle_index, seat_index))
 					{
@@ -810,7 +814,9 @@ boolean action_vehicle_perform(
 		{
 			long current_time = game_time_get();
 
-			if (current_time >= state_data->stuck_detection_time + 150)
+			/* port: build 1749 (0x19da0) had no stuck detection */
+			if (!halo_build_1749() &&
+				current_time >= state_data->stuck_detection_time + 150)
 			{
 				state_data->stuck_detection_time = current_time;
 				if (distance_squared3d(
@@ -852,7 +858,9 @@ boolean action_vehicle_perform(
 					if (could_potentially_fake)
 					{
 						state_data->fake_entry_potential_timer++;
-						if (state_data->fake_entry_potential_timer >= 30)
+						/* port: in build 1749 after 45 ticks */
+						if (state_data->fake_entry_potential_timer >=
+							(halo_build_1749() ? 45 : 30))
 						{
 							correct_facing = TRUE;
 							within_range = TRUE;

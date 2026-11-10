@@ -375,6 +375,12 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     at idle priority, communicate at talk priority (1749's unit speech has
     no communicate priority). Any actor may make a hand signal, even one
     asleep or in the middle of a dive or similar (`ai_communication.c`).
+  - Getting into vehicles. 1749 gives up on a vehicle tilted more than
+    about 37 degrees (this build: 60), always prefers a gunner's seat
+    (this build lets a variant prefer passenger seats), waits a second
+    and a half rather than one before faking its way into a seat it is
+    stuck beside, and has no check for being stuck on the way
+    (`action_vehicle.c`).
   - Glancing at things. 1749 has no glance at a detonation (its look
     types have no such entry), lets a sleeping actor glance, and draws an
     actor's glance-length modifier straight from its tag's bounds, used
