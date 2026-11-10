@@ -21,6 +21,14 @@ copies their own dump into the `1749` folder beside the executable:
 
 `paths.data` and `paths.saves` in `1749\config.toml` move them.
 
+A profile copied off the Xbox with the dump (`1749\savegame\UDATA\<id>\`,
+whose `SaveMeta.xbx` is a `Name=` line) is used as it is. This build names
+its own profiles' folders after their names, and finds the others by the
+name in their `SaveMeta.xbx`, as the Xbox did
+(`port/linux/src/xbox_xapi.c`): renaming such a profile deletes its old
+folder. Before 1749-build-8 it didn't, so the profile was listed twice
+after a restart, and the old folder can be deleted.
+
 ## What differs from this build's maps
 
 The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to

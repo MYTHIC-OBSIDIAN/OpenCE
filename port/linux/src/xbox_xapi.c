@@ -75,18 +75,39 @@ static unsigned long long save_name_hash(LPCWSTR name)
 	return hash;
 }
 
-static void save_directory_for(LPCSTR root, LPCWSTR name, char *directory, unsigned long size)
+static void save_data_directory(LPCSTR root, char *directory, unsigned long size)
 {
-	unsigned long long hash = save_name_hash(name);
 	unsigned long length = (unsigned long)strlen(root);
 	const char *separator = (length && (root[length - 1] == '\\' || root[length - 1] == '/')) ? "" : "\\";
 
-	snprintf(directory, size, "%s%s" SAVE_DATA_DIRECTORY "\\%012llX\\", root, separator, hash & 0xffffffffffffULL);
+	snprintf(directory, size, "%s%s" SAVE_DATA_DIRECTORY "\\", root, separator);
 }
 
+static void save_directory_for(LPCSTR root, LPCWSTR name, char *directory, unsigned long size)
+{
+	char data_directory[MAX_PATH];
+	unsigned long long hash = save_name_hash(name);
+
+	save_data_directory(root, data_directory, sizeof(data_directory));
+	snprintf(directory, size, "%s%012llX\\", data_directory, hash & 0xffffffffffffULL);
+}
+
+/* A save's display name, from its SaveMeta.xbx. This build writes the name
+alone, in UTF-16 with no byte order mark. The Xbox's dashboard, and saves
+copied off an Xbox (build 1749's own profile in its dump, whose folder is
+named by the Xbox and not by the name's hash), keep it as a "Name=" line:
+in UTF-16 after a byte order mark, or in single bytes. */
 static BOOL save_read_name(const char *directory, WCHAR *name, unsigned long name_count)
 {
 	char meta_path[MAX_PATH + 32];
+	unsigned char bytes[(MAX_GAMENAME + 64) * 2];
+	WCHAR text[MAX_GAMENAME + 64];
+	unsigned long count = 0;
+	unsigned long first = 0;
+	unsigned long end;
+	unsigned long index;
+	BOOL wide = TRUE;
+	BOOL keyed = FALSE;
 	HANDLE file;
 	DWORD read = 0;
 	BOOL success;
@@ -95,10 +116,108 @@ static BOOL save_read_name(const char *directory, WCHAR *name, unsigned long nam
 	file = CreateFileA(meta_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (file == INVALID_HANDLE_VALUE)
 		return FALSE;
-	memset(name, 0, name_count * sizeof(WCHAR));
-	success = ReadFile(file, name, (name_count - 1) * sizeof(WCHAR), &read, NULL);
+	success = ReadFile(file, bytes, sizeof(bytes), &read, NULL);
 	CloseHandle(file);
-	return success;
+	if (!success)
+		return FALSE;
+	memset(name, 0, name_count * sizeof(WCHAR));
+
+	index = 0;
+	if (read >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+	{
+		index = 2;
+		keyed = TRUE;
+	}
+	else if (read >= 5 && !memcmp(bytes, "Name=", 5))
+	{
+		wide = FALSE;
+		keyed = TRUE;
+	}
+	while (count < sizeof(text) / sizeof(text[0]) && index + (wide ? 1 : 0) < read)
+	{
+		text[count++] = wide ? (WCHAR)(bytes[index] | (bytes[index + 1] << 8)) : (WCHAR)bytes[index];
+		index += wide ? 2 : 1;
+	}
+
+	end = count;
+	if (keyed)
+	{
+		/* the value of the line that starts "Name=" */
+		unsigned long line = 0;
+
+		end = 0;
+		while (line < count)
+		{
+			unsigned long next = line;
+
+			while (next < count && text[next] != '\r' && text[next] != '\n')
+				next++;
+			if (next - line >= 5 && text[line] == 'N' && text[line + 1] == 'a' && text[line + 2] == 'm' &&
+				text[line + 3] == 'e' && text[line + 4] == '=')
+			{
+				first = line + 5;
+				end = next;
+				break;
+			}
+			line = next + 1;
+		}
+	}
+	for (index = 0; first + index < end && index + 1 < name_count && text[first + index]; index++)
+		name[index] = text[first + index];
+	return TRUE;
+}
+
+static BOOL save_names_equal(LPCWSTR a, LPCWSTR b)
+{
+	while (*a && *a == *b)
+	{
+		a++;
+		b++;
+	}
+	return *a == *b;
+}
+
+/* The directory of the save named name; FALSE for none, with directory the
+one this build would make for it. This build's saves are named after their
+name's hash (save_directory_for). Others, such as build 1749's own profile,
+are found by the name in their SaveMeta.xbx, as the Xbox found them: renaming
+or deleting such a profile used to look for the hash's directory, find none
+and leave the old one, which then listed the profile twice. */
+static BOOL save_find_directory(LPCSTR root, LPCWSTR name, char *directory, unsigned long size)
+{
+	char data_directory[MAX_PATH];
+	char pattern[MAX_PATH + 4];
+	WIN32_FIND_DATAA entry;
+	HANDLE find;
+	BOOL found = FALSE;
+
+	save_directory_for(root, name, directory, size);
+	if (GetFileAttributesA(directory) != (DWORD)-1)
+		return TRUE;
+
+	save_data_directory(root, data_directory, sizeof(data_directory));
+	snprintf(pattern, sizeof(pattern), "%s*", data_directory);
+	find = FindFirstFileA(pattern, &entry);
+	if (find == INVALID_HANDLE_VALUE)
+		return FALSE;
+	do
+	{
+		char candidate[MAX_PATH * 2];
+		WCHAR candidate_name[MAX_GAMENAME];
+
+		if (!(entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			continue;
+		if (snprintf(candidate, sizeof(candidate), "%s%s\\", data_directory, entry.cFileName) >= (int)sizeof(candidate))
+			continue;
+		if (save_read_name(candidate, candidate_name, MAX_GAMENAME) && save_names_equal(candidate_name, name) &&
+			strlen(candidate) < size)
+		{
+			strcpy(directory, candidate);
+			found = TRUE;
+		}
+	} while (!found && FindNextFileA(find, &entry));
+	CloseHandle(find);
+	return found;
 }
 
 DWORD WINAPI XCreateSaveGame(LPCSTR root_path_name, LPCWSTR save_game_name, DWORD creation_disposition,
@@ -107,15 +226,11 @@ DWORD WINAPI XCreateSaveGame(LPCSTR root_path_name, LPCWSTR save_game_name, DWOR
 	char directory[MAX_PATH];
 	char data_directory[MAX_PATH];
 	char meta_path[MAX_PATH + 32];
-	unsigned long root_length = (unsigned long)strlen(root_path_name);
-	DWORD attributes;
 	HANDLE file;
 	DWORD written;
 
 	(void)create_flags;
-	save_directory_for(root_path_name, save_game_name, directory, sizeof(directory));
-	attributes = GetFileAttributesA(directory);
-	if (attributes != (DWORD)-1)
+	if (save_find_directory(root_path_name, save_game_name, directory, sizeof(directory)))
 	{
 		if (creation_disposition == CREATE_NEW)
 			return ERROR_ALREADY_EXISTS;
@@ -124,8 +239,7 @@ DWORD WINAPI XCreateSaveGame(LPCSTR root_path_name, LPCWSTR save_game_name, DWOR
 	{
 		if (creation_disposition == OPEN_EXISTING)
 			return ERROR_PATH_NOT_FOUND;
-		snprintf(data_directory, sizeof(data_directory), "%s%s" SAVE_DATA_DIRECTORY, root_path_name,
-			(root_length && (root_path_name[root_length - 1] == '\\' || root_path_name[root_length - 1] == '/')) ? "" : "\\");
+		save_data_directory(root_path_name, data_directory, sizeof(data_directory));
 		CreateDirectoryA(root_path_name, NULL);
 		CreateDirectoryA(data_directory, NULL);
 		if (!CreateDirectoryA(directory, NULL))
@@ -185,8 +299,7 @@ DWORD WINAPI XDeleteSaveGame(LPCSTR root_path_name, LPCWSTR save_game_name)
 {
 	char directory[MAX_PATH];
 
-	save_directory_for(root_path_name, save_game_name, directory, sizeof(directory));
-	if (GetFileAttributesA(directory) == (DWORD)-1)
+	if (!save_find_directory(root_path_name, save_game_name, directory, sizeof(directory)))
 		return ERROR_PATH_NOT_FOUND;
 	delete_tree(directory);
 	return ERROR_SUCCESS;
@@ -228,7 +341,6 @@ HANDLE WINAPI XFindFirstSaveGame(LPCSTR root_path_name, PXGAME_FIND_DATA find_ga
 {
 	struct save_game_find *find = calloc(1, sizeof(*find));
 	struct platform_handle *handle;
-	unsigned long root_length = (unsigned long)strlen(root_path_name);
 	char pattern[MAX_PATH + 4];
 	WIN32_FIND_DATAA entry;
 
@@ -237,8 +349,7 @@ HANDLE WINAPI XFindFirstSaveGame(LPCSTR root_path_name, PXGAME_FIND_DATA find_ga
 		SetLastError(ERROR_NOT_ENOUGH_MEMORY);
 		return INVALID_HANDLE_VALUE;
 	}
-	snprintf(find->data_directory, sizeof(find->data_directory), "%s%s" SAVE_DATA_DIRECTORY "\\", root_path_name,
-		(root_length && (root_path_name[root_length - 1] == '\\' || root_path_name[root_length - 1] == '/')) ? "" : "\\");
+	save_data_directory(root_path_name, find->data_directory, sizeof(find->data_directory));
 	snprintf(pattern, sizeof(pattern), "%s*", find->data_directory);
 	find->directory_find = FindFirstFileA(pattern, &entry);
 	if (find->directory_find == INVALID_HANDLE_VALUE || !save_game_find_fill(find, &entry, find_game_data))
