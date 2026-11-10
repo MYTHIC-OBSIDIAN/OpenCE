@@ -961,7 +961,10 @@ static void update_alien_fighter_physics_new(
 
 			scale_vector3d(&vehicle->object.forward, vehicle->vehicle.speed, &desired_velocity);
 
-			if (vehicle->vehicle.speed>0.0f)
+			/* port: (build 1749 accelerates by how far the stick is pushed) */
+			if (halo_build_1749())
+				throttle = (real)fabs(vehicle->unit.throttle.i);
+			else if (vehicle->vehicle.speed>0.0f)
 				throttle = vehicle->vehicle.speed/definition->unknown2f8;
 			else
 				throttle = -(vehicle->vehicle.speed/definition->unknown2fc);
@@ -1016,7 +1019,12 @@ static void update_alien_fighter_physics_new(
 
 		spin = magnitude3d(&vehicle->object.angular_velocity)/definition->unknown314;
 
-		if (spin>vehicle->vehicle.thrust)
+		/* port: (build 1749 keeps no thrust for a banshee) */
+		if (halo_build_1749())
+		{
+			thrust_delta = 0.0f;
+		}
+		else if (spin>vehicle->vehicle.thrust)
 		{
 			thrust_delta = PIN((1.0f-vehicle->vehicle.thrust)*
 				(1.0f-vehicle->vehicle.thrust)*0.2f,
@@ -1519,7 +1527,11 @@ static void update_human_plane_physics(
 
 		factor = !TEST_FLAG(vehicle->vehicle.flags, 2) ? (TEST_FLAG(vehicle->vehicle.flags, 3) ? 1.0f : 0.75f) : 0.25f;
 		factor *= 1.0f-throttle;
-		interpolate_scalar(&vehicle->vehicle.hover, factor*vehicle->unit.seat_power[0], 0.05f);
+		/* port: (build 1749 sets the hover at once) */
+		if (halo_build_1749())
+			vehicle->vehicle.hover = factor*vehicle->unit.seat_power[0];
+		else
+			interpolate_scalar(&vehicle->vehicle.hover, factor*vehicle->unit.seat_power[0], 0.05f);
 
 		vehicle->vehicle.thrust = throttle*vehicle->unit.seat_power[0];
 
@@ -1714,7 +1726,9 @@ static boolean update_suspension(
 
 						scale_vector3d(&normal, extent+extent, &vector);
 
-						collision_test_vector(0xc0a0, &start, &vector, vehicle_index, &collision);
+						/* port: (COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS) */
+						collision_test_vector(COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS,
+							&start, &vector, vehicle_index, &collision);
 
 						shift = PIN((1.0f-collision.t)+(1.0f-collision.t), 0.0f, 1.0f);
 
@@ -1755,8 +1769,14 @@ static void create_crashing_effects(
 		&scenario_get_game_globals()->falling_damage, 0, struct game_globals_falling_damage);
 	real_vector3d delta;
 	real speed;
+	/* port: build 1749 plays only the crash sound, from a harder knock
+	(0.026 world units a tick, full at 0.042), and damages nothing */
+	real minimum_speed = halo_build_1749() ? 0.026f : 0.02f;
+	real speed_scale = halo_build_1749() ? 62.5f : 45.454544f;
+	long damage_effect_index = halo_build_1749() ? NONE :
+		falling_damage->vehicle_hit_environment_damage_effect.index;
 
-	if (falling_damage->vehicle_hit_environment_damage_effect.index!=NONE ||
+	if (damage_effect_index!=NONE ||
 		definition->crash_sound.index!=NONE)
 	{
 		short mass_point_index;
@@ -1766,7 +1786,7 @@ static void create_crashing_effects(
 		delta.k = vehicle->object.translational_velocity.k-previous_velocity->k;
 
 		speed = magnitude3d(&delta);
-		if (speed>0.02f)
+		if (speed>minimum_speed)
 		{
 			for (mass_point_index = 0; mass_point_index<physics->mass_points.count; mass_point_index++)
 			{
@@ -1775,15 +1795,14 @@ static void create_crashing_effects(
 
 				if (TEST_FLAG(mass_points[mass_point_index].flags, 1))
 				{
-					real scale = (speed-0.02f)*45.454544f;
+					real scale = (speed-minimum_speed)*speed_scale;
 					real sound_scale;
 
-					if (falling_damage->vehicle_hit_environment_damage_effect.index!=NONE)
+					if (damage_effect_index!=NONE)
 					{
 						struct damage_data damage_data;
 
-						damage_data_new(&damage_data,
-							falling_damage->vehicle_hit_environment_damage_effect.index);
+						damage_data_new(&damage_data, damage_effect_index);
 
 						damage_data.scale = PIN(scale, 0.0f, 1.0f);
 						damage_data.origin = vehicle->object.bounding_sphere_center;
@@ -2102,6 +2121,81 @@ static void update_human_jeep_physics(
 	return;
 }
 
+/* port: build 1749's ghost. It holds itself up by its antigravity
+alone (at 30% while jump is held), pushes toward the speed the stick asks
+for and turns as the stick steers, with none of this build's hover,
+levelling, boost or recovery forces, and only while upright (up.k of 0.2
+or more) and out of deep water. */
+static void update_alien_scout_physics_build_1749(
+	long vehicle_index,
+	real steering,
+	struct powered_mass_point_datum *state,
+	struct mass_point_datum *mass_points)
+{
+	struct vehicle_datum *vehicle = vehicle_datum_get(vehicle_index);
+	struct vehicle_definition *definition = vehicle_specific_definition_get(
+		vehicle->definition_index);
+	struct physics_definition *physics = physics_definition_get(
+		definition->unit.object.physics.index);
+	real_vector3d magic_force = *global_zero_vector3d;
+	real_vector3d magic_torque = *global_zero_vector3d;
+	real water_depth = scenario_location_water_depth(&vehicle->object.location,
+		&vehicle->object.position);
+	real antigrav = vehicle->unit.seat_power[0];
+	short mass_point_index;
+
+	if (TEST_FLAG(vehicle->vehicle.flags, 3))
+		antigrav *= 0.3f;
+
+	if (water_depth<0.5f && vehicle->object.up.k>=0.2f)
+	{
+		real_matrix4x3 vehicle_matrix;
+		real_vector3d local_velocity;
+		real_vector3d acceleration;
+		real maximum_speed = definition->unknown2f8;
+		real current;
+		real desired;
+		real torque;
+		long sign;
+
+		matrix4x3_from_point_and_vectors(&vehicle_matrix, &vehicle->object.position,
+			&vehicle->object.forward, &vehicle->object.up);
+		matrix4x3_inverse_transform_vector(&vehicle_matrix,
+			&vehicle->object.translational_velocity, &local_velocity);
+
+		acceleration.i = maximum_speed*vehicle->unit.throttle.i-local_velocity.i;
+		acceleration.j = maximum_speed*vehicle->unit.throttle.j-local_velocity.j;
+		acceleration.k = 0.0f;
+		limit3d(&acceleration, definition->unknown300);
+		matrix4x3_transform_vector(&vehicle_matrix, &acceleration, &acceleration);
+		scale_vector3d(&acceleration, physics->mass, &magic_force);
+
+		current = dot_product3d(&vehicle->object.angular_velocity, &vehicle->object.up);
+		sign = steering!=0.0f ? (steering<0.0f ? -1 : 1) : 0;
+		desired = square_root((real)(fabs(steering)*0.0069813174f))*sign;
+		torque = PIN(desired-current, -0.0034906587f, 0.0034906587f)*physics->zz_moment;
+		scale_vector3d(&vehicle->object.up, torque, &magic_torque);
+
+		scale_vector3d(&magic_force, antigrav, &magic_force);
+		scale_vector3d(&magic_torque, antigrav, &magic_torque);
+	}
+
+	for (mass_point_index = 0;
+		mass_point_index<physics->powered_mass_points.count;
+		mass_point_index++)
+	{
+		state[mass_point_index].antigrav_fraction = antigrav;
+		state[mass_point_index].rotation.v.i = 0.0f;
+		state[mass_point_index].rotation.v.j = 0.0f;
+		state[mass_point_index].rotation.v.k = 0.0f;
+		state[mass_point_index].rotation.w = 1.0f;
+	}
+
+	physics_update(vehicle_index, state, mass_points, &magic_force, &magic_torque);
+
+	return;
+}
+
 static void update_alien_scout_physics(
 	long vehicle_index,
 	real steering,
@@ -2120,6 +2214,14 @@ static void update_alien_scout_physics(
 	real antigrav;
 	real water_depth;
 	short mass_point_index;
+
+	/* port: (update_alien_scout_physics_build_1749; the hover below is
+	still kept, for the AI's driving and the ghost's functions) */
+	if (halo_build_1749())
+	{
+		update_alien_scout_physics_build_1749(vehicle_index, steering, state, mass_points);
+		goto update_hover;
+	}
 
 	water_depth = scenario_location_water_depth(&vehicle->object.location,
 		&vehicle->object.position);
@@ -2353,6 +2455,7 @@ static void update_alien_scout_physics(
 
 	physics_update(vehicle_index, state, mass_points, &magic_force, &magic_torque);
 
+update_hover:
 	{
 		real maximum = MAX(vehicle->object.up.k, 0.4f);
 		long powered_count = 0;
@@ -2387,7 +2490,9 @@ static void update_alien_scout_physics(
 		vehicle->vehicle.hover = target;
 	}
 
-	create_ghost_effect(vehicle_index);
+	/* port: (build 1749 has no thruster dust) */
+	if (!halo_build_1749())
+		create_ghost_effect(vehicle_index);
 
 	return;
 }
@@ -2406,7 +2511,9 @@ static void update_alien_fighter_physics(
 	else
 		update_alien_fighter_physics_new(vehicle_index, state, mass_points);
 
-	create_ghost_effect(vehicle_index);
+	/* port: (build 1749 has no thruster dust) */
+	if (!halo_build_1749())
+		create_ghost_effect(vehicle_index);
 
 	return;
 }
@@ -2714,7 +2821,9 @@ boolean vehicle_update(
 	else if (vehicle->vehicle.stop_time>0)
 	{
 		slowly_stop_vehicle(vehicle_index);
-		update_suspension(vehicle_index);
+		/* port: (build 1749 leaves the wheels as they are) */
+		if (!halo_build_1749())
+			update_suspension(vehicle_index);
 	}
 
 	match_assert("c:\\halo\\SOURCE\\units\\vehicles.c", 372,
@@ -2748,7 +2857,9 @@ animate:
 	{
 		struct unit_animation_update_data data;
 
-		data.state_desired = _unit_state_idle;
+		/* port: (build 1749 animates a hovering vehicle as hovering) */
+		data.state_desired = halo_build_1749() && TEST_FLAG(vehicle->vehicle.flags, _vehicle_hovering_bit) ?
+			_unit_state_hovering : _unit_state_idle;
 		data.crouching = FALSE;
 		unit_update_animation(vehicle_index, &data);
 	}

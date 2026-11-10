@@ -77,7 +77,21 @@ enum
 	_collision_test_for_bipeds_passthrough_living_flags = 0xC2A0,
 	_collision_test_for_bipeds_dead_flags = 0xC0A0,
 	_collision_test_for_vehicles_flags = 0xC0A0,
+
+	/* port: build 1749's vehicles test their mass points and wheels
+	against other vehicles too, by those vehicles' physics (its 0x206150,
+	in its numbering of these bits) */
+	_collision_test_for_build_1749_vehicles_flags =
+		_collision_test_for_vehicles_flags |
+		FLAG(_collision_test_objects_vehicles_bit) |
+		FLAG(_collision_test_use_vehicle_physics_bit),
 };
+
+/* port: the flags a vehicle's own physics tests with */
+#define COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS \
+	(halo_build_1749() ? \
+		(unsigned long)_collision_test_for_build_1749_vehicles_flags : \
+		(unsigned long)_collision_test_for_bipeds_dead_flags)
 
 /* ---------- macros */
 

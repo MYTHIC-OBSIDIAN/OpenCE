@@ -194,6 +194,44 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   (0.2–0.75 for a ghost), and turns the vehicle for its 30 ticks however
   upright it gets, about the plain axis, without touching its velocity.
   halo1749.exe does the same (`vehicle_update`).
+- **Vehicle physics.** Compared function by function with 1749's
+  `physics.c` and `vehicles.c`, these differ, and halo1749.exe does as
+  1749 does:
+  - *The ground.* 1749 reads none of a physics tag's ground values: every
+    vehicle on the newer physics pushes off the ground with friction 0.2,
+    depth 0.15, damping 0.05 and normal limits 0.5 to 0.707
+    (`physics_compute_new`). The warthog's tag says friction 0.1 and the
+    ghost's has zeros, which this build divided by. A material scales the
+    friction of a vehicle of any mass, where this build skips those over
+    7,500.
+  - *Hitting things.* Where a mass point would pass through something,
+    this build cuts the velocity into the surface, up to four times a
+    tick. 1749 instead leaves the vehicle where it is for that tick with
+    its velocity whole, and the ground's push then sends it back up: the
+    warthog's hop off bumps and ledges (`physics_update_new`).
+  - *Other vehicles.* 1749's mass points, wheels and antigravity test
+    other vehicles too, by those vehicles' physics, so vehicles meet as
+    they meet the ground. They push each other with no collision forces
+    (`COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS`, `physics_update`). What a
+    vehicle stands on keeps its shield (`compute_ground_plane`).
+  - *The ghost.* It holds itself up by its antigravity alone, at 30%
+    while jump is held. It pushes toward the speed the stick asks for and
+    turns as the stick steers, only while fairly upright (up.k of 0.2 or
+    more) and out of deep water. It has none of this build's hover,
+    levelling, boost or recovery forces
+    (`update_alien_scout_physics_build_1749`). Its hover is still worked
+    out, as this build's AI drives by it.
+  - *The banshee.* It accelerates by how far the stick is pushed rather
+    than by its speed, and keeps no thrust. The pelican's hover is set at
+    once rather than eased.
+  - *Crashes.* A knock plays the crash sound from 0.026 a tick (full at
+    0.042) and does no damage. Ghosts and banshees throw up no thruster
+    dust. A stopping vehicle's wheels stay as they are, and a hovering
+    one is animated as hovering.
+
+  A vehicle still knocks bipeds aside and runs them over as this build's
+  does, from the vehicle's side. 1749 does it from the biped's side
+  (`biped_update`), which is not ported.
 - **The end of a game.** 1749's carnage report has its own line, "X:
   next game, A: replay, B: quit", for every machine: A takes the host back
   to the pregame (as this build's does), B leaves, and X has the host take

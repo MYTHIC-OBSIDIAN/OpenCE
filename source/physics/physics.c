@@ -681,8 +681,9 @@ static void compute_ground_plane(
 	mass_point->ground_depth = mass_point_definition->radius -
 		plane3d_distance_to_point(&mass_point->ground_plane, &mass_point->position);
 
+	/* port: (COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS) */
 	if (collision_get_features_in_sphere(
-			_collision_test_for_bipeds_dead_flags,
+			COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS,
 			&mass_point->position,
 			mass_point_definition->radius,
 			0.0f,
@@ -704,7 +705,8 @@ static void compute_ground_plane(
 				(collision.object_index != NONE &&
 					!TEST_FLAG(_object_mask_scenery, object_get_type(collision.object_index))));
 
-		if (collision.object_index != NONE)
+		/* port: (build 1749 leaves the shield of what a vehicle stands on) */
+		if (collision.object_index != NONE && !halo_build_1749())
 			object_deplete_shield(collision.object_index);
 	}
 
@@ -855,7 +857,21 @@ void physics_compute_new(
 			real normal_velocity;
 			real ground_scale;
 
-			if (material->physics_ground_friction_scale > 0.0f && physics->mass <= 7500.0f)
+			/* port: build 1749 reads none of the physics' ground values;
+			every vehicle has its own code's (a warthog's tag has a friction
+			of 0.1, a ghost's all zeros), and a material scales the friction
+			of a vehicle of any mass */
+			if (halo_build_1749())
+			{
+				ground_friction = 0.2f;
+				ground_normal_k1 = 0.70710677f;
+				ground_normal_k0 = 0.5f;
+				ground_depth = 0.15f;
+				ground_damp_fraction = 0.05f;
+			}
+
+			if (material->physics_ground_friction_scale > 0.0f &&
+				(physics->mass <= 7500.0f || halo_build_1749()))
 				ground_friction *= material->physics_ground_friction_scale;
 			if (material->physics_ground_friction_normal_k1_scale > 0.0f)
 				ground_normal_k1 *= material->physics_ground_friction_normal_k1_scale;
@@ -1013,8 +1029,9 @@ void physics_compute_new(
 
 				scale_vector3d(global_down3d, probe_length, &probe_vector);
 
+				/* port: (COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS) */
 				if (collision_test_vector(
-						_collision_test_for_bipeds_dead_flags,
+						COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS,
 						&point,
 						&probe_vector,
 						instance->object_index,
@@ -1343,7 +1360,8 @@ static void physics_compute_unit_collisions(
 
 		case _object_type_vehicle:
 		{
-			if (object_index != vehicle_index)
+			/* port: (as in physics_update) */
+			if (object_index != vehicle_index && !halo_build_1749())
 			{
 				struct physics_instance other_physics;
 
@@ -1521,6 +1539,58 @@ void physics_update_new(
 	if (debug_physics_disable_penetration_freeze)
 	{
 		object_set_position(instance->object_index, &position, &forward, &up);
+	}
+	else if (halo_build_1749())
+	{
+		/* port: build 1749 freezes a vehicle any of whose mass points would
+		pass through something on its way: it stays where it is for the
+		tick, keeping the velocity it has, which the ground's push then
+		turns into a bounce. It moves it only when none would. */
+		real_matrix4x3 world_matrix;
+		real_point3d center_of_mass;
+		unsigned long stuck_mass_point_flags = 0;
+
+		matrix4x3_from_point_and_vectors(&world_matrix, &position, &forward, &up);
+		set_real_point3d(&center_of_mass,
+			-instance->physics->center_of_mass.x,
+			-instance->physics->center_of_mass.y,
+			-instance->physics->center_of_mass.z);
+		matrix4x3_transform_point(&world_matrix, &center_of_mass, &center_of_mass);
+		world_matrix.position = center_of_mass;
+
+		for (mass_point_index = 0;
+			mass_point_index < mass_point_count && !stuck_mass_point_flags;
+			mass_point_index++)
+		{
+			struct mass_point_definition const *mass_point_definition = TAG_BLOCK_GET_ELEMENT(
+				&instance->physics->mass_points,
+				mass_point_index,
+				struct mass_point_definition);
+			struct mass_point_datum const *mass_point = mass_points + mass_point_index;
+			real_point3d swept_position;
+			real_vector3d delta;
+			struct collision_result collision;
+
+			matrix4x3_transform_point(
+				&world_matrix,
+				&mass_point_definition->position,
+				&swept_position);
+			vector_from_points3d(&mass_point->position, &swept_position, &delta);
+
+			if (collision_test_vector(
+					_collision_test_for_build_1749_vehicles_flags,
+					&mass_point->position,
+					&delta,
+					instance->object_index,
+					&collision))
+			{
+				SET_FLAG(stuck_mass_point_flags, mass_point_index, TRUE);
+			}
+		}
+
+		if (!stuck_mass_point_flags)
+			object_set_position(instance->object_index, &position, &forward, &up);
+		vehicle->vehicle.stuck_mass_point_flags = stuck_mass_point_flags;
 	}
 	else
 	{
@@ -2056,8 +2126,9 @@ static void physics_update_old(
 				struct collision_result collision;
 
 				scale_vector3d(global_down3d, probe_length, &probe_vector);
+				/* port: (COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS) */
 				if (collision_test_vector(
-						_collision_test_for_bipeds_dead_flags,
+						COLLISION_TEST_FOR_VEHICLE_PHYSICS_FLAGS,
 						&point,
 						&probe_vector,
 						object_index,
@@ -2281,6 +2352,9 @@ void physics_update(
 		&total_force,
 		&total_torque);
 
+	/* port: (build 1749 has no collision forces between vehicles: they
+	meet by their mass points, which test other vehicles) */
+	if (!halo_build_1749())
 	{
 		struct vehicle_datum *vehicle = vehicle_datum_get(object_index);
 
