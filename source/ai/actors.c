@@ -4229,7 +4229,10 @@ static void actor_update(
 			{
 				actor_clear_output(actor_index);
 				actor_action_control(actor_index);
-				actor_communication_update(actor_index);
+				/* port: build 1749's actor update (0x39e90) had no idle
+				vocalizations */
+				if (!halo_build_1749())
+					actor_communication_update(actor_index);
 				actor_conversation_control(actor_index);
 				actor_destination_update(actor_index);
 				actor_look_affect_movement(actor_index);

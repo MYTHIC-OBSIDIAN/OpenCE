@@ -1446,6 +1446,98 @@ struct reply_usage const global_reply_table[NUMBER_OF_REPLY_USAGES] =
 		NULL },
 };
 
+/* port: build 1749's reply table (0x232dc8): 39 replies, its own chances,
+and no delays or repeat delays */
+static struct reply_usage const global_reply_table_build_1749[] =
+{
+	{ 76, -1, 2, 92, -1, 2, 0, 0.0f, 0.7f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 2, 2, 81, -1, 2, 0, 0.0f, 0.3f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 11, 2, 82, -1, 2, 0, 0.0f, 0.4f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 10, 2, 83, -1, 2, 0, 0.0f, 0.4f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 5, 2, 84, -1, 2, 0, 0.0f, 0.6f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 3, 2, 85, -1, 2, 0, 0.5f, 0.5f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 4, 2, 86, -1, 2, 0, 0.0f, 1.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 6, 2, 87, -1, 2, 0, 0.0f, 1.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 7, 2, 88, -1, 2, 0, 0.0f, 0.7f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 12, 2, 89, -1, 2, 0, 0.0f, 0.5f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 9, 2, 90, -1, 2, 0, 0.0f, 0.6f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, 8, 2, 91, -1, 2, 0, 0.0f, 1.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 55, -1, 2, 56, -1, 4, 1, 0.7f, 1.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 57, -1, 2, 58, -1, 2, 0, 0.5f, 0.25f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 59, -1, 2, 60, -1, 2, 0, 0.5f, 0.25f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 61, -1, 2, 62, -1, 2, 0, 0.5f, 0.25f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 63, -1, 2, 64, -1, 2, 0, 0.5f, 0.25f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, -1, 2, 54, -1, 2, 0, 0.3f, 0.25f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 53, -1, 2, 80, -1, 2, 0, 0.0f, 0.3f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 23, -1, 2, 24, -1, 1, 0, 0.4f, 0.0f, 0.0f, 0.0f,
+		NULL },
+	{ 32, -1, 3, 33, -1, 1, 0, 0.4f, 0.0f, 0.0f, 0.0f,
+		NULL },
+	{ 51, -1, 2, 52, -1, 4, 1, 0.5f, 0.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 49, -1, 2, 50, -1, 3, 0, 0.5f, 0.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 29, -1, 3, 30, -1, 1, 0, 0.5f, 0.4f, 0.0f, 0.0f,
+		NULL },
+	{ 108, -1, 2, 123, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 108, -1, 2, 124, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_not_close },
+	{ 109, -1, 2, 123, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 109, -1, 2, 124, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_not_close },
+	{ 110, -1, 2, 123, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_close },
+	{ 110, -1, 2, 124, -1, 3, 0, 0.6f, 0.0f, 0.0f, 0.0f,
+		reply_filter_not_close },
+	{ 125, -1, 3, 126, -1, 3, 0, 0.8f, 0.0f, 0.0f, 0.0f,
+		NULL },
+	{ 127, -1, 2, 128, -1, 3, 0, 0.5f, 0.0f, 0.0f, 0.0f,
+		reply_filter_no_certain_target },
+	{ 129, -1, 3, 130, -1, 3, 0, 0.4f, 0.0f, 0.0f, 0.0f,
+		NULL },
+	{ 132, -1, 2, 133, -1, 3, 0, 1.0f, 0.0f, 0.0f, 0.0f,
+		reply_filter_searching },
+	{ 137, -1, 2, 138, -1, 3, 0, 1.0f, 0.0f, 0.0f, 0.0f,
+		reply_filter_same_target },
+	{ 139, -1, 2, 140, -1, 4, 0, 0.7f, 0.0f, 0.0f, 0.0f,
+		reply_filter_same_platoon },
+	{ 141, -1, 2, 142, -1, 4, 0, 0.7f, 0.0f, 0.0f, 0.0f,
+		reply_filter_same_platoon },
+	{ 156, -1, 2, 157, -1, 3, 0, 0.4f, 0.0f, 0.0f, 0.0f,
+		reply_filter_fighting_close },
+	{ 159, -1, 2, 160, -1, 3, 0, 0.7f, 0.0f, 0.0f, 0.0f,
+		reply_filter_flee_leader },
+	{ -1, -1, -1, -1, -1, -1, 0, 0.0f, 0.0f, 0.0f, 0.0f,
+		NULL },
+};
+
+static struct reply_usage const *reply_table_get(
+	void)
+{
+	return halo_build_1749() ? global_reply_table_build_1749 : global_reply_table;
+}
+
 char const *global_communication_priority_names[NUMBER_OF_COMMUNICATION_PRIORITIES] =
 {
 	"none",
@@ -1746,7 +1838,8 @@ static boolean reply_filter_close(
 		if (prop_index != NONE)
 		{
 			prop = prop_get(prop_index);
-			if (prop->distance < COMMUNICATION_CLOSE_DISTANCE &&
+			/* port: build 1749 (0x3d3c0) called 3 units close */
+			if (prop->distance < (halo_build_1749() ? 3.0f : COMMUNICATION_CLOSE_DISTANCE) &&
 				(prop->line_of_sight == _ai_line_of_sight_clear ||
 				prop->line_of_sight == _ai_line_of_sight_occluded))
 			{
@@ -1778,7 +1871,7 @@ static boolean reply_filter_not_close(
 		if (prop_index != NONE)
 		{
 			prop = prop_get(prop_index);
-			if (prop->distance > COMMUNICATION_CLOSE_DISTANCE ||
+			if (prop->distance > (halo_build_1749() ? 3.0f : COMMUNICATION_CLOSE_DISTANCE) ||
 				(prop->line_of_sight != _ai_line_of_sight_clear &&
 				prop->line_of_sight != _ai_line_of_sight_occluded))
 			{
@@ -1947,7 +2040,10 @@ static boolean reply_filter_flee_leader(
 	boolean result;
 
 	result = FALSE;
-	if (actor_is_fighting(reply_actor_index))
+	/* port: build 1749 (0x3d6b0) also wanted the leader close */
+	if ((!halo_build_1749() ||
+		reply_filter_close(original_unit_index, communication, reply_actor_index)) &&
+		actor_is_fighting(reply_actor_index))
 	{
 		reply_actor = actor_get(reply_actor_index);
 		if (reply_actor->meta.type == _actor_elite)
@@ -2178,7 +2274,88 @@ static real ai_communication_actor_talk_weight(
 			}
 		}
 
-		if (has_target)
+		if (has_target && halo_build_1749())
+		{
+			/* port: build 1749 (0x3f61b): a subject or cause counts only
+			if the actor knows of it (noticing or acknowledged) within
+			range; a death is reported only by an actor that can see, hear
+			or otherwise sense the body; and an actor that is the subject
+			or cause without leave simply doesn't match it */
+			boolean subject_matches = FALSE;
+			boolean cause_matches = FALSE;
+
+			if (TEST_FLAG(flags, _find_actor_allow_subject_bit) &&
+				actor->meta.unit_index == subject_unit_index)
+			{
+				subject_matches = TRUE;
+			}
+			else if (subject_unit_index != NONE)
+			{
+				long prop_index = prop_get_active_by_unit_index(
+					actor_index,
+					subject_unit_index);
+
+				if (prop_index != NONE)
+				{
+					struct prop_datum *prop = prop_get(prop_index);
+
+					if (prop->state >= _prop_state_becoming_unacknowledged &&
+						prop->state <= _prop_state_acknowledged &&
+						prop->distance < stimulus_range)
+					{
+						subject_matches = TRUE;
+						if (ai_communication_type == 0 &&
+							!prop->enemy &&
+							actor_visibility_at_point(
+								actor_index,
+								&actor->input.position,
+								&prop->head_position,
+								prop->lighting,
+								(word)prop->line_of_sight,
+								TRUE,
+								FALSE,
+								0) < 2 &&
+							prop->audibility < 2 &&
+							prop->ineffability < 2)
+						{
+							subject_matches = FALSE;
+						}
+						else
+						{
+							weight += (1.0f - prop->distance / stimulus_range) * 10.0f;
+						}
+					}
+				}
+			}
+
+			if (TEST_FLAG(flags, _find_actor_allow_cause_bit) &&
+				actor->meta.unit_index == cause_unit_index)
+			{
+				cause_matches = TRUE;
+			}
+			else if (cause_unit_index != NONE)
+			{
+				long prop_index = prop_get_active_by_unit_index(
+					actor_index,
+					cause_unit_index);
+
+				if (prop_index != NONE)
+				{
+					struct prop_datum *prop = prop_get(prop_index);
+
+					if (prop->state >= _prop_state_becoming_unacknowledged &&
+						prop->state <= _prop_state_acknowledged &&
+						prop->distance < stimulus_range)
+					{
+						weight += (1.0f - prop->distance / stimulus_range) * 10.0f;
+						cause_matches = TRUE;
+					}
+				}
+			}
+
+			passes = subject_matches || cause_matches;
+		}
+		else if (has_target)
 		{
 			boolean subject_matches;
 			boolean cause_matches;
@@ -3149,7 +3326,9 @@ static void ai_communication_update_speech_timers(
 	{
 		short communication_team;
 
-		actor_reset_idle_vocalization_timer(unit->unit.actor_index);
+		/* port: build 1749 (0x3d860) had no idle vocalizations to put off */
+		if (!halo_build_1749())
+			actor_reset_idle_vocalization_timer(unit->unit.actor_index);
 		communication_team = actor_communication_team(unit->unit.actor_index);
 		if (communication_team != NONE)
 		{
@@ -4420,7 +4599,7 @@ static long ai_communication_find_actor_to_reply_to_player(
 			communication_not_focused = FALSE;
 		}
 
-		reply = global_reply_table;
+		reply = reply_table_get();
 		reply_table_index = 0;
 		do
 		{
@@ -4467,7 +4646,8 @@ static long ai_communication_find_actor_to_reply_to_player(
 								_find_actor_mode_friend,
 								unit_index,
 								NONE,
-								9.0f,
+								/* port: build 1749 (0x3ff40) asked within 7 */
+								halo_build_1749() ? 7.0f : 9.0f,
 								NONE,
 								reply->communication_priority,
 								speech_priority,
@@ -4525,7 +4705,11 @@ static long ai_communication_find_actor_to_reply_to_player(
 						}
 						else
 						{
-							short communication_team = actor_communication_team(actor_index);
+							/* port: build 1749 kept no reply timers, so a
+							reply rated fully and was never held back */
+							short communication_team = halo_build_1749()
+								? NONE
+								: actor_communication_team(actor_index);
 
 							if (communication_team != NONE)
 							{
@@ -4677,7 +4861,7 @@ void ai_communication_finished(
 				vocalization_type);
 		}
 
-		for (reply = global_reply_table, reply_table_index = 0;
+		for (reply = reply_table_get(), reply_table_index = 0;
 			reply->original_vocalization_type != NONE;
 			reply++, reply_table_index++)
 		{
@@ -4762,7 +4946,7 @@ void ai_communication_finished(
 									DATUM_INDEX_TO_ABSOLUTE_INDEX(speaker_actor->meta.encounter_index),
 									unit_index,
 									NONE,
-									9.0f,
+									halo_build_1749() ? 7.0f : 9.0f,
 									NONE,
 									reply->communication_priority,
 									speech_priority,
@@ -4777,7 +4961,7 @@ void ai_communication_finished(
 									_find_actor_mode_friend,
 									unit_index,
 									NONE,
-									9.0f,
+									halo_build_1749() ? 7.0f : 9.0f,
 									NONE,
 									reply->communication_priority,
 									speech_priority,
@@ -4799,7 +4983,7 @@ void ai_communication_finished(
 								_find_actor_mode_enemy,
 								unit_index,
 								NONE,
-								9.0f,
+								halo_build_1749() ? 7.0f : 9.0f,
 								NONE,
 								reply->communication_priority,
 								speech_priority,
@@ -4912,7 +5096,7 @@ void ai_communication_finished(
 											speech_priority,
 											reply_vocalization_type,
 											NONE,
-											reply_table_index);
+											halo_build_1749() ? NONE : reply_table_index);
 										ai_communication_look_secondary_at_unit(
 											reply_unit->unit.actor_index,
 											_secondary_look_communicating_prop,

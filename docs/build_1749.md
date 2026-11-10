@@ -341,6 +341,14 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     turn is kept within the upper bound, raised by the avoidance's
     urgency, and once past the lower bound held at the largest turn seen
     (`actor_move_calculate_movement`).
+  - Chatter. 1749 replies from its own table of 39 replies (this build's
+    has 45), mostly less often, with no reply delays and no timers that
+    stop a reply being repeated. Repliers are sought within 7 units (this
+    build: 9), "close" means within 3 units (this build: 5), and the
+    reply that needs a fighting elite also needs the elite close. An actor joins in on what it was told only about
+    someone it is noticing or knows of; a death is reported only by an
+    actor that can see, hear or otherwise sense the body. Actors make no
+    idle noises (`ai_communication.c`, `actors.c`).
   - Following a path. A step is passed once its point still lies ahead
     along the next step and the actor is within a quarter unit of that
     step's line; a path always ends when its last step is reached; and a
