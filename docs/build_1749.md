@@ -187,6 +187,13 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   free seats. It flips an overturned vehicle whoever is at its wheel.
   halo1749.exe does the same (`unit_find_nearby_seat`,
   `player_examine_nearby_vehicle`).
+- **Flipping a vehicle.** This build turns an overturned vehicle by a
+  roll it pins to the vehicle tag's minimum and maximum flipping angular
+  velocities, which 1749's tags do not have, so the roll came out nothing
+  and the vehicle never moved. 1749's code pins the roll itself, to 0.2–1
+  (0.2–0.75 for a ghost), and turns the vehicle for its 30 ticks however
+  upright it gets, about the plain axis, without touching its velocity.
+  halo1749.exe does the same (`vehicle_update`).
 - **The end of a game.** 1749's carnage report has its own line, "X:
   next game, A: replay, B: quit", for every machine: A takes the host back
   to the pregame (as this build's does), B leaves, and X has the host take

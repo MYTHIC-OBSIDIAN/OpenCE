@@ -2497,10 +2497,11 @@ boolean vehicle_update(
 	}
 
 	{
+		/* port: (build 1749 flips for 30 ticks however upright the vehicle gets) */
 		if (TEST_FLAG(vehicle->vehicle.flags, 4) &&
 			vehicle->vehicle.upending_type &&
 			vehicle->vehicle.upending_ticks<30 &&
-			vehicle->object.up.k<=0.9f)
+			(halo_build_1749() || vehicle->object.up.k<=0.9f))
 		{
 			real_vector3d torque_axis;
 			real roll;
@@ -2514,7 +2515,17 @@ boolean vehicle_update(
 				torque_axis = vehicle->object.forward;
 
 			roll = vehicle->object.up.k*-2.0f;
-			if (roll<definition->unknown340)
+			if (halo_build_1749())
+			{
+				/* port: (build 1749's vehicle tags have no flipping
+				angular velocities; its code pins the roll to 0.2-1,
+				or 0.2-0.75 for a ghost) */
+				real maximum_roll =
+					definition->vehicle_type==_vehicle_type_alien_scout ? 0.75f : 1.0f;
+
+				roll = PIN(roll, 0.2f, maximum_roll);
+			}
+			else if (roll<definition->unknown340)
 				roll = definition->unknown340;
 			else if (roll>definition->unknown344)
 				roll = definition->unknown344;
@@ -2522,7 +2533,9 @@ boolean vehicle_update(
 			torque *= roll;
 			vehicle->object.flags &= ~FLAG(_object_at_rest_bit);
 
-			if (vehicle->vehicle.upending_type==2 || vehicle->vehicle.upending_type==1)
+			/* port: (build 1749 does not tilt the axis or touch the velocity) */
+			if (!halo_build_1749() &&
+				(vehicle->vehicle.upending_type==2 || vehicle->vehicle.upending_type==1))
 			{
 				real_vector3d cross;
 
@@ -2536,7 +2549,7 @@ boolean vehicle_update(
 
 			scale_vector3d(&torque_axis, torque, &vehicle->object.angular_velocity);
 
-			switch (definition->vehicle_type)
+			switch (halo_build_1749() ? NONE : definition->vehicle_type)
 			{
 			case _vehicle_type_alien_fighter:
 				vehicle->object.translational_velocity.k =
