@@ -298,6 +298,11 @@ void render_camera_screen_to_view(
 real render_camera_get_adjusted_field_of_view_tangent(
 	real field_of_view)
 {
+	/* port: build 1749's (1749betaP.xbe) is wider: it divides by the 0.85
+	this build multiplies by, so its 70 degrees are 79 across a 4:3 screen
+	where this build's are 61, and every weapon's view and zoom with them */
+	if (halo_build_1749())
+		return tangent(field_of_view * 0.5f) * (1.0f / 0.85f);
 	return tangent(field_of_view * 0.5f) * 0.85f;
 }
 

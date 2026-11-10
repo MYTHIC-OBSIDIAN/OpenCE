@@ -5676,11 +5676,19 @@ void game_engine_playlist_next(
 	struct game_variant variant;
 
 	csstrcpy(global_stage.map_name, "levels\\test\\carousel\\carousel");
+	/* port: build 1749's playlist, its map and its game type (quick start
+	had played no game type at all, so no teleporter worked: the game
+	engine's update runs them): build_1749_variants.c */
+	if (halo_build_1749())
+	{
+		build_1749_playlist_next(parameter0, parameter1, playlist_type, global_stage.map_name,
+			(long)sizeof(global_stage.map_name), &global_stage.variant);
+	}
 	/* port: this LAN build's first multiplayer map, the multi_maps folder's
 	first (custom_edition_maps.c): the Xbox's multiplayer maps may be gone
 	from the maps folder, and precaching carousel then told of a damaged
 	disc */
-	if (custom_edition_maps_pc_count() > 0 &&
+	else if (custom_edition_maps_pc_count() > 0 &&
 		custom_edition_maps_level_name(custom_edition_maps_pc_display_index(0)))
 	{
 		csstrncpy(global_stage.map_name, custom_edition_maps_level_name(custom_edition_maps_pc_display_index(0)),

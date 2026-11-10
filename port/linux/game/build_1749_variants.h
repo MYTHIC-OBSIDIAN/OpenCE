@@ -2,7 +2,7 @@
 BUILD_1749_VARIANTS.H
 
 Build 1749's own game types (build_1749_variants.c), which halo1749.exe
-plays in place of this build's.
+plays in place of this build's, and its playlist (quick start's stage).
 */
 
 #ifndef __BUILD_1749_VARIANTS_H
@@ -42,5 +42,13 @@ struct game_variant *build_1749_variant(struct game_variant *variant, long index
 "ctf", ...), 1749's own among them ("dark_stalker", "killer", "hunter",
 "magic", "crazyball", "assault"); NONE for none */
 long build_1749_variant_index(char const *name);
+
+/* the stage game_engine_playlist_next picks, as 1749's did: an entry of
+d:\playlist.txt (1749\playlist.txt beside halo1749.exe, read once), at
+random by its weight among those for the players (minimum, maximum) and the
+playlist (type); without one, 1749's own, Slayer on Derelict
+(levels\test\carousel\carousel) */
+void build_1749_playlist_next(long minimum, long maximum, long type, char *map_name, long map_name_size,
+	struct game_variant *variant);
 
 #endif

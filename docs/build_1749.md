@@ -160,6 +160,20 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
   first 15 seconds, and Oddball shows the time with the ball whatever the
   ball (Hunter's and Stalker's too). halo1749.exe does the same
   (`game_engine_slayer.c`, `game_engine.c`, `game_engine_oddball.c`).
+- **A wider view.** This build's camera draws a field of view's tangent
+  times 0.85 (`render_camera_get_adjusted_field_of_view_tangent`); 1749's
+  divides by 0.85, so the same 70 degrees are 79 across a 4:3 screen where
+  this build's are 61. halo1749.exe draws 1749's, and every weapon's view
+  and scope with it.
+- **Quick start's game.** 1749's executable took quick start's stage from
+  `d:\playlist.txt` (`1749\playlist.txt` here), an entry at random by its
+  weight: a line `version 1`, then for each entry its map, its game type's
+  name (`slayer`, `ctf`, `team_king`, ...) and five lines of numbers, the
+  fewest and most players, the range of playlist types and the weight (1 to
+  255). Without the file it played Slayer on Derelict, every time. halo1749.exe
+  does the same (`build_1749_playlist_next`): it had played Derelict with no
+  game type at all, so nothing the game type runs (teleporters among it)
+  worked.
 - **No message for a powerup walked over.** 1749's powerups have no item
   message of their own (theirs is 0, the flamethrower's), and its
   executable named a powerup only when it was swapped for: halo1749.exe
