@@ -345,10 +345,21 @@ The comparison is of 1749's `ui.map`, its ten campaign levels (`a10` to
     has 45), mostly less often, with no reply delays and no timers that
     stop a reply being repeated. Repliers are sought within 7 units (this
     build: 9), "close" means within 3 units (this build: 5), and the
-    reply that needs a fighting elite also needs the elite close. An actor joins in on what it was told only about
-    someone it is noticing or knows of; a death is reported only by an
-    actor that can see, hear or otherwise sense the body. Actors make no
-    idle noises (`ai_communication.c`, `actors.c`).
+    reply that needs a fighting elite also needs the elite close. An
+    actor joins in on what it was told only about someone it is noticing
+    or knows of; a death is reported only by an actor that can see, hear
+    or otherwise sense the body. Actors make no idle noises
+    (`ai_communication.c`, `actors.c`).
+  - What sets actors talking. 1749's own table of 93 lines is used (this
+    build's has 104). It has no lines for a lone flee, or after combat
+    (alone, unscathed, wounded, massacre, triumph, checking bodies,
+    shooting corpses, celebrating). Its actors make no hand signals when
+    they sight or find an enemy, are blocked, uncover, advance or take
+    cover. Five lines on a death weigh a quarter of this build's. The
+    line on being damaged is said at a higher priority and may repeat at
+    once; the search lines repeat sooner (0 to 5 seconds, not 8 to 25),
+    and uncovering and cover lines may repeat at once
+    (`global_dialogue_table_build_1749`).
   - Following a path. A step is passed once its point still lies ahead
     along the next step and the actor is within a quarter unit of that
     step's line; a path always ends when its last step is reached; and a
