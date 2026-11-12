@@ -6,6 +6,13 @@
 #define MCC_MAPS_LEVEL_PREFIX "mcc_maps\\"
 #define MCC_MAPS_FIRST_DISPLAY_INDEX 0x1000
 #define MCC_MAPS_MAXIMUM 1024
+/* MCC maps put in the custom_maps folder are listed with the Custom Edition
+maps (CUSTOM EDITION and CUSTOM CAMPAIGNS), not in the MCC lists: a loose map
+is the level mcc_maps\custom_maps\<name>, one in a package folder of
+custom_maps mcc_maps\custom_maps+<folder>\<name>. Those packages are read
+from custom_maps (xbox_files.c's translate_workshop). */
+#define MCC_MAPS_CUSTOM_PACKAGE "custom_maps"
+#define MCC_MAPS_CUSTOM_FOLDER "d:\\custom_maps\\"
 
 void mcc_maps_rescan(void);
 short mcc_maps_count(boolean multiplayer_only);
@@ -13,6 +20,9 @@ short mcc_maps_index(short row, boolean multiplayer_only);
 /* Exact scenario-type lists; display indices still use the full catalog. */
 short mcc_maps_type_count(boolean campaign);
 short mcc_maps_type_index(short row, boolean campaign);
+/* those of the custom_maps folder, listed with the Custom Edition maps */
+short mcc_maps_custom_count(boolean campaign);
+short mcc_maps_custom_index(short row, boolean campaign);
 short mcc_maps_find(char const *level_name);
 char const *mcc_maps_level_name(short index);
 wchar_t const *mcc_maps_name(short index);

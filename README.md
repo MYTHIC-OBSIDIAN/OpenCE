@@ -138,6 +138,14 @@ MULTIPLAYER** (multiplayer maps), with an independent loader and their own
 `mcc_maps` folder. There is no network co-op in this build, so a campaign map is
 played alone or in split screen.
 
+MCC maps can also go in `custom_maps`, beside the Custom Edition maps: loose,
+or each package in a folder of its own (`custom_maps/MercuryRising/`). They are
+found as the lists open and listed after the Custom Edition maps: multiplayer
+maps in Create Game's **CUSTOM EDITION**, campaign maps in New Game's **CUSTOM
+CAMPAIGNS**. A loose map uses the [shared resources](#shared-mcc-resources),
+never `custom_maps`' own `bitmaps.map` and `sounds.map` (Custom Edition's); a
+package folder's own resources go in that folder.
+
 You still need the [Xbox game data](#a-copy-of-halo-combat-evolved-is-required). Obtain any required MCC resources from your own installed copy of Halo 1 in MCC.
 
 ### Steam Workshop

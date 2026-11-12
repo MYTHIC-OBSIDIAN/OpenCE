@@ -1224,14 +1224,35 @@ static void digsite_map_text(short map, wchar_t *text)
 	text[ROW_TEXT_LENGTH - 1] = 0;
 }
 
+/* CUSTOM EDITION's and CUSTOM CAMPAIGNS' entries: the Custom Edition maps,
+then the MCC maps of the custom_maps folder (mcc_maps.c's
+MCC_MAPS_CUSTOM_PACKAGE), the multiplayer maps or the campaign maps. An
+entry's MCC catalog index, or NONE for a Custom Edition map's (or another
+kind's). */
+static short custom_mcc_index(short kind, short entry)
+{
+	boolean campaign = kind == MAP_KIND_CUSTOM_CAMPAIGN;
+	short custom_edition_count;
+
+	if (kind != MAP_KIND_CUSTOM_CAMPAIGN && kind != MAP_KIND_CUSTOM_MULTIPLAYER)
+		return NONE;
+	custom_edition_count = custom_edition_maps_count(campaign);
+	return entry >= custom_edition_count ? mcc_maps_custom_index((short)(entry - custom_edition_count), campaign) : NONE;
+}
+
 /* a Custom Edition map's name (the menus find its name, picture and
-description by its display index: custom_edition_maps.c) */
+description by its display index: custom_edition_maps.c), or an MCC map's
+of custom_maps (by its catalog's) */
 static void custom_map_text(boolean campaign, short map, wchar_t *text)
 {
-	wchar_t const *name = custom_edition_maps_name(custom_edition_maps_display_index_of(campaign, map));
+	short mcc = custom_mcc_index(campaign ? MAP_KIND_CUSTOM_CAMPAIGN : MAP_KIND_CUSTOM_MULTIPLAYER, map);
+	wchar_t const *name = mcc != NONE ? mcc_maps_name(mcc) :
+		custom_edition_maps_name(custom_edition_maps_display_index_of(campaign, map));
 
 	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
 	text[ROW_TEXT_LENGTH - 1] = 0;
+	if (mcc != NONE)
+		mcc_menu_text_row(text);
 }
 
 static void custom_multiplayer_map_text(short map, wchar_t *text)
@@ -1454,14 +1475,15 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return multiplayer_entry_count(multiplayer_map_count);
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_count();
+	/* (and the MCC maps of custom_maps after: custom_mcc_index) */
 	case MAP_KIND_CUSTOM_CAMPAIGN:
-		return custom_edition_maps_count(TRUE);
+		return custom_edition_maps_count(TRUE) + mcc_maps_custom_count(TRUE);
 	case MAP_KIND_MCC_SINGLEPLAYER:
 		return mcc_maps_type_count(TRUE);
 	case MAP_KIND_MCC_MULTIPLAYER:
 		return mcc_maps_type_count(FALSE);
 	default:
-		return custom_edition_maps_count(FALSE);
+		return custom_edition_maps_count(FALSE) + mcc_maps_custom_count(FALSE);
 	}
 }
 
@@ -1469,6 +1491,11 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 description (map_description_show) */
 static short map_kind_display_index(short kind, short entry)
 {
+	short mcc = custom_mcc_index(kind, entry);
+
+	/* (an MCC map of custom_maps: its catalog's, as the MCC lists') */
+	if (mcc != NONE)
+		return (short)(MCC_MAPS_FIRST_DISPLAY_INDEX + mcc);
 	switch (kind)
 	{
 	case MAP_KIND_MULTIPLAYER:
@@ -1489,7 +1516,7 @@ static short map_kind_display_index(short kind, short entry)
 campaign map, or one not installed */
 static short map_kind_level_index(short kind, short entry)
 {
-	if (map_kind_singleplayer(kind))
+	if (map_kind_singleplayer(kind) || custom_mcc_index(kind, entry) != NONE)
 		return NONE;
 	/* (an Xbox map's: its index in the Xbox's level list, the multiplayer
 	maps' first, which is its display index too) */
@@ -1529,9 +1556,14 @@ static short map_kind_of_level_index(short level_index, short *kind)
 	return entry;
 }
 
-/* the level name of a Custom Edition kind's entry, or NULL */
+/* the level name of a Custom Edition kind's entry (an MCC map's of
+custom_maps too), or NULL */
 static char const *custom_map_level_name(short kind, short entry)
 {
+	short mcc = custom_mcc_index(kind, entry);
+
+	if (mcc != NONE)
+		return mcc_maps_level_name(mcc);
 	return custom_edition_maps_level_name(map_kind_display_index(kind, entry));
 }
 
@@ -1612,8 +1644,13 @@ static void level_list_update(struct widget_instance *list)
 		level_list.chosen = entry;
 	if (kind != MAP_KIND_SINGLEPLAYER)
 	{
-		map_description_show(description, NONE,
-			level_list.chosen < count ? map_kind_display_index(kind, level_list.chosen) : NONE);
+		/* (an MCC map of custom_maps: its picture, and the difficulties it
+		was finished at) */
+		if (level_list.chosen < count && custom_mcc_index(kind, level_list.chosen) != NONE)
+			mcc_map_description_show(description, custom_mcc_index(kind, level_list.chosen));
+		else
+			map_description_show(description, NONE,
+				level_list.chosen < count ? map_kind_display_index(kind, level_list.chosen) : NONE);
 		profile_name_show(description);
 		return;
 	}
@@ -4014,8 +4051,11 @@ static void map_list_update(struct widget_instance *list)
 	if (entry != NONE)
 		map_list.chosen = entry;
 	visible_set(named(description, "mp_map_right_item", 0), map_list.chosen < count);
-	map_description_show(description, NONE,
-		map_list.chosen < count ? map_kind_display_index(kind, map_list.chosen) : NONE);
+	if (map_list.chosen < count && custom_mcc_index(kind, map_list.chosen) != NONE)
+		mcc_map_description_show(description, custom_mcc_index(kind, map_list.chosen));
+	else
+		map_description_show(description, NONE,
+			map_list.chosen < count ? map_kind_display_index(kind, map_list.chosen) : NONE);
 	profile_name_show(description);
 }
 
@@ -4033,6 +4073,15 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		return mcc_host_list_choose(list);
 	if (chosen >= map_list_count())
 		return campaign_fail();
+	/* (an MCC map of custom_maps, in CUSTOM EDITION) */
+	if (custom_mcc_index(map_list.kind, chosen) != NONE)
+	{
+		short mcc = custom_mcc_index(map_list.kind, chosen);
+
+		if (!mcc_maps_level_name(mcc) || mcc_maps_campaign(mcc))
+			return campaign_fail();
+		return ui_widget_port_mcc_multiplayer_map_choose(mcc_maps_level_name(mcc));
+	}
 	/* (a Digsite map not installed) */
 	if (map_list.kind == MAP_KIND_DIGSITE &&
 		!custom_edition_maps_installed(map_kind_display_index(map_list.kind, chosen)))

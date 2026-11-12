@@ -517,7 +517,11 @@ Workshop packages while **WORKSHOP MAPS** is on (`game.workshop_maps`, on by
 default). **CAMPAIGN MISSIONS** enables explicit campaign manifests and mission
 ordering (off by default). New Game's MCC SINGLEPLAYER lists the campaign maps,
 and Create Game's MCC MULTIPLAYER the multiplayer maps; there is no network
-co-op in this build.
+co-op in this build. MCC maps in `custom_maps` (loose, or in a folder of it
+for each package) are listed after the Custom Edition maps instead: CUSTOM
+EDITION's multiplayer maps, CUSTOM CAMPAIGNS' campaign maps (level names
+`mcc_maps\custom_maps\<name>` and `mcc_maps\custom_maps+<folder>\<name>`,
+read from `custom_maps` by `xbox_files.c`'s `translate_custom_mcc`).
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,
 and [MCC previews](../../docs/reading/mcc_level_previews.md) for menu discovery.
 

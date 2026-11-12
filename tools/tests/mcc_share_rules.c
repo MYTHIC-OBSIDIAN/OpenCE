@@ -108,6 +108,13 @@ int main(int argc,char **argv)
             p=package(safe[i]);
             CHECK(mcc_share_eligible(&p));
         }
+        /* (custom_maps' MCC maps: read from custom_maps, never offered) */
+        p=package("mcc_maps/custom_maps/level");
+        CHECK(mcc_share_decide(&p)==MCC_SHARE_NOT_A_PACKAGE);
+        p=package("mcc_maps/Custom_Maps+Mercury/a10");
+        CHECK(mcc_share_decide(&p)==MCC_SHARE_NOT_A_PACKAGE);
+        p=package("mcc_maps/custom_mapsx/a10");
+        CHECK(mcc_share_eligible(&p));
         p=package(NULL);CHECK(!mcc_share_eligible(&p));
         return 0;
     }

@@ -57,6 +57,18 @@ mcc_maps/sounds.map    Matching MCC resources, when required by the package
 mcc_maps/bitmaps.map   Matching MCC resources, when required by the package
 ```
 
+In this fork, MCC maps may also be put in `custom_maps`: loose
+(`custom_maps/a10.map`, the level `mcc_maps\custom_maps\a10`) or in a folder
+of it for each package (`custom_maps/MercuryRising/a10.map`, the level
+`mcc_maps\custom_maps+MercuryRising\a10`). `mcc_maps.c` finds them as the
+lists open (`mcc_maps_scan_custom`: each file is identified, so the Custom
+Edition maps beside them are not taken) and lists them after the Custom
+Edition maps, in CUSTOM EDITION (multiplayer) and CUSTOM CAMPAIGNS
+(campaign), not in the MCC lists. `xbox_files.c` reads that package from
+`custom_maps` (`translate_custom_mcc`, `paths.custom_maps` honoured), except a
+loose map's `bitmaps.map`, `sounds.map` and `loc.map`: those in `custom_maps`
+are Custom Edition's, so a loose map uses the shared MCC resources.
+
 The level identity is `mcc_maps\a10`. The filename is retained even when
 the internal scenario name differs. The supplied Mercury Rising file is
 an example: its filename is `a10.map`, while its header names

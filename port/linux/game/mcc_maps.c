@@ -2,7 +2,8 @@
 MCC_MAPS.C
 
 The independent MCC menu catalog. Only version 13 Halo 1 MCC caches from
-d:\mcc_maps are admitted. The on-disk filename is the level identity; the
+d:\mcc_maps (and from d:\custom_maps, listed with the Custom Edition maps:
+MCC_MAPS_CUSTOM_PACKAGE) are admitted. The on-disk filename is the level identity; the
 cache's internal scenario name may differ. No Xbox or Custom Edition map
 list, loader, resource directory or display index is used here.
 */
@@ -39,6 +40,8 @@ struct mcc_menu_map
 	wchar_t name[64];
 	wchar_t description[MCC_MAP_DESCRIPTION_MAXIMUM + 1];
 	boolean campaign, titled;
+	/* custom_maps' (MCC_MAPS_CUSTOM_PACKAGE): listed with the Custom Edition maps */
+	boolean custom;
 	short mission_order, next_state;
 	char next_mission[64];
 	char campaign_title[64];
@@ -104,6 +107,15 @@ static void mcc_map_description_read(struct mcc_menu_map *map)
 	}
 }
 
+/* whether a map's name (<package>\\<map>) is custom_maps': its package
+custom_maps, or custom_maps+<folder> */
+static boolean mcc_map_name_custom(char const *name)
+{
+	size_t length = sizeof(MCC_MAPS_CUSTOM_PACKAGE) - 1;
+
+	return !_strnicmp(name, MCC_MAPS_CUSTOM_PACKAGE, length) && (name[length] == '\\' || name[length] == '+');
+}
+
 static void mcc_map_register(char const *name)
 {
 	char path[128], candidate[128], canonical[64];
@@ -147,6 +159,7 @@ static void mcc_map_register(char const *name)
 	if (mcc_workshop_local_item(map->level_name, &item))
 		strcpy(map->item_id, item.id);
 	map->campaign = identity.scenario_type == 0;
+	map->custom = mcc_map_name_custom(name);
 	display = strrchr(name, '\\');
 	display = display ? display + 1 : name;
 	for (index = 0; display[index]; index++)
@@ -350,6 +363,49 @@ static void mcc_maps_scan_directory(char const *package)
     CloseHandle(find);
 }
 
+/* The MCC maps of the custom_maps folder: those loose in it (the package
+custom_maps), and those of each folder in it (custom_maps+<folder>). The
+Custom Edition maps beside them are not MCC's, and are not admitted
+(mcc_map_register identifies each file). */
+static void mcc_maps_scan_custom(char const *folder)
+{
+    WIN32_FIND_DATAA data;
+    HANDLE find;
+    char pattern[128];
+    snprintf(pattern,sizeof(pattern),"%s%s%s*.*",MCC_MAPS_CUSTOM_FOLDER,folder,folder[0] ? "\\" : "");
+    find=FindFirstFileA(pattern,&data);
+    if (find==INVALID_HANDLE_VALUE) return;
+    do {
+        char name[sizeof(data.cFileName)+1], relative[128];
+        char *extension;
+        size_t length;
+        memcpy(name,data.cFileName,sizeof(data.cFileName));
+        name[sizeof(data.cFileName)]=0;
+        length=strlen(name);
+        if (!length || strpbrk(name,"/\\+") || length>40 || name[0]=='.') continue;
+        if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            /* (one folder deep, as mcc_maps' packages) */
+            if (!folder[0]) mcc_maps_scan_custom(name);
+            continue;
+        }
+        extension=strrchr(name,'.');
+        if (!extension || csstrcasecmp(extension+1,"map")) continue;
+        *extension=0;
+        if (!csstrcasecmp(name,"sounds") || !csstrcasecmp(name,"bitmaps") || !csstrcasecmp(name,"loc")) continue;
+        snprintf(relative,sizeof(relative),"%s%s%s\\%s",MCC_MAPS_CUSTOM_PACKAGE,folder[0] ? "+" : "",folder,name);
+        mcc_map_register(relative);
+    } while (FindNextFileA(find,&data));
+    CloseHandle(find);
+}
+
+static short mcc_maps_custom_count_scanned(void)
+{
+    short index, count = 0;
+    for (index = 0; index < mcc_menu_catalog.count; index++)
+        count += mcc_menu_catalog.maps[index].custom ? 1 : 0;
+    return count;
+}
+
 static void mcc_maps_scan(void)
 {
     short i;
@@ -363,6 +419,7 @@ static void mcc_maps_scan(void)
     mcc_menu_catalog.scanned=TRUE;
     mcc_menu_catalog.count=0;
     mcc_maps_scan_directory("");
+    mcc_maps_scan_custom("");
     /* The subscribed Steam Workshop items: each map is the level mcc_maps\<item id>\<map name>. */
     for (i=0;i<steam_workshop_count();i++) {
         struct steam_workshop_map const *item=steam_workshop_map(i);
@@ -377,11 +434,18 @@ static void mcc_maps_scan(void)
         struct mcc_menu_map *map=&mcc_menu_catalog.maps[i];
         char const *base=strrchr(map->file_name,'\\');
         if (base && mcc_map_workshop_title(map)) continue;
+        /* (custom_maps' loose maps by their own names; a folder's, with the
+         * folder's name after, as mcc_maps' packages) */
+        if (map->custom && !strchr(map->file_name,'+')) continue;
         if (base) {
             char package[64];
             size_t n,k,length=(size_t)(base-map->file_name);
             memcpy(package,map->file_name,length);package[length]=0;
             if (mcc_map_package_is_item(package)) continue;
+            if (map->custom) {
+                memmove(package,package+sizeof(MCC_MAPS_CUSTOM_PACKAGE),strlen(package+sizeof(MCC_MAPS_CUSTOM_PACKAGE))+1);
+                length=strlen(package);
+            }
             /* Preserve the established human-named package disambiguator. */
             for (n=0;map->name[n];n++) {}
             map->name[n++]=' ';map->name[n++]='[';
@@ -391,7 +455,8 @@ static void mcc_maps_scan(void)
     }
     mcc_maps_campaign_metadata();
     mcc_maps_menu_metadata();
-    error(_error_silent,"mcc maps: %d maps found in mcc_maps and its packages",mcc_menu_catalog.count);
+    error(_error_silent,"mcc maps: %d maps found in mcc_maps and its packages, %d of them in custom_maps",
+        mcc_menu_catalog.count,mcc_maps_custom_count_scanned());
 }
 
 int mcc_maps_next_mission(char const *level_name, char next[64])
@@ -453,7 +518,7 @@ short mcc_maps_type_count(boolean campaign)
 	mcc_maps_scan();
 	for (index = 0; index < mcc_menu_catalog.count; index++)
 	{
-		if (mcc_menu_catalog.maps[index].campaign == campaign)
+		if (mcc_menu_catalog.maps[index].campaign == campaign && !mcc_menu_catalog.maps[index].custom)
 			count++;
 	}
 	return count;
@@ -468,7 +533,35 @@ short mcc_maps_type_index(short row, boolean campaign)
 		return NONE;
 	for (index = 0; index < mcc_menu_catalog.count; index++)
 	{
-		if (mcc_menu_catalog.maps[index].campaign == campaign && row-- == 0)
+		if (mcc_menu_catalog.maps[index].campaign == campaign && !mcc_menu_catalog.maps[index].custom && row-- == 0)
+			return index;
+	}
+	return NONE;
+}
+
+short mcc_maps_custom_count(boolean campaign)
+{
+	short index, count = 0;
+
+	mcc_maps_scan();
+	for (index = 0; index < mcc_menu_catalog.count; index++)
+	{
+		if (mcc_menu_catalog.maps[index].campaign == campaign && mcc_menu_catalog.maps[index].custom)
+			count++;
+	}
+	return count;
+}
+
+short mcc_maps_custom_index(short row, boolean campaign)
+{
+	short index;
+
+	mcc_maps_scan();
+	if (row < 0)
+		return NONE;
+	for (index = 0; index < mcc_menu_catalog.count; index++)
+	{
+		if (mcc_menu_catalog.maps[index].campaign == campaign && mcc_menu_catalog.maps[index].custom && row-- == 0)
 			return index;
 	}
 	return NONE;
@@ -637,7 +730,8 @@ void mcc_map_browser_open(struct mcc_map_browser *browser, boolean campaign)
 		{
 			for (index = 0; index < mcc_menu_catalog.count; index++)
 			{
-				if (mcc_menu_catalog.maps[index].campaign == campaign && mcc_map_in_collection(index, group))
+				if (mcc_menu_catalog.maps[index].campaign == campaign && !mcc_menu_catalog.maps[index].custom &&
+					mcc_map_in_collection(index, group))
 				{
 					mcc_map_browser_add_folder(browser, index, group);
 					break;
@@ -649,7 +743,8 @@ void mcc_map_browser_open(struct mcc_map_browser *browser, boolean campaign)
 	{
 		for (index = 0; index < mcc_menu_catalog.count; index++)
 		{
-			if (mcc_menu_catalog.maps[index].campaign != campaign)
+			/* (custom_maps' are listed with the Custom Edition maps) */
+			if (mcc_menu_catalog.maps[index].campaign != campaign || mcc_menu_catalog.maps[index].custom)
 				continue;
 			mcc_map_package(index, package);
 			if (browser->package[0])

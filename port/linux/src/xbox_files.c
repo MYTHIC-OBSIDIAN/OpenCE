@@ -342,6 +342,69 @@ static BOOL names_match(const char *a, const char *b, unsigned long length)
 	return TRUE;
 }
 
+/* mcc_maps\custom_maps\... and mcc_maps\custom_maps+<folder>\...: the MCC
+maps of the custom_maps folder, loose in it or in a folder of it (mcc_maps.c's
+MCC_MAPS_CUSTOM_PACKAGE), with that folder's files. A loose map's package
+resources are not custom_maps' bitmaps.map and sounds.map (Custom Edition's):
+it looks for them as mcc_maps' own package's would. cursor is after
+mcc_maps\; the rest of the path after the package in rest */
+static int translate_custom_mcc(const char *cursor, char *resolved, unsigned long size, const char **rest)
+{
+	static const char *const resources[] = { "bitmaps.map", "sounds.map", "loc.map" };
+	const char *custom_maps = config_string("paths.custom_maps");
+	char folder[1024], local_name[256], sub[64];
+	unsigned long length = 0, index;
+	int loose;
+
+	if (!names_match(cursor, "custom_maps", 11) || (cursor[11] != '\\' && cursor[11] != '/' && cursor[11] != '+'))
+		return 0;
+	loose = cursor[11] != '+';
+	cursor += loose ? 11 : 12;
+	if (!loose)
+	{
+		while (cursor[length] && cursor[length] != '\\' && cursor[length] != '/' && length + 1 < sizeof(sub))
+		{
+			sub[length] = cursor[length];
+			length++;
+		}
+		sub[length] = 0;
+		if (!length || (cursor[length] != '\\' && cursor[length] != '/'))
+			return 0;
+		cursor += length;
+	}
+	else
+	{
+		const char *file = cursor;
+
+		while (*file == '\\' || *file == '/')
+			file++;
+		for (index = 0; index < sizeof(resources) / sizeof(resources[0]); index++)
+		{
+			if (names_match(file, resources[index], strlen(resources[index]) + 1))
+				return 0;
+		}
+	}
+	if (custom_maps[0])
+		snprintf(folder, sizeof(folder), "%s", custom_maps);
+	else if (posix_find_entry_case_insensitive(platform_data_root(), "custom_maps", local_name, sizeof(local_name)))
+		snprintf(folder, sizeof(folder), "%s/%s", platform_data_root(), local_name);
+	else
+		return 0;
+	trim_separators(folder);
+	if (!loose)
+	{
+		if (!posix_find_entry_case_insensitive(folder, sub, local_name, sizeof(local_name)))
+			snprintf(local_name, sizeof(local_name), "%s", sub);
+		length = strlen(folder);
+		snprintf(folder + length, sizeof(folder) - length, "/%s", local_name);
+	}
+	if (strlen(folder) >= size)
+		return 0;
+	snprintf(resolved, size, "%s", folder);
+	*rest = cursor;
+	return 1;
+}
+
 /* mcc_maps\<Workshop item id>\... where the data root has no such package folder: the item's maps folder in the
 player's Steam library (steam_workshop.h). The rest of the path after the id in rest */
 static int translate_workshop(const char *cursor, char *resolved, unsigned long size, const char **rest)
@@ -354,6 +417,8 @@ static int translate_workshop(const char *cursor, char *resolved, unsigned long 
 	if (!names_match(cursor, "mcc_maps", 8) || (cursor[8] != '\\' && cursor[8] != '/'))
 		return 0;
 	cursor += 9;
+	if (translate_custom_mcc(cursor, resolved, size, rest))
+		return 1;
 	/* MCC-owned resource discovery also serves the virtual fopen path. */
 	if (steam_workshop_resource_path(cursor, platform_data_root(), resolved, size))
 	{

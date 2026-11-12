@@ -13,6 +13,19 @@ static int mcc_share_same(char const *a, char const *b)
     return !*a && !*b;
 }
 
+/* custom_maps' MCC maps' packages, custom_maps and custom_maps+<folder>
+(mcc_maps.c's MCC_MAPS_CUSTOM_PACKAGE): read from custom_maps, beside its
+Custom Edition maps, and listed with them; never offered, as a joiner's copy
+would be staged into mcc_maps */
+static int mcc_share_custom_maps(char const *folder)
+{
+    char start[13];
+    size_t length;
+    for (length=0;length<12 && folder[length];length++) start[length]=folder[length];
+    start[length]=0;
+    return mcc_share_same(folder,"custom_maps") || mcc_share_same(start,"custom_maps+");
+}
+
 /* Sharing names must be portable even when the sender is not on Windows.
  * This is stricter than local discovery and does not change its accepted names. */
 static int mcc_share_component(char const *name)
@@ -57,6 +70,7 @@ enum mcc_share_reason mcc_share_decide(struct mcc_share_package const *package)
         mcc_share_same(level,"bitmaps") || mcc_share_same(level,"sounds") ||
         mcc_share_same(level,"loc")) return MCC_SHARE_BAD_NAME;
     if (mcc_share_same(folder,"_shared")) return MCC_SHARE_SHARED_RESOURCES;
+    if (mcc_share_custom_maps(folder)) return MCC_SHARE_NOT_A_PACKAGE;
     if (package->content==MCC_SHARE_CONTENT_STOCK) return MCC_SHARE_STOCK;
     if (package->sidecar!=MCC_SHARE_SIDECAR_ABSENT &&
         package->sidecar!=MCC_SHARE_SIDECAR_VALID) return MCC_SHARE_UNKNOWN_ORIGIN;
