@@ -22,9 +22,11 @@ Conventions carried over from the Xbox:
 */
 
 #include "xgpu.h"
+#include "mcc_environment_shader.h"
 #include "sdl_platform.h"
 #include "halo_ui_pointer.h"
 #include "port_config.h"
+#include "loading_widescreen.h"
 #include "posix.h"
 #include "main/console.h"
 
@@ -48,6 +50,23 @@ void stats_log_set_renderer(const char *vendor, const char *renderer);
 OpenGL ES, which has no glClipControl: its depth from -1 would lose the
 precision near 0 that reversing gains */
 BOOL xgpu_reversed_depth;
+
+/* A record of the device's own (a vertex array, a render target, a
+framebuffer, a program): the renderer cannot go on without it. The web
+build's malloc gives NULL when the heap is full, rather than aborting
+(-sABORTING_MALLOC=0, tools/web_build.py), and WebAssembly does not trap a
+write through it (address 0 is memory), so stop here instead. */
+static void *device_record_new(size_t size)
+{
+	void *record = calloc(1, size);
+
+	if (!record)
+	{
+		fprintf(stderr, "d3d8: out of memory for a %lu byte record\n", (unsigned long)size);
+		abort();
+	}
+	return record;
+}
 
 /* ---------- the screen's width
 
@@ -437,6 +456,8 @@ struct draw_uniforms
 	float screen_offset;
 	float texture_lod_bias[4];
 	float height_fade[4];
+	/* display.reversed_depth: a z bias's depth units (nv2a_vsh.c) */
+	float depth_bias;
 };
 
 struct program_entry
@@ -455,6 +476,7 @@ struct program_entry
 	GLint texture_lod_bias;
 	GLint screen_offset;
 	GLint height_fade;
+	GLint depth_bias;
 	/* nv2a_pixel_shader_key's source_blend's color, and what it last had */
 	GLint blend_constant;
 	float blend_constant_value[4];
@@ -854,13 +876,14 @@ static void render_targets_evict(void);
 /* what a test's place in the buffer holds until the GPU copies its count
 there: more than any test covers (8K with 4x MSAA has 133 million samples) */
 #define VISIBILITY_UNCOPIED 0xFFFFFFFFUL
-/* a frame's tests: their queries (kept until every count is read), the slot
-and area of each, and (once the frame is presented) the fence its copies
-wait on */
+/* a frame's tests: their queries (kept until every count is read), the
+slot, number (visibility_ended) and area of each, and (once the frame is
+presented) the fence its copies wait on */
 struct visibility_batch
 {
 	GLuint queries[VISIBILITY_TEST_SLOTS];
 	unsigned short slots[VISIBILITY_TEST_SLOTS];
+	ULONGLONG tests[VISIBILITY_TEST_SLOTS];
 	float areas[VISIBILITY_TEST_SLOTS];
 	unsigned long count, read, frame;
 	ULONGLONG serial;
@@ -938,6 +961,12 @@ struct gl_device
 	is incomplete, so until a test's count has arrived the slot's earlier
 	count stands. A frame of The Library's lights makes hundreds of tests. */
 	GLuint visibility_known[VISIBILITY_TEST_SLOTS];
+	/* the tests ended at each slot so far, dropped ones too, and the number
+	(from 1) of the one whose count the slot gives, 0 for none: the latest
+	read, which can be frames older than the slot's latest test
+	(xgpu_visibility_tests_ended) */
+	ULONGLONG visibility_ended[VISIBILITY_TEST_SLOTS];
+	ULONGLONG visibility_counted[VISIBILITY_TEST_SLOTS];
 	/* the tests of this frame and of the two before, whose counts are yet
 	to be read (visibility_read_batch): the game waits for results at the
 	start of the next frame, and a query read there would stop the CPU
@@ -1250,7 +1279,7 @@ static struct vertex_array_entry *vertex_array_get(const struct vertex_layout *l
 		if (entry->hash == hash && !memcmp(&entry->layout, layout, sizeof(*layout)))
 			return entry;
 	}
-	entry = calloc(1, sizeof(*entry));
+	entry = device_record_new(sizeof(*entry));
 	entry->hash = hash;
 	entry->layout = *layout;
 	memset(entry->bindings, 0xff, sizeof(entry->bindings));
@@ -1596,6 +1625,7 @@ static struct render_target_entry *render_target_get(const D3DSurface *surface)
 	unsigned long width, height, slot;
 	long screen;
 	BOOL depth;
+	GLint previous_texture;
 
 	if (!surface || !surface->Data)
 		return NULL;
@@ -1642,7 +1672,7 @@ static struct render_target_entry *render_target_get(const D3DSurface *surface)
 			return render_target_remember(surface, screen, entry);
 		}
 	}
-	entry = calloc(1, sizeof(*entry));
+	entry = device_record_new(sizeof(*entry));
 	entry->target.data = surface->Data;
 	entry->target.width = width;
 	entry->target.height = height;
@@ -1655,10 +1685,14 @@ static struct render_target_entry *render_target_get(const D3DSurface *surface)
 	entry->screen_buffer = surface->Data == (depth ? device.depth_buffer.Data : device.back_buffer.Data);
 	entry->target.format = depth ? (xgpu_reversed_depth ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8) :
 		entry->screen_buffer && hdr.active ? GL_RGBA16F : GL_RGBA8;
+	/* Textures may already be selected for this draw. Allocating its target
+	 * must not replace the active sampler's input with the output image. */
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
 	glGenTextures(1, &entry->target.texture);
 	glBindTexture(GL_TEXTURE_2D, entry->target.texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 	render_target_storage(&entry->target);
+	glBindTexture(GL_TEXTURE_2D, (GLuint)previous_texture);
 	xgpu_gl_state_invalidate();
 	entry->next = render_targets;
 	render_targets = entry;
@@ -1698,7 +1732,7 @@ static GLuint framebuffer_find(GLuint color, GLuint depth, BOOL renderbuffers)
 			return entry->framebuffer;
 		}
 	}
-	entry = calloc(1, sizeof(*entry));
+	entry = device_record_new(sizeof(*entry));
 	entry->color = color;
 	entry->depth = depth;
 	entry->renderbuffers = renderbuffers;
@@ -2784,16 +2818,20 @@ void WINAPI D3DDevice_BeginVisibilityTest(void)
 
 HRESULT WINAPI D3DDevice_EndVisibilityTest(DWORD index)
 {
+	ULONGLONG test;
 
 	if (!device.gl_ready || !device.visibility_test_active)
 		return S_OK;
 	device.visibility_test_active = FALSE;
 	index %= VISIBILITY_TEST_SLOTS;
+	/* (numbered whether its count will come or not) */
+	test = ++device.visibility_ended[index];
 	if (!device.active_query)
 	{
 		if (device.visibility_unavailable)
 		{
 			device.visibility_known[index] = VISIBILITY_ALL_SAMPLES;
+			device.visibility_counted[index] = test;
 			device.query_pending[index] = TRUE;
 		}
 		return S_OK;
@@ -2809,6 +2847,7 @@ HRESULT WINAPI D3DDevice_EndVisibilityTest(DWORD index)
 		struct visibility_batch *batch = &device.visibility_batches[device.visibility_batch];
 
 		batch->slots[batch->count] = (unsigned short)index;
+		batch->tests[batch->count] = test;
 		batch->areas[batch->count++] = device.query_area[index];
 		device.query_pending[index] = TRUE;
 		return S_OK;
@@ -2830,6 +2869,17 @@ HRESULT WINAPI D3DDevice_GetVisibilityTestResult(DWORD index, UINT *result, ULON
 	if (result)
 		*result = device.visibility_known[index];
 	return S_OK;
+}
+
+/* (xgpu.h) */
+unsigned long long xgpu_visibility_tests_ended(unsigned long index)
+{
+	return device.visibility_ended[index % VISIBILITY_TEST_SLOTS];
+}
+
+unsigned long long xgpu_visibility_test_counted(unsigned long index)
+{
+	return device.visibility_counted[index % VISIBILITY_TEST_SLOTS];
 }
 
 /* ---------- render and texture stage state */
@@ -2942,6 +2992,15 @@ void WINAPI D3DDevice_SetTexture(DWORD stage, D3DBaseTexture *texture)
 		device.textures[stage] = texture;
 }
 
+
+/* Unload can happen before a later draw replaces every texture stage. */
+void xgpu_mcc_texture_unbind(DWORD const *resource)
+{
+	unsigned long stage;
+	for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
+		if ((DWORD const *)device.textures[stage] == resource)
+			device.textures[stage] = NULL;
+}
 
 void WINAPI D3DDevice_SetPalette(DWORD stage, D3DPalette *palette)
 {
@@ -3063,6 +3122,11 @@ HRESULT WINAPI D3DDevice_CreateVertexShader(CONST DWORD *declaration, CONST DWOR
 		/* header: program type in the low word, instruction count in the high */
 		object->instruction_count = function[0] >> 16;
 		object->instructions = malloc(object->instruction_count * 4 * sizeof(DWORD));
+		if (!object->instructions && object->instruction_count)
+		{
+			free(object);
+			return E_OUTOFMEMORY;
+		}
 		memcpy(object->instructions, function + 1, object->instruction_count * 4 * sizeof(DWORD));
 	}
 	parse_declaration(object, declaration);
@@ -3305,7 +3369,7 @@ static GLuint fragment_shader_get(const struct nv2a_pixel_shader_key *key)
 			return entry->shader;
 		}
 	}
-	entry = calloc(1, sizeof(*entry));
+	entry = device_record_new(sizeof(*entry));
 	entry->hash = hash;
 	entry->key = *key;
 	source = nv2a_pixel_shader_to_glsl(key);
@@ -3350,7 +3414,7 @@ static struct program_entry *program_get(GLuint vertex_shader, GLuint fragment_s
 			return entry;
 		}
 	}
-	entry = calloc(1, sizeof(*entry));
+	entry = device_record_new(sizeof(*entry));
 	entry->vertex_shader = vertex_shader;
 	entry->fragment_shader = fragment_shader;
 	memset(&entry->uniforms, 0xff, sizeof(entry->uniforms));
@@ -3431,6 +3495,7 @@ static struct program_entry *program_get(GLuint vertex_shader, GLuint fragment_s
 	entry->texture_lod_bias = glGetUniformLocation(entry->program, "texture_lod_bias");
 	entry->screen_offset = glGetUniformLocation(entry->program, "screen_offset");
 	entry->height_fade = glGetUniformLocation(entry->program, "height_fade");
+	entry->depth_bias = glGetUniformLocation(entry->program, "depth_bias");
 	entry->blend_constant = glGetUniformLocation(entry->program, "blend_constant");
 	entry->model_lights = glGetUniformLocation(entry->program, "model_lights");
 	for (stage = 0; stage < D3DTSS_MAXSTAGES; stage++)
@@ -3755,7 +3820,7 @@ static GLuint mip_composite_get(const struct xgpu_texture_description *descripti
 	}
 	if (!composite)
 	{
-		composite = calloc(1, sizeof(*composite));
+		composite = device_record_new(sizeof(*composite));
 		composite->data = data;
 		composite->width = description->width;
 		composite->height = description->height;
@@ -4112,11 +4177,20 @@ static void apply_raster_state(BOOL has_depth)
 
 		offset[0] = dword_to_float(rs[D3DRS_POLYGONOFFSETZSLOPESCALE]);
 		offset[1] = dword_to_float(rs[D3DRS_POLYGONOFFSETZOFFSET]);
-		/* (display.reversed_depth: toward the camera is up) */
+		/* The slope is the depth's change across a pixel, and a target drawn
+		at several pixels to the game's one (render_target_get) has that many
+		times less depth across each: the Xbox's slope term, taken across its
+		own pixels, is that many times the scale. On a surface seen at an
+		angle it is most of the bias (the Pelican's lights on its curved hull
+		sank in at 1080 lines with it a 2.25th as large). */
+		offset[0] *= target_scale[0] > target_scale[1] ? target_scale[0] : target_scale[1];
+		/* (display.reversed_depth: toward the camera is up, and the units,
+		which a floating-point depth buffer measures by the depth itself,
+		are the vertex program's, in the Xbox's measure: depth_bias) */
 		if (xgpu_reversed_depth)
 		{
 			offset[0] = -offset[0];
-			offset[1] = -offset[1];
+			offset[1] = 0.0f;
 		}
 		if (memcmp(gl_state.polygon_offset, offset, sizeof(offset)))
 		{
@@ -4130,7 +4204,7 @@ static void apply_raster_state(BOOL has_depth)
 
 /* the uniforms of the latest draws, converted from these inputs; the serial
 counts the conversions */
-#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 4)
+#define DRAW_UNIFORM_INPUT_COUNT (4 + 4 + 16 + 1 + 16 + 2 + 4 + 1 + 1 + 7 * D3DTSS_MAXSTAGES + 4 + 2)
 
 /* the height fade of the draws that follow (d3d8_gl_set_height_fade): off
 while its scale is zero */
@@ -4249,6 +4323,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	key.combiner_state[D3DRS_PSFINALCOMBINERCONSTANT0] = 0;
 	key.combiner_state[D3DRS_PSFINALCOMBINERCONSTANT1] = 0;
 	key.texture_modes = D3D__RenderState[D3DRS_PSTEXTUREMODES];
+	key.mcc_bump_attenuation = mcc_environment_shader_active();
 	/* the textures before the targets: a render target the draw samples
 	has its multisampled pixels resolved by a blit (render_target_resolve),
 	which binds framebuffers of its own, and the back buffer can be both
@@ -4434,6 +4509,8 @@ static struct program_entry *prepare_draw(BOOL immediate)
 		}
 		memcpy(&inputs[count], height_fade_value, sizeof(height_fade_value));
 		count += 4;
+		inputs[count++] = D3D__RenderState[D3DRS_SOLIDOFFSETENABLE];
+		inputs[count++] = D3D__RenderState[D3DRS_POLYGONOFFSETZOFFSET];
 		if (!draw_uniforms_serial || !words_equal(inputs, draw_uniform_inputs, sizeof(inputs)))
 		{
 			struct draw_uniforms *converted = &draw_uniforms;
@@ -4473,6 +4550,13 @@ static struct program_entry *prepare_draw(BOOL immediate)
 			}
 			converted->screen_offset = (float)UI_OFFSET;
 			memcpy(converted->height_fade, height_fade_value, sizeof(converted->height_fade));
+			/* (display.reversed_depth: the z bias's units, the Xbox's depth
+			units toward the camera, in the depth the vertex program writes:
+			one is 1 / viewport_scale.z, the depth buffer's range over the
+			viewport's) */
+			converted->depth_bias = xgpu_reversed_depth && D3D__RenderState[D3DRS_SOLIDOFFSETENABLE] &&
+				device.viewport_scale[2] != 0.0f ?
+				-dword_to_float(D3D__RenderState[D3DRS_POLYGONOFFSETZOFFSET]) / device.viewport_scale[2] : 0.0f;
 		}
 	}
 	/* and a program that has had them since needs none of them */
@@ -4495,6 +4579,7 @@ static struct program_entry *prepare_draw(BOOL immediate)
 	uniform_float(entry->screen_offset, &entry->uniforms.screen_offset, draw_uniforms.screen_offset);
 	uniform_vec4(entry->texture_lod_bias, entry->uniforms.texture_lod_bias, draw_uniforms.texture_lod_bias, 1);
 	uniform_vec4(entry->height_fade, entry->uniforms.height_fade, draw_uniforms.height_fade, 1);
+	uniform_float(entry->depth_bias, &entry->uniforms.depth_bias, draw_uniforms.depth_bias);
 	return entry;
 }
 
@@ -5053,6 +5138,10 @@ static WORD *quad_indices(const WORD *indices, unsigned long count, unsigned lon
 	WORD *result = malloc(quads * 6 * sizeof(WORD) + 2);
 	unsigned long quad;
 
+	/* (out of memory: none, and the draw is dropped) */
+	*out_count = 0;
+	if (!result)
+		return NULL;
 	for (quad = 0; quad < quads; quad++)
 	{
 		WORD v0 = indices ? indices[quad * 4] : (WORD)(quad * 4);
@@ -5096,9 +5185,12 @@ void WINAPI D3DDevice_DrawVertices(D3DPRIMITIVETYPE primitive_type, UINT start_v
 		unsigned long count;
 		WORD *indices = quad_indices(NULL, vertex_count, &count);
 
-		glDrawElements(GL_TRIANGLES, (GLsizei)count, GL_UNSIGNED_SHORT,
-			(const void *)index_upload(indices, count * sizeof(WORD)));
-		free(indices);
+		if (indices)
+		{
+			glDrawElements(GL_TRIANGLES, (GLsizei)count, GL_UNSIGNED_SHORT,
+				(const void *)index_upload(indices, count * sizeof(WORD)));
+			free(indices);
+		}
 	}
 	else
 	{
@@ -5138,6 +5230,8 @@ void WINAPI D3DDevice_DrawIndexedVertices(D3DPRIMITIVETYPE primitive_type, UINT 
 	if (primitive_type == D3DPT_QUADLIST)
 	{
 		indices = quad_indices(index_data, vertex_count, &count);
+		if (!indices)
+			return;
 		source = indices;
 	}
 	(void)index;
@@ -5314,7 +5408,7 @@ void WINAPI D3DDevice_End(void)
 				free(placed);
 			}
 		}
-		else
+		else if (indices)
 		{
 			glDrawElements(GL_TRIANGLES, (GLsizei)index_count, GL_UNSIGNED_SHORT,
 				(const void *)index_upload(indices, index_count * sizeof(WORD)));
@@ -5643,6 +5737,8 @@ static void write_screenshot(struct render_target_entry *target)
 	if (!directory)
 		return;
 	pixels = malloc(image_size);
+	if (!pixels)
+		return;
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer_get(target->target.texture, 0));
 	glReadPixels(0, 0, (GLsizei)width, (GLsizei)height, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 	/* the display ignores destination alpha, which the game uses as scratch;
@@ -5848,6 +5944,7 @@ static void visibility_read_batch(void)
 			}
 			device.visibility_known[batch->slots[test]] = area > 1.0f ?
 				(GLuint)(samples / area + 0.5f) : samples;
+			device.visibility_counted[batch->slots[test]] = batch->tests[test];
 			device.visibility_stats.samples++;
 			device.visibility_stats.nonzero += samples != 0;
 			if (samples > device.visibility_stats.maximum)
@@ -5988,6 +6085,13 @@ static void front_buffer_take(void)
 		left = 0;
 		width = (GLint)back_buffer->target.gl_width;
 	}
+	/* The loading feature expands the original effect across this width.
+	Capture all of it back into the stock feedback texture, not its centre. */
+	if (loading_widescreen_active())
+	{
+		left = 0;
+		width = (GLint)back_buffer->target.gl_width;
+	}
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, read);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw);
 	glDisable(GL_SCISSOR_TEST);
@@ -6071,6 +6175,9 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 				hdr.float_window ? hdr.sdr_white : 0.0f)))
 		{
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer_get(back_buffer->target.texture, 0));
+			/* Creating the source framebuffer binds both targets. A cached
+			map can reach this first blit without a loading-screen draw. */
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 			/* row 0 of the render target is the top of the picture */
 			glBlitFramebuffer(0, 0, (GLint)back_buffer->target.gl_width, (GLint)back_buffer->target.gl_height,
 				x, y + height, x + width, y, GL_COLOR_BUFFER_BIT, GL_LINEAR);

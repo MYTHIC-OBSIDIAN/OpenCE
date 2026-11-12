@@ -70,6 +70,7 @@ def test_pending_menu_bumper_visibility_and_focus(tmp_path):
 #include <stdio.h>
 #define NUMBEROF(a) (sizeof(a)/sizeof(*(a)))
 #define FALSE 0
+#define TRUE 1
 typedef int boolean;
 struct widget_instance {
  char const *name;short vertical_offset;int visible,definition_tag_index;
@@ -177,6 +178,7 @@ def test_real_glyph_geometry_opacity_cache_and_teardown(tmp_path):
 #define FALSE 0
 typedef int boolean;typedef float real;typedef unsigned long pixel32;
 typedef struct {short x0,y0,x1,y1;}rectangle2d;
+typedef struct {real x0,y0,x1,y1;}real_rectangle2d;
 struct bitmap_data {unsigned long *hardware_format;};
 struct icon_hud_element_definition {short frame_rate;unsigned flags;pixel32 color;};
 struct dynamic_screen_vertex {struct {real x,y;}position,texture_coordinates;pixel32 color;};
@@ -191,7 +193,8 @@ static int computer_style=3;
 static int controller_button_style(void){return computer_style;}
 static char const *bumper_style="original";
 static char const *config_string(char const *s){assert(!strcmp(s,"display.hud_bumper_style"));return bumper_style;}
-static int players=1,allocations,live,draws,fail;static long ticks,last_asset;
+static int players=1,allocations,live,draws,fail,unbound;static long ticks,last_asset;
+static void unbind(unsigned long const *p){assert(p);unbound++;}
 static struct dynamic_screen_vertex drawn[4];
 static long game_time_get(void){return ticks;}
 static int local_player_count(void){return players;}
@@ -249,6 +252,19 @@ int main(void){
  fail=0;assert(controller_glyph_draw(3,0,&icon,&cursor,0));assert(drawn[0].color==0xffffff);
  for(style=-1;style<3;style++)assert(!controller_glyph_draw(style,0,&icon,&cursor,0));
  assert(!controller_glyph_draw(4,0,&icon,&cursor,0));controller_glyphs_dispose();assert(!live);
+ /* A menu can allocate first; MCC's later binding must survive ordinary draws
+  * until the shared cache unbinds it before deleting the bitmap. */
+ {real_rectangle2d uv;int before;
+  assert(controller_glyph_bitmap(3,0,&uv));before=allocations;
+  assert(controller_glyph_draw_with_release(3,0,&icon,&cursor,0,unbind));
+  assert(controller_glyph_bitmap(3,0,&uv));
+  assert(controller_glyph_draw(3,0,&icon,&cursor,0));
+  assert(allocations==before&&!unbound);
+  controller_glyphs_dispose();assert(!live&&unbound==1);
+  controller_glyphs_dispose();assert(unbound==1);
+  assert(controller_glyph_bitmap(3,0,&uv));
+  controller_glyphs_dispose();assert(!live&&unbound==1);
+ }
  return 0;
 }
 '''

@@ -52,7 +52,7 @@ machines, 16 players) are 0x226 and 0x434. */
 /* (then the gametype's PC options, struct game_variant_options: 0x2C bytes) */
 #define HALO_PORT_NETWORK_GAME_VARIANT_OPTIONS_OFFSET (HALO_PORT_NETWORK_GAME_PLAYERS_END + 0xA)
 #define HALO_PORT_NETWORK_GAME_LOCAL_DATA_OFFSET (HALO_PORT_NETWORK_GAME_PLAYERS_END + 0x36)
-#define HALO_PORT_NETWORK_GAME_SIZE (HALO_PORT_NETWORK_GAME_PLAYERS_END + 0x3A)
+#define HALO_PORT_NETWORK_GAME_SIZE (HALO_PORT_NETWORK_GAME_PLAYERS_END + 0x3A + 64) /* MCC content and metadata SHA-256 */
 
 /* ---------- system link protocol
 
@@ -69,7 +69,15 @@ is newer (network_client_manager.c). A host advertises it, with its netcode,
 in its game's advertisement's reserved bytes (network_server_message_handler.c),
 which hosts built before there was a version send as zeros: version 0.
 Raise it with any change to what the machines send each other. */
-#define HALO_PORT_NETWORK_VERSION 48
+/* This fork's own numbers (LAN-only: never the same as OpenCE's, whose
+machines it does not meet). Version 49 takes OpenCE's 42 and 43: MCC map
+admission and sharing (the game record's MCC content and metadata digests),
+shared checkpoint, boat, clock and scripted-pose agreement, an MCC map's
+damage impulses along the damage's direction, a vehicle on its side
+throwing its riders, chat marking the host's lines, a co-op cutscene's sound
+carrying how far the host has played it, an MCC conversion's allowance at a
+round's start, and players riding the vehicles they stand on. */
+#define HALO_PORT_NETWORK_VERSION 49
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0
@@ -92,7 +100,7 @@ header included; the per-tick update of 128 players is 3,857 */
 update of 128 players decodes to 0x1010 bytes */
 #define HALO_PORT_NETWORK_PACKET_SIZE 0x1100
 
-/* the game settings record (HALO_PORT_NETWORK_GAME_SIZE, 13,136 bytes at 128
+/* the game settings record (HALO_PORT_NETWORK_GAME_SIZE, 13,200 bytes at 128
 machines and players) does not fit one message; it is sent in pieces of
 this many bytes (4 pieces), each 3,594 bytes on the wire */
 #define HALO_PORT_NETWORK_GAME_SETTINGS_FRAGMENT_SIZE 0xE00

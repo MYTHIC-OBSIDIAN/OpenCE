@@ -34,6 +34,7 @@ LAYOUT = HUD_ASSETS / "layout.json"
 CE_LAYOUT = HUD_ASSETS / "ce_layout.json"
 # (Halo PC's own sheets, laid out from the Xbox redraws: tools/pc_hud_assets.py)
 PC_LAYOUT = HUD_ASSETS / "pc_layout.json"
+MCC_LAYOUT = HUD_ASSETS / "mcc_layout.json"
 CE_STOCK = HUD_ASSETS / "ce_stock.json"
 # the HUD textures whose bitmaps Halo Custom Edition lays out alike
 CUSTOM_EDITION_HUD = HUD_ASSETS / "custom_edition.json"
@@ -74,7 +75,8 @@ def textures() -> List[tuple]:
     result = []
     for folder, listing, title in ((HUD_ASSETS, LAYOUT, False), (TITLE_ASSETS, TITLE_LIST, True),
                                    (BUTTON_ASSETS, BUTTON_LIST, True), (HUD_ASSETS, CE_LAYOUT, False),
-                                   (HUD_ASSETS, PC_LAYOUT, False), (CONTROLLER_ASSETS, CONTROLLER_LIST, True)):
+                                   (HUD_ASSETS, PC_LAYOUT, False), (HUD_ASSETS, MCC_LAYOUT, False),
+                                   (CONTROLLER_ASSETS, CONTROLLER_LIST, True)):
         if (ROOT / listing).is_file():
             result += [(folder, asset, title) for asset in json.loads((ROOT / listing).read_text())["assets"]]
     return result
@@ -94,7 +96,7 @@ def smaa_files() -> List[tuple]:
 
 def hud_asset_inputs() -> List[Path]:
     """The files the generated source is made from."""
-    inputs = [listing for listing in (LAYOUT, CE_LAYOUT, PC_LAYOUT, CE_STOCK, CUSTOM_EDITION_HUD, TITLE_LIST, BUTTON_LIST, CONTROLLER_LIST, FONT_LIST, MENU_LIST)
+    inputs = [listing for listing in (LAYOUT, CE_LAYOUT, PC_LAYOUT, MCC_LAYOUT, CE_STOCK, CUSTOM_EDITION_HUD, TITLE_LIST, BUTTON_LIST, CONTROLLER_LIST, FONT_LIST, MENU_LIST)
               if (ROOT / listing).is_file()]
     return [*inputs, *(folder / f"{asset['name']}.png" for folder, asset, _ in textures()),
             *(FONT_ASSETS / name for name in font_files()), *(MENU_ASSETS / name for name in menu_files()),
@@ -108,7 +110,7 @@ def hud_configure_inputs() -> List[Path]:
     folders, for files added or removed), not each file, which a change of a
     list may rename or remove."""
     inputs = []
-    for folder, listing in ((HUD_ASSETS, LAYOUT), (HUD_ASSETS, CE_LAYOUT), (TITLE_ASSETS, TITLE_LIST), (BUTTON_ASSETS, BUTTON_LIST),
+    for folder, listing in ((HUD_ASSETS, LAYOUT), (HUD_ASSETS, CE_LAYOUT), (HUD_ASSETS, MCC_LAYOUT), (TITLE_ASSETS, TITLE_LIST), (BUTTON_ASSETS, BUTTON_LIST),
                             (CONTROLLER_ASSETS, CONTROLLER_LIST),
                             (FONT_ASSETS, FONT_LIST), (MENU_ASSETS, MENU_LIST)):
         if (ROOT / listing).is_file():

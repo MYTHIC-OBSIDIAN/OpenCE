@@ -129,6 +129,61 @@ Maps that require OpenSauce are not compatible.
 The LAN browser supports automatic map downloads - when you join a game it will download the custom maps from other players, with any of `bitmaps.map`, `sounds.map` and `loc.map` you are missing, when the host has map sharing enabled (on by default).
 Refer to [docs/custom_edition_caches.md](docs/custom_edition_caches.md).
 
+## MCC maps
+
+Halo 1 maps and campaigns made for the Master Chief Collection (MCC version
+13: Steam Workshop items, or packages copied by hand) are played from New
+Game's **MCC SINGLEPLAYER** (campaign maps) and Create Game's **MCC
+MULTIPLAYER** (multiplayer maps), with an independent loader and their own
+`mcc_maps` folder. There is no network co-op in this build, so a campaign map is
+played alone or in split screen.
+
+You still need the [Xbox game data](#a-copy-of-halo-combat-evolved-is-required). Obtain any required MCC resources from your own installed copy of Halo 1 in MCC.
+
+### Steam Workshop
+
+1. Subscribe to a Halo 1 MCC Workshop map or campaign and let Steam finish downloading it.
+2. Reopen the map list. **Settings > Network Setup > Map Sharing > MCC Packages** has **STEAM DISCOVERY** (on by default) and **CAMPAIGN MISSIONS** (mission ordering and progression for campaigns, on by default).
+
+OpenCE reads Workshop packages where Steam keeps them: no copying, and Steam can be closed while playing. Some maps also need the [shared resources](#shared-mcc-resources) below. If your Steam library is not found, set its location under `[paths]` in `config.toml`:
+
+```toml
+[paths]
+steam = 'C:\Steam'
+```
+
+### Manual installation
+
+Create a folder such as `mcc_maps/MercuryRising` beside your existing `maps` and `custom_maps` folders.
+
+- Place the package's level `.map` files directly inside it.
+- Keep any supplied `bitmaps.map` and `sounds.map` beside those levels. **Do not mix resources from different packages.**
+- Keep the package's JSON files and PNG previews, preserving their metadata and image subfolders.
+
+Map-only packages are valid, but copying only the maps from a complete package loses its metadata features. See the [package layout guide](docs/mcc_maps.md#installation-and-menus).
+
+### Shared MCC resources
+
+Some maps need MCC's standard resources. Copy these files once into your game data folder:
+
+| File in your MCC installation | Destination in OpenCE |
+| --- | --- |
+| `halo1/maps/bitmaps.map` | `mcc_maps/_shared/singleplayer/bitmaps.map` |
+| `halo1/maps/custom_edition/bitmaps.map` | `mcc_maps/_shared/multiplayer/bitmaps.map` |
+| `halo1/maps/custom_edition/sounds.map` | `mcc_maps/_shared/multiplayer/sounds.map` |
+
+**Use MCC's files, not those from a standalone Custom Edition installation.** Steam discovery does not install these resources.
+
+Keep package-supplied resources inside their package folder; they take priority over shared resources. Self-contained maps need no shared files. OpenCE reports missing or incompatible resources when loading.
+
+### MCC map support disclaimer
+
+The MCC loader is experimental: a map that appears in the menus is not
+proven to play correctly. On a LAN, a host can offer its MCC packages to
+joiners who lack them when both have opted in (**SHARE MCC PACKAGES** and
+**DOWNLOAD MAPS**). Retail game data is not distributed. See the
+[MCC reading guide](docs/reading/README.md) for setup, limits and evidence.
+
 ## Mods
 
 Mods go in a `mods` folder next to `maps`. Each mod is a folder of Halo PC tag files, as the Halo Editing Kit and Invader make them, with a `mod.toml` describing it. Every mod in the folder is on by default. Mods in the main menu turns them on and off and sets their order. Think of it like a resource pack list, the mod at the top plays over the ones below it. The game also refuses mods that say they cannot be played together. 

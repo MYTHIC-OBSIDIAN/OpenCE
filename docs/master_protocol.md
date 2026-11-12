@@ -69,7 +69,7 @@ checks), since anyone can make signatures that verify under one.
 executable) lists the masters, one per line:
 `https://master1.example.org ed25519:<64 hex>`; `#` starts a comment; the
 first 4 are used. A file that names none (missing, empty, or comments alone,
-as the release's) leaves the official master, built into the game
+as the release's) leaves the official masters, built into the game
 (`master_list_read_defaults` in `port/linux/src/master_list.c`) and the web
 page (`servers.js`):
 `https://master.opencommunityedition.com ed25519:89f4eda71229f11f3538679f49ef7fb0c2b407b380093f7f4fe02105b92225aa`.
@@ -278,7 +278,7 @@ signature as `listing_signed` does.
 | --- | --- | --- |
 | 0 | 2 | `"HL"` |
 | 2 | 1 | Format: 1 |
-| 3 | 2 | Network version (`HALO_PORT_NETWORK_VERSION`, 40 now) |
+| 3 | 2 | Network version (`HALO_PORT_NETWORK_VERSION`, 43 now) |
 | 5 | 1 | Flags (below) |
 | 6 | 4 | Sequence: the host's count of its listings (the newest wins) |
 | 10 | 4 | The host's Unix time when it made the listing |

@@ -101,7 +101,11 @@ static void custom_edition_tag_cache_reserve(void)
 
 void *halo_custom_edition_tag_cache(void)
 {
+#ifdef HALO_WEB
+	return web_custom_edition_tag_cache();
+#else
 	return custom_edition_tag_cache;
+#endif
 }
 
 BOOL platform_is_contiguous(const void *address)

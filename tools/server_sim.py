@@ -226,6 +226,7 @@ SCHEMA = [
     _field("universal", "no_shields", "boolean", "Players have no shields"),
     _field("universal", "invisible", "boolean", "Players are always camouflaged"),
     _field("universal", "generic_equipment", "boolean", "Every map starts players with the same weapons"),
+    _field("universal", "vehicle_riding", "boolean", "Players standing on a vehicle are carried by it", alias="riding"),
     _field("universal", "weapon_set", "choice", "The weapons on the map", alias="weapons",
            choices=["normal", "pistols", "rifles", "plasma", "sniper", "no_sniping", "rocket_launchers", "shotguns",
                     "short_range", "human", "no_grenades", "covenant", "classic", "heavy"]),
@@ -329,6 +330,11 @@ def default_settings():
                  "Edition map the map.", "HALO_NET_MAP_SHARE"),
         _setting("network.map_share_upload", "integer", 1024, "Hosting: the most kilobytes a second the host sends "
                  "of maps (16 to 20480).", "HALO_NET_MAP_SHARE_UPLOAD", low=16, high=20480),
+        _setting("network.vehicle_riding", "boolean", False, "Host: the base setting: players standing on a moving "
+                 "vehicle are carried by it. In multiplayer each gametype's "
+                 "VEHICLE RIDING rule overrides it (a gametype without the rule is off). A map's own choice still "
+                 "wins. Changes count from the next map.",
+                 "HALO_NET_VEHICLE_RIDING"),
         _setting("network.public_address", "string", "", "Hosting: the internet address joiners reach this machine "
                  "at, as host[:port].", "HALO_NET_PUBLIC_ADDRESS"),
         _setting("server.name", "string", "OpenCE Server", "The game's name in the lobby and the server browser: 15 "
@@ -415,6 +421,10 @@ def default_settings():
                  "HALO_SERVER_AFK_KICK_WHEN_FULL"),
         _setting("server.afk_kick_full_minutes", "integer", 3, "With server.afk_kick_when_full, the minutes away "
                  "before a kick.", "HALO_SERVER_AFK_KICK_FULL_MINUTES", low=2, high=60),
+        _setting("server.vehicle_riding_override_gametype", "boolean", False, "True: on a dedicated server, "
+                 "turns the gametype's riding override off, so multiplayer uses network.vehicle_riding. A map's own "
+                 "choice still wins. Changes count from the next map.",
+                 "HALO_SERVER_VEHICLE_RIDING_OVERRIDE_GAMETYPE"),
         _setting("server.map_vote", "boolean", False, "The players vote for the next game in the lobby.",
                  "HALO_SERVER_MAP_VOTE"),
         _setting("server.map_vote_choices", "integer", 4, "The entries a map vote offers.",
@@ -2451,8 +2461,9 @@ def h_rotation_next(api, request, session, body):
 @route("POST", r"/api/rotation/play", "moderator")
 def h_rotation_play(api, request, session, body):
     map_text = body.get("map")
-    if not isinstance(map_text, str) or not map_text or " " in map_text or '"' in map_text:
-        raise CommandError("schema", "map is needed (no spaces)", field="map")
+    if not isinstance(map_text, str) or not map_text or len(map_text) > 255 or " " in map_text or '"' in map_text:
+        raise CommandError("schema", "map is needed: a map or a rotation entry, 255 characters at most, with no spaces",
+                           field="map")
     gametype = body.get("gametype") if isinstance(body.get("gametype"), str) else ""
     if " " in gametype or '"' in gametype:
         raise CommandError("schema", "a gametype holds no space", field="gametype")

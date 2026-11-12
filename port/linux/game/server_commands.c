@@ -743,7 +743,8 @@ static char const *const settable_settings[] =
 	"server.afk_kick_when_full", "server.afk_kick_full_minutes", "server.map_vote", "server.map_vote_choices", "server.map_vote_seconds",
 	"network.text_chat", "network.voice_lobby", "network.voice_mode", "network.voice_kbps", "network.votekick",
 	"network.vote_end_game", "network.votekick_threshold", "network.votekick_percent", "network.votekick_minutes", "network.votekick_ban_minutes", "network.map_share", "network.map_share_upload",
-	"network.public_address", "network.shield_effects", "network.fire_origins",
+	"network.public_address", "network.vehicle_riding", "server.vehicle_riding_override_gametype",
+	"network.shield_effects", "network.fire_origins",
 };
 
 /* those of them the owner's console alone changes (the standard input, the
