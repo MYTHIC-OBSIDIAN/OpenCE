@@ -3,6 +3,7 @@
 picture for both, the Xbox's with display.intro "xbox", else Halo PC's
 (menu_functions.c's profile_ok_picture, gametype_ok_picture) */
 #define _button_preset_swap_b_and_right_thumb 4
+#define NUMBEROF(array) (sizeof(array) / sizeof((array)[0]))
 struct widget_instance
 {
 	char const *name;
@@ -57,11 +58,12 @@ int main(int argc, char **argv)
 		focus(&row); profile_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 3, "the row's lost: %d", picture.animation.current_frame_index);
 	} else CASE("gametype") {
+		short intro_row;
 		picture.name = "playlist_edit_ext_desc_pic";
 		intro = "xbox"; picture.animation.current_frame_index = 7; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture replaced");
 		intro = "pc"; gametype_ok_picture(&list);
-		CHECK(picture.animation.current_frame_index == 9, "Halo PC's OK picture not shown");
+		CHECK(picture.animation.current_frame_index == 10, "Halo PC's OK picture not shown");
 		intro = "xbox"; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture not back");
 		picture.animation.current_frame_index = 6; gametype_ok_picture(&list);
@@ -74,6 +76,25 @@ int main(int argc, char **argv)
 		CHECK(picture.animation.current_frame_index == 3, "Halo PC's ITEM OPTIONS picture not back");
 		gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 3, "Halo PC's ITEM OPTIONS picture replaced");
+		/* (GAME OPTIONS the same) */
+		picture.animation.current_frame_index = 1; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 1, "Halo PC's GAME OPTIONS picture replaced");
+		intro = "xbox"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 9, "the Xbox's GAME OPTIONS picture not shown");
+		gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 9, "the Xbox's GAME OPTIONS picture replaced");
+		intro = "pc"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 1, "Halo PC's GAME OPTIONS picture not back");
+		/* (the rows with one picture) */
+		for (intro_row = 0; intro_row < 7; intro_row++)
+		{
+			if (intro_row == 1 || intro_row == 3)
+				continue;
+			picture.animation.current_frame_index = intro_row;
+			intro = "xbox"; gametype_ok_picture(&list);
+			intro = "pc"; gametype_ok_picture(&list);
+			CHECK(picture.animation.current_frame_index == intro_row, "row %d's picture changed", intro_row);
+		}
 	} else return 2;
 	return 0;
 }

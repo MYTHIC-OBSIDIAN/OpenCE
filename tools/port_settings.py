@@ -1262,16 +1262,19 @@ XBOX_CONTROLLER_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\controller_e
 # settings menu's OK show the Xbox's gametype settings' sixth picture, else
 # both Halo PC's About picture. The profile menu's has the Xbox's after its
 # button settings' (frame 15), and the gametype menu's has Halo PC's after
-# its own (frame 9: PNG_FRAMES). The gametype menu's ITEM OPTIONS with
-# PLATFORM "xbox": the Xbox's fourth gametype settings picture (frame 8:
-# menu_functions.c's GAMETYPE_XBOX_ITEMS_FRAME); Halo PC's (frame 3) else.
+# its own (frame 10: PNG_FRAMES). The gametype menu's ITEM OPTIONS and
+# GAME OPTIONS with PLATFORM "xbox": the Xbox's fourth and second gametype
+# settings pictures (frames 8 and 9: menu_functions.c's gametype_pictures);
+# Halo PC's (frames 3 and 1) else.
 BITMAP_FRAMES = {
     f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)] +
                              [("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
                                5, None, None, 0, 0)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
-         3, None, None, 0, 0)],
+         3, None, None, 0, 0),
+        ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
+         1, None, None, 0, 0)],
 }
 # frames added after those, one of another of our bitmaps' PNGs: its PNG,
 # width and height

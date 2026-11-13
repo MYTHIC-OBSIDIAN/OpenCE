@@ -31,10 +31,11 @@ def test_case(case):
     (('ok_picture_xbox() ? PROFILE_XBOX_OK_FRAME : PROFILE_OK_FRAME', 'PROFILE_OK_FRAME'), 'profile'),
     (('if (frame != PROFILE_OK_FRAME && frame != PROFILE_XBOX_OK_FRAME)\n\t\t\trow_frame = frame;',
       'row_frame = frame;'), 'profile'),
-    (('frame == GAMETYPE_OK_FRAME && !xbox_platform', 'frame == GAMETYPE_OK_FRAME'), 'gametype'),
-    # (ITEM OPTIONS' Xbox picture whatever PLATFORM is, or never)
-    (('frame == GAMETYPE_ITEMS_FRAME && xbox_platform', 'frame == GAMETYPE_ITEMS_FRAME'), 'gametype'),
-    (('frame == GAMETYPE_ITEMS_FRAME && xbox_platform', 'frame == GAMETYPE_ITEMS_FRAME && !xbox_platform'), 'gametype'),
+    # (Halo PC's picture whatever PLATFORM is; the Xbox's)
+    (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][0];'), 'gametype'),
+    (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][1];'), 'gametype'),
+    # (GAME OPTIONS' pair left out)
+    (('\t\t{ GAMETYPE_GAME_FRAME, GAMETYPE_XBOX_GAME_FRAME },\n', ''), 'gametype'),
 ])
 def test_negative_control(fault, case):
     status, output = run(build('ok_pictures', generated(fault)), case)
