@@ -156,6 +156,12 @@ subfolders. A loose map uses the [shared resources](#shared-mcc-resources),
 never its folder's own `bitmaps.map` and `sounds.map` (Custom Edition's).
 See the [package layout guide](docs/mcc_maps.md#installation-and-menus).
 
+As a Custom Edition map's, an MCC map's `<name>.bmp` beside it (24-bit or
+32-bit, its middle cropped to the menus' 140x114 picture shape; up to 8 MB)
+is its picture in the map lists, before any picture its package's metadata
+gives, and its `<name>.txt` its description (lines of about 17 characters,
+as the Xbox's multiplayer map descriptions).
+
 You still need the [Xbox game data](#a-copy-of-halo-combat-evolved-is-required). Obtain any required MCC resources from your own installed copy of Halo 1 in MCC.
 
 ### Shared MCC resources

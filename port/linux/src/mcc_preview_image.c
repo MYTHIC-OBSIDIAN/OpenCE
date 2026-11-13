@@ -5,6 +5,8 @@
 #include "mcc_menu_metadata.h"
 #include "posix.h"
 #include "zlib_prefixed.h"
+#include "../game/bmp_files.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -109,8 +111,30 @@ int mcc_preview_fit(unsigned width, unsigned height, int box_width, int box_heig
     return 1;
 }
 
+/* port: a <map>.bmp beside the map file (as a Custom Edition map's: its
+ * middle cropped to the menus' 140x114 picture shape), at
+ * MCC_PREVIEW_BMP_WIDTH by MCC_PREVIEW_BMP_HEIGHT; 0 without one, or with
+ * one bmp_files.c does not read (logged by the caller's absence of art) */
+#define MCC_PREVIEW_BMP_WIDTH 512u
+#define MCC_PREVIEW_BMP_HEIGHT 417u
+static int mcc_preview_bmp(const char *root, const char *name, unsigned char *bytes, struct mcc_preview_image *image)
+{
+    char relative[96];
+    struct bmp_file_picture picture;
+    int length, written = snprintf(relative, sizeof(relative), "%s.bmp", name);
+    if (written <= 0 || (size_t)written >= sizeof(relative)) return 0;
+    length = posix_mcc_preview_read(root, relative, bytes, MCC_PREVIEW_FILE_LIMIT);
+    if (length <= 0 || bmp_file_open(bytes, (uint32_t)length, &picture) != _bmp_file_status_ok) return 0;
+    image->pixels = malloc(MCC_PREVIEW_BMP_WIDTH*MCC_PREVIEW_BMP_HEIGHT*sizeof(*image->pixels));
+    if (!image->pixels) return 0;
+    bmp_file_fit(bytes, &picture, 140, 114, MCC_PREVIEW_BMP_WIDTH, MCC_PREVIEW_BMP_HEIGHT, image->pixels);
+    image->width = MCC_PREVIEW_BMP_WIDTH; image->height = MCC_PREVIEW_BMP_HEIGHT;
+    return 1;
+}
+
 /* Only explicitly listed mission/map JSON can supply images. The actual map
- * resolution supplies the root, so a local override never borrows Steam art. */
+ * resolution supplies the root, so a local override never borrows Steam art.
+ * port: a <map>.bmp beside the map comes first (mcc_preview_bmp). */
 int mcc_preview_image_load(const char *level, int campaign, struct mcc_preview_image *image)
 {
     char root[1024];
@@ -122,6 +146,10 @@ int mcc_preview_image_load(const char *level, int campaign, struct mcc_preview_i
     memset(image,0,sizeof(*image));
     if (!mcc_manifest_package_root(level,root) || !(name = strrchr(level,'\\'))) return 0;
     name++;
+    bytes = malloc(MCC_PREVIEW_FILE_LIMIT);
+    if (!bytes) return 0;
+    if (mcc_preview_bmp(root, name, bytes, image)) { free(bytes); return 1; }
+    free(bytes); bytes = NULL;
     metadata = malloc(sizeof(*metadata));
     if (!metadata) return 0;
     if (!mcc_menu_metadata_load(root,campaign,metadata) || !(selected=mcc_menu_metadata_find(metadata,name))) goto done;

@@ -76,6 +76,13 @@ Edition maps, in CUSTOM EDITION (multiplayer) and CUSTOM CAMPAIGNS
 loose map's `bitmaps.map`, `sounds.map` and `loc.map`: those in `custom_maps`
 are Custom Edition's, so a loose map uses the shared MCC resources.
 
+In this fork a `<name>.bmp` beside an MCC map (in `custom_maps`,
+`digsite_maps` or a package folder of them) is its menu picture, before its
+package metadata's PNG (`mcc_preview_image.c`'s `mcc_preview_bmp`, reading it
+with `bmp_files.c` as a Custom Edition map's: 24-bit or 32-bit uncompressed,
+its middle cropped to 140x114; at most 8 MB, `posix_mcc_preview_read`'s
+limit). An unreadable one leaves the PNG, or the unknown map's picture.
+
 The `digsite_maps` folder's MCC maps are found the same way (the levels
 `mcc_maps\digsite_maps\<name>` and `mcc_maps\digsite_maps+<folder>\<name>`,
 read from `digsite_maps`; `paths.custom_maps` does not move it). Its campaign

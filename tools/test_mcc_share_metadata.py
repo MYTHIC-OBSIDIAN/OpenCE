@@ -24,8 +24,11 @@ DRIVER = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+/* (the "image" operation's map folder: the level's map file is in it) */
+static const char *test_map_folder;
 void platform_translate_path(const char *in,char *out,unsigned long size) {
- (void)in; if(size) out[0]=0;
+ (void)in; if(!size) return;
+ if(test_map_folder) snprintf(out,size,"%s/level.map",test_map_folder); else out[0]=0;
 }
 static const char *test_library = "";
 static int test_campaigns;
@@ -59,6 +62,15 @@ int main(int argc,char **argv) {
   ok=mcc_menu_metadata_load(argv[2],atoi(argv[3]),&metadata);
   printf("%d %d\n",ok,metadata.count);
   for(i=0;i<metadata.count;i++) printf("%s\n",metadata.maps[i].name);
+ } else if(!strcmp(argv[1],"image")) {
+  /* port: a map's menu picture (a <map>.bmp beside it first) */
+  struct mcc_preview_image image;
+  test_map_folder=argv[2];
+  ok=mcc_preview_image_load(argv[4],atoi(argv[3]),&image);
+  printf("%d %u %u\n",ok,image.width,image.height);
+  if(ok) printf("%08x %08x\n",(unsigned)image.pixels[0],
+   (unsigned)image.pixels[(image.height/2)*image.width+image.width/2]);
+  mcc_preview_image_free(&image);
  } else if(!strcmp(argv[1],"digest")) {
   ok=mcc_share_metadata_digest(argv[2],atoi(argv[3]),argv[4],digest,reason);
   printf("%d\n",ok);for(i=0;i<32;i++)printf("%02x",digest[i]);printf("\n%s\n",reason);
@@ -95,7 +107,7 @@ def metadata_tool(tmp_path_factory):
     files = ROOT / "port/windows/src/win32_files.c" if windows else SRC / "posix_files.c"
     sources = [work / "driver.c", SRC / "mcc_share_metadata.c", SRC / "mcc_preview_image.c",
                SRC / "mcc_menu_metadata.c", SRC / "posix_mcc_preview.c", SRC / "mcc_manifest.c",
-               SRC / "server_json.c", SRC / "steam_workshop.c",
+               SRC / "server_json.c", SRC / "steam_workshop.c", ROOT / "port/linux/game/bmp_files.c",
                ROOT / "port/linux/game/mcc_sha256.c", files, *sorted(ZLIB.glob("*.c"))]
     result = subprocess.run([compiler, *flags, "-std=gnu11", "-DZ_PREFIX", "-I", str(SRC), "-I", str(ZLIB),
                              *map(str, sources), "-o", str(exe)], capture_output=True, text=True)
@@ -411,3 +423,50 @@ def test_unsupported_campaign_kind_stays_refused(metadata_tool, tmp_path, kind):
     # (this fork looks for no Workshop maps, so the scan reports nothing of
     # the item; the manifest's refusal is checked above)
     assert result.returncode == 0 and result.stdout.splitlines() == ["0"]
+
+
+def bmp(width, height, bits=24, center=(0, 0, 255), edge=(255, 0, 0)):
+    """An uncompressed bottom-up bmp: `edge` colour, a `center` square in the middle."""
+    import struct
+    channels = bits // 8
+    stride = (width * channels + 3) & ~3
+    rows = bytearray()
+    for y in range(height):
+        row = bytearray()
+        for x in range(width):
+            inside = width // 3 <= x < 2 * width // 3 and height // 3 <= y < 2 * height // 3
+            r, g, b = center if inside else edge
+            row += bytes((b, g, r)) + (b"\xff" if channels == 4 else b"")
+        rows += row + b"\0" * (stride - len(row))
+    header = struct.pack("<IiiHHIIiiII", 40, width, height, 1, bits, 0, len(rows), 2835, 2835, 0, 0)
+    return b"BM" + struct.pack("<IHHI", 14 + len(header) + len(rows), 0, 0, 14 + len(header)) + header + bytes(rows)
+
+
+def image(tool, folder, level, campaign=False):
+    return run(tool, "image", folder, campaign, level)
+
+
+def test_map_bmp_is_its_menu_picture(metadata_tool, tmp_path):
+    """port: a <map>.bmp beside an MCC map is its picture, before its package's PNG."""
+    (tmp_path / "crashsite.map").write_bytes(b"map fixture")
+    assert image(metadata_tool, tmp_path, "mcc_maps\\custom_maps\\crashsite", True)[0] == "0 0 0"
+    (tmp_path / "CrashSite.BMP").write_bytes(bmp(420, 342))
+    lines = image(metadata_tool, tmp_path, "mcc_maps\\custom_maps\\crashsite", True)
+    assert lines[0] == "1 512 417"
+    assert lines[1] == "ffff0000 ff0000ff"
+    # (a 32-bit one too, and the middle of a wide one cropped to 140x114)
+    (tmp_path / "CrashSite.BMP").write_bytes(bmp(1920, 1080, 32))
+    assert image(metadata_tool, tmp_path, "mcc_maps\\custom_maps\\crashsite", True)[1] == "ffff0000 ff0000ff"
+
+
+def test_map_bmp_before_package_png(metadata_tool, tmp_path):
+    package(tmp_path)
+    level = "mcc_maps\\custom_maps+pack\\first"
+    assert image(metadata_tool, tmp_path, level)[0] == "1 3 2"
+    (tmp_path / "first.bmp").write_bytes(bmp(280, 228))
+    assert image(metadata_tool, tmp_path, level)[0] == "1 512 417"
+    # (one bmp_files.c does not read: the package's PNG)
+    (tmp_path / "first.bmp").write_bytes(bmp(280, 228, 16))
+    assert image(metadata_tool, tmp_path, level)[0] == "1 3 2"
+    (tmp_path / "first.bmp").write_bytes(b"BM not a picture")
+    assert image(metadata_tool, tmp_path, level)[0] == "1 3 2"
