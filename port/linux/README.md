@@ -431,14 +431,14 @@ the setting for one start of the game. It has priority over the file.
 | `network.voice_mode` | `"team_global_enemy_proximity"` | `HALO_NET_VOICE_MODE` | When you host: who hears whom during a game. `"off"`; `"team_proximity"` (teammates who are near); `"team_enemy_proximity"` (all players who are near); `"team_global"` (all teammates); `"team_global_enemy_proximity"` (all teammates, and enemies who are near). Refer to "Voice chat". |
 | `network.voice_kbps` | `24` | `HALO_NET_VOICE_KBPS` | When you host: the voice quality in the lobby and in a game, in kilobits per second, `8` to `64`. |
 | `network.voice_proximity` | `15.0` | `HALO_NET_VOICE_PROXIMITY` | When you host: the distance in world units (1 unit is approximately 3 metres) at which players are near, for voice chat. `5` to `100`. |
-| `network.text_chat` | `"on"` | `HALO_NET_TEXT_CHAT` | When you host: the text chat. `"on"`, lines with links refused; `"links"`, links allowed; `"off"`, no chat (in either case). Always off in a game a player hosts that is listed in the server browser; a dedicated server's follows it, listed or not. TEXT CHAT in Server Setup > Teamplay Options (in co-op, Voice and Voting) writes its choice here. Refer to "Text chat". |
-| `network.votekick` | `true` | `HALO_NET_VOTEKICK` | When you host: `true`, the players can vote to kick a player. Refer to "Security". `false`: no votes. VOTE KICK in Server Setup > Teamplay Options (in co-op, Voice and Voting) writes its choice here. |
+| `network.text_chat` | `"on"` | `HALO_NET_TEXT_CHAT` | When you host: the text chat. `"on"`, lines with links refused; `"links"`, links allowed; `"off"`, no chat (in either case). Always off in a game a player hosts that is listed in the server browser; a dedicated server's follows it, listed or not. TEXT CHAT in Server Setup > Teamplay Options (in co-op, Voice and Chat) writes its choice here. Refer to "Text chat". |
+| `network.votekick` | `true` | `HALO_NET_VOTEKICK` | When you host: `true`, the players can vote to kick a player. Refer to "Security". `false`: no votes. Held off in this LAN build (no longer in the menus), as the stock game has no votes to kick. |
 | `network.votekick_threshold` | `"dynamic"` | `HALO_NET_VOTEKICK_THRESHOLD` | When you host: the yes votes that a vote (to kick, to end the game) needs, of the players who can vote. `"dynamic"`: scaled with the players, more than half up to 8 players, 40% (at least 5) up to 32, 30% (at least 13) above. `"static"`: `network.votekick_percent` of them, rounded up. At least 2 in both cases, and more yes than no. Only in config.toml (and a dedicated server's `sv_set`), not in the menus. |
 | `network.votekick_percent` | `50` | `HALO_NET_VOTEKICK_PERCENT` | When you host, with `network.votekick_threshold = "static"`: the percentage of the players who can vote that must vote yes (`1` to `100`). For a vote to kick, never more than the players who can vote yes (the player of the vote cannot). |
 | `network.vote_end_game` | `true` | `HALO_NET_VOTE_END_GAME` | When you host: `true`, the players can vote to end the game (`!endgame` in the chat; F1 votes yes, F2 no), counted as a vote to kick. The game ends with its scores, as `sv_end_game` ends it. `false`: no such votes. |
 | `network.votekick_minutes` | `5` | `HALO_NET_VOTEKICK_MINUTES` | When you host: the minutes that a player must play on the server before the player can start a vote to kick (`0` to `60`). To vote, a player must play for 2 minutes, or for this time if it is less. |
 | `network.votekick_ban_minutes` | `30` | `HALO_NET_VOTEKICK_BAN_MINUTES` | When you host: the minutes that a player who is kicked by a vote cannot join again (`1` to `1440`). |
-| `network.shield_effects` | `stock` | `HALO_NET_SHIELD_EFFECTS` | Host: the shield effects every player of a network game sees, whatever their own settings, so that none sees what another does not: `stock`, `glow` (`display.shield_glow`), `light_show` (its Light Show intensity), `overshield` (`display.overshield_effect`), `glow_overshield` or `light_show_overshield`; or `players`, not synced: each player sees their own settings' (PLAYERS' OWN). Sent to each client when it is ready and when it changes (`network_shield_effects.c`); a client draws stock until it has it. An online co-op game is always each player's own, whatever the host chose: the players play together. SHIELD EFFECTS in Server Setup > Player Options writes its choice here. |
+| `network.shield_effects` | `stock` | `HALO_NET_SHIELD_EFFECTS` | Host: the shield effects every player of a network game sees, whatever their own settings, so that none sees what another does not: `stock`, `glow` (`display.shield_glow`), `light_show` (its Light Show intensity), `overshield` (`display.overshield_effect`), `glow_overshield` or `light_show_overshield`; or `players`, not synced: each player sees their own settings' (PLAYERS' OWN). Sent to each client when it is ready and when it changes (`network_shield_effects.c`); a client draws stock until it has it. An online co-op game is always each player's own, whatever the host chose: the players play together. Held at `stock` in this LAN build (no longer in the menus): every player of a network game sees the stock game's shields. |
 | `network.fire_origins` | `true` | `HALO_NET_FIRE_ORIGINS` | Host: whether a client's reported hit that the shooter's camera had no line of sight to may still count from where the client says its player's shots leave, when that is not the camera (distributed message 93: a VR build's weapon hand, which may be past a corner the camera is behind). The hand must be within 0.4 world units of the camera, no more than 0.05 behind the eye along the line to the target, 0.2 to its side and 0.1 above it, with the line from the eye to it clear; the host logs how many hits counted only that way. `false`: from the camera and vehicles' guns only (`network_damage.c`). |
 | `network.vehicle_riding` | `false` | `HALO_NET_VEHICLE_RIDING` | Host: with `true`, a player standing on a moving vehicle is carried by it, turns with it, lands back on it after a jump and keeps its motion when stepping or jumping off; the vehicle it stands on does not hurt it. The base setting (co-op's options in Server Setup write it). In multiplayer (online, system link, split screen) the gametype's VEHICLE RIDING rule under Vehicle Options, saved with the gametype, overrides it; a gametype without the rule is off, whatever this setting says (stock gametypes and older saved ones have none). A co-op rotation entry's `riding` rule overrides it for that entry. Changes count from the next map; clients use the host's decision, including when joining mid-map, and its `debug.riding_` values. Film playback and the editor never ride. Saved games of builds before this setting are not offered or loaded. No row in the Settings menu. A map can choose for itself, winning over the base setting, the gametype and the dedicated override until the next map: with `(global boolean vehicle_riding true)` (or `false`; its value at the map's start counts, a later `set` does not), or with `(vehicle_riding true)` or `(vehicle_riding false)` in a startup script, which counts only on the map's first tick and wins over the global. The old `game.vehicle_riding` name is not read. |
 | `network.block_mouse_aim_assist` | `false` | `HALO_NET_BLOCK_MOUSE_AIM_ASSIST` | Host: Player Options > Aim Assist, Allowed or Block M+KB. Block overrides optional mouse magnetism while mouse/keyboard aims, including on the host, without changing the saved preference. Controllers and touch retain their existing behavior; bullet autoaim is unchanged. |
@@ -816,7 +816,7 @@ can HIDE the chat entirely, for purists and streamers: no lines show, and
 its keys open nothing.
 
 The host chooses the text chat for its games with TEXT CHAT in Server
-Setup > Teamplay Options (in co-op, Voice and Voting; `network.text_chat`):
+Setup > Teamplay Options (in co-op, Voice and Chat; `network.text_chat`):
 ON (the default: a line with a link, such as `discord.gg/...`,
 `example.com`, `www.`, an address, or `example [dot] com`, is refused),
 WITH LINKS, or OFF. A domain that is a word as well (`.me`, `.to`, `.is`)
@@ -879,7 +879,7 @@ The host sets voice chat for all players in Server Setup > Teamplay Options
   default), in the lobby and in the game.
 
 In co-op, Server Setup has no Teamplay Options: the same settings are in
-Server Setup > Voice and Voting.
+Server Setup > Voice and Chat.
 
 A speaker shows next to the name of a player who talks: in the lobby, on
 the scoreboard, in a list at the left of the screen during a game, and
@@ -1206,9 +1206,8 @@ Only machines with the invite can find the game:
   Refer to `NETCODE.md`. `kick <player name>` drops the player the same
   way, but keeps nothing: no line in `bans.txt`, and the player can join
   again at once. In co-op, `bringto` brings every player to the host.
-- Players can vote to kick a player. The host turns this on or off with
-  VOTE KICK in Server Setup > Teamplay Options (`network.votekick`; in
-  co-op, Server Setup > Voice and Voting). Hold the scoreboard key, right-click to
+- Votes to kick a player (`network.votekick`) are held off in this LAN
+  build, as the stock game has none; where a build allows them: hold the scoreboard key, right-click to
   show the pointer, and click the name of the player. Then click **Start
   a vote to kick**. While a vote runs, every player sees its box at the
   left of the screen: F1 votes yes, F2 no, or with a controller the D-pad's

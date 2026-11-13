@@ -299,6 +299,10 @@ not a moderator: spaced letters and look-alikes get past it.
 
 ### Votes, the map vote and players away
 
+In this LAN build `network.votekick` is held off and `network.shield_effects`
+at `stock`, whatever the server's config says: there are no votes to kick, and
+every player sees the stock game's shields.
+
 The players vote to kick a player (`network.votekick`: the scoreboard's
 right-click, or the console's `votekick <name>`) and to end the game
 (`network.vote_end_game`: `!endgame` in the chat). While a vote runs every

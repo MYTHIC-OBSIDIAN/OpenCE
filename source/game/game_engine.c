@@ -1935,7 +1935,9 @@ static void scoreboard_menu_items(
 		offered[item] = FALSE;
 		labels[item][0] = 0;
 	}
-	offered[_scoreboard_item_vote] = TRUE;
+	/* (port: not where votes to kick are off, as this LAN build holds them,
+	network.votekick: port_config.c) */
+	offered[_scoreboard_item_vote] = config_boolean("network.votekick") != 0;
 	if (network_votekick_get_status(&status) && status.kind == _network_vote_kick &&
 		status.player_index == DATUM_INDEX_TO_ABSOLUTE_INDEX(scoreboard_menu.player_index))
 	{

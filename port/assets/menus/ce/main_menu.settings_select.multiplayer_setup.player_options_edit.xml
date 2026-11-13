@@ -79,7 +79,6 @@
 		<child widget="main_menu/settings_select/multiplayer_setup/player_options_edit/op_invisible_players" x="54" y="235"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/player_options_edit/op_suicide_penalty" x="54" y="262"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/player_options_edit/op_aim_assist" x="54" y="289"/>
-		<child widget="main_menu/settings_select/multiplayer_setup/player_options_edit/op_shield_effects" x="54" y="316"/>
 		<child widget="main_menu/settings_select/multiplayer_setup/player_options_edit/player_button_bar" y="414"/>
 	</widget>
 	<widget name="main_menu/settings_select/multiplayer_setup/player_options_edit/player_options_screen" width="640" height="480" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/gradient">

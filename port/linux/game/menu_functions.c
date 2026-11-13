@@ -7833,14 +7833,9 @@ static struct gametype_option const gametype_options[] =
 		{ "8", "12", "16", "24", "32", "48", "64" } },
 	{ "voice_proximity_spinner", _option_setting, 0, 0, 6, { 0 }, "network.voice_proximity",
 		{ "5", "10", "15", "20", "30", "50" } },
-	/* (and the players' votes to kick: port/linux/game/network_votekick.c) */
-	{ "votekick_spinner", _option_setting, 0, 0, 2, { 0 }, "network.votekick", { "true", "false" } },
 	/* (and the text chat: port/linux/game/network_chat.c) */
 	{ "text_chat_spinner", _option_setting, 0, 0, 3, { 0 }, "network.text_chat", { "on", "links", "off" } },
 	{ "aim_assist_spinner", _option_setting, 0, 0, 2, { 0 }, "network.block_mouse_aim_assist", { "false", "true" } },
-	/* (the shield effects every machine draws: network_shield_effects.c) */
-	{ "shield_effects_spinner", _option_setting, 0, 0, 7, { 0 }, "network.shield_effects",
-		{ "stock", "glow", "light_show", "overshield", "glow_overshield", "light_show_overshield", "players" } },
 	/* co-op's options (Server Setup's CO-OP OPTIONS: tools/port_settings.py's
 	COOP_SETUP_SCREENS; coop_enemies.c) */
 	{ "coop_friendly_fire_spinner", _option_setting, 0, 0, 4, { 0 }, "network.coop_friendly_fire",

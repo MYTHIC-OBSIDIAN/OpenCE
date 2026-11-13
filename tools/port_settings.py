@@ -540,7 +540,9 @@ WIDE_SETTINGS = {"audio.output_device", "audio.input_device", "network.listings"
                  "network.browser_sort"}
 
 # Teamplay Options' rows of the port's (_teamplay_options_extras): the
-# gametype's FORCE TEAM SPAWNS, then the host's voice chat and vote kicks;
+# gametype's FORCE TEAM SPAWNS, then the host's voice and text chat (no
+# VOTE KICK: network.votekick is held off, as the stock game has no votes,
+# port_config.c's lan_only_off_booleans);
 # each row's key, its label, its choices' words (menu_functions.c's
 # gametype_options give their values) and their helps
 TEAMPLAY_EDIT = "main_menu/settings_select/multiplayer_setup/teamplay_options_edit"
@@ -573,11 +575,6 @@ TEAMPLAY_ROWS = [
      [f"Voices at {kbps} kilobits a second, in the lobby\\nand in the game." for kbps in VOICE_QUALITIES]),
     ("voice_proximity", "VOICE NEAR DISTANCE:", ["15 M", "30 M", "45 M", "60 M", "90 M", "150 M"],
      [f"Players {meters} meters apart or less are near\\nfor voice chat." for meters in (15, 30, 45, 60, 90, 150)]),
-    # (network_votekick.c)
-    ("votekick", "VOTE KICK:", ["ON", "OFF"], [
-        "Players can vote to kick a player, from the\\nscoreboard.",
-        "Players cannot vote to kick anyone.",
-    ]),
     # (network_chat.c: one row for the chat and its links, as Teamplay
     # Options has room for one more)
     ("text_chat", "TEXT CHAT:", ["ON", "WITH LINKS", "OFF"], [
@@ -931,19 +928,9 @@ AIM_ASSIST_HELP = [
     "Players keep their current mouse aim assist setting.",
     "Disable mouse aim assist for mouse/keyboard players.\\nController and touch aim assist are unchanged.",
 ]
-# the host's shield effects, for every player of a network game
-# (network_shield_effects.c): their words, then their helps
-SHIELD_EFFECTS = ['STOCK', 'GLOW', 'LIGHT SHOW', 'OVERSHIELD', 'GLOW+OVERSHIELD', 'SHOW+OVERSHIELD',
-                  "PLAYERS' OWN"]
-SHIELD_EFFECTS_HELP = [
-    "Everyone sees the stock game's shields and\\novershield, whatever their own settings.",
-    "Everyone's shields light their surroundings as\\nthey flare.",
-    "Everyone's shields light their surroundings as\\nthey flare, three times as far (Light Show).",
-    "For everyone, the overshield rises up the body\\nand stays lit, in its own color.",
-    "For everyone, shields light their surroundings,\\nand the overshield rises and stays lit.",
-    "For everyone, Light Show's shield glow, and the\\novershield rising and staying lit.",
-    "Not synced: each player sees the shield effects\\nof their own Video Setup settings.",
-]
+# (no SHIELD EFFECTS row: a network game's shield effects are held to the
+# stock game's, network.shield_effects "stock", port_config.c's
+# lan_only_strings)
 
 STRING_INSERTS = {
     # (the profile menu's PREFERENCES: CUSTOMISATION_ITEM)
@@ -952,9 +939,9 @@ STRING_INSERTS = {
     # menu_functions.c's filters_help)
     f"{MT}/join_game/filters/cap_filter_options": [(11, [
         "Show servers on maps you do not have if their\\nhost shares them: they download as you join."])],
-    f"{PLAYER_EDIT}/player_options_labels": [(8, ["AIM ASSIST:", "SHIELD EFFECTS:"])],
-    f"{PLAYER_EDIT}/cap_player_options": [(28, AIM_ASSIST_HELP + SHIELD_EFFECTS_HELP)],
-    # (Teamplay Options' voice chat and vote kick rows, after its own:
+    f"{PLAYER_EDIT}/player_options_labels": [(8, ["AIM ASSIST:"])],
+    f"{PLAYER_EDIT}/cap_player_options": [(28, AIM_ASSIST_HELP)],
+    # (Teamplay Options' voice and text chat rows, after its own:
     # TEAMPLAY_ROWS)
     f"{TEAMPLAY_EDIT}/teamplay_options_labels": [(3, [label for _, label, *_ in TEAMPLAY_EXTRA_ROWS])],
     f"{TEAMPLAY_EDIT}/cap_teamplay_options": [(10, [text for *_, helps in TEAMPLAY_EXTRA_ROWS for text in helps])],
@@ -1098,8 +1085,7 @@ WIDGET_PATCHES = {
         f'<child widget="main_menu/main_menu_item_credits" x="{MODS_ITEM_PLACE[0]}" y="{MODS_ITEM_PLACE[1]}"/>']}},
     f"{PLAYER_EDIT}/player_options_menu": {"insert_before": {
         f"{PLAYER_EDIT}/player_button_bar": [
-            f'<child widget="{PLAYER_EDIT}/op_aim_assist" x="54" y="289"/>',
-            f'<child widget="{PLAYER_EDIT}/op_shield_effects" x="54" y="316"/>']}},
+            f'<child widget="{PLAYER_EDIT}/op_aim_assist" x="54" y="289"/>']}},
     # (its rows 27 apart, not 30, so that ten fit above the help, which keeps
     # the three lines some have: ce_menus.py's CHILD_OFFSETS)
     f"{PLAYER_EDIT}/player_options_help": {"set": {"top": 345, "height": 60}},
@@ -1228,7 +1214,7 @@ WIDGET_PATCHES = {
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_primary_weapon" x="54" y="223"/>',
             f'<child widget="main_menu/settings_select/multiplayer_setup/item_options_edit/op_secondary_weapon" x="54" y="253"/>',
         ]}},
-    # (Teamplay Options' voice chat and vote kick rows, over its buttons:
+    # (Teamplay Options' voice and text chat rows, over its buttons:
     # Server Setup's only, _teamplay_options_extras)
     f"{TEAMPLAY_EDIT}/teamplay_options_menu": {"insert_before": {
         f"{TEAMPLAY_EDIT}/teamplay_button_bar": [
@@ -1798,7 +1784,7 @@ COOP_SETUP_SCREENS = [
             "Respawn at checkpoint positions after everyone dies.\\nThe world keeps its progress.",
         ]),
     ]),
-    ("voice_options", "VOICE AND VOTING", "Voice chat, text chat and votes to kick a player,\\nfor this game.",
+    ("voice_options", "VOICE AND CHAT", "Voice chat and text chat, for this game.",
      TEAMPLAY_ROWS),
 ]
 # Server Setup's map sharing (port/linux/game/map_share.c), for any game,
@@ -2301,12 +2287,10 @@ def _vehicle_options_extras() -> list:
 
 
 def _player_options_extras() -> list:
-    """The host's aim-assist policy and shield effects, hidden while editing
-    saved gametypes."""
+    """The host's aim-assist policy, hidden while editing saved gametypes."""
     base = PLAYER_EDIT
     lines = []
-    for key, label_index, words in (("aim_assist", 8, ["ALLOWED", "BLOCK M+KB"]),
-                                    ("shield_effects", 9, SHIELD_EFFECTS)):
+    for key, label_index, words in (("aim_assist", 8, ["ALLOWED", "BLOCK M+KB"]),):
         lines += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
             ("flags", "pass_unhandled_to_focused_child"), ("bitmap", "bitmaps/option_bkds"),
             ("color", "#FF2896FF")], [f'<child widget="{base}/{key}_label"/>',
@@ -2322,14 +2306,13 @@ def _player_options_extras() -> list:
             ("list_flags", "items_from_strings"), ("header_bitmap", "bitmaps/arrow_sm_left"),
             ("footer_bitmap", "bitmaps/arrow_sm_right"), ("header_bounds", "7 -13 19 -7"),
             ("footer_bounds", "7 208 19 214")], ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
-    return lines + _strings(f"{base}/var_aim_assist", ["ALLOWED", "BLOCK M+KB"]) + \
-        _strings(f"{base}/var_shield_effects", SHIELD_EFFECTS)
+    return lines + _strings(f"{base}/var_aim_assist", ["ALLOWED", "BLOCK M+KB"])
 
 
 def _teamplay_options_extras() -> list:
     """Teamplay Options' rows of the port's: the gametype's FORCE TEAM
     SPAWNS (game_engine.c), then the host's voice chat
-    (port/linux/game/network_voice.c) and vote kicks (network_votekick.c),
+    (port/linux/game/network_voice.c) and text chat (network_chat.c),
     in Server Setup's copy only (menu_functions.c's gametype_options_init),
     kept in config.toml"""
     lines = []

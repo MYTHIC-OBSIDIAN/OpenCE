@@ -370,8 +370,8 @@ static const struct config_setting config_settings[] =
 		"\"glow_overshield\" or \"light_show_overshield\" (display.shield_glow,\n"
 		"its light_show intensity, display.overshield_effect); \"players\": not\n"
 		"synced, each player sees their own settings'. An online co-op game is\n"
-		"always each player's own. SHIELD EFFECTS in Server Setup > Player\n"
-		"Options writes its choice here." },
+		"always each player's own. This LAN build holds it at \"stock\": every\n"
+		"player of a network game sees the stock game's shields." },
 	{ "network.fire_origins", _config_boolean, "true", "HALO_NET_FIRE_ORIGINS", _environment_value, _platform_all,
 		"Host: whether a reported hit the shooter's camera had no line of sight\n"
 		"to may still count from where their machine says the shot left, when\n"
@@ -658,7 +658,8 @@ static const struct config_setting config_settings[] =
 		"right-click, or the console's votekick; F1 or the D-pad's left votes\n"
 		"yes, F2 or its right no). The yes votes needed are\n"
 		"network.votekick_threshold's, counted once per address, and more yes\n"
-		"than no." },
+		"than no. This LAN build holds it off, as the stock game has no votes\n"
+		"to kick." },
 	{ "network.votekick_threshold", _config_string, "\"dynamic\"", "HALO_NET_VOTEKICK_THRESHOLD", _environment_value,
 		_platform_all,
 		"Hosting: the yes votes a vote (to kick, to end the game) needs, of the\n"
@@ -2768,6 +2769,9 @@ static const char *const lan_only_off_booleans[] =
 	"network.online", "network.join_from_clipboard", "network.allow_upnp", "network.public_lobby",
 	"network.host_public", "network.coop_public", "update.auto", "server.public", "server.master_publish",
 	"server.master_publish_address",
+	/* (no longer in the menus: as the stock game, which has no votes to
+	kick; a vote to end the game is network.vote_end_game's) */
+	"network.votekick",
 };
 
 /* the string settings held to a value: name, value */
@@ -2780,6 +2784,9 @@ static const char *const lan_only_strings[][2] =
 	glow's) */
 	{ "display.shield_glow_intensity", "default" },
 	{ "display.shield_color", "default" },
+	/* (no longer in the menus: a network game's shield effects are the
+	stock game's for every player) */
+	{ "network.shield_effects", "stock" },
 };
 
 static int lan_only_boolean_off(const char *name)
