@@ -2363,12 +2363,27 @@ profile's button settings as the Xbox's Controller Setup shows them */
 /* the picture's frames (the bitmap's: tools/port_settings.py's
 FRAME_ORDER, FRAME_REPLACEMENTS and BITMAP_FRAMES): the nine rows', as the
 list numbers its rows (player_profile_edit_select_menu_update_extended_description),
-PREFERENCES's last; OK's (the PC version's About's); then the Xbox's five of
-the button settings */
+PREFERENCES's last; OK's, Halo PC's (its About's); then the Xbox's five of
+the button settings; then OK's, the Xbox's (its gametype settings' sixth) */
 #define PROFILE_GAMEPAD_FRAME 2
 #define PROFILE_OK_FRAME 9
 #define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
+#define PROFILE_XBOX_OK_FRAME (PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES)
+
+/* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
+its button bar's (OK's), the Xbox's; then Halo PC's (the profile menu's
+PROFILE_OK_FRAME's: port_settings.py's PNG_FRAMES) */
+#define GAMETYPE_OK_FRAME 7
+#define GAMETYPE_PC_OK_FRAME 8
+
+/* the two OK pictures, the settings menu's and Edit Multiplayer Gametype's,
+are one: the Xbox's with the Xbox's intro (display.intro "xbox"), else
+Halo PC's */
+static boolean ok_picture_xbox(void)
+{
+	return !strcmp(config_string("display.intro"), "xbox");
+}
 
 /* "port profile ok picture" (the list's, after the Xbox's description
 update, which leaves the picture be on its buttons): OK's picture while the
@@ -2382,18 +2397,34 @@ static void profile_ok_picture(struct widget_instance *list)
 		"profile_edit_extended_desc_pic", 0);
 	boolean on_ok = bar && !strcmp(bar->name, "profile_edit_button_bar") && bar->focused_child &&
 		!strcmp(bar->focused_child->name, "profile_edit_button_ok");
+	short ok_frame = ok_picture_xbox() ? PROFILE_XBOX_OK_FRAME : PROFILE_OK_FRAME;
+	short frame;
 
 	if (!picture)
 		return;
-	if (on_ok && picture->animation.current_frame_index != PROFILE_OK_FRAME)
+	frame = picture->animation.current_frame_index;
+	if (on_ok && frame != ok_frame)
 	{
-		row_frame = picture->animation.current_frame_index;
-		picture->animation.current_frame_index = PROFILE_OK_FRAME;
+		if (frame != PROFILE_OK_FRAME && frame != PROFILE_XBOX_OK_FRAME)
+			row_frame = frame;
+		picture->animation.current_frame_index = ok_frame;
 	}
-	else if (!on_ok && picture->animation.current_frame_index == PROFILE_OK_FRAME)
+	else if (!on_ok && (frame == PROFILE_OK_FRAME || frame == PROFILE_XBOX_OK_FRAME))
 	{
 		picture->animation.current_frame_index = row_frame;
 	}
+}
+
+/* "port gametype ok picture" (the list's, after the Xbox's description
+update, which shows the button bar's frame on it): Halo PC's OK picture in
+the Xbox's place but with the Xbox's intro */
+static void gametype_ok_picture(struct widget_instance *list)
+{
+	struct widget_instance *picture = named(list->parameters.list.extended_description,
+		"playlist_edit_ext_desc_pic", 0);
+
+	if (picture && picture->animation.current_frame_index == GAMETYPE_OK_FRAME && !ok_picture_xbox())
+		picture->animation.current_frame_index = GAMETYPE_PC_OK_FRAME;
 }
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's
@@ -8847,6 +8878,10 @@ void pc_menu_game_data_function_invoke(
 		saved_game_list_update(widget);
 	else if (!strcmp(name, "port gamepad layout preview"))
 		profile_gamepad_layout(widget);
+	else if (!strcmp(name, "port gametype ok picture"))
+	{
+		gametype_ok_picture(widget);
+	}
 	else if (!strcmp(name, "port profile ok picture"))
 		profile_ok_picture(widget);
 }

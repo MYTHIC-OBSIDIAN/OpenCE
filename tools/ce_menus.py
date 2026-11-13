@@ -436,6 +436,9 @@ class Art:
         for source, index, width, height, x, y in port_settings.BITMAP_FRAMES.get(our_name(tag), []):
             self.added_frames.append((our_name(tag), source, index))
             lines.append(f"\t\t<frame{attributes([('map', source), ('index', index), ('width', width), ('height', height), ('x', x or None), ('y', y or None)])}/>")
+        # (and another of our bitmaps' PNGs: port_settings.PNG_FRAMES)
+        for png, width, height in port_settings.PNG_FRAMES.get(our_name(tag), []):
+            lines.append(f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>")
         lines.append("\t</bitmap>")
         return "\n".join(lines)
 
@@ -764,8 +767,9 @@ def main() -> None:
     report += [f"| `{name}.png` | `{tag}` frame {index} |" for name, tag, index in sorted(art.xbox_frames)]
     report += [
         "",
-        "These frames are added after a bitmap's, drawn scaled from the Xbox map's (the profile settings'",
-        "picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button settings).",
+        "These frames are added after a bitmap's, drawn from the Xbox map's (the profile settings'",
+        "picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button settings, scaled;",
+        "and the settings menu's OK with display.intro \"xbox\": the gametype settings' sixth).",
         "",
         "| Our bitmap | The Xbox's frame |",
         "| --- | --- |",
@@ -774,8 +778,8 @@ def main() -> None:
     report += [
         "",
         "These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's",
-        "CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer",
-        "Gametype's OK; the profile menu's PREFERENCES).",
+        "CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK; the profile",
+        "menu's PREFERENCES).",
         "",
         "| Our bitmap | Our frame | The Xbox's frame |",
         "| --- | --- | --- |",

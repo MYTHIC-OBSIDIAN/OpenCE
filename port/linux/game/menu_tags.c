@@ -435,6 +435,7 @@ static char const *const port_game_data_input_names[] =
 	"port gamepad layout preview",
 	/* (the profile settings' picture on OK, from their list) */
 	"port profile ok picture",
+	"port gametype ok picture",
 	/* (the main menu's Mods) */
 	"port mods update",
 	"port mcc share update", "port mcc share text",

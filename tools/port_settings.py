@@ -1115,6 +1115,10 @@ WIDGET_PATCHES = {
         # (its picture on OK: the list knows its focus, the picture does not)
         "inputs": ["port profile ok picture"],
     },
+    # (Edit Multiplayer Gametype's picture on its button bar, OK's: the
+    # Xbox's or Halo PC's, as display.intro is: BITMAP_FRAMES)
+    "main_menu/settings_select/multiplayer_setup/playlist_edit/edit_playlist_select_list": {
+        "inputs": ["port gametype ok picture"]},
     # (straight to their screens: no "checking for updates" dialog, which
     # asked the PC version's servers)
     # (JOIN GAME's INTERNET: the server browser's item, named INTERNET as
@@ -1282,15 +1286,28 @@ WIDGET_PATCHES = {
 # 512 by 235 of their 512 by 512: drawn at 279 wide, in the middle of the
 # picture's 279 by 202
 XBOX_CONTROLLER_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\controller_edit\\config_controller"
+# Then the two OK pictures (menu_functions.c's ok_picture_frame): with
+# display.intro "xbox", both the Edit Multiplayer Gametype's and the
+# settings menu's OK show the Xbox's gametype settings' sixth picture, else
+# both Halo PC's About picture. The profile menu's has the Xbox's after its
+# button settings' (frame 15), and the gametype menu's has Halo PC's after
+# its own (frame 8: PNG_FRAMES).
 BITMAP_FRAMES = {
-    f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)],
+    f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)] +
+                             [("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
+                               5, None, None, 0, 0)],
+}
+# frames added after those, one of another of our bitmaps' PNGs: its PNG,
+# width and height
+PNG_FRAMES = {
+    "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png", 512, 256)],
 }
 
 # frames of a bitmap (by our names, after FRAME_ORDER) drawn instead from a
 # frame of the Xbox map's (the player's own): its bitmap, its frame. The
-# Multiplayer menu's CREATE GAME INTERNET shows the Xbox's gametype
-# settings' second picture, its LAN the Xbox Multiplayer menu's third, and
-# CO-OP CAMPAIGN its split screen picture (the first: one television, two
+# Multiplayer menu's CREATE GAME INTERNET and LAN show JOIN GAME's
+# (FRAME_ORDER), and CO-OP CAMPAIGN the Xbox's split screen picture (the first: one television, two
 # controllers, one Xbox); Edit Multiplayer Gametype's OK (its button bar:
 # the list's eighth item) the Xbox's gametype settings' sixth; the profile
 # menu's PREFERENCES the Xbox's profile settings' third
@@ -1299,8 +1316,6 @@ XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_set
 XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
-        2: (XBOX_GAMETYPE_PICTURES, 1),
-        3: (XBOX_MULTIPLAYER_PICTURES, 2),
         4: (XBOX_MULTIPLAYER_PICTURES, 0),
     },
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": {

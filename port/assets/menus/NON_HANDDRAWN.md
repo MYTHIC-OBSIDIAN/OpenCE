@@ -30,8 +30,9 @@ the same picture, or for the profile settings the Xbox's picture for the same th
 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__2.png` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options` frame 1 |
 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options` frame 3 |
 
-These frames are added after a bitmap's, drawn scaled from the Xbox map's (the profile settings'
-picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button settings).
+These frames are added after a bitmap's, drawn from the Xbox map's (the profile settings'
+picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button settings, scaled;
+and the settings menu's OK with display.intro "xbox": the gametype settings' sixth).
 
 | Our bitmap | The Xbox's frame |
 | --- | --- |
@@ -40,15 +41,14 @@ picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button s
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller` frame 6 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller` frame 7 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\controller_edit\config_controller` frame 8 |
+| `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 5 |
 
 These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's
-CREATE GAME INTERNET and LAN, and CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer
-Gametype's OK; the profile menu's PREFERENCES).
+CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK; the profile
+menu's PREFERENCES).
 
 | Our bitmap | Our frame | The Xbox's frame |
 | --- | --- | --- |
-| `main_menu/multiplayer_type_select/mp_options` | 2 | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 1 |
-| `main_menu/multiplayer_type_select/mp_options` | 3 | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 2 |
 | `main_menu/multiplayer_type_select/mp_options` | 4 | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 0 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | 7 | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 5 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | 8 | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options` frame 2 |
