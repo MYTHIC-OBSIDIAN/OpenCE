@@ -1316,9 +1316,14 @@ XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options
 # player puts the PC version's picture under the name in the menus folder
 # beside halo.exe (tools/extract_pc_ui_images.py names them so). The
 # profile menu's CONTROLS SETUP is Halo PC's frame 2 (its Controls'
-# picture), not frame 1.
+# picture), not frame 1. A name (a PNG another bitmap's frame has) instead
+# of a number: that PNG; the profile menu's CHANGE NAME is the gametype
+# menu's CHANGE NAME picture (Halo PC's), as with PLATFORM "xbox" it is the
+# Xbox's (BITMAP_FRAMES).
 PNG_REPLACEMENTS = {
-    f"{PE}/profile_options": {1: 2},
+    f"{PE}/profile_options": {
+        0: "ce/shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__0.png",
+        1: 2},
 }
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {

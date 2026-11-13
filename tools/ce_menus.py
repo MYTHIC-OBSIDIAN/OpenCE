@@ -435,6 +435,10 @@ class Art:
         # (frames that are another PC frame's PNG: port_settings.PNG_REPLACEMENTS)
         for position, pc_index in sorted(port_settings.PNG_REPLACEMENTS.get(our_name(tag), {}).items()):
             width, height = data[indices[0]]["width"], data[indices[0]]["height"]
+            # (another bitmap's PNG, which it draws)
+            if isinstance(pc_index, str):
+                lines[1 + position] = f"\t\t<frame{attributes([('png', pc_index), ('width', width), ('height', height)])}/>"
+                continue
             png = f"ce/{relative}__{pc_index}.png"
             if png not in self.pngs:
                 self.draw(relative, pc_index, len(data), width, height, MENUS / png, self.shown.get(tag, []))
