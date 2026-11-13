@@ -1,8 +1,8 @@
 # Halo 1 MCC custom maps
 
 The companion MCC implementation adds an independent loader for modern Halo 1
-MCC version-13 caches and **MCC SINGLEPLAYER** / **MCC MULTIPLAYER** choices in the map
-menus. It is an experimental
+MCC version-13 caches, listed in the map menus with the Custom Edition maps
+(**CUSTOM CAMPAIGNS** and **CUSTOM EDITION**). It is an experimental
 runtime adapter, with explicit format limits below. A successful menu
 probe or file audit is not proof that a map plays correctly.
 
@@ -38,9 +38,11 @@ the toggle, including through the PC pause menu; Xbox menus are unchanged.
 
 ## Installation and menus
 
-OpenCE's stock selector offers MCC singleplayer and multiplayer categories,
-package folders, campaign difficulty selection, previews and completion badges.
-The same menu runs on every platform. See
+OpenCE's stock selector offers MCC singleplayer and multiplayer categories
+with package folders. This fork has no MCC categories: its map lists show the
+MCC maps after the Custom Edition maps, campaign maps in CUSTOM CAMPAIGNS and
+multiplayer maps in CUSTOM EDITION, with campaign difficulty selection,
+previews and completion badges. See
 [MCC menu images and badges](reading/mcc_level_previews.md) for metadata and
 completion-record limits. Fork-specific Modern and Xbox-style menus are not
 part of this upstream contribution.
@@ -64,7 +66,8 @@ of it for each package (`custom_maps/MercuryRising/a10.map`, the level
 lists open (`mcc_maps_scan_custom`: each file is identified, so the Custom
 Edition maps beside them are not taken) and lists them after the Custom
 Edition maps, in CUSTOM EDITION (multiplayer) and CUSTOM CAMPAIGNS
-(campaign), not in the MCC lists. `xbox_files.c` reads that package from
+(campaign), before the `mcc_maps` folder's and the Steam Workshop's
+(`mcc_maps_listed_index`). `xbox_files.c` reads that package from
 `custom_maps` (`translate_custom_mcc`, `paths.custom_maps` honoured), except a
 loose map's `bitmaps.map`, `sounds.map` and `loc.map`: those in `custom_maps`
 are Custom Edition's, so a loose map uses the shared MCC resources.
@@ -222,8 +225,7 @@ id and title and a joiner's refusal text work as for any such package. The path
 translation (`platform_translate_path`) opens `mcc_maps\<item id>\` as the
 item's `maps` folder in Steam's library. A package folder of that name in the
 data root's `mcc_maps` wins, so a player can still override an item by hand.
-The MCC menus show the map's Workshop title, and a package folder shows the
-item's title instead of its id. The resources a map needs (`bitmaps.map`,
+The map lists show the map's Workshop title. The resources a map needs (`bitmaps.map`,
 `sounds.map`) are selected independently. A Workshop resource beside the level
 in the item's `maps` folder takes precedence; when absent, the same item's
 `halo1/maps` file is used. An existing entry remains authoritative even if it
@@ -270,57 +272,27 @@ nothing else.
 
 ### Workshop collections
 
-Several Workshop items belong to a collection that their makers published as a
-set (a competitive pack, a social pack, a 2v2 set). `workshop_collections.c`
-holds a fixed, curated set of Halo CE collections as data: a name and the ids of
-its items. It does not query current Steam collection membership.
-`game.mcc_collections` (`HALO_MCC_COLLECTIONS=1`) enables these groups by
-default. Reopen the map list after changing it. Imported packages can identify
-their collection through `workshop_id.txt`, without Steam. At the
-top of the MCC map menus a collection the player has an item of is a folder
-(`[PRO EDITION]`), before the package folders; it holds the maps of the
-player's items that are in it, by their Workshop titles. An item that is in two
-collections is in both folders; an item in none keeps the package folder of its
-own, named by its title. A collection with no subscribed item has no folder.
-Only the menu changes: levels are still `mcc_maps\<item id>\<map name>`, so
-a host's map and a joiner's messages do not depend on collections. A collection
-the table does not know is shown as its items' own folders.
+`workshop_collections.c` holds a fixed set of Halo CE Workshop collections
+(a name and the ids of its items). OpenCE groups the MCC map menus' folders by
+them (`game.mcc_collections`); this fork's lists have no folders, so the
+setting is not read and the MCC Packages screen has no COLLECTION FOLDERS.
 
-The two MCC categories show package folders first (alphabetically, in brackets),
-then loose maps. Open a folder to choose one of its levels; the rows omit the
-repeated package suffix, while the selected map's details retain its identity.
-Only folders with maps of the selected category appear. A mixed package appears
-in both categories, with campaign and multiplayer maps filtered separately.
-Back returns from a folder to the package list; at the root it exits as before.
-Campaign difficulty selection still follows mission selection. Returning from
-that screen restores the MCC folder and selected mission. Each category remembers
-its folder/selection for the current session, separately for New Game and hosting.
-A rescan restores selections by identity, and returns to the root if a package
-has disappeared. `_shared`, resources and empty/unsupported-only folders are not
-selectable packages.
-
-Folder grouping lives in `mcc_maps.c`. The existing MCC menu callbacks bind its
-rows to the shared widgets. MCC Back handlers on the enclosing screens and
-lists are needed because screens consume Back before their children; two
-MCC-only description widgets show folder and empty-category text. The common description update
-hides those widgets when leaving MCC. Xbox/CE lists, map identities, loading,
-resource selection, checkpoints and network messages are unchanged.
-
-Open the map-kind chooser and select **MCC SINGLEPLAYER** for campaign
-maps or **MCC MULTIPLAYER** for multiplayer maps. The cache header's scenario
-type determines the category, independently of the filename; both lists
-read `mcc_maps` and its immediate package folders. New Game's campaign maps proceed to difficulty
-selection, and multiplayer maps can be explored alone. The network host
-map screen routes campaign maps to cooperative setup and multiplayer maps
-to gametypes. Split-screen multiplayer skips **MCC SINGLEPLAYER**, just as
-it skips the existing singleplayer categories. These
+Open the map-kind chooser and select **CUSTOM CAMPAIGNS** for campaign
+maps or **CUSTOM EDITION** for multiplayer maps: the MCC maps follow the
+Custom Edition ones, each row marked as MCC. The cache header's scenario
+type determines the list, independently of the filename; the lists read
+`custom_maps`, `mcc_maps` and its immediate package folders, and the Steam
+Workshop's items. New Game's campaign maps proceed to difficulty selection.
+The network host's map screen routes campaign maps (CUSTOM CAMPAIGNS, shown
+while hosting a system link game) to network co-op and multiplayer maps to
+gametypes. Split screen shows only CUSTOM EDITION. These
 are menu routes in the implementation; multiplayer interoperability and
 complete campaigns require gameplay testing.
 Without campaign metadata enabled, each selected MCC campaign map remains an
 independent scenario. **CAMPAIGN MISSIONS** under Settings > Network Setup >
 MCC Packages (`game.mcc_campaigns`) is enabled by default to discover Workshop
 campaigns and use their authored mission order. The same screen exposes desktop
-Steam discovery and collection folders, also enabled by default. Players can
+Steam discovery, also enabled by default. Players can
 turn each option off; saved choices and environment overrides are respected.
 
 `ModInfo.json` must identify `Halo1` and `GameModContents.HasCampaign = true`.

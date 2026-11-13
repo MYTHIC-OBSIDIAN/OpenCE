@@ -1,12 +1,11 @@
 #include "harness.h"
 #include <ctype.h>
 #include <strings.h>
-/* MCC maps of the custom_maps folder: their virtual package's path
-(xbox_files.c's translate_custom_mcc), and their place after the Custom
-Edition maps of CUSTOM EDITION and CUSTOM CAMPAIGNS (menu_functions.c's
-custom_mcc_index) */
+/* MCC maps: the custom_maps folder's virtual package's path (xbox_files.c's
+translate_custom_mcc), and their place after the Custom Edition maps of
+CUSTOM EDITION and CUSTOM CAMPAIGNS (menu_functions.c's custom_mcc_index) */
 enum { MAP_KIND_SINGLEPLAYER, MAP_KIND_MULTIPLAYER, MAP_KIND_DIGSITE, MAP_KIND_CUSTOM_MULTIPLAYER,
-	MAP_KIND_CUSTOM_CAMPAIGN, MAP_KIND_MCC_SINGLEPLAYER, MAP_KIND_MCC_MULTIPLAYER };
+	MAP_KIND_CUSTOM_CAMPAIGN };
 static char custom_maps_setting[256];
 static const char *config_string(const char *name){(void)name;return custom_maps_setting;}
 static const char *platform_data_root(void){return "/data";}
@@ -24,9 +23,10 @@ static int names_match(const char *a,const char *b,unsigned long length)
  return 1;
 }
 static void trim_separators(char *path){size_t n=strlen(path);while (n>1&&(path[n-1]=='/'||path[n-1]=='\\')) path[--n]=0;}
-/* 3 Custom Edition multiplayer maps and 2 campaign ones; MCC's of custom_maps: 2 and 1 */
+/* 3 Custom Edition multiplayer maps and 2 campaign ones; MCC's (custom_maps',
+then mcc_maps'): 2 and 1 */
 static short custom_edition_maps_count(boolean campaign){return campaign?2:3;}
-static short mcc_maps_custom_index(short row,boolean campaign)
+static short mcc_maps_listed_index(short row,boolean campaign)
 {
  static const short multiplayer[]={7,9},solo[]={4};
  if (campaign) return row==0?solo[0]:NONE;
@@ -73,7 +73,7 @@ int main(int argc,char **argv)
   CHECK(custom_mcc_index(MAP_KIND_CUSTOM_CAMPAIGN,1)==NONE,"a Custom Edition campaign map taken for MCC's");
   CHECK(custom_mcc_index(MAP_KIND_CUSTOM_CAMPAIGN,2)==4,"the MCC campaign map not after them");
   CHECK(custom_mcc_index(MAP_KIND_DIGSITE,5)==NONE,"another kind's entry taken for MCC's");
-  CHECK(custom_mcc_index(MAP_KIND_MCC_MULTIPLAYER,5)==NONE,"MCC MULTIPLAYER's entry taken for custom_maps'");
+  CHECK(custom_mcc_index(MAP_KIND_MULTIPLAYER,4)==NONE,"MULTIPLAYER's entry taken for MCC's");
  } else return 2;
  return 0;
 }

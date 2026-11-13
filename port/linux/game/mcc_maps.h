@@ -6,9 +6,9 @@
 #define MCC_MAPS_LEVEL_PREFIX "mcc_maps\\"
 #define MCC_MAPS_FIRST_DISPLAY_INDEX 0x1000
 #define MCC_MAPS_MAXIMUM 1024
-/* MCC maps put in the custom_maps folder are listed with the Custom Edition
-maps (CUSTOM EDITION and CUSTOM CAMPAIGNS), not in the MCC lists: a loose map
-is the level mcc_maps\custom_maps\<name>, one in a package folder of
+/* MCC maps are listed with the Custom Edition maps (CUSTOM EDITION and
+CUSTOM CAMPAIGNS: mcc_maps_listed_index). One put in the custom_maps folder
+loose is the level mcc_maps\custom_maps\<name>, one in a package folder of
 custom_maps mcc_maps\custom_maps+<folder>\<name>. Those packages are read
 from custom_maps (xbox_files.c's translate_workshop). */
 #define MCC_MAPS_CUSTOM_PACKAGE "custom_maps"
@@ -23,6 +23,10 @@ short mcc_maps_type_index(short row, boolean campaign);
 /* those of the custom_maps folder, listed with the Custom Edition maps */
 short mcc_maps_custom_count(boolean campaign);
 short mcc_maps_custom_index(short row, boolean campaign);
+/* the menus' of a kind: custom_maps' first, then the mcc_maps folder's and
+the Steam Workshop's */
+short mcc_maps_listed_count(boolean campaign);
+short mcc_maps_listed_index(short row, boolean campaign);
 short mcc_maps_find(char const *level_name);
 char const *mcc_maps_level_name(short index);
 wchar_t const *mcc_maps_name(short index);
@@ -34,27 +38,5 @@ boolean mcc_maps_level_campaign(char const *level_name);
 int mcc_maps_next_mission(char const *level_name, char next[64]);
 /* The title of the Steam Workshop item with this id when it is subscribed here and has one. */
 boolean mcc_maps_workshop_title(char const *item_id, char *title, unsigned size);
-
-/* Menu-only views. Identities, not catalog indices, survive a rescan. */
-#include "../src/workshop_collections.h"
-#define MCC_MAP_BROWSER_MAXIMUM (MCC_MAPS_MAXIMUM * WORKSHOP_COLLECTION_MAXIMUM_PER_ITEM)
-struct mcc_map_browser
-{
-	/* the open folder: a package, or a Workshop collection (`collection`, its number in group); "" at the top */
-	char package[64], selected[64];
-	short entries[MCC_MAP_BROWSER_MAXIMUM];
-	/* a folder row's collection (workshop_collections.h), or NONE for a package's */
-	short groups[MCC_MAP_BROWSER_MAXIMUM];
-	boolean folders[MCC_MAP_BROWSER_MAXIMUM];
-	short count, chosen, group, selected_group;
-	boolean campaign, collection, selected_folder;
-};
-
-void mcc_map_browser_open(struct mcc_map_browser *browser, boolean campaign);
-void mcc_map_browser_select(struct mcc_map_browser *browser, short row);
-boolean mcc_map_browser_enter(struct mcc_map_browser *browser, short row);
-boolean mcc_map_browser_back(struct mcc_map_browser *browser);
-short mcc_map_browser_index(struct mcc_map_browser const *browser, short row);
-void mcc_map_browser_text(struct mcc_map_browser const *browser, short row, wchar_t text[64]);
 
 #endif

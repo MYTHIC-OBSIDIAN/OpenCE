@@ -1043,9 +1043,6 @@ enum
 	MAP_KIND_DIGSITE,
 	MAP_KIND_CUSTOM_MULTIPLAYER,
 	MAP_KIND_CUSTOM_CAMPAIGN,
-	/* (the mcc_maps folder's: mcc_maps.c) */
-	MAP_KIND_MCC_SINGLEPLAYER,
-	MAP_KIND_MCC_MULTIPLAYER,
 	NUMBER_OF_MAP_KINDS
 };
 
@@ -1085,12 +1082,7 @@ short ui_widget_port_multiplayer_maps(char const *const **names, short *last_use
 /* the campaign menu's kinds (New Game's), the others the Map screen's */
 static boolean map_kind_singleplayer(short kind)
 {
-	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_CAMPAIGN || kind == MAP_KIND_MCC_SINGLEPLAYER;
-}
-
-static boolean map_kind_mcc(short kind)
-{
-	return kind == MAP_KIND_MCC_SINGLEPLAYER || kind == MAP_KIND_MCC_MULTIPLAYER;
+	return kind == MAP_KIND_SINGLEPLAYER || kind == MAP_KIND_CUSTOM_CAMPAIGN;
 }
 
 /* the kinds a chooser shows: New Game's, the Map screen's, or (the Map
@@ -1240,10 +1232,10 @@ static void digsite_map_text(short map, wchar_t *text)
 }
 
 /* CUSTOM EDITION's and CUSTOM CAMPAIGNS' entries: the Custom Edition maps,
-then the MCC maps of the custom_maps folder (mcc_maps.c's
-MCC_MAPS_CUSTOM_PACKAGE), the multiplayer maps or the campaign maps. An
-entry's MCC catalog index, or NONE for a Custom Edition map's (or another
-kind's). */
+then the MCC maps (mcc_maps_listed_index: the custom_maps folder's, then the
+mcc_maps folder's and the Steam Workshop's), the multiplayer maps or the
+campaign maps. An entry's MCC catalog index, or NONE for a Custom Edition
+map's (or another kind's). */
 static short custom_mcc_index(short kind, short entry)
 {
 	boolean campaign = kind == MAP_KIND_CUSTOM_CAMPAIGN;
@@ -1252,12 +1244,12 @@ static short custom_mcc_index(short kind, short entry)
 	if (kind != MAP_KIND_CUSTOM_CAMPAIGN && kind != MAP_KIND_CUSTOM_MULTIPLAYER)
 		return NONE;
 	custom_edition_count = custom_edition_maps_count(campaign);
-	return entry >= custom_edition_count ? mcc_maps_custom_index((short)(entry - custom_edition_count), campaign) : NONE;
+	return entry >= custom_edition_count ? mcc_maps_listed_index((short)(entry - custom_edition_count), campaign) : NONE;
 }
 
 /* a Custom Edition map's name (the menus find its name, picture and
 description by its display index: custom_edition_maps.c), or an MCC map's
-of custom_maps (by its catalog's) */
+(by its catalog's) */
 static void custom_map_text(boolean campaign, short map, wchar_t *text)
 {
 	short mcc = custom_mcc_index(campaign ? MAP_KIND_CUSTOM_CAMPAIGN : MAP_KIND_CUSTOM_MULTIPLAYER, map);
@@ -1305,9 +1297,6 @@ static void map_description_show(struct widget_instance *description, short leve
 	struct widget_instance *widget;
 	short marker;
 
-	/* MCC folder descriptions have no map display index. */
-	visible_set(named(description, "mcc_folder_name", 0), FALSE);
-	visible_set(named(description, "mcc_folder_help", 0), FALSE);
 	visible_set(named(description, "replay_level_right_name", 0), level != NONE);
 	visible_set(named(description, "replay_level_right_pic", 0), level != NONE);
 	visible_set(named(description, "replay_level_right_data", 0), level != NONE);
@@ -1329,28 +1318,9 @@ static void map_description_show(struct widget_instance *description, short leve
 		widget->parameters.text_box.string_list_index = map;
 }
 
-/* MCC has its own catalog, selection state and namespace. Its name and
-description use its reserved display indices; an absent screenshot uses
-the stock unknown-map image without entering the CE picture provider. */
-static struct
-{
-	short first, chosen;
-	boolean campaign;
-} mcc_solo_list;
-
-static struct mcc_map_browser mcc_solo_browsers[2];
-
-static void mcc_browser_focus(struct widget_instance *list, struct mcc_map_browser *browser,
-	short *first, short *chosen)
-{
-	*chosen = browser->chosen;
-	*first = map_kind_first(*chosen, browser->count);
-	if (browser->count)
-		map_kind_focus(list, *first, *chosen);
-	else
-		focus_row(list, 0);
-}
-
+/* an MCC map's description: its name and words by the MCC catalog's reserved
+display indices, its picture (the stock unknown-map image without one), and
+the difficulties it was finished at */
 static void mcc_map_description_show(struct widget_instance *description, short index)
 {
 	struct widget_instance *picture, *badge;
@@ -1377,78 +1347,9 @@ static void mcc_map_description_show(struct widget_instance *description, short 
 	}
 }
 
-static void mcc_solo_map_text(short row, wchar_t *text)
-{
-	mcc_map_browser_text(&mcc_solo_browsers[mcc_solo_list.campaign], row, text);
-	mcc_menu_text_row(text);
-}
-
-static void mcc_browser_description(struct widget_instance *description, struct mcc_map_browser *browser)
-{
-	short index = mcc_map_browser_index(browser, browser->chosen);
-	wchar_t text[ROW_TEXT_LENGTH];
-
-	visible_set(named(description, "mp_map_right_item", 0), TRUE);
-	mcc_map_description_show(description, index);
-	if (index == NONE)
-	{
-		mcc_map_browser_text(browser, browser->chosen, text);
-		text_set(named(description, "mcc_folder_name", 0), text);
-		text_set(named(description, "mcc_folder_help", 0), browser->count ?
-			L"Open folder to\r\nchoose a map." : L"No MCC maps found\r\nin this category.");
-		visible_set(named(description, "mcc_folder_name", 0), TRUE);
-		visible_set(named(description, "mcc_folder_help", 0), TRUE);
-	}
-}
-
-static boolean mcc_solo_folder_choose(struct widget_instance *list)
-{
-	struct mcc_map_browser *browser = &mcc_solo_browsers[mcc_solo_list.campaign];
-
-	if (!mcc_map_browser_enter(browser, mcc_solo_list.chosen))
-		return FALSE;
-	mcc_browser_focus(list, browser, &mcc_solo_list.first, &mcc_solo_list.chosen);
-	ui_play_audio_feedback_sound(SOUND_FORWARD);
-	return TRUE;
-}
-
-static void mcc_solo_list_update(struct widget_instance *list)
-{
-	struct widget_instance *description = list->parameters.list.extended_description;
-	struct mcc_map_browser *browser = &mcc_solo_browsers[mcc_solo_list.campaign];
-	short row = map_kind_rows_update(list, &mcc_solo_list.first, browser->count, mcc_solo_map_text);
-
-	if (row != NONE)
-	{
-		mcc_solo_list.chosen = row;
-		mcc_map_browser_select(browser, row);
-	}
-	mcc_browser_description(description, browser);
-	profile_name_show(description);
-}
-
-static boolean mcc_solo_choose(short controller)
-{
-	short index = mcc_map_browser_index(&mcc_solo_browsers[mcc_solo_list.campaign], mcc_solo_list.chosen);
-	char const *level_name = mcc_maps_level_name(index);
-	struct player_profile profile;
-
-	if (!level_name || !campaign_profile(controller, &profile))
-		return campaign_fail();
-	if (mcc_maps_campaign(index))
-	{
-		main_set_map_name(level_name);
-		main_defer_map_map_change();
-		return TRUE;
-	}
-	campaign_start(level_name, main_get_difficulty(), controller);
-	return FALSE;
-}
-
 /* New Game's list: SINGLEPLAYER's levels, the profile's reached, or CUSTOM
-CAMPAIGNS' maps, played as the campaign's levels are, at the difficulty
-chosen next, or MCC SINGLEPLAYER's (the mcc_maps folder's campaign maps,
-by their package folders) */
+CAMPAIGNS' maps (the MCC campaign maps after the Custom Edition ones),
+played as the campaign's levels are, at the difficulty chosen next */
 static struct
 {
 	short kind;
@@ -1457,27 +1358,6 @@ static struct
 	char const *const *map_names;
 	short map_count;
 } level_list;
-
-/* Handle Back explicitly: a failed handler would propagate B to the
-screen's default back action even after returning to the package list. */
-static boolean mcc_solo_back(struct widget_instance *list, boolean *widget_deleted)
-{
-	struct widget_instance *child = named(list, "solo_level_select_list", 0);
-
-	if (child)
-		list = child;
-	if (map_kind_mcc(level_list.kind) && mcc_map_browser_back(&mcc_solo_browsers[mcc_solo_list.campaign]))
-	{
-		mcc_browser_focus(list, &mcc_solo_browsers[mcc_solo_list.campaign],
-			&mcc_solo_list.first, &mcc_solo_list.chosen);
-		ui_play_audio_feedback_sound(SOUND_BACK);
-		return TRUE;
-	}
-	ui_play_audio_feedback_sound(SOUND_BACK);
-	ui_widget_port_go_back(list);
-	*widget_deleted = TRUE;
-	return TRUE;
-}
 
 /* a map list's entries of a kind (the Map screen's difficulties aside) */
 static short map_kind_count(short kind, short multiplayer_map_count)
@@ -1490,15 +1370,11 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return multiplayer_entry_count(multiplayer_map_count);
 	case MAP_KIND_DIGSITE:
 		return custom_edition_maps_digsite_count();
-	/* (and the MCC maps of custom_maps after: custom_mcc_index) */
+	/* (and the MCC maps after: custom_mcc_index) */
 	case MAP_KIND_CUSTOM_CAMPAIGN:
-		return custom_edition_maps_count(TRUE) + mcc_maps_custom_count(TRUE);
-	case MAP_KIND_MCC_SINGLEPLAYER:
-		return mcc_maps_type_count(TRUE);
-	case MAP_KIND_MCC_MULTIPLAYER:
-		return mcc_maps_type_count(FALSE);
+		return custom_edition_maps_count(TRUE) + mcc_maps_listed_count(TRUE);
 	default:
-		return custom_edition_maps_count(FALSE) + mcc_maps_custom_count(FALSE);
+		return custom_edition_maps_count(FALSE) + mcc_maps_listed_count(FALSE);
 	}
 }
 
@@ -1587,10 +1463,10 @@ static boolean level_list_initialize(struct widget_instance *list, short control
 {
 	struct player_profile profile;
 	short level, last_used;
-	short mcc_kind = level_list.kind;
+	short previous_kind = level_list.kind, previous_chosen = level_list.chosen;
 
+	/* (the MCC maps looked for again as the list opens) */
 	mcc_maps_rescan();
-	mcc_solo_list.first = mcc_solo_list.chosen = 0;
 
 	if (!campaign_profile(controller, &profile))
 		return FALSE;
@@ -1607,15 +1483,18 @@ static boolean level_list_initialize(struct widget_instance *list, short control
 	level_list.first = map_kind_first(level, NUMBER_OF_SINGLE_PLAYER_LEVELS);
 	map_kind_set(list, level_list.kind);
 	map_kind_focus(list, level_list.first, level_list.chosen);
-	/* MCC keeps its folder when the difficulty screen recreates this list. */
-	if (map_kind_mcc(mcc_kind))
+	/* (CUSTOM CAMPAIGNS again, on the map chosen last, when the list was
+	left on it: the difficulty menu's B recreates the list) */
+	if (previous_kind == MAP_KIND_CUSTOM_CAMPAIGN)
 	{
-		level_list.kind = mcc_kind;
-		mcc_solo_list.campaign = mcc_kind == MAP_KIND_MCC_SINGLEPLAYER;
-		mcc_map_browser_open(&mcc_solo_browsers[mcc_solo_list.campaign], mcc_solo_list.campaign);
-		map_kind_set(list, mcc_kind);
-		mcc_browser_focus(list, &mcc_solo_browsers[mcc_solo_list.campaign],
-			&mcc_solo_list.first, &mcc_solo_list.chosen);
+		short count = map_kind_count(previous_kind, level_list.map_count);
+
+		level_list.kind = previous_kind;
+		level_list.chosen = (short)PIN(previous_chosen, 0, MAX(count - 1, 0));
+		level_list.first = map_kind_first(level_list.chosen, count);
+		map_kind_set(list, level_list.kind);
+		if (count)
+			map_kind_focus(list, level_list.first, level_list.chosen);
 	}
 	return TRUE;
 }
@@ -1633,24 +1512,8 @@ static void level_list_update(struct widget_instance *list)
 
 	if (kind != level_list.kind)
 	{
-		if (map_kind_mcc(kind))
-		{
-			boolean chooser = focused_row(list) == 0;
-
-			mcc_solo_list.campaign = kind == MAP_KIND_MCC_SINGLEPLAYER;
-			mcc_map_browser_open(&mcc_solo_browsers[mcc_solo_list.campaign], mcc_solo_list.campaign);
-			mcc_browser_focus(list, &mcc_solo_browsers[mcc_solo_list.campaign],
-				&mcc_solo_list.first, &mcc_solo_list.chosen);
-			if (chooser)
-				focus_row(list, 0);
-		}
 		level_list.kind = kind;
 		level_list.first = level_list.chosen = 0;
-	}
-	if (map_kind_mcc(kind))
-	{
-		mcc_solo_list_update(list);
-		return;
 	}
 	count = map_kind_count(kind, level_list.map_count);
 	entry = map_kind_rows_update(list, &level_list.first, count,
@@ -1659,8 +1522,8 @@ static void level_list_update(struct widget_instance *list)
 		level_list.chosen = entry;
 	if (kind != MAP_KIND_SINGLEPLAYER)
 	{
-		/* (an MCC map of custom_maps: its picture, and the difficulties it
-		was finished at) */
+		/* (an MCC map: its picture, and the difficulties it was finished
+		at) */
 		if (level_list.chosen < count && custom_mcc_index(kind, level_list.chosen) != NONE)
 			mcc_map_description_show(description, custom_mcc_index(kind, level_list.chosen));
 		else
@@ -1692,9 +1555,6 @@ static boolean level_choose(struct widget_instance *list, short controller)
 	level_list_update(list);
 	level = campaign.shown_level;
 	count = map_kind_count(level_list.kind, level_list.map_count);
-
-	if (map_kind_mcc(level_list.kind))
-		return mcc_solo_choose(controller);
 
 	if (level_list.kind != MAP_KIND_SINGLEPLAYER && (level_list.chosen < 0 || level_list.chosen >= count))
 		return campaign_fail();
@@ -4032,58 +3892,6 @@ static void map_difficulty_text(short difficulty, wchar_t *text)
 	string_get("pc\\main_menu\\player_profiles_select\\difficulty_names", difficulty, text);
 }
 
-/* MCC MULTIPLAYER and (hosting a system link game) MCC SINGLEPLAYER: the
-mcc_maps folder's maps of the kind, by its package folders (mcc_maps.c's
-browser). A campaign MCC map chosen lists the difficulties (B goes back to
-the map) and is hosted as network co-op, as the campaign's levels are. */
-static struct
-{
-	short first, chosen, step, level;
-	boolean campaign;
-} mcc_host_list;
-
-static struct mcc_map_browser mcc_host_browsers[2];
-
-static void mcc_host_map_text(short row, wchar_t *text)
-{
-	mcc_map_browser_text(&mcc_host_browsers[mcc_host_list.campaign], row, text);
-	mcc_menu_text_row(text);
-}
-
-/* the kind's browser opened (MCC SINGLEPLAYER's or MCC MULTIPLAYER's) */
-static void mcc_host_list_open(struct widget_instance *list, short kind)
-{
-	csmemset(&mcc_host_list, 0, sizeof(mcc_host_list));
-	mcc_host_list.campaign = kind == MAP_KIND_MCC_SINGLEPLAYER;
-	mcc_map_browser_open(&mcc_host_browsers[mcc_host_list.campaign], mcc_host_list.campaign);
-	mcc_browser_focus(list, &mcc_host_browsers[mcc_host_list.campaign], &mcc_host_list.first, &mcc_host_list.chosen);
-}
-
-static void mcc_host_list_update(struct widget_instance *list)
-{
-	struct widget_instance *description = list->parameters.list.extended_description;
-	struct mcc_map_browser *browser = &mcc_host_browsers[mcc_host_list.campaign];
-	boolean difficulties = mcc_host_list.step == MAP_STEP_DIFFICULTIES;
-	short row = map_kind_rows_update(list, &mcc_host_list.first,
-		difficulties ? NUMBER_OF_GAME_DIFFICULTY_LEVELS : browser->count,
-		difficulties ? map_difficulty_text : mcc_host_map_text);
-
-	if (row != NONE)
-	{
-		mcc_host_list.chosen = row;
-		if (!difficulties)
-			mcc_map_browser_select(browser, row);
-	}
-	if (difficulties)
-	{
-		visible_set(named(description, "mp_map_right_item", 0), TRUE);
-		mcc_map_description_show(description, mcc_host_list.level);
-	}
-	else
-		mcc_browser_description(description, browser);
-	profile_name_show(description);
-}
-
 /* (below: a LAN co-op game's settings, without Server Setup) */
 static void cooperative_lan_start(void);
 
@@ -4097,62 +3905,35 @@ static boolean mcc_cooperative_start(struct widget_instance *list, char const *l
 	return ui_widget_port_open(list, LOBBY_NAME, widget_deleted);
 }
 
-static boolean mcc_host_list_choose(struct widget_instance *list, boolean *widget_deleted)
-{
-	struct mcc_map_browser *browser = &mcc_host_browsers[mcc_host_list.campaign];
-	short index = mcc_host_list.step == MAP_STEP_DIFFICULTIES ? mcc_host_list.level :
-		mcc_map_browser_index(browser, mcc_host_list.chosen);
-	char const *level_name = mcc_maps_level_name(index);
-
-	/* (a package folder: its maps) */
-	if (mcc_host_list.step != MAP_STEP_DIFFICULTIES && mcc_map_browser_enter(browser, mcc_host_list.chosen))
-	{
-		mcc_browser_focus(list, browser, &mcc_host_list.first, &mcc_host_list.chosen);
-		ui_play_audio_feedback_sound(SOUND_FORWARD);
-		return FALSE;
-	}
-	if (!level_name)
-		return campaign_fail();
-	if (mcc_host_list.step == MAP_STEP_DIFFICULTIES)
-		return mcc_cooperative_start(list, level_name, mcc_host_list.chosen, widget_deleted);
-	if (!mcc_maps_campaign(index))
-		return ui_widget_port_mcc_multiplayer_map_choose(level_name);
-	/* (a campaign map: hosted as network co-op, which split screen is not) */
-	if (!map_list.hosting)
-		return campaign_fail();
-	mcc_map_browser_select(browser, mcc_host_list.chosen);
-	mcc_host_list.level = index;
-	mcc_host_list.step = MAP_STEP_DIFFICULTIES;
-	mcc_host_list.chosen = (short)PIN(main_get_difficulty(), 0, NUMBER_OF_GAME_DIFFICULTY_LEVELS - 1);
-	mcc_host_list.first = 0;
-	map_kind_focus(list, 0, mcc_host_list.chosen);
-	ui_play_audio_feedback_sound(SOUND_FORWARD);
-	return FALSE;
-}
-
 /* "mp level list initialize": on the multiplayer map used last */
 static boolean map_list_initialize(struct widget_instance *list)
 {
 	char const *const *names;
 	short last_used = 0;
-	short mcc_kind = map_list.kind;
+	short previous_kind = map_list.kind;
+	short previous_entry = map_list.step == MAP_STEP_DIFFICULTIES ? map_list.level : map_list.chosen;
 
 	map_list.hosting = global_network_game_server_get() != NULL && !network_game_is_splitscreen_local();
+	/* (the maps folders looked for again as the list opens, the MCC maps'
+	too) */
 	mcc_maps_rescan();
-	/* (the maps folders looked for again as the list opens) */
 	custom_edition_maps_look_again();
 	map_list.map_count = ui_widget_port_multiplayer_maps(&names, &last_used);
 	/* (a Custom Edition map's kind, when it was one) */
 	last_used = map_kind_of_level_index(last_used, &map_list.kind);
 	map_kind_set(list, map_list.kind);
 	map_step_open(list, MAP_STEP_MAPS, last_used);
-	/* (an MCC kind again, when the list was left on it and it is still
-	shown: MCC SINGLEPLAYER only hosting over the network) */
-	if (mcc_kind == MAP_KIND_MCC_MULTIPLAYER || (mcc_kind == MAP_KIND_MCC_SINGLEPLAYER && map_list.hosting))
+	/* (an MCC map again, when the list was left on one: the multiplayer
+	maps used last do not hold them. CUSTOM CAMPAIGNS only hosting over the
+	network.) */
+	if ((previous_kind == MAP_KIND_CUSTOM_MULTIPLAYER ||
+		(previous_kind == MAP_KIND_CUSTOM_CAMPAIGN && map_list.hosting)) &&
+		previous_entry < map_kind_count(previous_kind, map_list.map_count) &&
+		custom_mcc_index(previous_kind, previous_entry) != NONE)
 	{
-		map_list.kind = mcc_kind;
-		map_kind_set(list, mcc_kind);
-		mcc_host_list_open(list, mcc_kind);
+		map_list.kind = previous_kind;
+		map_kind_set(list, previous_kind);
+		map_step_open(list, MAP_STEP_MAPS, previous_entry);
 	}
 	return TRUE;
 }
@@ -4167,22 +3948,9 @@ static void map_list_update(struct widget_instance *list)
 
 	if (kind != map_list.kind)
 	{
-		if (map_kind_mcc(kind))
-		{
-			boolean chooser = focused_row(list) == 0;
-
-			mcc_host_list_open(list, kind);
-			if (chooser)
-				focus_row(list, 0);
-		}
 		map_list.kind = kind;
 		map_list.step = MAP_STEP_MAPS;
 		map_list.first = map_list.chosen = 0;
-	}
-	if (map_kind_mcc(kind))
-	{
-		mcc_host_list_update(list);
-		return;
 	}
 	count = map_step_count();
 	entry = map_kind_rows_update(list, &map_list.first, count, map_list.step == MAP_STEP_DIFFICULTIES ?
@@ -4197,8 +3965,7 @@ static void map_list_update(struct widget_instance *list)
 		map_description_show(description, shown, NONE);
 		level_description(description, "replay_level", shown, FALSE, NULL, NONE);
 	}
-	/* (an MCC map of custom_maps: its picture, and the difficulties it was
-	finished at) */
+	/* (an MCC map: its picture, and the difficulties it was finished at) */
 	else if ((map_list.step == MAP_STEP_DIFFICULTIES || map_list.chosen < count) &&
 		custom_mcc_index(kind, shown) != NONE)
 	{
@@ -4223,8 +3990,6 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 	map_list_update(list);
 	chosen = map_list.chosen;
 
-	if (map_kind_mcc(map_list.kind))
-		return mcc_host_list_choose(list, widget_deleted);
 	if (chosen >= map_step_count())
 		return campaign_fail();
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
@@ -4286,24 +4051,9 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 }
 
 /* "port map list back" (B on the list): from the difficulties back to the
-map, out of an MCC package folder, else out of the Map screen */
+map, else out of the Map screen */
 static boolean map_list_back(struct widget_instance *list, boolean *widget_deleted)
 {
-	struct mcc_map_browser *browser = &mcc_host_browsers[mcc_host_list.campaign];
-
-	if (map_kind_mcc(map_list.kind) && mcc_host_list.step == MAP_STEP_DIFFICULTIES)
-	{
-		mcc_host_list.step = MAP_STEP_MAPS;
-		mcc_browser_focus(list, browser, &mcc_host_list.first, &mcc_host_list.chosen);
-		ui_play_audio_feedback_sound(SOUND_BACK);
-		return TRUE;
-	}
-	if (map_kind_mcc(map_list.kind) && mcc_map_browser_back(browser))
-	{
-		mcc_browser_focus(list, browser, &mcc_host_list.first, &mcc_host_list.chosen);
-		ui_play_audio_feedback_sound(SOUND_BACK);
-		return TRUE;
-	}
 	ui_play_audio_feedback_sound(SOUND_BACK);
 	if (map_list.step == MAP_STEP_DIFFICULTIES)
 	{
@@ -4311,19 +4061,6 @@ static boolean map_list_back(struct widget_instance *list, boolean *widget_delet
 		return TRUE;
 	}
 	ui_widget_port_go_back(list);
-	*widget_deleted = TRUE;
-	return TRUE;
-}
-
-/* "port mcc host folder back": the screen takes B before its list does */
-static boolean mcc_host_back(struct widget_instance *widget, boolean *widget_deleted)
-{
-	struct widget_instance *list = named(widget, "mp_map_select_list_2", 0);
-
-	if (list && map_kind_mcc(map_list.kind))
-		return map_list_back(list, widget_deleted);
-	ui_play_audio_feedback_sound(SOUND_BACK);
-	ui_widget_port_go_back(widget);
 	*widget_deleted = TRUE;
 	return TRUE;
 }
@@ -8846,10 +8583,6 @@ boolean pc_menu_event_function_invoke(
 		{
 			return map_list_back(widget, widget_deleted);
 		}
-		else if (!strcmp(name, "port mcc host folder back"))
-		{
-			return mcc_host_back(widget, widget_deleted);
-		}
 		else if (!strcmp(name, "mp profiles list initialize"))
 		{
 			if (!strcmp(widget->name, "playlist_select_list"))
@@ -9128,13 +8861,7 @@ boolean pc_menu_event_function_invoke(
 		}
 		else if (!strcmp(name, "solo level set map"))
 		{
-			if (map_kind_mcc(level_list.kind) && mcc_solo_folder_choose(widget))
-				return FALSE;
 			return level_choose(widget, controller);
-		}
-		else if (!strcmp(name, "port mcc solo folder back"))
-		{
-			return mcc_solo_back(widget, widget_deleted);
 		}
 		else if (!strcmp(name, "difficulty item select"))
 		{

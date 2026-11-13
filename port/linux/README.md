@@ -253,7 +253,7 @@ Video Setup; Gamepads' OK saves the profile at once. In co-op the settings
 have Network Setup too, with its in-game pages as in a multiplayer game.
 
 Create Game's Map screen, hosting a system link game, has the campaign's
-tabs too (SINGLEPLAYER, CUSTOM CAMPAIGNS and MCC SINGLEPLAYER): a level
+tabs too (SINGLEPLAYER and CUSTOM CAMPAIGNS): a level
 chosen lists the difficulties (B goes back to the level), and the level at
 one is hosted as a network co-op game. Split screen hosts only the
 multiplayer tabs. A network co-op game holds two players at most (the host refuses a third,
@@ -407,7 +407,7 @@ the setting for one start of the game. It has priority over the file.
 | `paths.logs` | `""` | `HALO_LOG_ROOT` | The folder of `debug.txt`, `bans.txt` and `cheaters.txt`. Empty: the data root. With it, the data root can be read-only (a dedicated server's maps mounted so). |
 | `paths.custom_maps` | `""` | `HALO_CUSTOM_MAPS_ROOT` | The `custom_maps` folder (Custom Edition maps, with their `bitmaps.map`, `sounds.map` and `loc.map`). Empty: the one in the data root. |
 | `game.mcc_campaigns` | `true` | `HALO_MCC_CAMPAIGNS` | Use explicit MCC campaign metadata for discovery, mission titles, authored ordering and progression. In co-op only the host chooses the next mission. Reopen the map list after changing this. |
-| `game.mcc_collections` | `true` | `HALO_MCC_COLLECTIONS` | Group MCC packages by the bundled Workshop collection list, including imported packages identified by a sidecar. Reopen the map list after changing this. |
+| `game.mcc_collections` | `true` | `HALO_MCC_COLLECTIONS` | **Not read:** the map lists have no folders (the MCC maps are listed in CUSTOM CAMPAIGNS and CUSTOM EDITION). Before: group MCC packages into folders by the bundled Workshop collection list. |
 | `game.workshop_maps` | `true` | `HALO_WORKSHOP_MAPS` | Discover installed Halo CE Steam Workshop maps on desktop. Local MCC packages take precedence. Android and web use local packages. |
 | `paths.steam` | `""` | `HALO_STEAM_ROOT` | A Steam folder or library to check first for subscribed Halo CE Workshop items. Automatic discovery also checks Windows registry installations; Linux's `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `$XDG_DATA_HOME/Steam` and home-folder locations; and their library lists. Empty: automatic discovery only. |
 | `network.address` | `""` | `HALO_NET_ADDRESS` | The IPv4 address of this machine for system link. Refer to "Play on one computer". |
@@ -553,18 +553,18 @@ Halo 1 MCC packages use a separate `mcc_maps` folder and MCC-owned readers,
 conversion, rendering and script adapters. The game finds installed Steam
 Workshop packages while **WORKSHOP MAPS** is on (`game.workshop_maps`, on by
 default). **CAMPAIGN MISSIONS** enables explicit campaign manifests and mission
-ordering (off by default). New Game's MCC SINGLEPLAYER lists the campaign maps,
-and Create Game's MCC MULTIPLAYER the multiplayer maps (and, hosting a
-system link game, its MCC SINGLEPLAYER the campaign maps, hosted as network
-co-op). MCC maps in `custom_maps` (loose, or in a folder of it
-for each package) are listed after the Custom Edition maps instead: CUSTOM
-EDITION's multiplayer maps, CUSTOM CAMPAIGNS' campaign maps (level names
+ordering (off by default). There are no MCC tabs: the MCC maps are listed
+after the Custom Edition maps (`mcc_maps_listed_index`), the campaign maps in
+CUSTOM CAMPAIGNS (New Game's, and Create Game's while hosting a system link
+game, as network co-op), the multiplayer maps in CUSTOM EDITION: first those
+in `custom_maps` (loose, or in a folder of it for each package; level names
 `mcc_maps\custom_maps\<name>` and `mcc_maps\custom_maps+<folder>\<name>`,
-read from `custom_maps` by `xbox_files.c`'s `translate_custom_mcc`).
+read from `custom_maps` by `xbox_files.c`'s `translate_custom_mcc`), then
+those of `mcc_maps` and the Steam Workshop.
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,
 and [MCC previews](../../docs/reading/mcc_level_previews.md) for menu discovery.
 
-All map families use this build's network version (49). MCC content identity, sharing
+All map families use this build's network version (50). MCC content identity, sharing
 consent and load-progress checks remain separate from the existing Xbox/CE paths;
 see [the network agreement](NETCODE.md#opence-network-agreement).
 

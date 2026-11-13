@@ -441,8 +441,6 @@ SCREENS["network_setup/mcc_packages"] = {
          "Find installed Halo CE Workshop maps on this PC.\nLocal MCC packages take precedence.", "desktop"),
         ("CAMPAIGN MISSIONS:", "game.mcc_campaigns", ON_OFF,
          "Use campaign metadata for mission order and\nprogression. Online, the host chooses the next map.", None),
-        ("COLLECTION FOLDERS:", "game.mcc_collections", ON_OFF,
-         "Group installed MCC packages using the bundled\ncollection list. Works without Steam.", None),
     ],
 }
 
@@ -1161,44 +1159,16 @@ WIDGET_PATCHES = {
         '<on event="b" run="port map list back"/>',
         '<on event="back" run="port map list back"/>',
     ]},
-    "main_menu/solo_level_select/solo_level_select_list": {"swap": {"main_menu/new_select/list_item_0": MAP_KIND_CHOOSER},
-                                                          "handlers": [
-        '<on event="created" run="initialize sp level list solo"/>',
-        '<on event="deleted" run="dispose sp level list"/>',
-        '<on event="custom_activation" run="solo level set map" open="main_menu/difficulty_select/difficulty_select_list_screen"/>',
-        '<on event="b" run="port mcc solo folder back"/>',
-        '<on event="back" run="port mcc solo folder back"/>',
-    ]},
-    "main_menu/solo_level_select/solo_level_select_screen": {"handlers": [
-        '<on event="b" run="port mcc solo folder back"/>',
-        '<on event="back" run="port mcc solo folder back"/>',
-    ]},
-    f"{MT}/mp_map_select/mp_map_select_screen": {"handlers": [
-        '<on event="created" run="net server defer start"/>',
-        '<on event="b" run="port mcc host folder back"/>',
-        '<on event="back" run="port mcc host folder back"/>',
-    ]},
-    # The host returns here after a round with no menu history. Back must
-    # reopen the main menu when it closes the last screen, as the lobby does.
-    f"{MT}/connected/connected_map_select_wrapper": {"set": {
-        "flags": "pass_unhandled_to_focused_child pause_game main_menu_if_no_history tag_controller_index force_handle_mouse",
-    }, "handlers": [
-        '<on event="b" run="port mcc host folder back"/>',
-        '<on event="back" run="port mcc host folder back"/>',
-    ]},
+    "main_menu/solo_level_select/solo_level_select_list": {"swap": {"main_menu/new_select/list_item_0": MAP_KIND_CHOOSER}},
     # (each description shows the other kind's maps too: a campaign level's
     # picture, name and words on the Map screen, a multiplayer map's on New
     # Game's)
     f"{MT}/mp_map_select/mp_map_right_item": {"children": [
-        '<child widget="main_menu/new_select/mcc_folder_name"/>',
-        '<child widget="main_menu/new_select/mcc_folder_help"/>',
         '<child widget="main_menu/solo_level_select/replay_level_right_name"/>',
         '<child widget="main_menu/solo_level_select/replay_level_right_pic"/>',
         '<child widget="main_menu/solo_level_select/replay_level_right_data"/>',
     ]},
     "main_menu/solo_level_select/replay_level_right_item": {"children": [
-        '<child widget="main_menu/new_select/mcc_folder_name"/>',
-        '<child widget="main_menu/new_select/mcc_folder_help"/>',
         f'<child widget="{MT}/mp_map_select/mp_map_right_name"/>',
         f'<child widget="{MT}/mp_map_select/mp_map_right_pic"/>',
         f'<child widget="{MT}/mp_map_select/mp_map_right_data"/>',
@@ -2362,15 +2332,7 @@ def _map_kind() -> list:
     # (New Game's SINGLEPLAYER and CUSTOM CAMPAIGNS, the Map screen's the
     # rest: menu_functions.c's map_kind_shown)
     lines += _strings("main_menu/new_select/var_map_kinds",
-                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION", "CUSTOM CAMPAIGNS",
-                       "MCC SINGLEPLAYER", "MCC MULTIPLAYER"])
-    # (an MCC package folder's name and help, in the description's place:
-    # menu_functions.c's mcc_browser_description)
-    for name, top, height in (("name", 204, 54), ("help", 270, 124)):
-        lines += _widget(f"main_menu/new_select/mcc_folder_{name}",
-                         [("type", "text"), ("controller", 1), ("left", 417), ("top", top),
-                          ("width", 146), ("height", height), ("font", "ui\\small_ui"),
-                          ("color", "#FF2896FF")], [])
+                      ["SINGLEPLAYER", "MULTIPLAYER", "DIGSITE", "CUSTOM EDITION", "CUSTOM CAMPAIGNS"])
     return lines
 
 

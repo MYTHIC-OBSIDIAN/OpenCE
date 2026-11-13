@@ -29,8 +29,8 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   it has, as it drives a remote player's, until it hears nothing of it for
   two seconds (`port/linux/game/network_actors.c`).
 - **Co-op.** A network game on a campaign level with no game engine
-  (Create Game's Map screen hosting over system link: its SINGLEPLAYER,
-  CUSTOM CAMPAIGNS and MCC SINGLEPLAYER maps) is co-op, of two players at
+  (Create Game's Map screen hosting over system link: its SINGLEPLAYER and
+  CUSTOM CAMPAIGNS maps, the MCC ones too) is co-op, of two players at
   most (`HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS`), its settings split screen
   co-op's. Only the host runs the
   level's scripts and spawns players. `network_coop.c` sends the clients

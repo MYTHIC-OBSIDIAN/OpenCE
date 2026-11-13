@@ -18,7 +18,6 @@ static boolean field(long tag, short index)
     if (!strcmp(name,"pc\\main_menu\\settings_select\\player_setup\\player_profile_edit\\network_setup\\mcc_download\\description") ||
         !strcmp(name,"pc\\main_menu\\settings_select\\player_setup\\player_profile_edit\\network_setup\\mcc_downloads\\description")) return TRUE;
     if (!strncmp(name,"pc\\mcc_xbox\\",12) && !strcmp(leaf,"status")) return TRUE;
-    if (!strcmp(leaf,"mcc_folder_name") || !strcmp(leaf,"mcc_folder_help")) return TRUE;
     if (index < MCC_MAPS_FIRST_DISPLAY_INDEX || index >= MCC_MAPS_FIRST_DISPLAY_INDEX+MCC_MAPS_MAXIMUM) return FALSE;
     return !strcmp(leaf,"mp_map_right_name") || !strcmp(leaf,"mp_map_right_data") || !strcmp(leaf,"lobby_map_name");
 }
@@ -83,15 +82,7 @@ boolean mcc_menu_text_draw(long tag, short index, wchar_t const *text, long font
     rectangle2d area=*bounds, clip;
     int width=bounds->x1-bounds->x0-2, height=bounds->y1-bounds->y0, used;
     long small;
-    char const *name;
     if (!field(tag,index)) return FALSE;
-    name=tag_get_name(tag);
-    /* Xbox cards reserve their lower row for earned badges. Keep the native
-     * text origin, but never let an authored description draw over that row. */
-    if (!strncmp(name,"pc\\mcc_xbox\\",12) && strstr(name,"\\mcc_folder_help")) {
-        area.y1=(short)MIN(area.y1,area.y0+83);
-        height=area.y1-area.y0;
-    }
     clip=area;
     if (width<=0 || height<=0) return TRUE;
     draw_string_set_draw_mode(font,NONE,0,0,color);

@@ -7,7 +7,9 @@ have separate readers, resource roots and loading state.
 ## Reading route
 
 1. [mcc_maps.c](https://github.com/chestahh/GulchCE/blob/1131d624b5c4e1f6e4d12174c4929452acf65285/port/linux/game/mcc_maps.c): `mcc_maps_scan` and
-   `mcc_map_browser_open` build the installed catalog and folder selection.
+   `mcc_map_browser_open` build the installed catalog and folder selection
+   (this fork: `mcc_maps_scan` and `mcc_maps_listed_index`, the map lists' MCC
+   entries, without folders).
 2. [cache_files.c](../../source/cache/cache_files.c): `scenario_tags_load`
    dispatches by map identity; `scenario_tags_unload` releases that family's state.
 3. [mcc_cache.c](https://github.com/chestahh/GulchCE/blob/1131d624b5c4e1f6e4d12174c4929452acf65285/port/linux/game/mcc_cache.c): `mcc_cache_tags_load` and
