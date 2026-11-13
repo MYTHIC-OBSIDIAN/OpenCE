@@ -432,6 +432,14 @@ class Art:
         for position, (source, index) in sorted(port_settings.FRAME_REPLACEMENTS.get(our_name(tag), {}).items()):
             self.replaced_frames.append((our_name(tag), position, source, index))
             lines[1 + position] = f"\t\t<frame{attributes([('map', source), ('index', index)])}/>"
+        # (frames that are another PC frame's PNG: port_settings.PNG_REPLACEMENTS)
+        for position, pc_index in sorted(port_settings.PNG_REPLACEMENTS.get(our_name(tag), {}).items()):
+            width, height = data[indices[0]]["width"], data[indices[0]]["height"]
+            png = f"ce/{relative}__{pc_index}.png"
+            if png not in self.pngs:
+                self.draw(relative, pc_index, len(data), width, height, MENUS / png, self.shown.get(tag, []))
+                self.pngs.append(png)
+            lines[1 + position] = f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>"
         # (the port's frames after them: the Xbox map's, scaled)
         for source, index, width, height, x, y in port_settings.BITMAP_FRAMES.get(our_name(tag), []):
             self.added_frames.append((our_name(tag), source, index))

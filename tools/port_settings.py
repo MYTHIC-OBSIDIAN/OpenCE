@@ -1302,6 +1302,16 @@ PNG_FRAMES = {
 XBOX_MULTIPLAYER_PICTURES = "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options"
 XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options"
 XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
+# frames of a bitmap (by our names, after FRAME_ORDER) that are another of
+# the PC version's frames' PNGs, by its PNG's name, drawn (as the
+# placeholder) as the PC version's frame of that number would be: the
+# player puts the PC version's picture under the name in the menus folder
+# beside halo.exe (tools/extract_pc_ui_images.py names them so). The
+# profile menu's CONTROLS SETUP is Halo PC's frame 2 (its Controls'
+# picture), not frame 1.
+PNG_REPLACEMENTS = {
+    f"{PE}/profile_options": {1: 2},
+}
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
         4: (XBOX_MULTIPLAYER_PICTURES, 0),
