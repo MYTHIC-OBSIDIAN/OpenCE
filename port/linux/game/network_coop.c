@@ -141,6 +141,14 @@ toward it each tick. */
 #define WATCH_HOST_HEIGHT 1.0f
 #define WATCH_HOST_FOLLOW 0.2f
 
+/* hud.c's NUMBER_OF_PLAYER_RESPAWN_FAILURES: none, combat, enemies,
+moving, vehicle (a change there is one here) */
+#define NUMBER_OF_RESPAWN_FAILURES 5
+/* where distributed_coop_presentation.skip_voters carries the respawn's
+failure, and its count */
+#define PRESENTATION_RESPAWN_FAILURE_SHIFT 4
+#define PRESENTATION_SKIP_VOTERS_MASK 0x0F
+
 /* how often the host sends again the state a client that joined since, or
 missed a message, would lack (host_resend) */
 #define OBJECT_REFRESH_TICKS (2 * TICKS_PER_SECOND)
@@ -275,7 +283,12 @@ struct distributed_coop_presentation
 	struct distributed_vector camera_forward;
 	struct distributed_vector camera_up;
 	word camera_field_of_view;
-	/* the skip vote: machines that voted, out of how many */
+	/* the skip vote: machines that voted, out of how many (the host's
+	press, and the host alone: no client reads them). skip_voters' high
+	four bits (port) are why the dead cannot respawn yet
+	(PRESENTATION_RESPAWN_FAILURE_SHIFT: players_respawn_coop's
+	respawn_failure), which a dead client's HUD names as split screen's
+	does; a host without them sends a count of 0 or 1 there, none */
 	byte skip_votes;
 	byte skip_voters;
 	/* the scripts' HUD settings (hud_unit.c, hud_weapon.c) */
@@ -1545,7 +1558,8 @@ static void host_presentation(
 	game_allegiance_get_teams(presentation->ally_teams, presentation->friendly_teams);
 	SET_FLAG(presentation->flags, _presentation_skippable_bit, skip_vote.offered);
 	presentation->skip_votes = (byte)MIN(skip_vote.votes, 255);
-	presentation->skip_voters = (byte)MIN(skip_vote.voters, 255);
+	presentation->skip_voters = (byte)(MIN(skip_vote.voters, PRESENTATION_SKIP_VOTERS_MASK) |
+		(PIN(players_get_respawn_failure(), 0, NUMBER_OF_RESPAWN_FAILURES - 1) << PRESENTATION_RESPAWN_FAILURE_SHIFT));
 
 	SET_FLAG(presentation->flags, _presentation_show_hud_bit, hud_scripted_globals->show_hud);
 	SET_FLAG(presentation->flags, _presentation_show_help_text_bit, hud_scripted_globals->show_hud_help_text);
@@ -3791,6 +3805,13 @@ static void client_presentation_apply(
 	boolean cinematic = TEST_FLAG(presentation->flags, _presentation_cinematic_bit);
 
 	player_input_enable(!presentation->input_disabled);
+	/* the respawn's failure, which a dead player's HUD names (a value no
+	host sends is none: hud.c has no message for it) */
+	{
+		short respawn_failure = (short)(presentation->skip_voters >> PRESENTATION_RESPAWN_FAILURE_SHIFT);
+
+		players_port_set_respawn_failure(respawn_failure < NUMBER_OF_RESPAWN_FAILURES ? respawn_failure : 0);
+	}
 	if (presentation->players_vitality_set && distributed_real_valid(presentation->players_maximum_body_vitality) &&
 		distributed_real_valid(presentation->players_maximum_shield_vitality) &&
 		presentation->players_maximum_body_vitality > 0.0f && presentation->players_maximum_shield_vitality >= 0.0f)
@@ -3894,7 +3915,7 @@ static void client_presentation_apply(
 
 	skip_vote.offered = TEST_FLAG(presentation->flags, _presentation_skippable_bit);
 	skip_vote.votes = presentation->skip_votes;
-	skip_vote.voters = presentation->skip_voters;
+	skip_vote.voters = presentation->skip_voters & PRESENTATION_SKIP_VOTERS_MASK;
 	client_apply_hud_state(presentation);
 }
 

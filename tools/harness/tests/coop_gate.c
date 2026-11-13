@@ -29,6 +29,8 @@ static void *player_data;
 static long data_next_index(void *data,long previous){return previous+1<player_count?previous+1:NONE;}
 static struct player_datum *player_get(long i){CHECK(i>=0&&i<player_count,"invalid player");return &people[i];}
 static boolean coop_scripts_host(void){return host;}
+/* (the relaxed gate is a game of more than split screen's two players: these cases are of one) */
+static boolean coop_scripts_relaxed(void){return host;}
 static long player_index_from_unit_index(long index){int i;for(i=0;i<player_count;i++)if(people[i].unit_index==index)return i;return NONE;}
 static real_point3d *object_get_origin(long i,real_point3d *p){*p=objects[i].position;return p;}
 static void object_set_position(long i,real_point3d const *p,void *forward,void *up){objects[i].position=*p;rollbacks++;}

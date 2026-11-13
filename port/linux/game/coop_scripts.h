@@ -13,7 +13,9 @@ Campaign scripts made to work for every player in network co-op
 /* ---------- prototypes */
 
 /* hs_library_external.c's volume_test_objects_all: whether to count the
-list as inside once any of it is, because every object in it is a player */
+list as inside once any of it is, because every object in it is a player
+(a game of more players than split screen co-op's two; a game of two waits
+for both, as split screen's does) */
 boolean coop_scripts_any_player_will_do(
 	long object_list_index);
 /* An empty (players) result or failed list allocation cannot advance a
@@ -70,10 +72,12 @@ void coop_scripts_board_followers(
 	char const *seat_name);
 
 /* hs.c's game_safe_to_save, for the scripts: the game's own test, or in
-co-op, any one player alive, on the ground and unseen by enemies. The
-scripts wait on it before a cutscene, and with players spread out a fight
-somewhere else would hold up the one a player has reached. Checkpoints
-keep the game's own test. */
+co-op of more players than split screen's two, any one player alive, on the
+ground and unseen by enemies. The scripts wait on it before a cutscene, and
+with many players spread out a fight somewhere else would hold up the one a
+player has reached. A game of two keeps the game's own test, as split
+screen's does (both players alive and safe); so do checkpoints in a game of
+two (main.c). */
 boolean coop_scripts_safe_to_save(
 	void);
 

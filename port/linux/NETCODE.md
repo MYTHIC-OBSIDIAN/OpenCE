@@ -79,7 +79,18 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   the host, else a teammate. The players spawn at the level's start, as
   split screen's do, and a dead player watches through the campaign's
   dead camera and comes back beside the other by the campaign's own test
-  (`players_respawn_coop`: nothing dangerous, the teammate on the ground).
+  (`players_respawn_coop`: nothing dangerous, the teammate on the ground),
+  made behind the teammate where split screen's teleport found no room (a
+  remote player cannot be killed unseen and tried again). A dead client's
+  HUD names why it cannot respawn yet (in combat, enemies near, moving, in
+  a vehicle) as split screen's does: the host's reason rides in the high
+  bits of the presentation's `skip_voters`, which no client reads.
+  The scripts' `game_is_cooperative` is true in network co-op as in split
+  screen co-op, so the campaign stages player1 in its cutscenes, Pelicans
+  and starts; and a game of two keeps split screen's script tests: a
+  `volume_test_objects_all` on the players waits for both, and
+  `game_safe_to_save` (before a cutscene, and checkpoints) for both alive
+  and safe. Only a larger game takes one player for all (`coop_scripts.c`).
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.

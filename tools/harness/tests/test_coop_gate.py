@@ -28,3 +28,18 @@ def test_gate(case):
 def test_negative(fault,case):
     status,output=run(build('coop_gate',generated(fault)),case)
     assert status==CHECK_FAILED,output
+
+
+def test_two_players_wait_as_split_screen():
+    """A game of two (network co-op's most) keeps split screen's tests:
+    every player in the volume, every player safe. Only a larger game
+    relaxes them to one player."""
+    port=read('port/linux/game/coop_scripts.c')
+    relaxed=function(port,'coop_scripts_relaxed')
+    assert '#define SPLIT_SCREEN_COOP_PLAYERS 2' in port
+    assert 'count > SPLIT_SCREEN_COOP_PLAYERS' in relaxed
+    assert 'quit_out_of_game' in relaxed
+    for name in ['coop_scripts_any_player_will_do','coop_scripts_safe_to_save']:
+        body=function(port,name)
+        assert 'coop_scripts_relaxed()' in body,name
+        assert 'coop_scripts_host()' not in body,name

@@ -375,6 +375,10 @@ short local_player_count(
 
 short players_get_respawn_failure(
 	void);
+/* port: a network co-op client's, from its host's (network_coop.c): the
+respawn's failure its dead player's HUD names, as split screen's does */
+void players_port_set_respawn_failure(
+	short respawn_failure);
 
 boolean players_respawn_coop(
 	void);

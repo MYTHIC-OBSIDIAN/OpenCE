@@ -11,11 +11,15 @@ fires for whoever walks into it, and what it starts is sent to the clients
 
 - Waiting for every player at once (volume_test_objects_all on the
   players): the Maw's run to the Pillar of Autumn's bridge, a30's Pelican
-  pickups. Split-screen players stand together; network players don't, so
-  the wait would never end. In co-op one player arriving is enough.
+  pickups. With more players than split screen co-op's two the wait would
+  hardly end, so one player arriving is enough.
 - Waiting until it's safe (game_safe_to_save) before a cutscene: the
-  game's test fails while any enemy sees any player. In co-op one player
-  out of danger is enough.
+  game's test fails while any enemy sees any player. With more players
+  than split screen co-op's two one player out of danger is enough.
+
+  A game of two (network co-op's most: HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS)
+  keeps split screen's tests: both players arrive, both are safe
+  (coop_scripts_relaxed).
 - Naming players one at a time: the scripts reach the players through
   player0 and player1 (the first two in the players list), to put them in
   a Pelican, take them out of it, stage them for a cutscene or give them a
@@ -49,6 +53,8 @@ fires for whoever walks into it, and what it starts is sent to the clients
 
 /* players the scripts name: player0 and player1 */
 #define NAMED_PLAYERS 2
+/* split screen co-op's players */
+#define SPLIT_SCREEN_COOP_PLAYERS 2
 
 /* ---------- private code */
 
@@ -56,6 +62,27 @@ static boolean coop_scripts_host(
 	void)
 {
 	return game_connection() == _game_connection_network_server && network_coop_active();
+}
+
+/* the host of a game of more players than split screen co-op's: its
+scripts' waits for every player, and for every player safe, are for one.
+A game of two waits as split screen's does. */
+static boolean coop_scripts_relaxed(
+	void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	short count = 0;
+
+	if (!coop_scripts_host())
+		return FALSE;
+	data_iterator_new(&iterator, player_data);
+	while ((player = data_iterator_next(&iterator)) != NULL)
+	{
+		if (!player->quit_out_of_game)
+			count++;
+	}
+	return count > SPLIT_SCREEN_COOP_PLAYERS;
 }
 
 /* the seat label to look for when boarding a follower: player0's own up to
@@ -90,7 +117,7 @@ boolean coop_scripts_any_player_will_do(
 	long object_index;
 	boolean any = FALSE;
 
-	if (!coop_scripts_host())
+	if (!coop_scripts_relaxed())
 		return FALSE;
 	for (object_index = object_list_get_first(object_list_index, &reference_index);
 		object_index != NONE;
@@ -464,7 +491,7 @@ boolean coop_scripts_safe_to_save(
 
 	if (game_safe_to_save())
 		return TRUE;
-	if (!coop_scripts_host())
+	if (!coop_scripts_relaxed())
 		return FALSE;
 	data_iterator_new(&iterator, player_data);
 	while ((player = data_iterator_next(&iterator)) != NULL)

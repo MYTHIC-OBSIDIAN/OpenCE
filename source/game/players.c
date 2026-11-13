@@ -420,6 +420,10 @@ static boolean players_respawn_network_coop(
 	boolean first_spawn);
 static struct player_starting_location const *players_coop_spawn_location(
 	struct player_starting_location *location);
+static boolean player_place_beside_teammate(
+	long player_index);
+/* (below: the teammate a network co-op respawn is made behind) */
+static long players_coop_spawn_beside_index;
 static long is_player_in_trigger(
 	short bsp_switch_trigger_volume_index,
 	long object_index);
@@ -706,6 +710,12 @@ short players_get_respawn_failure(
 	void)
 {
 	return players_globals->respawn_failure;
+}
+
+void players_port_set_respawn_failure(
+	short respawn_failure)
+{
+	players_globals->respawn_failure = respawn_failure;
 }
 
 long local_player_get_player_index(
@@ -2468,7 +2478,16 @@ boolean players_respawn_coop(
 		{
 			if (player->unit_index == NONE)
 			{
+				/* port: a network co-op player is made behind the teammate
+				(players_coop_spawn_location), not at the level's start: split
+				screen's whose teleport beside them failed was killed again
+				unseen (player_pseudo_kill) and tried again, which a remote
+				player cannot be, so one with no room there is still by them.
+				Else beside another teammate who has room */
+				if (network_coop_active())
+					players_coop_spawn_beside_index = respawn_unit_index;
 				player_spawn(iterator.datum_index);
+				players_coop_spawn_beside_index = NONE;
 				if (player->unit_index != NONE)
 				{
 					result = player_teleport(
@@ -2476,6 +2495,12 @@ boolean players_respawn_coop(
 						respawn_unit_index,
 						&object_get(respawn_unit_index)->
 							object.bounding_sphere_center);
+					/* (behind the teammate, or beside another: back either way) */
+					if (!result && network_coop_active())
+					{
+						player_place_beside_teammate(iterator.datum_index);
+						result = TRUE;
+					}
 				}
 				else
 				{

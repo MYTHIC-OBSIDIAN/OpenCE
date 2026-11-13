@@ -2844,6 +2844,7 @@ symbols in this file:
 #include "units/units.h"
 #include "units/vehicles.h"
 #include "coop_scripts.h" /* port: port/linux/game/coop_scripts.c */
+#include "network_coop.h" /* port: port/linux/game/network_coop.c */
 #ifdef HALO_PROFILE
 #include "profile_console.h" /* port: port/linux/game/profile_console.c */
 #endif
@@ -14417,7 +14418,16 @@ static long alphabetize(
 HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_safe_to_save_evaluate, coop_scripts_safe_to_save)
 HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_all_quiet_evaluate, game_all_quiet)
 HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_safe_to_speak_evaluate, game_safe_to_speak)
-HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_is_cooperative_evaluate, game_is_cooperative)
+/* port: and in network co-op, as split screen co-op is: the campaign's
+scripts stage player1 in its cutscenes, Pelicans and starts only for a
+cooperative game (game_is_cooperative counts split screen's players alone) */
+static boolean hs_port_game_is_cooperative(
+	void)
+{
+	return game_is_cooperative() || network_coop_active();
+}
+
+HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_is_cooperative_evaluate, hs_port_game_is_cooperative)
 HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(main_saving_map_evaluate, main_saving_map)
 HS_EVALUATE_RETURN_BOOLEAN_NO_ARGUMENTS(game_state_reverted_evaluate, game_state_reverted)
 

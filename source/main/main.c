@@ -2140,12 +2140,14 @@ static void main_save_map_private(
 				}
 				else if (main_globals.ticks_until_next_save_check-- <= 0)
 				{
-					/* port: in network co-op one player safe is enough, as for
-					the scripts' own test (coop_scripts_safe_to_save): the game's
-					asks it of every player at once, whom one dead, one in the air
-					or one driving past held off, and a level's checkpoint (the
-					Maw's before its Warthog run) gave up; a team wipe went back
-					to the one before */
+					/* port: in network co-op of more players than split
+					screen's two, one player safe is enough, as for the scripts'
+					own test (coop_scripts_safe_to_save): the game's asks it of
+					every player at once, whom one dead, one in the air or one
+					driving past held off, and a level's checkpoint (the Maw's
+					before its Warthog run) gave up; a team wipe went back to the
+					one before. A game of two asks it of both, as split screen's
+					does */
 					if (coop_scripts_safe_to_save())
 					{
 						if (main_globals.safe_intervals++ >= 3)
