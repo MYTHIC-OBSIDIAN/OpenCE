@@ -344,22 +344,34 @@ static BOOL names_match(const char *a, const char *b, unsigned long length)
 
 /* mcc_maps\custom_maps\... and mcc_maps\custom_maps+<folder>\...: the MCC
 maps of the custom_maps folder, loose in it or in a folder of it (mcc_maps.c's
-MCC_MAPS_CUSTOM_PACKAGE), with that folder's files. A loose map's package
-resources are not custom_maps' bitmaps.map and sounds.map (Custom Edition's):
-it looks for them as mcc_maps' own package's would. cursor is after
-mcc_maps\; the rest of the path after the package in rest */
+MCC_MAPS_CUSTOM_PACKAGE), with that folder's files; and the same of the
+digsite_maps folder (mcc_maps\digsite_maps\..., MCC_MAPS_DIGSITE_PACKAGE). A
+loose map's package resources are not that folder's bitmaps.map and
+sounds.map (Custom Edition's): it looks for them as mcc_maps' own package's
+would. cursor is after mcc_maps\; the rest of the path after the package in
+rest */
 static int translate_custom_mcc(const char *cursor, char *resolved, unsigned long size, const char **rest)
 {
 	static const char *const resources[] = { "bitmaps.map", "sounds.map", "loc.map" };
 	const char *custom_maps = config_string("paths.custom_maps");
+	const char *package;
 	char folder[1024], local_name[256], sub[64];
-	unsigned long length = 0, index;
+	unsigned long length = 0, index, package_length;
 	int loose;
 
-	if (!names_match(cursor, "custom_maps", 11) || (cursor[11] != '\\' && cursor[11] != '/' && cursor[11] != '+'))
+	if (names_match(cursor, "custom_maps", 11) && (cursor[11] == '\\' || cursor[11] == '/' || cursor[11] == '+'))
+		package = "custom_maps";
+	else if (names_match(cursor, "digsite_maps", 12) && (cursor[12] == '\\' || cursor[12] == '/' || cursor[12] == '+'))
+	{
+		package = "digsite_maps";
+		/* (paths.custom_maps moves custom_maps alone) */
+		custom_maps = "";
+	}
+	else
 		return 0;
-	loose = cursor[11] != '+';
-	cursor += loose ? 11 : 12;
+	package_length = strlen(package);
+	loose = cursor[package_length] != '+';
+	cursor += loose ? package_length : package_length + 1;
 	if (!loose)
 	{
 		while (cursor[length] && cursor[length] != '\\' && cursor[length] != '/' && length + 1 < sizeof(sub))
@@ -386,7 +398,7 @@ static int translate_custom_mcc(const char *cursor, char *resolved, unsigned lon
 	}
 	if (custom_maps[0])
 		snprintf(folder, sizeof(folder), "%s", custom_maps);
-	else if (posix_find_entry_case_insensitive(platform_data_root(), "custom_maps", local_name, sizeof(local_name)))
+	else if (posix_find_entry_case_insensitive(platform_data_root(), package, local_name, sizeof(local_name)))
 		snprintf(folder, sizeof(folder), "%s/%s", platform_data_root(), local_name);
 	else
 		return 0;

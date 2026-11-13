@@ -145,6 +145,11 @@ Custom Edition maps: loose, or each package in a folder of its own
 never `custom_maps`' own `bitmaps.map` and `sounds.map` (Custom Edition's); a
 package folder's own resources go in that folder.
 
+MCC maps in `digsite_maps` (loose, or each package in a folder of its own, as
+in `custom_maps`) are found too: their campaign maps are listed in **CUSTOM
+CAMPAIGNS**, their multiplayer maps in the Map screen's **DIGSITE**, after the
+Digsite maps.
+
 You still need the [Xbox game data](#a-copy-of-halo-combat-evolved-is-required). Obtain any required MCC resources from your own installed copy of Halo 1 in MCC.
 
 ### Steam Workshop

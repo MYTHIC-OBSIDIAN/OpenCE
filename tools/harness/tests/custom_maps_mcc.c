@@ -11,12 +11,13 @@ enum { MAP_KIND_SINGLEPLAYER, MAP_KIND_MULTIPLAYER, MAP_KIND_DIGSITE, MAP_KIND_C
 static char custom_maps_setting[256];
 static const char *config_string(const char *name){(void)name;return custom_maps_setting;}
 static const char *platform_data_root(void){return "/data";}
-/* the data root has custom_maps as Custom_Maps (and, with `mods_folder`,
-mods as Mods), and in it the folder Mercury */
+/* the data root has custom_maps as Custom_Maps, digsite_maps as Digsite_Maps
+(and, with `mods_folder`, mods as Mods), and in them the folder Mercury */
 static int mods_folder;
 static int posix_find_entry_case_insensitive(const char *folder,const char *name,char *found,unsigned long size)
 {
  if (!strcmp(folder,"/data") && !strcasecmp(name,"custom_maps")) {snprintf(found,size,"Custom_Maps");return 1;}
+ if (!strcmp(folder,"/data") && !strcasecmp(name,"digsite_maps")) {snprintf(found,size,"Digsite_Maps");return 1;}
  if (!strcmp(folder,"/data") && !strcasecmp(name,"mods") && mods_folder) {snprintf(found,size,"Mods");return 1;}
  if (!strcasecmp(name,"mercury")) {snprintf(found,size,"Mercury");return 1;}
  return 0;
@@ -39,6 +40,9 @@ static void trim_separators(char *path){size_t n=strlen(path);while (n>1&&(path[
 /* 3 Custom Edition multiplayer maps and 2 campaign ones; MCC's (custom_maps',
 then mcc_maps'): 2 and 1 */
 static short custom_edition_maps_count(boolean campaign){return campaign?2:3;}
+/* 4 Digsite maps; digsite_maps' MCC multiplayer maps: 1 */
+static short custom_edition_maps_digsite_count(void){return 4;}
+static short mcc_maps_digsite_index(short row,boolean campaign){return !campaign&&row==0?12:NONE;}
 static short mcc_maps_listed_index(short row,boolean campaign)
 {
  static const short multiplayer[]={7,9},solo[]={4};
@@ -90,6 +94,11 @@ int main(int argc,char **argv)
   snprintf(custom_maps_setting,sizeof(custom_maps_setting),"/elsewhere/maps/");
   translated("custom_maps\\level.map","/elsewhere/maps","\\level.map");
   translated("custom_maps+mercury\\a10.map","/elsewhere/maps/Mercury","\\a10.map");
+  /* (digsite_maps', which paths.custom_maps does not move) */
+  translated("digsite_maps\\level.map","/data/Digsite_Maps","\\level.map");
+  translated("DIGSITE_MAPS+mercury\\a10.map","/data/Digsite_Maps/Mercury","\\a10.map");
+  not_translated("digsite_maps\\bitmaps.map");
+  not_translated("digsite_mapsx\\level.map");
  } else CASE("shared") {
   /* (the mods folder, made as it is spelt when it is not there yet) */
   shared("_shared\\singleplayer\\bitmaps.map","/data/mods","singleplayer\\bitmaps.map");
@@ -111,7 +120,9 @@ int main(int argc,char **argv)
   CHECK(custom_mcc_index(MAP_KIND_CUSTOM_MULTIPLAYER,5)==NONE,"past the end");
   CHECK(custom_mcc_index(MAP_KIND_CUSTOM_CAMPAIGN,1)==NONE,"a Custom Edition campaign map taken for MCC's");
   CHECK(custom_mcc_index(MAP_KIND_CUSTOM_CAMPAIGN,2)==4,"the MCC campaign map not after them");
-  CHECK(custom_mcc_index(MAP_KIND_DIGSITE,5)==NONE,"another kind's entry taken for MCC's");
+  CHECK(custom_mcc_index(MAP_KIND_DIGSITE,3)==NONE,"a Digsite map taken for MCC's");
+  CHECK(custom_mcc_index(MAP_KIND_DIGSITE,4)==12,"digsite_maps' MCC map not after the Digsite maps");
+  CHECK(custom_mcc_index(MAP_KIND_DIGSITE,5)==NONE,"past DIGSITE's end");
   CHECK(custom_mcc_index(MAP_KIND_MULTIPLAYER,4)==NONE,"MULTIPLAYER's entry taken for MCC's");
  } else return 2;
  return 0;

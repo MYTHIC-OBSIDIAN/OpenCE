@@ -13,6 +13,11 @@ custom_maps mcc_maps\custom_maps+<folder>\<name>. Those packages are read
 from custom_maps (xbox_files.c's translate_workshop). */
 #define MCC_MAPS_CUSTOM_PACKAGE "custom_maps"
 #define MCC_MAPS_CUSTOM_FOLDER "d:\\custom_maps\\"
+/* the same of the digsite_maps folder (mcc_maps\digsite_maps\<name>,
+mcc_maps\digsite_maps+<folder>\<name>): campaign maps listed in CUSTOM
+CAMPAIGNS, multiplayer maps in DIGSITE (mcc_maps_digsite_index) */
+#define MCC_MAPS_DIGSITE_PACKAGE "digsite_maps"
+#define MCC_MAPS_DIGSITE_FOLDER "d:\\digsite_maps\\"
 
 void mcc_maps_rescan(void);
 short mcc_maps_count(boolean multiplayer_only);
@@ -23,8 +28,12 @@ short mcc_maps_type_index(short row, boolean campaign);
 /* those of the custom_maps folder, listed with the Custom Edition maps */
 short mcc_maps_custom_count(boolean campaign);
 short mcc_maps_custom_index(short row, boolean campaign);
-/* the menus' of a kind: custom_maps' first, then the mcc_maps folder's and
-the Steam Workshop's */
+/* those of the digsite_maps folder */
+short mcc_maps_digsite_count(boolean campaign);
+short mcc_maps_digsite_index(short row, boolean campaign);
+/* the menus' of a kind, listed with the Custom Edition maps: custom_maps'
+first, (campaign maps) digsite_maps', then the mcc_maps folder's and the
+Steam Workshop's */
 short mcc_maps_listed_count(boolean campaign);
 short mcc_maps_listed_index(short row, boolean campaign);
 short mcc_maps_find(char const *level_name);

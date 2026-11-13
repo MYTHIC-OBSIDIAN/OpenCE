@@ -32,6 +32,11 @@ def test_case(case):
     (('(short)(entry - custom_edition_count)', '(short)(entry - custom_edition_count + 1)'), 'lists'),
     # (the package folder's name dropped)
     (('snprintf(folder + length, sizeof(folder) - length, "/%s", local_name);', ';'), 'paths'),
+    # (digsite_maps' MCC maps counted from the wrong row)
+    (('mcc_maps_digsite_index((short)(entry - digsite_count), FALSE)',
+      'mcc_maps_digsite_index((short)(entry - digsite_count + 1), FALSE)'), 'lists'),
+    # (digsite_maps' packages read from custom_maps)
+    (('\t\tpackage = "digsite_maps";', '\t\tpackage = "custom_maps";'), 'paths'),
     # (the shared sets left in mcc_maps\\_shared)
     (('snprintf(resolved, size, "%s/%s", platform_data_root(), local_name);',
       'snprintf(resolved, size, "%s/mcc_maps/_shared", platform_data_root());'), 'shared'),

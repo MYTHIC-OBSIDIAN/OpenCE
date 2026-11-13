@@ -115,6 +115,13 @@ int main(int argc,char **argv)
         CHECK(mcc_share_decide(&p)==MCC_SHARE_NOT_A_PACKAGE);
         p=package("mcc_maps/custom_mapsx/a10");
         CHECK(mcc_share_eligible(&p));
+        /* (and digsite_maps') */
+        p=package("mcc_maps/digsite_maps/level");
+        CHECK(mcc_share_decide(&p)==MCC_SHARE_NOT_A_PACKAGE);
+        p=package("mcc_maps/Digsite_Maps+Mercury/a10");
+        CHECK(mcc_share_decide(&p)==MCC_SHARE_NOT_A_PACKAGE);
+        p=package("mcc_maps/digsite_mapsx/a10");
+        CHECK(mcc_share_eligible(&p));
         p=package(NULL);CHECK(!mcc_share_eligible(&p));
         return 0;
     }

@@ -560,7 +560,11 @@ game, as network co-op), the multiplayer maps in CUSTOM EDITION: first those
 in `custom_maps` (loose, or in a folder of it for each package; level names
 `mcc_maps\custom_maps\<name>` and `mcc_maps\custom_maps+<folder>\<name>`,
 read from `custom_maps` by `xbox_files.c`'s `translate_custom_mcc`), then
-those of `mcc_maps` and the Steam Workshop.
+(campaign maps) those of `digsite_maps` (as `custom_maps`': level names
+`mcc_maps\digsite_maps\<name>` and `mcc_maps\digsite_maps+<folder>\<name>`),
+then those of `mcc_maps` and the Steam Workshop. The multiplayer MCC maps of
+`digsite_maps` are listed in DIGSITE instead, after the Digsite maps
+(`mcc_maps_digsite_index`).
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,
 and [MCC previews](../../docs/reading/mcc_level_previews.md) for menu discovery.
 

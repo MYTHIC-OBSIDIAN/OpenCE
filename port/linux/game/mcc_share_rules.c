@@ -16,14 +16,18 @@ static int mcc_share_same(char const *a, char const *b)
 /* custom_maps' MCC maps' packages, custom_maps and custom_maps+<folder>
 (mcc_maps.c's MCC_MAPS_CUSTOM_PACKAGE): read from custom_maps, beside its
 Custom Edition maps, and listed with them; never offered, as a joiner's copy
-would be staged into mcc_maps */
+would be staged into mcc_maps. The same of digsite_maps' (digsite_maps,
+digsite_maps+<folder>). */
 static int mcc_share_custom_maps(char const *folder)
 {
-    char start[13];
+    char start[14];
     size_t length;
-    for (length=0;length<12 && folder[length];length++) start[length]=folder[length];
+    for (length=0;length<13 && folder[length];length++) start[length]=folder[length];
     start[length]=0;
-    return mcc_share_same(folder,"custom_maps") || mcc_share_same(start,"custom_maps+");
+    if (mcc_share_same(folder,"custom_maps") || mcc_share_same(folder,"digsite_maps") ||
+        mcc_share_same(start,"digsite_maps+")) return 1;
+    start[length<12 ? length : 12]=0;
+    return mcc_share_same(start,"custom_maps+");
 }
 
 /* Sharing names must be portable even when the sender is not on Windows.

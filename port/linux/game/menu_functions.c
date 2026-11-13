@@ -1023,13 +1023,16 @@ static boolean campaign_continue(short controller)
 /* ---- the map lists (New Game's and the Map screen's): their first row's
 chooser of New Game's SINGLEPLAYER (the campaign's levels) or CUSTOM
 CAMPAIGNS (the Custom Edition maps built as singleplayer of the custom_maps
-folder, and the Digsite maps built so), or the Map screen's MULTIPLAYER maps (the
+folder, and the Digsite maps built so; then the MCC campaign maps of
+custom_maps, digsite_maps and mcc_maps), or the Map screen's MULTIPLAYER maps (the
 Halo PC maps of the multi_maps folder: Gearbox's six, and Halo PC's versions
 of the Xbox's, each followed by the Xbox's own of it put in multi_maps as
 <name>_xbox.map, "<name> (Classic)"; the maps folder's are not listed),
-DIGSITE (the Digsite maps, a fixed list, each played as its file's scenario
+DIGSITE (the Digsite maps, a fixed list, then the digsite_maps folder's MCC
+multiplayer maps; a Digsite map played as its file's scenario
 type says) or CUSTOM EDITION maps (the other Custom Edition multiplayer maps
-of the custom_maps folder: custom_edition_maps.c)
+of the custom_maps folder: custom_edition_maps.c; then the MCC multiplayer
+maps of custom_maps and mcc_maps)
 (port_settings.MAP_KIND_CHOOSER), then the kind's rows, scrolling as
 list_scroll scrolls. The Map screen, hosting a system link game, has New
 Game's kinds too. A campaign map is played as the campaign is (alone, or
@@ -1222,29 +1225,41 @@ static void multiplayer_map_text(short map, wchar_t *text)
 	text[ROW_TEXT_LENGTH - 1] = 0;
 }
 
-/* DIGSITE's entry's name */
-static void digsite_map_text(short map, wchar_t *text)
-{
-	wchar_t const *name = custom_edition_maps_name(custom_edition_maps_digsite_display_index(map));
-
-	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
-	text[ROW_TEXT_LENGTH - 1] = 0;
-}
-
 /* CUSTOM EDITION's and CUSTOM CAMPAIGNS' entries: the Custom Edition maps,
-then the MCC maps (mcc_maps_listed_index: the custom_maps folder's, then the
-mcc_maps folder's and the Steam Workshop's), the multiplayer maps or the
-campaign maps. An entry's MCC catalog index, or NONE for a Custom Edition
-map's (or another kind's). */
+then the MCC maps (mcc_maps_listed_index: the custom_maps folder's, the
+digsite_maps folder's campaign maps, then the mcc_maps folder's and the
+Steam Workshop's), the multiplayer maps or the campaign maps; DIGSITE's:
+the Digsite maps, then the digsite_maps folder's MCC multiplayer maps. An
+entry's MCC catalog index, or NONE for a Custom Edition or Digsite map's
+(or another kind's). */
 static short custom_mcc_index(short kind, short entry)
 {
 	boolean campaign = kind == MAP_KIND_CUSTOM_CAMPAIGN;
 	short custom_edition_count;
 
+	if (kind == MAP_KIND_DIGSITE)
+	{
+		short digsite_count = custom_edition_maps_digsite_count();
+
+		return entry >= digsite_count ? mcc_maps_digsite_index((short)(entry - digsite_count), FALSE) : NONE;
+	}
 	if (kind != MAP_KIND_CUSTOM_CAMPAIGN && kind != MAP_KIND_CUSTOM_MULTIPLAYER)
 		return NONE;
 	custom_edition_count = custom_edition_maps_count(campaign);
 	return entry >= custom_edition_count ? mcc_maps_listed_index((short)(entry - custom_edition_count), campaign) : NONE;
+}
+
+/* DIGSITE's entry's name: a Digsite map's, or an MCC map's of digsite_maps */
+static void digsite_map_text(short map, wchar_t *text)
+{
+	short mcc = custom_mcc_index(MAP_KIND_DIGSITE, map);
+	wchar_t const *name = mcc != NONE ? mcc_maps_name(mcc) :
+		custom_edition_maps_name(custom_edition_maps_digsite_display_index(map));
+
+	ustrncpy(text, name ? name : L"", ROW_TEXT_LENGTH - 1);
+	text[ROW_TEXT_LENGTH - 1] = 0;
+	if (mcc != NONE)
+		mcc_menu_text_row(text);
 }
 
 /* a Custom Edition map's name (the menus find its name, picture and
@@ -1368,9 +1383,9 @@ static short map_kind_count(short kind, short multiplayer_map_count)
 		return NUMBER_OF_SINGLE_PLAYER_LEVELS;
 	case MAP_KIND_MULTIPLAYER:
 		return multiplayer_entry_count(multiplayer_map_count);
-	case MAP_KIND_DIGSITE:
-		return custom_edition_maps_digsite_count();
 	/* (and the MCC maps after: custom_mcc_index) */
+	case MAP_KIND_DIGSITE:
+		return custom_edition_maps_digsite_count() + mcc_maps_digsite_count(FALSE);
 	case MAP_KIND_CUSTOM_CAMPAIGN:
 		return custom_edition_maps_count(TRUE) + mcc_maps_listed_count(TRUE);
 	default:
@@ -1384,7 +1399,7 @@ static short map_kind_display_index(short kind, short entry)
 {
 	short mcc = custom_mcc_index(kind, entry);
 
-	/* (an MCC map of custom_maps: its catalog's, as the MCC lists') */
+	/* (an MCC map: its catalog's) */
 	if (mcc != NONE)
 		return (short)(MCC_MAPS_FIRST_DISPLAY_INDEX + mcc);
 	switch (kind)
@@ -3926,7 +3941,7 @@ static boolean map_list_initialize(struct widget_instance *list)
 	/* (an MCC map again, when the list was left on one: the multiplayer
 	maps used last do not hold them. CUSTOM CAMPAIGNS only hosting over the
 	network.) */
-	if ((previous_kind == MAP_KIND_CUSTOM_MULTIPLAYER ||
+	if ((previous_kind == MAP_KIND_CUSTOM_MULTIPLAYER || previous_kind == MAP_KIND_DIGSITE ||
 		(previous_kind == MAP_KIND_CUSTOM_CAMPAIGN && map_list.hosting)) &&
 		previous_entry < map_kind_count(previous_kind, map_list.map_count) &&
 		custom_mcc_index(previous_kind, previous_entry) != NONE)
@@ -3997,7 +4012,7 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		char const *map_name = map_list.kind == MAP_KIND_SINGLEPLAYER ? main_get_solo_level_name(map_list.level) :
 			custom_map_level_name(map_list.kind, map_list.level);
 
-		/* (an MCC campaign map of custom_maps) */
+		/* (an MCC campaign map) */
 		if (custom_mcc_index(map_list.kind, map_list.level) != NONE)
 		{
 			if (!map_name)
@@ -4013,7 +4028,7 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		cooperative_lan_start();
 		return ui_widget_port_open(list, LOBBY_NAME, widget_deleted);
 	}
-	/* (an MCC map of custom_maps, in CUSTOM EDITION or CUSTOM CAMPAIGNS: a
+	/* (an MCC map, in CUSTOM EDITION, CUSTOM CAMPAIGNS or DIGSITE: a
 	multiplayer one hosted at once, a campaign one's difficulties next) */
 	if (custom_mcc_index(map_list.kind, chosen) != NONE)
 	{

@@ -2,8 +2,9 @@
 MCC_MAPS.C
 
 The independent MCC menu catalog. Only version 13 Halo 1 MCC caches from
-d:\mcc_maps (and from d:\custom_maps, listed with the Custom Edition maps:
-MCC_MAPS_CUSTOM_PACKAGE) are admitted. The on-disk filename is the level identity; the
+d:\mcc_maps (and from d:\custom_maps and d:\digsite_maps, listed with the
+Custom Edition maps: MCC_MAPS_CUSTOM_PACKAGE, MCC_MAPS_DIGSITE_PACKAGE) are
+admitted. The on-disk filename is the level identity; the
 cache's internal scenario name may differ. No Xbox or Custom Edition map
 list, loader, resource directory or display index is used here.
 */
@@ -39,8 +40,9 @@ struct mcc_menu_map
 	wchar_t name[64];
 	wchar_t description[MCC_MAP_DESCRIPTION_MAXIMUM + 1];
 	boolean campaign, titled;
-	/* custom_maps' (MCC_MAPS_CUSTOM_PACKAGE): listed with the Custom Edition maps */
-	boolean custom;
+	/* custom_maps' or digsite_maps' (MCC_MAPS_CUSTOM_PACKAGE,
+	MCC_MAPS_DIGSITE_PACKAGE): listed with the Custom Edition maps */
+	boolean custom, digsite;
 	short mission_order, next_state;
 	char next_mission[64];
 	char campaign_title[64];
@@ -106,13 +108,13 @@ static void mcc_map_description_read(struct mcc_menu_map *map)
 	}
 }
 
-/* whether a map's name (<package>\\<map>) is custom_maps': its package
-custom_maps, or custom_maps+<folder> */
-static boolean mcc_map_name_custom(char const *name)
+/* whether a map's name (<package>\\<map>) is of the folder `package`'s
+(custom_maps or digsite_maps): its package that, or that+<folder> */
+static boolean mcc_map_name_of(char const *name, char const *package)
 {
-	size_t length = sizeof(MCC_MAPS_CUSTOM_PACKAGE) - 1;
+	size_t length = strlen(package);
 
-	return !_strnicmp(name, MCC_MAPS_CUSTOM_PACKAGE, length) && (name[length] == '\\' || name[length] == '+');
+	return !_strnicmp(name, package, length) && (name[length] == '\\' || name[length] == '+');
 }
 
 static void mcc_map_register(char const *name)
@@ -158,7 +160,8 @@ static void mcc_map_register(char const *name)
 	if (mcc_workshop_local_item(map->level_name, &item))
 		strcpy(map->item_id, item.id);
 	map->campaign = identity.scenario_type == 0;
-	map->custom = mcc_map_name_custom(name);
+	map->digsite = mcc_map_name_of(name, MCC_MAPS_DIGSITE_PACKAGE);
+	map->custom = map->digsite || mcc_map_name_of(name, MCC_MAPS_CUSTOM_PACKAGE);
 	display = strrchr(name, '\\');
 	display = display ? display + 1 : name;
 	for (index = 0; display[index]; index++)
@@ -362,16 +365,16 @@ static void mcc_maps_scan_directory(char const *package)
     CloseHandle(find);
 }
 
-/* The MCC maps of the custom_maps folder: those loose in it (the package
-custom_maps), and those of each folder in it (custom_maps+<folder>). The
-Custom Edition maps beside them are not MCC's, and are not admitted
-(mcc_map_register identifies each file). */
-static void mcc_maps_scan_custom(char const *folder)
+/* The MCC maps of the custom_maps (or digsite_maps) folder `root`: those
+loose in it (the package `package`), and those of each folder in it
+(<package>+<folder>). The Custom Edition maps beside them are not MCC's,
+and are not admitted (mcc_map_register identifies each file). */
+static void mcc_maps_scan_custom(char const *root, char const *package, char const *folder)
 {
     WIN32_FIND_DATAA data;
     HANDLE find;
     char pattern[128];
-    snprintf(pattern,sizeof(pattern),"%s%s%s*.*",MCC_MAPS_CUSTOM_FOLDER,folder,folder[0] ? "\\" : "");
+    snprintf(pattern,sizeof(pattern),"%s%s%s*.*",root,folder,folder[0] ? "\\" : "");
     find=FindFirstFileA(pattern,&data);
     if (find==INVALID_HANDLE_VALUE) return;
     do {
@@ -384,24 +387,24 @@ static void mcc_maps_scan_custom(char const *folder)
         if (!length || strpbrk(name,"/\\+") || length>40 || name[0]=='.') continue;
         if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             /* (one folder deep, as mcc_maps' packages) */
-            if (!folder[0]) mcc_maps_scan_custom(name);
+            if (!folder[0]) mcc_maps_scan_custom(root,package,name);
             continue;
         }
         extension=strrchr(name,'.');
         if (!extension || csstrcasecmp(extension+1,"map")) continue;
         *extension=0;
         if (!csstrcasecmp(name,"sounds") || !csstrcasecmp(name,"bitmaps") || !csstrcasecmp(name,"loc")) continue;
-        snprintf(relative,sizeof(relative),"%s%s%s\\%s",MCC_MAPS_CUSTOM_PACKAGE,folder[0] ? "+" : "",folder,name);
+        snprintf(relative,sizeof(relative),"%s%s%s\\%s",package,folder[0] ? "+" : "",folder,name);
         mcc_map_register(relative);
     } while (FindNextFileA(find,&data));
     CloseHandle(find);
 }
 
-static short mcc_maps_custom_count_scanned(void)
+static short mcc_maps_custom_count_scanned(boolean digsite)
 {
     short index, count = 0;
     for (index = 0; index < mcc_menu_catalog.count; index++)
-        count += mcc_menu_catalog.maps[index].custom ? 1 : 0;
+        count += mcc_menu_catalog.maps[index].custom && mcc_menu_catalog.maps[index].digsite == digsite ? 1 : 0;
     return count;
 }
 
@@ -418,7 +421,8 @@ static void mcc_maps_scan(void)
     mcc_menu_catalog.scanned=TRUE;
     mcc_menu_catalog.count=0;
     mcc_maps_scan_directory("");
-    mcc_maps_scan_custom("");
+    mcc_maps_scan_custom(MCC_MAPS_CUSTOM_FOLDER,MCC_MAPS_CUSTOM_PACKAGE,"");
+    mcc_maps_scan_custom(MCC_MAPS_DIGSITE_FOLDER,MCC_MAPS_DIGSITE_PACKAGE,"");
     /* The subscribed Steam Workshop items: each map is the level mcc_maps\<item id>\<map name>. */
     for (i=0;i<steam_workshop_count();i++) {
         struct steam_workshop_map const *item=steam_workshop_map(i);
@@ -433,8 +437,8 @@ static void mcc_maps_scan(void)
         struct mcc_menu_map *map=&mcc_menu_catalog.maps[i];
         char const *base=strrchr(map->file_name,'\\');
         if (base && mcc_map_workshop_title(map)) continue;
-        /* (custom_maps' loose maps by their own names; a folder's, with the
-         * folder's name after, as mcc_maps' packages) */
+        /* (custom_maps' and digsite_maps' loose maps by their own names; a
+         * folder's, with the folder's name after, as mcc_maps' packages) */
         if (map->custom && !strchr(map->file_name,'+')) continue;
         if (base) {
             char package[64];
@@ -442,7 +446,8 @@ static void mcc_maps_scan(void)
             memcpy(package,map->file_name,length);package[length]=0;
             if (mcc_map_package_is_item(package)) continue;
             if (map->custom) {
-                memmove(package,package+sizeof(MCC_MAPS_CUSTOM_PACKAGE),strlen(package+sizeof(MCC_MAPS_CUSTOM_PACKAGE))+1);
+                size_t skip=map->digsite ? sizeof(MCC_MAPS_DIGSITE_PACKAGE) : sizeof(MCC_MAPS_CUSTOM_PACKAGE);
+                memmove(package,package+skip,strlen(package+skip)+1);
                 length=strlen(package);
             }
             /* Preserve the established human-named package disambiguator. */
@@ -454,8 +459,8 @@ static void mcc_maps_scan(void)
     }
     mcc_maps_campaign_metadata();
     mcc_maps_menu_metadata();
-    error(_error_silent,"mcc maps: %d maps found in mcc_maps and its packages, %d of them in custom_maps",
-        mcc_menu_catalog.count,mcc_maps_custom_count_scanned());
+    error(_error_silent,"mcc maps: %d maps found in mcc_maps and its packages, %d of them in custom_maps, %d in digsite_maps",
+        mcc_menu_catalog.count,mcc_maps_custom_count_scanned(FALSE),mcc_maps_custom_count_scanned(TRUE));
 }
 
 int mcc_maps_next_mission(char const *level_name, char next[64])
@@ -538,20 +543,24 @@ short mcc_maps_type_index(short row, boolean campaign)
 	return NONE;
 }
 
-short mcc_maps_custom_count(boolean campaign)
+/* the MCC maps of a kind of the custom_maps folder (digsite FALSE) or of
+the digsite_maps folder */
+static short mcc_maps_folder_count(boolean campaign, boolean digsite)
 {
 	short index, count = 0;
 
 	mcc_maps_scan();
 	for (index = 0; index < mcc_menu_catalog.count; index++)
 	{
-		if (mcc_menu_catalog.maps[index].campaign == campaign && mcc_menu_catalog.maps[index].custom)
+		struct mcc_menu_map const *map = &mcc_menu_catalog.maps[index];
+
+		if (map->campaign == campaign && map->custom && map->digsite == digsite)
 			count++;
 	}
 	return count;
 }
 
-short mcc_maps_custom_index(short row, boolean campaign)
+static short mcc_maps_folder_index(short row, boolean campaign, boolean digsite)
 {
 	short index;
 
@@ -560,26 +569,56 @@ short mcc_maps_custom_index(short row, boolean campaign)
 		return NONE;
 	for (index = 0; index < mcc_menu_catalog.count; index++)
 	{
-		if (mcc_menu_catalog.maps[index].campaign == campaign && mcc_menu_catalog.maps[index].custom && row-- == 0)
+		struct mcc_menu_map const *map = &mcc_menu_catalog.maps[index];
+
+		if (map->campaign == campaign && map->custom && map->digsite == digsite && row-- == 0)
 			return index;
 	}
 	return NONE;
 }
 
-/* the menus' MCC maps of a kind: those of the custom_maps folder, then the
-mcc_maps folder's and the Steam Workshop's */
+short mcc_maps_custom_count(boolean campaign)
+{
+	return mcc_maps_folder_count(campaign, FALSE);
+}
+
+short mcc_maps_custom_index(short row, boolean campaign)
+{
+	return mcc_maps_folder_index(row, campaign, FALSE);
+}
+
+short mcc_maps_digsite_count(boolean campaign)
+{
+	return mcc_maps_folder_count(campaign, TRUE);
+}
+
+short mcc_maps_digsite_index(short row, boolean campaign)
+{
+	return mcc_maps_folder_index(row, campaign, TRUE);
+}
+
+/* the menus' MCC maps of a kind listed with the Custom Edition maps: those
+of the custom_maps folder, (campaign maps) the digsite_maps folder's (its
+multiplayer maps are DIGSITE's), then the mcc_maps folder's and the Steam
+Workshop's */
 short mcc_maps_listed_count(boolean campaign)
 {
-	return (short)(mcc_maps_custom_count(campaign) + mcc_maps_type_count(campaign));
+	return (short)(mcc_maps_custom_count(campaign) + (campaign ? mcc_maps_digsite_count(TRUE) : 0) +
+		mcc_maps_type_count(campaign));
 }
 
 short mcc_maps_listed_index(short row, boolean campaign)
 {
 	short custom = mcc_maps_custom_count(campaign);
+	short digsite = campaign ? mcc_maps_digsite_count(TRUE) : 0;
 
 	if (row < 0)
 		return NONE;
-	return row < custom ? mcc_maps_custom_index(row, campaign) : mcc_maps_type_index((short)(row - custom), campaign);
+	if (row < custom)
+		return mcc_maps_custom_index(row, campaign);
+	if (row < custom + digsite)
+		return mcc_maps_digsite_index((short)(row - custom), TRUE);
+	return mcc_maps_type_index((short)(row - custom - digsite), campaign);
 }
 
 short mcc_maps_find(char const *level_name)

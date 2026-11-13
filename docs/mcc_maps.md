@@ -72,6 +72,13 @@ Edition maps, in CUSTOM EDITION (multiplayer) and CUSTOM CAMPAIGNS
 loose map's `bitmaps.map`, `sounds.map` and `loc.map`: those in `custom_maps`
 are Custom Edition's, so a loose map uses the shared MCC resources.
 
+The `digsite_maps` folder's MCC maps are found the same way (the levels
+`mcc_maps\digsite_maps\<name>` and `mcc_maps\digsite_maps+<folder>\<name>`,
+read from `digsite_maps`; `paths.custom_maps` does not move it). Its campaign
+maps are listed in CUSTOM CAMPAIGNS, after `custom_maps`' and before
+`mcc_maps`'; its multiplayer maps in DIGSITE, after the Digsite maps
+(`mcc_maps_digsite_index`), never in CUSTOM EDITION.
+
 The level identity is `mcc_maps\a10`. The filename is retained even when
 the internal scenario name differs. The supplied Mercury Rising file is
 an example: its filename is `a10.map`, while its header names
