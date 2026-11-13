@@ -94,7 +94,7 @@ key, whose public key is [deploy/release-key.pub](deploy/release-key.pub).
 
 - **Supports up to 128 players** on up to 128 machines and up to 4 players on each device in split screen.
 - **Peer-to-peer internet hosting:** join through the server browser or an invite link. A host lists a game as public in the server browser, or keeps it private for players with the invite link. With the Discord integration, the host can also send the invite through Discord.
-- **Co-op campaign:** split screen on one computer (Multiplayer > CO-OP CAMPAIGN), or over system link: Create Game's Map screen has the SINGLEPLAYER and CUSTOM CAMPAIGNS tabs, for two players at most, with split screen co-op's settings.
+- **Co-op campaign:** split screen on one computer (Multiplayer > COOPERATIVE PLAY), or over system link: Create Game's Map screen has the SINGLEPLAYER and CUSTOM CAMPAIGNS tabs, for two players at most, with split screen co-op's settings.
 - **Voice Chat:** push to talk (V) or an open microphone (can be changed in the menu's audio settings)
 - **Map sharing:** a player who does not have the game's Custom Edition map downloads it from the other players.
 - **Moderation:** the host can kick and ban players from the scoreboard menu or the `kick` and `ban` console commands. Players can vote to kick. 

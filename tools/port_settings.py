@@ -990,7 +990,7 @@ def LOADOUT_HELPS(slot: str) -> list:
 
 STRING_OVERRIDES.update({
     f"{MT}/multiplayer_options": ["JOIN GAME", "CREATE GAME", "INTERNET", "LAN", "DIRECT LINK", "EDIT GAMETYPES",
-                                  "SERVER BROWSER", "CO-OP CAMPAIGN"],
+                                  "SERVER BROWSER", "COOPERATIVE PLAY"],
     # (one for each item: JOIN GAME's INTERNET and LAN, CREATE GAME's
     # INTERNET and LAN, CO-OP CAMPAIGN, EDIT GAMETYPES; the INTERNET items
     # play on the LAN in this build: multiplayer_mode_set)
@@ -999,7 +999,7 @@ STRING_OVERRIDES.update({
         "Join a multiplayer game on\\nyour LAN.",
         "Create a multiplayer game\\non the Internet.",
         "Host a game on your LAN\\nonly.",
-        "Play the campaign with a\\nfriend in split screen:\\nplayer 2 on a gamepad.",
+        "Play through the single-player\\ncampaign with a friend.",
         "Set all the attributes for your \\nmultiplayer gametypes and\\nkeep them for future use.",
     ],
     "main_menu/gametype_select/var_gametype_banks": ["STANDARD", "CUSTOM"],

@@ -198,7 +198,7 @@ edition shows it: each of the PC version's texts is that `loc.map`'s
 it is English. The pictures with words in them (the screens' titles, the
 main menu's items) are drawn in English.
 
-Multiplayer > CO-OP CAMPAIGN is the Xbox's cooperative play, which the PC
+Multiplayer > COOPERATIVE PLAY is the Xbox's cooperative play, which the PC
 version does not have: two players on this computer play the campaign in
 split screen. Player 1 is the player who chose it, on the current profile.
 Player 2 then chooses a profile with their own controller (a gamepad), and

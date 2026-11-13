@@ -59,7 +59,7 @@ the one last used, else the first) and the game's saved game in it:
 The Xbox's functions of those names take the Xbox's widgets (a spinner of
 levels, the difficulty list itself), so ours run instead (menu_tags.c).
 
-Co-op (the Xbox's Cooperative Play, Multiplayer's CO-OP CAMPAIGN): "port coop
+Co-op (the Xbox's Cooperative Play, Multiplayer's COOPERATIVE PLAY): "port coop
 begin" makes two players, player 1 on its profile; "port coop player 2"
 gives player 2 the profile chosen and the controller that chose it; then the
 campaign's New Game and difficulty start the game for both.
@@ -2645,7 +2645,7 @@ static boolean profile_delete(void)
 
 /* ---------- Co-op: the campaign for two players on this machine, in split
 screen (the Xbox's Cooperative Play, which the PC version has not):
-Multiplayer's CO-OP CAMPAIGN ("port coop begin"), player 2's profile, chosen
+Multiplayer's COOPERATIVE PLAY ("port coop begin"), player 2's profile, chosen
 with player 2's controller ("port coop player 2"), then New Game's levels
 (those either has reached) and difficulty, with either player's controller
 (ui_widget.c, widget_takes_events_of_controller). The main menu and
