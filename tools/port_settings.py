@@ -1280,11 +1280,11 @@ BITMAP_FRAMES = {
                               # Xbox's profile settings' second; frame 17)
                               (f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options", 1, None, None, 0, 0)],
     # (the Multiplayer menu's INTERNET and LAN items' with PLATFORM "xbox":
-    # the Xbox's second and third; frames 6 and 7: menu_functions.c's
+    # the Xbox's third and second; frames 6 and 7: menu_functions.c's
     # multiplayer_picture)
     f"{MT}/mp_options": [
-        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 1, None, None, 0, 0),
-        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, None, None, 0, 0)],
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, None, None, 0, 0),
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 1, None, None, 0, 0)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
          3, None, None, 0, 0),

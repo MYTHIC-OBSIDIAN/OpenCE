@@ -780,7 +780,7 @@ def main() -> None:
         "gametype settings' fourth, second and first; and the profile settings' CHANGE NAME with",
         "display.intro \"xbox\": the gametype settings' first, and CONTROLS SETUP: the Xbox's profile",
         "settings' second; and the Multiplayer menu's INTERNET and LAN with display.intro \"xbox\": the",
-        "Xbox's second and third).",
+        "Xbox's third and second).",
         "",
         "| Our bitmap | The Xbox's frame |",
         "| --- | --- |",

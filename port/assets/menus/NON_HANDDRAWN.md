@@ -37,7 +37,7 @@ Multiplayer Gametype's ITEM OPTIONS, GAME OPTIONS and CHANGE NAME with display.i
 gametype settings' fourth, second and first; and the profile settings' CHANGE NAME with
 display.intro "xbox": the gametype settings' first, and CONTROLS SETUP: the Xbox's profile
 settings' second; and the Multiplayer menu's INTERNET and LAN with display.intro "xbox": the
-Xbox's second and third).
+Xbox's third and second).
 
 | Our bitmap | The Xbox's frame |
 | --- | --- |
@@ -49,8 +49,8 @@ Xbox's second and third).
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 5 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 0 |
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options` frame 1 |
-| `main_menu/multiplayer_type_select/mp_options` | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 1 |
 | `main_menu/multiplayer_type_select/mp_options` | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 2 |
+| `main_menu/multiplayer_type_select/mp_options` | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 1 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 3 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 1 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 0 |
