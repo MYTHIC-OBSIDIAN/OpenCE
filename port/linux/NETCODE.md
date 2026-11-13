@@ -91,6 +91,13 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   `volume_test_objects_all` on the players waits for both, and
   `game_safe_to_save` (before a cutscene, and checkpoints) for both alive
   and safe. Only a larger game takes one player for all (`coop_scripts.c`).
+  From a cutscene's start (a cinematic, the scripts' camera, or the
+  players' controls taken) until the players have their controls back, a
+  client draws exactly the host's view: the scripts' camera, or the host's
+  own first person through its unit's eyes (that unit not drawn), never its
+  own. The cutscene's events (lines, titles, animations) are held for the
+  presentation of the host tick that sent them, and so start with its
+  camera and fades, as on the host, not two ticks before them.
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.

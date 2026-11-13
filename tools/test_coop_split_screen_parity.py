@@ -55,3 +55,41 @@ def test_respawn_is_split_screens_beside_the_partner():
     # the death timer and its test are split screen's for the host too
     main = source("source/main/main.c")
     assert "players_respawn_coop())" in function(main, "main_respawn_private")
+
+
+def test_client_sees_the_hosts_view_until_control_returns():
+    coop = source("port/linux/game/network_coop.c")
+    wanted = function(coop, "client_host_view_wanted")
+    # a cinematic, the scripts' camera, or the controls taken: until the
+    # players have them back
+    assert "_presentation_cinematic_bit" in wanted
+    assert "presentation->camera_scripted" in wanted
+    assert "presentation->input_disabled" in wanted
+    record = function(coop, "client_view_record")
+    assert "coop_presentation.view_active = valid && host_view;" in record
+    apply = function(coop, "client_presentation_apply")
+    assert "client_view_record(presentation, host_view);" in apply
+    # the host's own first person: through its unit's eyes, which is not drawn
+    assert "client_host_eyes_unit(&presentation->camera_position)" in apply
+    assert "scripted_camera_set_first_person(eyes_unit);" in apply
+    eyes = function(coop, "client_host_eyes_unit")
+    assert "player->local_player_index != NONE" in eyes
+    assert "unit_get_camera_position(" in eyes
+
+
+def test_events_start_on_their_presentations_tick():
+    coop = source("port/linux/game/network_coop.c")
+    handle = function(coop, "network_coop_handle_events")
+    assert "client_event_arrived(&events[index], host_time);" in handle
+    assert "client_apply_event(" not in handle
+    arrived = function(coop, "client_event_arrived")
+    assert "host_time > coop_presentation.played_time" in arrived
+    play = function(coop, "client_play_presentation")
+    # after the presentation of the ticks played
+    assert play.index("client_presentation_apply(presentation);") < play.index("client_play_pending_events(FALSE);")
+    pending = function(coop, "client_play_pending_events")
+    assert "client_pending_events.host_times[index] <= coop_presentation.played_time" in pending
+    # a host gone quiet plays what was held
+    assert "client_play_pending_events(TRUE);" in function(coop, "network_coop_client_tick")
+    distributed = source("port/linux/game/network_distributed.c")
+    assert "network_coop_handle_events(entries, header.count, header.game_time);" in distributed

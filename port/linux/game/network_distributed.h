@@ -450,7 +450,7 @@ void network_coop_client_tick(void);
 word network_coop_presentation_entry_size(void);
 void network_coop_handle_presentation(void const *entries, long host_time);
 word network_coop_event_entry_size(void);
-void network_coop_handle_events(void const *entries, short count);
+void network_coop_handle_events(void const *entries, short count, long host_time);
 word network_coop_device_group_entry_size(void);
 void network_coop_handle_device_groups(void const *entries, short count);
 word network_coop_object_names_entry_size(void);

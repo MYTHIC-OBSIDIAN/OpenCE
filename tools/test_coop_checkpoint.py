@@ -290,8 +290,9 @@ def test_coop_recovery_retires_queued_events_and_preserves_checkpoint_metadata(t
 #define NONE -1
 #define NUMBEROF(x) (sizeof(x)/sizeof((x)[0]))
 #define csmemset memset
-static struct {int cinematic_started,host_camera,buffered[4];} coop_presentation;
+static struct {int cinematic_started,host_camera,buffered[4];long camera_object_index,first_person_unit_index;struct {long object_index;} view_latest,view_previous;} coop_presentation;
 static struct {int count,applied_any,next_number,applied_number;} coop_events;
+static struct {int count;} client_pending_events;
 static int client_devices[4],client_names_differing[4],host_player_structure_bsps[4];
 static struct {int machine_count,joined,refresh;} host_resend;
 static struct {int voted,votes,client_heard_times[4],client_vote_times[4],cooldown_until;} skip_vote;
@@ -308,12 +309,13 @@ int main(void){
  int phase,i;
  for(phase=0;phase<2;phase++){
   client=phase;memset(&coop_presentation,1,sizeof(coop_presentation));
-  memset(&coop_events,1,sizeof(coop_events));memset(client_devices,1,sizeof(client_devices));
+  memset(&coop_events,1,sizeof(coop_events));client_pending_events.count=3;memset(client_devices,1,sizeof(client_devices));
   memset(client_names_differing,1,sizeof(client_names_differing));memset(&host_resend,1,sizeof(host_resend));
   memset(&skip_vote,1,sizeof(skip_vote));skip_vote.cooldown_until=77;
   network_coop_reset_recovery();
   assert(!coop_events.count && !coop_events.applied_any && !coop_events.next_number && !coop_events.applied_number);
   assert(!coop_presentation.cinematic_started && !coop_presentation.host_camera && !coop_presentation.buffered[0]);
+  assert(!client_pending_events.count && coop_presentation.first_person_unit_index==NONE && coop_presentation.camera_object_index==NONE);
   assert(!host_resend.machine_count && !host_resend.joined && !host_resend.refresh);
   assert(!skip_vote.voted && !skip_vote.votes && skip_vote.cooldown_until==77);
   for(i=0;i<4;i++)assert(!client_devices[i] && !client_names_differing[i] && host_player_structure_bsps[i]==NONE &&

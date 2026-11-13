@@ -6224,7 +6224,7 @@ void network_distributed_handle_message(
 		network_coop_handle_presentation(entries, header.game_time);
 		break;
 	case _distributed_message_coop_events:
-		network_coop_handle_events(entries, header.count);
+		network_coop_handle_events(entries, header.count, header.game_time);
 		break;
 	case _distributed_message_coop_skip_vote:
 		network_coop_handle_skip_vote(machine_index, entries);

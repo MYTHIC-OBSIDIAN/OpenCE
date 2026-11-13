@@ -12,14 +12,18 @@ that clients need to see is sent from this file:
   is shown, the mission timer), the players' maximum vitality, and
   whether the cutscene can be skipped. A client plays them one a tick by the host's clock, a
   couple of ticks behind the newest, so the camera keeps an even pace. It
-  starts and stops its own cinematic to match, and looks through the host's
-  camera meanwhile. If the host goes quiet for two seconds, the client ends
-  the cinematic so its players aren't stuck.
+  starts and stops its own cinematic to match, and from the cutscene's start
+  until the players have their controls back draws exactly the host's view:
+  the scripts' camera, or the host's own first person (through its unit's
+  eyes, the unit not drawn). If the host goes quiet for two seconds, the
+  client ends the cinematic so its players aren't stuck.
 - Events, which happen once: script sounds (dialogue, music, ambience),
   chapter titles, help and objective text, "Checkpoint" messages, screen
   shake, nav points, and custom animations on units and scenery. Each is
   sent in three ticks' messages in case one is lost, and numbered so a
-  client applies each exactly once, in order. The engine calls the
+  client applies each exactly once, in order, on the tick the presentation
+  of the host tick that sent it plays: a cutscene's lines and animations
+  start with its camera and fades, as on the host. The engine calls the
   network_coop_note_ functions (network_coop.h) to queue them.
 - Devices (doors, elevators, switches, lights). A device moves toward its
   device group's value (devices.c). On a client nothing sets those values
@@ -138,6 +142,9 @@ void local_player_set_player_index(short local_player_index, long player_index);
 from this far behind and above the host's eyes, easing a fraction of the way
 toward it each tick. */
 #define WATCH_HOST_DISTANCE 3.0f
+/* how far (world units) from another player's unit's eyes the host's view
+may be, and still be that unit's own first person (client_host_eyes_unit) */
+#define HOST_EYES_DISTANCE 1.0f
 #define WATCH_HOST_HEIGHT 1.0f
 #define WATCH_HOST_FOLLOW 0.2f
 
@@ -179,6 +186,9 @@ enum
 	MAXIMUM_QUEUED_EVENTS = 128,
 	/* each event is sent in this many ticks' messages */
 	EVENT_SENDS = 3,
+	/* a client's events held for the presentation of their host tick
+	(client_pending_events): a few ticks' worth */
+	MAXIMUM_PENDING_EVENTS = 256,
 
 	/* the size of devices.c's device group array (devices_initialize's;
 	every index into the arrays below is checked against this too) */
@@ -491,8 +501,15 @@ static struct
 	/* the object the host's cutscene camera is placed relative to, here
 	(NONE: none), which the camera is drawn moving with between ticks */
 	long camera_object_index;
+	/* the host's player whose eyes the host's view is (its own first person,
+	not a scripted camera), as this machine's scripted first-person camera,
+	which is not drawn in its own way (render_objects.c's
+	object_is_first_person_camera); NONE for none */
+	long first_person_unit_index;
 	/* the host's own view on the last two ticks played, drawn instead of
-	this machine's while view_active (network_coop_client_host_view) */
+	this machine's while view_active (network_coop_client_host_view): from
+	the host's cutscene's start until the players have their controls back,
+	every view the host has between (client_host_view_wanted) */
 	boolean view_active;
 	boolean view_previous_valid;
 	struct network_coop_view view_previous;
@@ -522,6 +539,18 @@ static struct
 	word applied_number;
 	boolean applied_any;
 } coop_events;
+
+/* client: the events heard ahead of the presentation being played, each
+with the host tick it was sent on, applied as that tick's presentation is
+(client_play_pending_events): a cutscene's lines, titles and animations
+then start on the tick of its camera and fades, as on the host, not the
+presentation's delay before them */
+static struct
+{
+	struct distributed_coop_event events[MAXIMUM_PENDING_EVENTS];
+	long host_times[MAXIMUM_PENDING_EVENTS];
+	short count;
+} client_pending_events;
 
 /* host: each device group as last sent, indexed by group */
 static struct
@@ -634,6 +663,7 @@ static struct
 /* ---------- prototypes */
 
 static void client_play_presentation(void);
+static void client_play_pending_events(boolean all);
 /* unit_scripting_commands.c */
 void unit_scripting_set_current_vitality_of(long unit_index, real body_vitality, real shield_vitality);
 /* port_config.c */
@@ -2150,9 +2180,11 @@ void network_coop_new_game(
 {
 	csmemset(&coop_presentation, 0, sizeof(coop_presentation));
 	coop_presentation.camera_object_index = NONE;
+	coop_presentation.first_person_unit_index = NONE;
 	coop_presentation.view_latest.object_index = NONE;
 	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
+	client_pending_events.count = 0;
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -3330,7 +3362,12 @@ void network_coop_reset_recovery(void)
 		client_host_camera_set(FALSE);
 	}
 	csmemset(&coop_presentation, 0, sizeof(coop_presentation));
+	coop_presentation.camera_object_index = NONE;
+	coop_presentation.first_person_unit_index = NONE;
+	coop_presentation.view_latest.object_index = NONE;
+	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
+	client_pending_events.count = 0;
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
 	csmemset(&host_resend, 0, sizeof(host_resend));
@@ -3421,6 +3458,7 @@ void network_coop_client_tick(
 	players_vitality_keep();
 	if (game_time_get() - coop_presentation.heard_time > PRESENTATION_SILENCE_TICKS)
 	{
+		client_play_pending_events(TRUE);
 		client_cinematic_end();
 		client_host_camera_set(FALSE);
 		player_input_enable(TRUE);
@@ -3713,10 +3751,59 @@ void network_coop_handle_object_names(
 	}
 }
 
-/* client: applies each event once, in order */
+/* client: applies the events held whose host tick has been played (all of
+them: the presentation stopped), in order */
+static void client_play_pending_events(
+	boolean all)
+{
+	short index = 0;
+
+	while (index < client_pending_events.count &&
+		(all || client_pending_events.host_times[index] <= coop_presentation.played_time))
+	{
+		index++;
+	}
+	if (!index)
+		return;
+	{
+		short applied;
+
+		for (applied = 0; applied < index; applied++)
+			client_apply_event(&client_pending_events.events[applied]);
+	}
+	client_pending_events.count = (short)(client_pending_events.count - index);
+	csmemmove(client_pending_events.events, client_pending_events.events + index,
+		client_pending_events.count * sizeof(client_pending_events.events[0]));
+	csmemmove(client_pending_events.host_times, client_pending_events.host_times + index,
+		client_pending_events.count * sizeof(client_pending_events.host_times[0]));
+}
+
+/* client: an event in its turn: held for the presentation of its host tick
+while that is still to be played, else (or with no room) at once, after
+those held before it */
+static void client_event_arrived(
+	struct distributed_coop_event const *event,
+	long host_time)
+{
+	if (coop_presentation.playing && host_time > coop_presentation.played_time)
+	{
+		if (client_pending_events.count == MAXIMUM_PENDING_EVENTS)
+			client_play_pending_events(TRUE);
+		client_pending_events.events[client_pending_events.count] = *event;
+		client_pending_events.host_times[client_pending_events.count] = host_time;
+		client_pending_events.count++;
+		return;
+	}
+	client_play_pending_events(TRUE);
+	client_apply_event(event);
+}
+
+/* client: applies each event once, in order, on the tick its host sent it
+is played (client_event_arrived) */
 void network_coop_handle_events(
 	void const *entries,
-	short count)
+	short count,
+	long host_time)
 {
 	struct distributed_coop_event const *events = entries;
 	short index;
@@ -3736,7 +3823,7 @@ void network_coop_handle_events(
 		{
 			continue;
 		}
-		client_apply_event(&events[index]);
+		client_event_arrived(&events[index], host_time);
 	}
 }
 
@@ -3767,7 +3854,8 @@ machine's: while the host's cutscene plays, as split screen co-op draws one
 view, player 1's (the host's), while a cutscene plays (main.c's
 single_window) and splits as it ends */
 static void client_view_record(
-	struct distributed_coop_presentation const *presentation)
+	struct distributed_coop_presentation const *presentation,
+	boolean host_view)
 {
 	struct network_coop_view view;
 	struct object_datum *filmed;
@@ -3796,13 +3884,56 @@ static void client_view_record(
 	coop_presentation.view_previous_valid = coop_presentation.view_active && valid;
 	coop_presentation.view_previous = coop_presentation.view_latest;
 	coop_presentation.view_latest = view;
-	coop_presentation.view_active = valid && TEST_FLAG(presentation->flags, _presentation_cinematic_bit);
+	coop_presentation.view_active = valid && host_view;
+}
+
+/* client: whether it draws the host's view, exactly as the host has it: from
+the moment the host's cutscene begins (a cinematic, the scripts' camera, or
+the players' controls taken) until the players have their controls again at
+its end. Split screen co-op drew one view through a cinematic and gave each
+player their own as it ended, before the controls came back; a client of a
+network game sees all of it as the host does. */
+static boolean client_host_view_wanted(
+	struct distributed_coop_presentation const *presentation)
+{
+	return TEST_FLAG(presentation->flags, _presentation_cinematic_bit) || presentation->camera_scripted ||
+		presentation->input_disabled;
+}
+
+/* client: the unit of another machine's player whose eyes the host's view
+is at (the host's own first person), else NONE */
+static long client_host_eyes_unit(
+	real_point3d const *camera_position)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	real nearest = HOST_EYES_DISTANCE * HOST_EYES_DISTANCE;
+	long found = NONE;
+
+	data_iterator_new(&iterator, player_data);
+	while ((player = data_iterator_next(&iterator)) != NULL)
+	{
+		real_point3d eyes;
+		real distance;
+
+		if (player->local_player_index != NONE || !unit_try_and_get(player->unit_index))
+			continue;
+		unit_get_camera_position(player->unit_index, &eyes);
+		distance = distance_squared3d(&eyes, camera_position);
+		if (distance <= nearest)
+		{
+			nearest = distance;
+			found = player->unit_index;
+		}
+	}
+	return found;
 }
 
 static void client_presentation_apply(
 	struct distributed_coop_presentation const *presentation)
 {
 	boolean cinematic = TEST_FLAG(presentation->flags, _presentation_cinematic_bit);
+	boolean host_view = client_host_view_wanted(presentation);
 
 	player_input_enable(!presentation->input_disabled);
 	/* the respawn's failure, which a dead player's HUD names (a value no
@@ -3835,13 +3966,15 @@ static void client_presentation_apply(
 	{
 		client_cinematic_end();
 	}
-	/* Use the host's camera while its scripts control it, a dead player's
-	too: the cutscene's camera wins over spectating (shots filmed by a moving
-	Pelican follow this machine's copy of it: camera_object_offset). Spectate
-	instead only when the cutscene leaves the camera with the player. A
-	player with no unit and nobody to watch also gets the host's view,
-	rather than a dead camera at the world origin. */
-	client_view_record(presentation);
+	/* Use the host's view, exactly as the host has it, from its cutscene's
+	start until the players have their controls back (client_host_view_wanted),
+	a dead player's too: the cutscene's camera wins over spectating (shots
+	filmed by a moving Pelican follow this machine's copy of it:
+	camera_object_offset), and a cutscene that leaves the camera with the
+	host shows the host's own first person. A player with no unit and nobody
+	to watch also gets the host's view, rather than a dead camera at the
+	world origin. */
+	client_view_record(presentation, host_view);
 	client_host_camera_set((coop_presentation.cinematic_started && presentation->camera_scripted) ||
 		coop_presentation.view_active || coop_spectate_nothing_to_watch(0));
 	/* (also outside a cinematic: a cutscene that leaves the players their
@@ -3876,9 +4009,29 @@ static void client_presentation_apply(
 			if (coop_presentation.cinematic_started && presentation->camera_scripted)
 				coop_presentation.camera_object_index = presentation->camera_object_index;
 		}
+		/* the host's own first person (not the scripts' camera): through
+		the eyes of its player's unit here, which is then not drawn, as the
+		host does not draw its own (the view drawn is still the host's,
+		network_coop_client_host_view) */
+		{
+			long eyes_unit = coop_presentation.view_active && !presentation->camera_scripted ?
+				client_host_eyes_unit(&presentation->camera_position) : NONE;
+
+			if (eyes_unit != NONE)
+			{
+				if (coop_presentation.first_person_unit_index != eyes_unit)
+				{
+					scripted_camera_set_first_person(eyes_unit);
+					coop_presentation.first_person_unit_index = eyes_unit;
+				}
+			}
+			else
+				coop_presentation.first_person_unit_index = NONE;
+		}
 		/* (where and how widely an observer can look: observer.c's
 		match_assert_valid_observer_command) */
-		if (distributed_point_valid(&position, CAMERA_WORLD_BOUND) && distributed_axes_make_valid(&forward, &up))
+		if (coop_presentation.first_person_unit_index == NONE &&
+			distributed_point_valid(&position, CAMERA_WORLD_BOUND) && distributed_axes_make_valid(&forward, &up))
 		{
 			boolean camera_ready = TRUE;
 
@@ -3897,6 +4050,7 @@ static void client_presentation_apply(
 	{
 		coop_presentation.watching_host_valid = FALSE;
 		coop_presentation.camera_object_index = NONE;
+		coop_presentation.first_person_unit_index = NONE;
 	}
 
 	/* start each new fade, backdated to when the host started it */
@@ -3954,4 +4108,6 @@ static void client_play_presentation(
 	}
 	if (presentation)
 		client_presentation_apply(presentation);
+	/* (the events of the ticks played, after their presentation) */
+	client_play_pending_events(FALSE);
 }
