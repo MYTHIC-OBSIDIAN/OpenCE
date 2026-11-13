@@ -82,12 +82,13 @@ Some campaigns keep audio and textures in separate resource files. For manual
 packages, keep each package's supplied files beside its levels. With desktop
 Workshop discovery enabled, packaged and installed MCC resources are found in
 place as described below. For installations without Steam discovery, install
-MCC's two standard sets once:
+MCC's two standard sets once, in this fork in the data root's `mods` folder
+(the folder of `halo.exe`; OpenCE's `mcc_maps/_shared`):
 
 ```text
-mcc_maps/_shared/singleplayer/bitmaps.map
-mcc_maps/_shared/multiplayer/bitmaps.map
-mcc_maps/_shared/multiplayer/sounds.map
+mods/singleplayer/bitmaps.map
+mods/multiplayer/bitmaps.map
+mods/multiplayer/sounds.map
 mcc_maps/solar_flare/m0.map
 mcc_maps/solar_flare/m1.map
 mcc_maps/solar_flare/sounds.map
@@ -98,7 +99,10 @@ Copy the `singleplayer` file from MCC's `halo1/maps/bitmaps.map`. Copy the
 `multiplayer` files from MCC's `halo1/maps/custom_edition/`. Both must come
 from MCC; do not substitute a Custom Edition installation. These folder names
 are installation labels, not a restriction on the maps that can use them.
-`_shared` is not a level package and its nested resource folders are not menus.
+They are not mods (`port_mods.c` passes over them without a `mod.toml`). The
+resource reader still names them `mcc_maps/_shared/<set>/`; `xbox_files.c`'s
+`translate_shared_mcc` opens them in `mods`. `mcc_maps/_shared` itself is no
+longer read, and is neither a level package nor a menu.
 
 Selection is independent for bitmaps and sounds. A package resource is
 selected first, then a legacy `mcc_maps/bitmaps.map` or `sounds.map` if present.
@@ -234,7 +238,7 @@ A local `mcc_maps/<item id>` package also prevents borrowing that item's files.
 
 If package and legacy root resources are absent, the existing shared-set
 selection checks both standard sets. A manually installed file under
-`mcc_maps/_shared` wins. Otherwise, with Workshop discovery enabled, each set
+`mods/singleplayer` or `mods/multiplayer` wins. Otherwise, with Workshop discovery enabled, each set
 resolves in the first discovered Steam library containing the corresponding
 MCC file, under `steamapps/common/Halo The Master Chief Collection/`:
 

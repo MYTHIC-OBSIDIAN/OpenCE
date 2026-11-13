@@ -19,7 +19,9 @@ tag) and `port/linux/src/port_mods.c` (the mods folder and its files).
 The mods are in the `mods` folder of the data root (the folder with
 `maps/`; on Android the app's data folder, on the web the browser's storage
 for the site). Each mod is a folder in it, with a `mod.toml` and a `tags`
-folder:
+folder. (Its `singleplayer` and `multiplayer` folders, without `mod.toml`,
+hold MCC's shared `bitmaps.map` and `sounds.map` for the MCC maps instead:
+[MCC maps](mcc_maps.md#installation-and-menus).)
 
 ```
 mods/

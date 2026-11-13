@@ -221,7 +221,7 @@ int mcc_resources_select(struct mcc_runtime *runtime,void *raw)
             mcc_resource_close(&candidate);
         }
         if (!selected->stream) {
-            error(_error_silent,"mcc resources: no complete matching %s for %s; check the package and MCC shared folders",
+            error(_error_silent,"mcc resources: no complete matching %s for %s; check the package and the mods folder's singleplayer and multiplayer",
                 type==1 ? "bitmaps.map" : "sounds.map",runtime->level_name);
             snprintf(runtime->failure,sizeof(runtime->failure),
                 "No matching %s. Install its MCC package resources beside the level.",

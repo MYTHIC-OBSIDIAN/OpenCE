@@ -405,6 +405,37 @@ static int translate_custom_mcc(const char *cursor, char *resolved, unsigned lon
 	return 1;
 }
 
+/* mcc_maps\_shared\singleplayer\ and mcc_maps\_shared\multiplayer\ (MCC's
+shared bitmaps.map and sounds.map: mcc_resources.c): the data root's mods
+folder's singleplayer and multiplayer folders, which the mods (port_mods.c)
+pass over. Steam's MCC install is looked in (steam_workshop_resource_path)
+when they are not there. cursor is after mcc_maps\; the rest of the path
+after the set in rest */
+static int translate_shared_mcc(const char *cursor, char *resolved, unsigned long size, const char **rest)
+{
+	char local_name[256];
+
+	if (!names_match(cursor, "_shared", 7) || (cursor[7] != '\\' && cursor[7] != '/'))
+		return 0;
+	cursor += 8;
+	if (!(names_match(cursor, "singleplayer", 12) && (cursor[12] == '\\' || cursor[12] == '/')) &&
+		!(names_match(cursor, "multiplayer", 11) && (cursor[11] == '\\' || cursor[11] == '/')))
+		return 0;
+	if (steam_workshop_resource_path(cursor - 8, platform_data_root(), resolved, size))
+	{
+		*rest = cursor + strlen(cursor);
+		return 1;
+	}
+	if (!posix_find_entry_case_insensitive(platform_data_root(), "mods", local_name, sizeof(local_name)))
+		snprintf(local_name, sizeof(local_name), "mods");
+	if (strlen(platform_data_root()) + strlen(local_name) + 2 > size)
+		return 0;
+	snprintf(resolved, size, "%s/%s", platform_data_root(), local_name);
+	/* (the set's folder and the file, found as the rest of a path is) */
+	*rest = cursor;
+	return 1;
+}
+
 /* mcc_maps\<Workshop item id>\... where the data root has no such package folder: the item's maps folder in the
 player's Steam library (steam_workshop.h). The rest of the path after the id in rest */
 static int translate_workshop(const char *cursor, char *resolved, unsigned long size, const char **rest)
@@ -417,7 +448,7 @@ static int translate_workshop(const char *cursor, char *resolved, unsigned long 
 	if (!names_match(cursor, "mcc_maps", 8) || (cursor[8] != '\\' && cursor[8] != '/'))
 		return 0;
 	cursor += 9;
-	if (translate_custom_mcc(cursor, resolved, size, rest))
+	if (translate_custom_mcc(cursor, resolved, size, rest) || translate_shared_mcc(cursor, resolved, size, rest))
 		return 1;
 	/* MCC-owned resource discovery also serves the virtual fopen path. */
 	if (steam_workshop_resource_path(cursor, platform_data_root(), resolved, size))

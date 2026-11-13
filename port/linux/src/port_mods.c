@@ -375,7 +375,10 @@ static int mod_read(struct port_mod *mod, const char *root, const char *folder)
 	text = config_file_read(path, &size);
 	if (!text)
 	{
-		platform_log("mods: %s/%s has no mod.toml: it is not a mod", root, folder);
+		/* (singleplayer and multiplayer: MCC's shared bitmaps.map and
+		sounds.map, xbox_files.c's translate_shared_mcc, not mods) */
+		if (!names_equal(folder, "singleplayer") && !names_equal(folder, "multiplayer"))
+			platform_log("mods: %s/%s has no mod.toml: it is not a mod", root, folder);
 		return 0;
 	}
 	result = toml_parse(text, (int)size);

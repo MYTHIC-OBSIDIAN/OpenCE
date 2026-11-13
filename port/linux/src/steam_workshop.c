@@ -630,7 +630,9 @@ int steam_workshop_resource_path(const char *request, const char *data_root, cha
 		installed = "steamapps/common/Halo The Master Chief Collection/halo1/maps/custom_edition";
 	else
 		return 0;
-	snprintf(local, sizeof(local), "mcc_maps/%s/%s", relative, resource);
+	/* port: the shared sets' own files are the data root's mods folder's
+	(mods/singleplayer, mods/multiplayer: xbox_files.c's translate_shared_mcc) */
+	snprintf(local, sizeof(local), "mods/%s/%s", relative + 8, resource);
 	if (resolve(data_root, local, found, sizeof(found)))
 		return 0;
 	/* The same ordered Steam libraries as map discovery. An explicit local

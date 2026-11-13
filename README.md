@@ -171,15 +171,15 @@ Map-only packages are valid, but copying only the maps from a complete package l
 
 ### Shared MCC resources
 
-Some maps need MCC's standard resources. Copy these files once into your game data folder:
+Some maps need MCC's standard resources. Copy these files once into the `mods` folder next to `halo.exe`:
 
 | File in your MCC installation | Destination in OpenCE |
 | --- | --- |
-| `halo1/maps/bitmaps.map` | `mcc_maps/_shared/singleplayer/bitmaps.map` |
-| `halo1/maps/custom_edition/bitmaps.map` | `mcc_maps/_shared/multiplayer/bitmaps.map` |
-| `halo1/maps/custom_edition/sounds.map` | `mcc_maps/_shared/multiplayer/sounds.map` |
+| `halo1/maps/bitmaps.map` | `mods/singleplayer/bitmaps.map` |
+| `halo1/maps/custom_edition/bitmaps.map` | `mods/multiplayer/bitmaps.map` |
+| `halo1/maps/custom_edition/sounds.map` | `mods/multiplayer/sounds.map` |
 
-**Use MCC's files, not those from a standalone Custom Edition installation.** Steam discovery does not install these resources.
+**Use MCC's files, not those from a standalone Custom Edition installation.** Without them, OpenCE uses those of MCC's Steam installation when Steam discovery finds one; it copies nothing. The `singleplayer` and `multiplayer` folders are not mods: Settings' Mods list passes over them.
 
 Keep package-supplied resources inside their package folder; they take priority over shared resources. Self-contained maps need no shared files. OpenCE reports missing or incompatible resources when loading.
 
