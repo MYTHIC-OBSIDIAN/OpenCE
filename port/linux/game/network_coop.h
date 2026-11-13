@@ -45,6 +45,11 @@ enum
 /* whether this is a network co-op game (not its lobby, whose menu scene also
 has no game engine) */
 boolean network_coop_active(void);
+/* camera_scripting.c's scripted_camera_set: whether this camera point is a
+co-op level's first, set before its players have had their controls (once
+a level, TRUE once): a solo game's observer takes it at once, as its first
+command, and so starts the opening cutscene where it starts */
+boolean network_coop_opening_camera(void);
 /* Host: retain the current session roster when loading a checkpoint. */
 void network_coop_restore_players(void);
 /* game_state.c: remember the team only after a checkpoint write succeeds. */

@@ -117,6 +117,10 @@ void observer_up_from_forward(
 void observer_set_camera(
 	short local_player_index,
 	struct observer_command *command);
+/* port: the next command each observer is given is taken at once, as a
+level's first is (network_coop_opening_camera) */
+void observer_port_cut_to_next_command(
+	void);
 
 /* ---------- globals */
 

@@ -186,6 +186,9 @@ enum
 	MAXIMUM_QUEUED_EVENTS = 128,
 	/* each event is sent in this many ticks' messages */
 	EVENT_SENDS = 3,
+	/* how long the players must have had their controls, out of a
+	cutscene, before a level's opening is over (coop_opening_update) */
+	COOP_OPENING_CONTROL_TICKS = 2 * TICKS_PER_SECOND,
 	/* a client's events held for the presentation of their host tick
 	(client_pending_events): a few ticks' worth */
 	MAXIMUM_PENDING_EVENTS = 256,
@@ -539,6 +542,15 @@ static struct
 	word applied_number;
 	boolean applied_any;
 } coop_events;
+
+/* A level's opening: whether its first cutscene camera point has been set,
+and how long the players have had their controls (network_coop_opening_camera) */
+static struct
+{
+	boolean camera_set;
+	boolean control_given;
+	long control_ticks;
+} coop_opening;
 
 /* client: the events heard ahead of the presentation being played, each
 with the host tick it was sent on, applied as that tick's presentation is
@@ -2185,6 +2197,7 @@ void network_coop_new_game(
 	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
+	csmemset(&coop_opening, 0, sizeof(coop_opening));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -3417,6 +3430,28 @@ void network_coop_skip_done(
 }
 
 /* host, after each tick */
+/* host, each tick: whether the players have had their controls, out of any
+cutscene, for COOP_OPENING_CONTROL_TICKS: the level's opening is over */
+static void coop_opening_update(
+	void)
+{
+	if (coop_opening.control_given)
+		return;
+	if (player_input_enabled() && !cinematic_in_progress() && !*director_camera_scripted)
+		coop_opening.control_given = ++coop_opening.control_ticks >= COOP_OPENING_CONTROL_TICKS;
+	else
+		coop_opening.control_ticks = 0;
+}
+
+boolean network_coop_opening_camera(
+	void)
+{
+	if (!coop_host() || coop_opening.camera_set || coop_opening.control_given)
+		return FALSE;
+	coop_opening.camera_set = TRUE;
+	return TRUE;
+}
+
 void network_coop_host_tick(
 	void)
 {
@@ -3424,6 +3459,7 @@ void network_coop_host_tick(
 
 	if (!coop_game())
 		return;
+	coop_opening_update();
 	host_resend_update();
 	players_vitality_keep();
 	host_friendly_fire_update();

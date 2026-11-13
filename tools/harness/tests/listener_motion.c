@@ -47,6 +47,9 @@ static struct director *director_get(short player) { return &directors[player]; 
 static long player_control_get_unit_index(short player) { return 100 + player; }
 static void director_update(real dt) {}
 static void observer_update(real dt) {}
+/* (not a network co-op level's opening: camera_scripting.c's cut to its first camera) */
+static boolean network_coop_opening_camera(void) { return FALSE; }
+static void observer_port_cut_to_next_command(void) {}
 #define _camera_script_mode_point 1
 static struct
 {

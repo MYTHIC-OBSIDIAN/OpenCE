@@ -497,6 +497,21 @@ void observer_up_from_forward(
 	return;
 }
 
+void observer_port_cut_to_next_command(
+	void)
+{
+	short local_player_index;
+
+	for (local_player_index = 0;
+		local_player_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS;
+		local_player_index++)
+	{
+		observer_get(local_player_index)->first_command = FALSE;
+	}
+
+	return;
+}
+
 void observer_set_camera(
 	short local_player_index,
 	struct observer_command *command)

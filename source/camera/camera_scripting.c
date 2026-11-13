@@ -40,6 +40,8 @@ symbols in this file:
 
 #include "camera_scripting.h"
 #include "director.h"
+#include "observer.h"
+#include "network_coop.h" /* port: port/linux/game/network_coop.c */
 
 #include "cseries/cseries.h"
 #include "cseries/errors.h"
@@ -302,6 +304,13 @@ void scripted_camera_set(
 		camera_script_globals.field_of_view = 1.22173047f;
 	camera_script_globals.relative_object_index = relative_object_index;
 	camera_script_globals.timer = (real)camera_time;
+	/* port: a level's first cutscene camera, set before its players have
+	had their controls, is where the camera starts, as in a solo game
+	(whose observer takes its first command at once): not the end of a
+	move from wherever a network co-op game's frames before it left the
+	camera (the player's eyes) */
+	if (network_coop_opening_camera())
+		observer_port_cut_to_next_command();
 
 	director_update(0.f);
 	observer_update(0.0001f);

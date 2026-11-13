@@ -68,6 +68,7 @@ static void game_state_note_event(char const *note){(void)note;}
 /* The unrelated state reset by the actual new-game lifecycle entry point. */
 static struct {long camera_object_index,first_person_unit_index;struct {long object_index;} view_latest,view_previous;} coop_presentation;
 static struct {int count;} client_pending_events;
+static struct {boolean camera_set,control_given;long control_ticks;} coop_opening;
 static int coop_events,host_devices,client_devices,client_names_differing[1];
 static int host_sent_transforms[1],host_sent_looks[1],host_sent_devices[1],host_player_structure_bsps[1],host_friendly_fire[1];
 static int host_sent_screen_effect,host_resend,players_vitality,host_attachment_count,host_looping_sound_count;

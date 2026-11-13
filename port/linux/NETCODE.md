@@ -98,6 +98,12 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   own. The cutscene's events (lines, titles, animations) are held for the
   presentation of the host tick that sent them, and so start with its
   camera and fades, as on the host, not two ticks before them.
+  A level's first cutscene camera, set before its players have had their
+  controls (an opening cutscene: Halo's, The Maw's), is where the host's
+  camera starts, as in a solo game, whose observer takes its first command
+  at once: not the end of a move from the player's eyes, which a co-op
+  game's frames before it had given the observer
+  (`network_coop_opening_camera`, `observer_port_cut_to_next_command`).
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.

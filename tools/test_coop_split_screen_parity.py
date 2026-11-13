@@ -93,3 +93,22 @@ def test_events_start_on_their_presentations_tick():
     assert "client_play_pending_events(TRUE);" in function(coop, "network_coop_client_tick")
     distributed = source("port/linux/game/network_distributed.c")
     assert "network_coop_handle_events(entries, header.count, header.game_time);" in distributed
+
+
+def test_opening_cutscene_starts_where_solos_does():
+    # a level's first cutscene camera, before the players have had their
+    # controls, is taken at once (solo's observer takes its first command so),
+    # not the end of a move from the player's eyes
+    scripting = source("source/camera/camera_scripting.c")
+    camera_set = function(scripting, "scripted_camera_set")
+    assert "if (network_coop_opening_camera())\n\t\tobserver_port_cut_to_next_command();" in camera_set
+    assert camera_set.index("network_coop_opening_camera()") < camera_set.index("observer_update(0.0001f);")
+    observer = source("source/camera/observer.c")
+    assert "observer_get(local_player_index)->first_command = FALSE;" in function(observer, "observer_port_cut_to_next_command")
+    coop = source("port/linux/game/network_coop.c")
+    opening = function(coop, "network_coop_opening_camera")
+    assert "coop_opening.camera_set || coop_opening.control_given" in opening
+    update = function(coop, "coop_opening_update")
+    assert "player_input_enabled() && !cinematic_in_progress() && !*director_camera_scripted" in update
+    assert "coop_opening_update();" in function(coop, "network_coop_host_tick")
+    assert "csmemset(&coop_opening, 0, sizeof(coop_opening));" in function(coop, "network_coop_new_game")
