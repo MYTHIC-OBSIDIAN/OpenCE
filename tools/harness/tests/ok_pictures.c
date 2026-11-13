@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 		intro = "xbox"; picture.animation.current_frame_index = 7; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture replaced");
 		intro = "pc"; gametype_ok_picture(&list);
-		CHECK(picture.animation.current_frame_index == 10, "Halo PC's OK picture not shown");
+		CHECK(picture.animation.current_frame_index == 11, "Halo PC's OK picture not shown");
 		intro = "xbox"; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture not back");
 		picture.animation.current_frame_index = 6; gametype_ok_picture(&list);
@@ -85,10 +85,17 @@ int main(int argc, char **argv)
 		CHECK(picture.animation.current_frame_index == 9, "the Xbox's GAME OPTIONS picture replaced");
 		intro = "pc"; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 1, "Halo PC's GAME OPTIONS picture not back");
+		/* (CHANGE NAME the same) */
+		picture.animation.current_frame_index = 0; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 0, "Halo PC's CHANGE NAME picture replaced");
+		intro = "xbox"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 10, "the Xbox's CHANGE NAME picture not shown");
+		intro = "pc"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 0, "Halo PC's CHANGE NAME picture not back");
 		/* (the rows with one picture) */
 		for (intro_row = 0; intro_row < 7; intro_row++)
 		{
-			if (intro_row == 1 || intro_row == 3)
+			if (intro_row <= 1 || intro_row == 3)
 				continue;
 			picture.animation.current_frame_index = intro_row;
 			intro = "xbox"; gametype_ok_picture(&list);

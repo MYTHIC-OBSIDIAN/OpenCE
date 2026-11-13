@@ -33,8 +33,8 @@ the same picture, or for the profile settings the Xbox's picture for the same th
 These frames are added after a bitmap's, drawn from the Xbox map's (the profile settings'
 picture of Gamepad Setup: the Xbox's Controller Setup's pictures of the button settings, scaled;
 the settings menu's OK with display.intro "xbox": the gametype settings' sixth; and Edit
-Multiplayer Gametype's ITEM OPTIONS and GAME OPTIONS with display.intro "xbox": the gametype
-settings' fourth and second).
+Multiplayer Gametype's ITEM OPTIONS, GAME OPTIONS and CHANGE NAME with display.intro "xbox": the
+gametype settings' fourth, second and first).
 
 | Our bitmap | The Xbox's frame |
 | --- | --- |
@@ -46,6 +46,7 @@ settings' fourth and second).
 | `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 5 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 3 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 1 |
+| `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 0 |
 
 These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's
 CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK; the profile

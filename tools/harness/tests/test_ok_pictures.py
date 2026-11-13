@@ -34,8 +34,9 @@ def test_case(case):
     # (Halo PC's picture whatever PLATFORM is; the Xbox's)
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][0];'), 'gametype'),
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][1];'), 'gametype'),
-    # (GAME OPTIONS' pair left out)
+    # (GAME OPTIONS' or CHANGE NAME's pair left out)
     (('\t\t{ GAMETYPE_GAME_FRAME, GAMETYPE_XBOX_GAME_FRAME },\n', ''), 'gametype'),
+    (('\t\t{ GAMETYPE_NAME_FRAME, GAMETYPE_XBOX_NAME_FRAME },\n', ''), 'gametype'),
 ])
 def test_negative_control(fault, case):
     status, output = run(build('ok_pictures', generated(fault)), case)
