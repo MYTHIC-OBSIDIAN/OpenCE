@@ -1147,6 +1147,8 @@ WIDGET_PATCHES = {
         "move": {f"{MT}/multiplayer_type_create_item": (-32, 177),
                  f"{MT}/multiplayer_type_create_internet_item": (None, 210),
                  f"{MT}/multiplayer_type_create_lan_item": (None, 243)},
+        # (its picture with PLATFORM "xbox": BITMAP_FRAMES)
+        "inputs": ["port multiplayer picture"],
     },
     # (the Map screen's and New Game's lists: SINGLEPLAYER or MULTIPLAYER
     # maps, the first row's chooser's (_map_kind); B on the Map screen goes
@@ -1277,6 +1279,12 @@ BITMAP_FRAMES = {
                               # (CONTROLS SETUP's with PLATFORM "xbox": the
                               # Xbox's profile settings' second; frame 17)
                               (f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options", 1, None, None, 0, 0)],
+    # (the Multiplayer menu's INTERNET and LAN items' with PLATFORM "xbox":
+    # the Xbox's second and third; frames 6 and 7: menu_functions.c's
+    # multiplayer_picture)
+    f"{MT}/mp_options": [
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 1, None, None, 0, 0),
+        ("ui\\shell\\main_menu\\multiplayer_type_select\\mp_options", 2, None, None, 0, 0)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
          3, None, None, 0, 0),
