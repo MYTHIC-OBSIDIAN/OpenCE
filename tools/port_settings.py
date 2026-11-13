@@ -333,9 +333,10 @@ SCREENS["customisation"] = {
          "The energy shield's flare on your first-person\narms too, as on your body.", None),
         ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
          "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
-        # (attract_mode.c's attract_mode_get_localized_movie_path)
-        ("INTRO:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
-         "Choose what intro video plays on launch.",
+        # (attract_mode.c's attract_mode_get_localized_movie_path; and the
+        # OK pictures: menu_functions.c's ok_picture_xbox)
+        ("PLATFORM:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
+         "Choose between Xbox and PC icons and intro.",
          None),
         # (the main menu's CREDITS: menu_functions.c's credits_play)
         ("CREDITS:", "display.credits", [("XBOX", "original"), ("PC", "pc")],

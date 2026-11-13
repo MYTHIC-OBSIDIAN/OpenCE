@@ -10,8 +10,9 @@
 > movie in the game (`bink\credits.bik` beside `halo.exe`, in the data root),
 > or Halo PC's credits scrolling over the main menu as Halo PC does (yellow
 > headers, blue names, round and round until A, B or Escape); after The Maw
-> the Xbox's movie always plays. INTRO there (XBOX or PC) picks the movie before the main menu:
-> `bink\intro_xbox.bik` (else the Xbox's `intro.bik`) or `bink\intro_pc.bik`.
+> the Xbox's movie always plays. PLATFORM there (XBOX or PC) picks the movie before the main menu:
+> `bink\intro_xbox.bik` (else the Xbox's `intro.bik`) or `bink\intro_pc.bik`, and the
+> settings menus' OK pictures.
 > Every mod in the `mods` folder is played. The Xbox's videos (the disc's `bink` folder, extracted
 > with the maps) play in the game as on the Xbox: the opening titles before
 > the main menu, the credits after The Maw (`port/linux/src/bink_play.c`,
