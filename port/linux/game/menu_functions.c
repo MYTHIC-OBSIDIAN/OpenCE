@@ -2262,10 +2262,13 @@ the button settings; then OK's, the Xbox's (its gametype settings' sixth) */
 #define PROFILE_XBOX_OK_FRAME (PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES)
 
 /* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
-its button bar's (OK's), the Xbox's; then Halo PC's (the profile menu's
-PROFILE_OK_FRAME's: port_settings.py's PNG_FRAMES) */
+its button bar's (OK's), the Xbox's; then the Xbox's ITEM OPTIONS picture
+(port_settings.py's BITMAP_FRAMES), then Halo PC's OK (the profile menu's
+PROFILE_OK_FRAME's: PNG_FRAMES) */
+#define GAMETYPE_ITEMS_FRAME 3
 #define GAMETYPE_OK_FRAME 7
-#define GAMETYPE_PC_OK_FRAME 8
+#define GAMETYPE_XBOX_ITEMS_FRAME 8
+#define GAMETYPE_PC_OK_FRAME 9
 
 /* the two OK pictures, the settings menu's and Edit Multiplayer Gametype's,
 are one: the Xbox's with the Xbox's intro (display.intro "xbox"), else
@@ -2306,15 +2309,28 @@ static void profile_ok_picture(struct widget_instance *list)
 }
 
 /* "port gametype ok picture" (the list's, after the Xbox's description
-update, which shows the button bar's frame on it): Halo PC's OK picture in
-the Xbox's place but with the Xbox's intro */
+update, which shows the row's or the button bar's frame on it): with
+PLATFORM "pc", Halo PC's OK picture in the Xbox's place; with "xbox", the
+Xbox's ITEM OPTIONS picture in Halo PC's */
 static void gametype_ok_picture(struct widget_instance *list)
 {
 	struct widget_instance *picture = named(list->parameters.list.extended_description,
 		"playlist_edit_ext_desc_pic", 0);
+	boolean xbox_platform = ok_picture_xbox();
+	short frame;
 
-	if (picture && picture->animation.current_frame_index == GAMETYPE_OK_FRAME && !ok_picture_xbox())
+	if (!picture)
+		return;
+	frame = picture->animation.current_frame_index;
+	if (frame == GAMETYPE_OK_FRAME && !xbox_platform)
 		picture->animation.current_frame_index = GAMETYPE_PC_OK_FRAME;
+	else if (frame == GAMETYPE_ITEMS_FRAME && xbox_platform)
+		picture->animation.current_frame_index = GAMETYPE_XBOX_ITEMS_FRAME;
+	/* (PLATFORM changed while the picture is the other's) */
+	else if (frame == GAMETYPE_PC_OK_FRAME && xbox_platform)
+		picture->animation.current_frame_index = GAMETYPE_OK_FRAME;
+	else if (frame == GAMETYPE_XBOX_ITEMS_FRAME && !xbox_platform)
+		picture->animation.current_frame_index = GAMETYPE_ITEMS_FRAME;
 }
 
 /* "port gamepad layout preview" (the picture's own): on Gamepad Setup's

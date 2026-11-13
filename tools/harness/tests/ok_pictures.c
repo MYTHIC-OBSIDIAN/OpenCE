@@ -61,9 +61,19 @@ int main(int argc, char **argv)
 		intro = "xbox"; picture.animation.current_frame_index = 7; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture replaced");
 		intro = "pc"; gametype_ok_picture(&list);
-		CHECK(picture.animation.current_frame_index == 8, "Halo PC's OK picture not shown");
+		CHECK(picture.animation.current_frame_index == 9, "Halo PC's OK picture not shown");
+		intro = "xbox"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 7, "the Xbox's OK picture not back");
 		picture.animation.current_frame_index = 6; gametype_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 6, "a row's picture changed");
+		/* (ITEM OPTIONS: the Xbox's picture with PLATFORM "xbox", Halo PC's
+		else) */
+		picture.animation.current_frame_index = 3; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 8, "the Xbox's ITEM OPTIONS picture not shown");
+		intro = "pc"; gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 3, "Halo PC's ITEM OPTIONS picture not back");
+		gametype_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 3, "Halo PC's ITEM OPTIONS picture replaced");
 	} else return 2;
 	return 0;
 }
