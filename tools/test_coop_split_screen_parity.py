@@ -112,3 +112,36 @@ def test_opening_cutscene_starts_where_solos_does():
     assert "player_input_enabled() && !cinematic_in_progress() && !*director_camera_scripted" in update
     assert "coop_opening_update();" in function(coop, "network_coop_host_tick")
     assert "csmemset(&coop_opening, 0, sizeof(coop_opening));" in function(coop, "network_coop_new_game")
+
+
+def test_lifepod_camera_lock_shows_the_hosts_view():
+    coop = source("port/linux/game/network_coop.c")
+    host = function(coop, "host_presentation")
+    assert "player_control_port_camera_control_enabled() ? 0 : PRESENTATION_CAMERA_LOCKED_BIT" in host
+    assert "(presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) != 0" in function(coop, "client_host_view_wanted")
+    apply = function(coop, "client_presentation_apply")
+    assert "scripted_player_control_set_camera_control((presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) == 0);" in apply
+    # the respawn failure's three bits, below the lock's
+    assert "PRESENTATION_RESPAWN_FAILURE_MASK" in apply
+    assert "#define PRESENTATION_CAMERA_LOCKED_BIT 0x80" in coop
+    assert "#define PRESENTATION_RESPAWN_FAILURE_MASK 0x07" in coop
+
+
+def test_cutscene_copies_follow_every_host_move():
+    objects = source("port/linux/game/network_objects.c")
+    follows = function(objects, "distributed_object_follows_host")
+    assert "network_coop_client_cutscene()" in follows
+    states = function(objects, "network_objects_handle_states")
+    assert "if (distributed_object_follows_host(state->object_index) && !own_vehicle)\n\t\t{\n\t\t\ttolerance = 0.0f;" in states
+
+
+def test_unit_hatches_are_resent():
+    coop = source("port/linux/game/network_coop.c")
+    looks = function(coop, "host_send_object_looks")
+    assert "host_sent_looks[absolute_index].hatches != hatches" in looks
+    assert "look->pad = hatches;" in looks
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "look->pad != coop_unit_hatches_get(object_index)" in client
+    assert "unit_close(object_index);" in client
+    note = function(coop, "network_coop_note_unit_open")
+    assert "coop_unit_hatches_set(unit_index, open ? UNIT_HATCHES_OPEN : UNIT_HATCHES_CLOSED);" in note

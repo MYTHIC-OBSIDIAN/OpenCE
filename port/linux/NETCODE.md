@@ -104,6 +104,15 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   at once: not the end of a move from the player's eyes, which a co-op
   game's frames before it had given the observer
   (`network_coop_opening_camera`, `observer_port_cut_to_next_command`).
+  The players' camera taken by the scripts (`player_camera_control`:
+  Halo's lifepod crash) counts as a cutscene too, carried in the top bit of
+  the presentation's `skip_voters` (the respawn failure keeps the three
+  below it), and a client takes it on its own players. Through a cutscene
+  a client's copies follow every move the host sends, however small (a
+  cutscene's biped bobbed within the tolerance). A unit's hatches as the
+  scripts last set them (`unit_open`, `unit_close`: The Maw's Banshee
+  canopy) ride in the object looks' padding and are sent again with them,
+  for a client that had no copy when the event came.
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.

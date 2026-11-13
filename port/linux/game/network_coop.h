@@ -50,6 +50,10 @@ co-op level's first, set before its players have had their controls (once
 a level, TRUE once): a solo game's observer takes it at once, as its first
 command, and so starts the opening cutscene where it starts */
 boolean network_coop_opening_camera(void);
+/* network_objects.c: whether this client is in the host's cutscene, drawing
+its view (from the cutscene's start until the players have their controls
+back): its copies then follow the host's every move */
+boolean network_coop_client_cutscene(void);
 /* Host: retain the current session roster when loading a checkpoint. */
 void network_coop_restore_players(void);
 /* game_state.c: remember the team only after a checkpoint write succeeds. */

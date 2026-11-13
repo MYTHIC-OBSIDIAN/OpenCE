@@ -152,9 +152,12 @@ may be, and still be that unit's own first person (client_host_eyes_unit) */
 moving, vehicle (a change there is one here) */
 #define NUMBER_OF_RESPAWN_FAILURES 5
 /* where distributed_coop_presentation.skip_voters carries the respawn's
-failure, and its count */
+failure, its count, and (its top bit) the players' camera taken by the
+scripts (player_camera_control) */
 #define PRESENTATION_RESPAWN_FAILURE_SHIFT 4
+#define PRESENTATION_RESPAWN_FAILURE_MASK 0x07
 #define PRESENTATION_SKIP_VOTERS_MASK 0x0F
+#define PRESENTATION_CAMERA_LOCKED_BIT 0x80
 
 /* how often the host sends again the state a client that joined since, or
 missed a message, would lack (host_resend) */
@@ -457,6 +460,11 @@ helmet off, a ship scaled) and so does damage. */
 struct distributed_coop_object_look
 {
 	short name_index;
+	/* (port) a unit's hatches as the scripts last set them (unit_open,
+	unit_close: a Banshee's canopy, a dropship's doors): UNIT_HATCHES_OPEN or
+	UNIT_HATCHES_CLOSED; 0, from a host without it (whose padding this was,
+	sent as 0), or for one the scripts never set: none. Its name is the
+	padding's still, the format older builds read (tools/network_format.py) */
 	short pad;
 	long object_index;
 	long definition_index;
@@ -465,6 +473,14 @@ struct distributed_coop_object_look
 };
 
 #define MAXIMUM_OBJECT_LOOKS_PER_MESSAGE 64
+
+/* distributed_coop_object_look.pad: a unit's hatches */
+enum
+{
+	UNIT_HATCHES_NONE = 0,
+	UNIT_HATCHES_OPEN,
+	UNIT_HATCHES_CLOSED,
+};
 
 struct distributed_coop_object_looks_message
 {
@@ -1228,7 +1244,44 @@ static struct
 	boolean changed;
 	byte region_permutations[MAXIMUM_REGIONS_PER_OBJECT];
 	real scale;
+	short hatches;
 } host_sent_looks[MAXIMUM_OBJECTS_PER_MAP];
+
+/* host: each unit's hatches as its scripts last set them; client: as last
+put on its copy (by its absolute index: the object it is of, and
+UNIT_HATCHES_). The event of unit_open or unit_close reached a copy only
+if it had it then: a level's opening (The Maw's Banshee) set them before a
+client had the host's objects, and nothing set them again. */
+static struct
+{
+	long object_index;
+	short hatches;
+} coop_unit_hatches[MAXIMUM_OBJECTS_PER_MAP];
+
+static short coop_unit_hatches_get(
+	long object_index)
+{
+	short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+
+	if (object_index == NONE || absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP ||
+		coop_unit_hatches[absolute_index].object_index != object_index)
+	{
+		return UNIT_HATCHES_NONE;
+	}
+	return coop_unit_hatches[absolute_index].hatches;
+}
+
+static void coop_unit_hatches_set(
+	long object_index,
+	short hatches)
+{
+	short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+
+	if (object_index == NONE || absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
+		return;
+	coop_unit_hatches[absolute_index].object_index = object_index;
+	coop_unit_hatches[absolute_index].hatches = hatches;
+}
 
 /* host, each tick: the objects whose looks changed (and, every
 OBJECT_REFRESH_TICKS, all whose looks ever have) */
@@ -1245,32 +1298,38 @@ static void host_send_object_looks(
 	{
 		short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.index);
 		struct distributed_coop_object_look *look;
+		short hatches = coop_unit_hatches_get(iterator.index);
 		boolean changing;
 
 		if (absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
 			continue;
 		if (host_sent_looks[absolute_index].object_index != iterator.index)
 		{
-			/* an object seen for the first time looks the same on every machine */
+			/* an object seen for the first time looks the same on every machine
+			(but for hatches the scripts set as they made it) */
 			host_sent_looks[absolute_index].object_index = iterator.index;
 			host_sent_looks[absolute_index].changed = FALSE;
 			host_sent_looks[absolute_index].scale = object->object.scale;
+			host_sent_looks[absolute_index].hatches = UNIT_HATCHES_NONE;
 			csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
 				sizeof(object->object.region_permutations));
-			continue;
+			if (hatches == UNIT_HATCHES_NONE)
+				continue;
 		}
 		changing = host_sent_looks[absolute_index].scale != object->object.scale ||
+			host_sent_looks[absolute_index].hatches != hatches ||
 			csmemcmp(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
 				sizeof(object->object.region_permutations));
 		if (!changing && !(host_resend.refresh && host_sent_looks[absolute_index].changed))
 			continue;
 		host_sent_looks[absolute_index].changed = TRUE;
 		host_sent_looks[absolute_index].scale = object->object.scale;
+		host_sent_looks[absolute_index].hatches = hatches;
 		csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
 			sizeof(object->object.region_permutations));
 		look = &message.looks[count++];
 		look->name_index = object->object.name_index;
-		look->pad = 0;
+		look->pad = hatches;
 		look->object_index = iterator.index;
 		look->definition_index = object->definition_index;
 		csmemcpy(look->region_permutations, object->object.region_permutations, sizeof(look->region_permutations));
@@ -1601,7 +1660,8 @@ static void host_presentation(
 	SET_FLAG(presentation->flags, _presentation_skippable_bit, skip_vote.offered);
 	presentation->skip_votes = (byte)MIN(skip_vote.votes, 255);
 	presentation->skip_voters = (byte)(MIN(skip_vote.voters, PRESENTATION_SKIP_VOTERS_MASK) |
-		(PIN(players_get_respawn_failure(), 0, NUMBER_OF_RESPAWN_FAILURES - 1) << PRESENTATION_RESPAWN_FAILURE_SHIFT));
+		(PIN(players_get_respawn_failure(), 0, NUMBER_OF_RESPAWN_FAILURES - 1) << PRESENTATION_RESPAWN_FAILURE_SHIFT) |
+		(player_control_port_camera_control_enabled() ? 0 : PRESENTATION_CAMERA_LOCKED_BIT));
 
 	SET_FLAG(presentation->flags, _presentation_show_hud_bit, hud_scripted_globals->show_hud);
 	SET_FLAG(presentation->flags, _presentation_show_help_text_bit, hud_scripted_globals->show_hud_help_text);
@@ -2198,6 +2258,7 @@ void network_coop_new_game(
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
 	csmemset(&coop_opening, 0, sizeof(coop_opening));
+	csmemset(coop_unit_hatches, NONE, sizeof(coop_unit_hatches));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -2972,7 +3033,13 @@ void network_coop_note_unit_open(
 	long unit_index,
 	boolean open)
 {
-	struct distributed_coop_event *event = event_new(_coop_event_unit_open);
+	struct distributed_coop_event *event;
+
+	/* (the host's, for its clients' copies; a client's, as put on its own:
+	both by unit_open and unit_close) */
+	if (network_coop_active())
+		coop_unit_hatches_set(unit_index, open ? UNIT_HATCHES_OPEN : UNIT_HATCHES_CLOSED);
+	event = event_new(_coop_event_unit_open);
 
 	if (!event)
 		return;
@@ -3381,6 +3448,7 @@ void network_coop_reset_recovery(void)
 	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
+	csmemset(coop_unit_hatches, NONE, sizeof(coop_unit_hatches));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
 	csmemset(&host_resend, 0, sizeof(host_resend));
@@ -3443,6 +3511,12 @@ static void coop_opening_update(
 		coop_opening.control_ticks = 0;
 }
 
+boolean network_coop_client_cutscene(
+	void)
+{
+	return coop_client() && (coop_presentation.view_active || coop_presentation.cinematic_started);
+}
+
 boolean network_coop_opening_camera(
 	void)
 {
@@ -3498,6 +3572,7 @@ void network_coop_client_tick(
 		client_cinematic_end();
 		client_host_camera_set(FALSE);
 		player_input_enable(TRUE);
+		scripted_player_control_set_camera_control(TRUE);
 	}
 	/* (its skip key asks the host by a pause request, below: no vote) */
 	skip_vote.voted = FALSE;
@@ -3671,6 +3746,17 @@ void network_coop_handle_object_looks(
 			look->scale != object->object.scale)
 		{
 			objects_scripting_set_scale(object_index, look->scale, 0);
+		}
+		/* (its hatches, once as they change here: each unit_open or
+		unit_close plays the opening or closing again) */
+		if ((look->pad == UNIT_HATCHES_OPEN || look->pad == UNIT_HATCHES_CLOSED) &&
+			look->pad != coop_unit_hatches_get(object_index) &&
+			object_try_and_get_and_verify_type(object_index, _object_mask_unit))
+		{
+			if (look->pad == UNIT_HATCHES_OPEN)
+				unit_open(object_index);
+			else
+				unit_close(object_index);
 		}
 	}
 }
@@ -3925,7 +4011,8 @@ static void client_view_record(
 
 /* client: whether it draws the host's view, exactly as the host has it: from
 the moment the host's cutscene begins (a cinematic, the scripts' camera, or
-the players' controls taken) until the players have their controls again at
+the players' controls or their camera taken: Halo's lifepod) until the
+players have their controls again at
 its end. Split screen co-op drew one view through a cinematic and gave each
 player their own as it ended, before the controls came back; a client of a
 network game sees all of it as the host does. */
@@ -3933,7 +4020,7 @@ static boolean client_host_view_wanted(
 	struct distributed_coop_presentation const *presentation)
 {
 	return TEST_FLAG(presentation->flags, _presentation_cinematic_bit) || presentation->camera_scripted ||
-		presentation->input_disabled;
+		presentation->input_disabled || (presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) != 0;
 }
 
 /* client: the unit of another machine's player whose eyes the host's view
@@ -3972,10 +4059,14 @@ static void client_presentation_apply(
 	boolean host_view = client_host_view_wanted(presentation);
 
 	player_input_enable(!presentation->input_disabled);
+	/* (and the camera, which the scripts take from the players in the
+	lifepod's crash: player_camera_control) */
+	scripted_player_control_set_camera_control((presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) == 0);
 	/* the respawn's failure, which a dead player's HUD names (a value no
 	host sends is none: hud.c has no message for it) */
 	{
-		short respawn_failure = (short)(presentation->skip_voters >> PRESENTATION_RESPAWN_FAILURE_SHIFT);
+		short respawn_failure = (short)((presentation->skip_voters >> PRESENTATION_RESPAWN_FAILURE_SHIFT) &
+			PRESENTATION_RESPAWN_FAILURE_MASK);
 
 		players_port_set_respawn_failure(respawn_failure < NUMBER_OF_RESPAWN_FAILURES ? respawn_failure : 0);
 	}

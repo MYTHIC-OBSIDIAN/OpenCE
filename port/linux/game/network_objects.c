@@ -811,11 +811,13 @@ static boolean distributed_unit_driven_here(
 
 /* Whether a client puts its copy exactly where the host has it, rather than
 closing on it: an unsteered vehicle, and anything in a co-op cutscene
-(where it keeps up with the host's camera). */
+(where it keeps up with the host's camera), from its start until the
+players have their controls back (network_coop_client_cutscene). */
 static boolean distributed_object_follows_host(
 	long object_index)
 {
-	return (network_coop_active() && cinematic_in_progress()) || distributed_vehicle_unsteered(object_index);
+	return (network_coop_active() && (cinematic_in_progress() || network_coop_client_cutscene())) ||
+		distributed_vehicle_unsteered(object_index);
 }
 
 /* whether a write of a vehicle copy is a host state correction a client makes of a copy it does not follow
@@ -3015,6 +3017,14 @@ void network_objects_handle_states(
 				blend_distance = 0.0f;
 				own_vehicle = TRUE;
 			}
+		}
+		/* (in a co-op cutscene every move the host sends, however small: within
+		the tolerance this machine's own physics and animation moved it between
+		the host's states, and a cutscene's biped bobbed) */
+		if (distributed_object_follows_host(state->object_index) && !own_vehicle)
+		{
+			tolerance = 0.0f;
+			angle_tolerance = 2.0f;
 		}
 		/* (at rest as the host has it, however close: a copy left at rest
 		while the host's falls hangs there; but not one this machine drives,

@@ -257,6 +257,10 @@ void player_control_dispose(
 	void);
 boolean scripted_player_control_set_camera_control(
 	boolean camera_control);
+/* port: whether the scripts leave the players their camera
+(player_camera_control): network_coop.c sends it to the clients */
+boolean player_control_port_camera_control_enabled(
+	void);
 void player_control_inhibit_buttons(
 	short local_player_index,
 	word action_flags,

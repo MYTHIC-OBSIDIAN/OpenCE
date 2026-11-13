@@ -468,6 +468,12 @@ static boolean player_control_camera_control_is_active(
 		!game_time_get_paused());
 }
 
+boolean player_control_port_camera_control_enabled(
+	void)
+{
+	return !TEST_FLAG(player_control_globals->flags, _player_control_camera_control_disabled_bit);
+}
+
 boolean scripted_player_control_set_camera_control(
 	boolean camera_control)
 {
