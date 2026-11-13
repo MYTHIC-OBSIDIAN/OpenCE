@@ -37,6 +37,7 @@ which tools/embed_assets.py embeds the files from, is written too.
 
 import argparse
 import json
+import re
 import shutil
 import struct
 import sys
@@ -450,11 +451,12 @@ class Art:
             lines.append(f"\t\t<frame{attributes([('map', source), ('index', index), ('width', width), ('height', height), ('x', x or None), ('y', y or None)])}/>")
         # (and another of our bitmaps' PNGs: port_settings.PNG_FRAMES)
         for png, width, height in port_settings.PNG_FRAMES.get(our_name(tag), []):
-            # (one of this bitmap's PC frames none of its frames is: drawn
-            # as they are)
-            own = f"ce/{relative}__"
-            if png.startswith(own) and png not in self.pngs and png[len(own):-4].isdigit():
-                self.draw(relative, int(png[len(own):-4]), len(data), width, height, MENUS / png,
+            # (a PC frame none of the bitmaps' frames is a PNG of, this
+            # bitmap's or another's: drawn as they are, the placeholder
+            # without a redraw)
+            frame_png = re.fullmatch(r"ce/(.+)__(\d+)\.png", png)
+            if frame_png and png not in self.pngs:
+                self.draw(frame_png.group(1), int(frame_png.group(2)), 2, width, height, MENUS / png,
                           self.shown.get(tag, []))
                 self.pngs.append(png)
             lines.append(f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>")

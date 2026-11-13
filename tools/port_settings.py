@@ -1296,6 +1296,11 @@ BITMAP_FRAMES = {
 # frames added after those, one of another of our bitmaps' PNGs: its PNG,
 # width and height
 PNG_FRAMES = {
+    # (the Multiplayer menu's CO-OP CAMPAIGN with PLATFORM "pc": Halo PC's
+    # profile settings' frame 7; frame 8: menu_functions.c's
+    # MULTIPLAYER_PC_COOP_FRAME)
+    f"{MT}/mp_options": [
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png", 512, 256)],
     # (GAMEPADS' with PLATFORM "pc", whatever the button settings: Halo PC's
     # frame 2, drawn as the placeholder until the player's is in the menus
     # folder; frame 18: menu_functions.c's PROFILE_PC_GAMEPAD_FRAME)

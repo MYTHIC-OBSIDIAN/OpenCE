@@ -159,6 +159,7 @@ int main(int argc, char **argv)
 		/* (the Multiplayer menu's: JOIN GAME's and CREATE GAME's INTERNET
 		and LAN the Xbox's with PLATFORM "xbox") */
 		static const short xbox_frames[] = { 6, 7, 6, 7, 4, 5 };
+		static const short pc_frames[] = { 0, 1, 2, 3, 8, 5 };
 		short item;
 		picture.name = "multiplayer_options_pic";
 		for (item = 0; item < 6; item++)
@@ -169,12 +170,16 @@ int main(int argc, char **argv)
 			multiplayer_picture(&list);
 			CHECK(picture.animation.current_frame_index == xbox_frames[item], "xbox: item %d's picture not kept", item);
 			intro = "pc"; picture.animation.current_frame_index = item; multiplayer_picture(&list);
-			CHECK(picture.animation.current_frame_index == item, "pc: item %d shows frame %d", item,
+			CHECK(picture.animation.current_frame_index == pc_frames[item], "pc: item %d shows frame %d", item,
 				picture.animation.current_frame_index);
+			multiplayer_picture(&list);
+			CHECK(picture.animation.current_frame_index == pc_frames[item], "pc: item %d's picture not kept", item);
 		}
 		/* (PLATFORM changed on the button bar: Halo PC's back) */
 		intro = "pc"; picture.animation.current_frame_index = 7; multiplayer_picture(&list);
 		CHECK(picture.animation.current_frame_index == 1, "Halo PC's LAN picture not back");
+		intro = "xbox"; picture.animation.current_frame_index = 8; multiplayer_picture(&list);
+		CHECK(picture.animation.current_frame_index == 4, "the Xbox's CO-OP picture not back");
 	} else return 2;
 	return 0;
 }

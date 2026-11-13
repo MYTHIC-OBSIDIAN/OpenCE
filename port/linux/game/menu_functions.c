@@ -2347,13 +2347,18 @@ GAMETYPES' (the Xbox's); then the Xbox's INTERNET and LAN pictures
 #define MULTIPLAYER_JOIN_LAN_FRAME 1
 #define MULTIPLAYER_CREATE_INTERNET_FRAME 2
 #define MULTIPLAYER_CREATE_LAN_FRAME 3
+#define MULTIPLAYER_COOP_FRAME 4
 #define MULTIPLAYER_XBOX_INTERNET_FRAME 6
 #define MULTIPLAYER_XBOX_LAN_FRAME 7
+/* (CO-OP CAMPAIGN's with PLATFORM "pc": Halo PC's profile settings' frame
+7, port_settings.py's PNG_FRAMES) */
+#define MULTIPLAYER_PC_COOP_FRAME 8
 
 /* "port multiplayer picture" (the list's, after the Xbox's description
 update, which shows the item's frame): with PLATFORM "xbox", JOIN GAME's
 and CREATE GAME's INTERNET and LAN pictures the Xbox's; Halo PC's with
-"pc" (JOIN GAME's back when PLATFORM changes on the button bar) */
+"pc" (JOIN GAME's back when PLATFORM changes on the button bar), and
+CO-OP CAMPAIGN's Halo PC's (the Xbox's with "xbox") */
 static void multiplayer_picture(struct widget_instance *list)
 {
 	struct widget_instance *picture = named(list->parameters.list.extended_description,
@@ -2369,7 +2374,11 @@ static void multiplayer_picture(struct widget_instance *list)
 			picture->animation.current_frame_index = MULTIPLAYER_XBOX_INTERNET_FRAME;
 		else if (frame == MULTIPLAYER_JOIN_LAN_FRAME || frame == MULTIPLAYER_CREATE_LAN_FRAME)
 			picture->animation.current_frame_index = MULTIPLAYER_XBOX_LAN_FRAME;
+		else if (frame == MULTIPLAYER_PC_COOP_FRAME)
+			picture->animation.current_frame_index = MULTIPLAYER_COOP_FRAME;
 	}
+	else if (frame == MULTIPLAYER_COOP_FRAME)
+		picture->animation.current_frame_index = MULTIPLAYER_PC_COOP_FRAME;
 	else if (frame == MULTIPLAYER_XBOX_INTERNET_FRAME)
 		picture->animation.current_frame_index = MULTIPLAYER_JOIN_INTERNET_FRAME;
 	else if (frame == MULTIPLAYER_XBOX_LAN_FRAME)

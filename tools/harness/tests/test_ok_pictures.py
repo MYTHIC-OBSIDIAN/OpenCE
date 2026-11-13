@@ -45,6 +45,9 @@ def test_case(case):
     (('\tif (ok_picture_xbox())\n\t{\n\t\tif (frame == MULTIPLAYER_JOIN_INTERNET_FRAME',
       '\tif (1)\n\t{\n\t\tif (frame == MULTIPLAYER_JOIN_INTERNET_FRAME'), 'multiplayer'),
     ((' || frame == MULTIPLAYER_CREATE_INTERNET_FRAME', ''), 'multiplayer'),
+    # (CO-OP's Halo PC picture never shown)
+    (('\telse if (frame == MULTIPLAYER_COOP_FRAME)\n\t\tpicture->animation.current_frame_index = MULTIPLAYER_PC_COOP_FRAME;\n', ''),
+     'multiplayer'),
     # (Halo PC's picture whatever PLATFORM is; the Xbox's)
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][0];'), 'gametype'),
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][1];'), 'gametype'),
