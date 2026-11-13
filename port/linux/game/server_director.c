@@ -64,6 +64,9 @@ int config_reload(char const *prefix);
 void platform_log(char const *format, ...);
 unsigned long system_milliseconds(void);
 extern boolean debug_no_drawing;
+/* (menu_functions.c's) */
+extern boolean ui_widget_port_cooperative_level_choose(char const *map_name, short difficulty);
+extern void ui_widget_port_cooperative_settings_apply(void);
 /* (port/linux/src/updater.c's) */
 int updater_server_check(void);
 long updater_server_available(void);
@@ -347,6 +350,7 @@ static void server_game_event(
 {
 	struct server_json json;
 	struct network_game *game = server_game();
+	boolean cooperative = server.current_set && !strcmp(server.current.gametype, "coop");
 	long red, blue;
 
 	server_json_begin(&json);
@@ -362,8 +366,8 @@ static void server_game_event(
 		char variant[32];
 
 		server_variant_name(&game->variant, variant, sizeof(variant));
-		server_json_string(&json, "variant", variant);
-		server_json_boolean(&json, "teams", game->variant.universal_variant.teams);
+		server_json_string(&json, "variant", cooperative ? "Co-op" : variant);
+		server_json_boolean(&json, "teams", !cooperative && game->variant.universal_variant.teams);
 	}
 	if (reason)
 	{
@@ -510,6 +514,9 @@ static void server_apply_game_settings(
 	if (!length)
 		ustrncpy(wide, L"OpenCE Server", NETWORK_GAME_NAME_LENGTH - 1);
 	network_game_server_port_set_settings(wide, PIN(maximum, 2, HALO_PORT_MAXIMUM_NETWORK_PLAYERS - 1));
+	/* (a co-op game's clients told the host has no player: its loading zones
+	ask for most of them, network_coop_host_dedicated) */
+	network_game_server_port_set_cooperative_dedicated(TRUE);
 }
 
 /* the listing: internet play (network.online), public or by invite, and
@@ -559,29 +566,50 @@ static boolean server_apply_entry(
 	struct game_variant variant;
 	struct game_variant_options options;
 	char reason[SERVER_REASON_SIZE];
-	char variant_name[32];
+	char variant_name[32] = "Co-op";
 
 	if (!network_server)
 		return FALSE;
 	csmemset(&variant, 0, sizeof(variant));
-	/* (a dedicated server hosts no co-op: server_rotation_check_kind) */
 	if (!strcmp(entry->gametype, "coop"))
 	{
-		server_log(_server_log_warning, "lobby", "%s cannot be played: a dedicated server hosts no co-op", entry->text);
-		return FALSE;
+		static char const *const difficulties[] = { "easy", "normal", "hard", "impossible" };
+		char const *setting = config_string("server.coop_difficulty");
+		short difficulty;
+
+		for (difficulty = 0; difficulty < (short)NUMBEROF(difficulties) && strcmp(setting, difficulties[difficulty]);
+			difficulty++)
+		{
+		}
+		if (difficulty == (short)NUMBEROF(difficulties))
+			difficulty = 1;
+		if (!ui_widget_port_cooperative_level_choose(entry->level, difficulty))
+		{
+			server_log(_server_log_warning, "lobby", "%s cannot be played as co-op", entry->level);
+			return FALSE;
+		}
+		/* (and as a player's co-op game has them: the campaign's split
+		screen co-op's friendly fire, player collisions and ally friendly
+		fire; and server.max_players again, which a co-op game holds to two
+		players at most: network_server_manager.c) */
+		ui_widget_port_cooperative_settings_apply();
+		server_apply_game_settings();
 	}
-	if (!server_gametype_build(entry->gametype, entry->rules, entry->rule_count, &variant, &options, reason,
-		sizeof(reason)))
+	else
 	{
-		server_log(_server_log_warning, "lobby", "%s cannot be played: %s", entry->text, reason);
-		return FALSE;
+		if (!server_gametype_build(entry->gametype, entry->rules, entry->rule_count, &variant, &options, reason,
+			sizeof(reason)))
+		{
+			server_log(_server_log_warning, "lobby", "%s cannot be played: %s", entry->text, reason);
+			return FALSE;
+		}
+		main_set_multiplayer_map_name(entry->level);
+		network_game_server_change_map_name(network_server, entry->level);
+		player_ui_set_game_variant(&variant);
+		player_ui_set_game_variant_options(&options);
+		network_game_server_change_game_variant(network_server, &variant);
+		server_variant_name(&variant, variant_name, sizeof(variant_name));
 	}
-	main_set_multiplayer_map_name(entry->level);
-	network_game_server_change_map_name(network_server, entry->level);
-	player_ui_set_game_variant(&variant);
-	player_ui_set_game_variant_options(&options);
-	network_game_server_change_game_variant(network_server, &variant);
-	server_variant_name(&variant, variant_name, sizeof(variant_name));
 	/* (every applied entry sets it, NONE without a riding rule) */
 	network_game_port_vehicle_riding_entry(server_entry_riding_rule(entry));
 	server.current = *entry;
@@ -633,6 +661,12 @@ static void server_advance(
 
 /* ---------- ending a game */
 
+static boolean server_cooperative(
+	void)
+{
+	return server.current_set && !strcmp(server.current.gametype, "coop");
+}
+
 /* the game over, said: how it ended, the scores' seconds, and the next game
 on every machine */
 static void server_game_over(
@@ -662,19 +696,48 @@ static void server_game_over(
 	}
 }
 
+/* a co-op level ended for everyone, as a won one is
+(network_game_server_port_cooperative_won): the server's postgame, and at
+once the lobby (co-op has no scores to show); the lobby tried again from
+the postgame if its machines are still joining (server_postgame) */
+static void server_end_cooperative(
+	void)
+{
+	struct network_game_server *network_server = global_network_game_server_get();
+
+	server.skip_postgame = TRUE;
+	server_game_over();
+	server_set_state(_server_state_postgame);
+	if (network_server && server_network_state() == SERVER_INGAME)
+	{
+		network_game_server_switch_to_postgame(network_server);
+		if (network_game_server_reset_to_pregame(network_server))
+			server.back_to_lobby = TRUE;
+	}
+}
+
 boolean server_director_end_game(
 	short reason,
 	boolean skip_postgame)
 {
-	if (server.state != _server_state_playing || !game_engine_running() || !game_engine_can_score())
+	boolean cooperative = server_cooperative();
+
+	/* (a co-op level is played once loaded: it has no game engine) */
+	if (server.state != _server_state_playing ||
+		(cooperative ? !game_in_progress() : !game_engine_running() || !game_engine_can_score()))
+	{
 		return FALSE;
+	}
 	if (!server.end_asked)
 	{
 		server.end_asked = TRUE;
 		server.end_reason = reason;
 		server.skip_postgame = skip_postgame;
 		server_log(_server_log_info, "game", "the game ends (%s)", server_end_names[reason]);
-		game_engine_end_game();
+		if (cooperative)
+			server_end_cooperative();
+		else
+			game_engine_end_game();
 	}
 	return TRUE;
 }
@@ -682,8 +745,10 @@ boolean server_director_end_game(
 boolean server_director_playing(
 	void)
 {
-	return server.state == _server_state_playing && !server.end_asked && game_engine_running() &&
-		game_engine_can_score();
+	boolean cooperative = server_cooperative();
+
+	return server.state == _server_state_playing && !server.end_asked &&
+		(cooperative ? game_in_progress() : game_engine_running() && game_engine_can_score());
 }
 
 boolean server_director_interpose(
@@ -1567,7 +1632,7 @@ static boolean server_entry_teams(
 	struct game_variant_options options;
 	char reason[SERVER_REASON_SIZE];
 
-	return server_gametype_build(entry->gametype, entry->rules, entry->rule_count,
+	return strcmp(entry->gametype, "coop") && server_gametype_build(entry->gametype, entry->rules, entry->rule_count,
 		&variant, &options, reason, sizeof(reason)) && variant.universal_variant.teams;
 }
 
@@ -1775,7 +1840,7 @@ static void server_lobby(
 		return;
 	}
 	/* (the lobby's widgets may put their map back: the entry's again, said) */
-	if (server.lobby_seconds - server.map_checked_seconds >= 1.0f)
+	if (server.lobby_seconds - server.map_checked_seconds >= 1.0f && strcmp(server.current.gametype, "coop"))
 	{
 		struct network_game *game = server_game();
 
@@ -1836,7 +1901,7 @@ static void server_playing(
 {
 	long players;
 
-	if (!game_engine_running())
+	if (!game_engine_running() && !server_cooperative())
 		return;
 	if (game_engine_running() && !game_engine_can_score())
 	{
@@ -1859,6 +1924,9 @@ static void server_playing(
 		server_set_state(_server_state_postgame);
 		return;
 	}
+	/* (a co-op level not loaded yet: nothing to count) */
+	if (server_cooperative() && !game_in_progress())
+		return;
 	server.game_seconds += seconds;
 	/* nobody in it (and nobody joining): it ends */
 	players = server_players_in_game();
@@ -2221,6 +2289,15 @@ void server_update(
 		if (server.state == _server_state_postgame || server.state == _server_state_playing ||
 			server.state == _server_state_loading)
 		{
+			/* (a co-op level won: network_game_server_port_cooperative_won
+			took every machine to the lobby at once) */
+			if (server.state == _server_state_playing && server_cooperative() && !server.game_over_said)
+			{
+				if (!server.end_asked)
+					server.end_reason = _server_end_score;
+				server.skip_postgame = TRUE;
+				server_game_over();
+			}
 			if (server.state != _server_state_postgame)
 				server_log(_server_log_info, "game", "back in the lobby");
 			server_back_in_lobby();
@@ -2232,7 +2309,7 @@ void server_update(
 	case SERVER_INGAME:
 		if (server.state == _server_state_lobby || server.state == _server_state_loading)
 		{
-			if (game_engine_running())
+			if (game_engine_running() || server_cooperative())
 			{
 				server.games_hosted++;
 				server.game_seconds = server.empty_seconds = server.idle_seconds = 0.0f;

@@ -375,7 +375,7 @@ static char const *const port_function_names[] =
 	"port mcc solo folder back", "port mcc host folder back",
 	"port mcc share download", "port mcc share workshop", "port mcc share cancel", "port mcc share closed",
 	"port mcc downloads open", "port mcc downloads previous", "port mcc downloads next", "port mcc downloads remove",
-	"port pause end game",
+	"port pause end game", "port coop friendly fire",
 	"port coop begin", "port coop player 2 list initialize", "port coop player 2",
 	"port lobby open", "port lobby add player", "port lobby join", "port lobby leave",
 	"port join4 open", "port join4 back", "port join4 done", "port join4 playing", "port join4 opener",
@@ -440,6 +440,8 @@ static char const *const port_game_data_input_names[] =
 	"port mods update",
 	"port mcc share update", "port mcc share text",
 	"port mcc downloads update", "port mcc downloads text",
+	/* (network co-op's pause menu's FRIENDLY FIRE: its text, ON or OFF) */
+	"port coop friendly fire text",
 	"port controller update",
 	/* (a dedicated server's map vote's screen) */
 	"port map vote update",

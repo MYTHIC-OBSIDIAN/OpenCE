@@ -76,8 +76,9 @@ shared checkpoint, boat, clock and scripted-pose agreement, an MCC map's
 damage impulses along the damage's direction, a vehicle on its side
 throwing its riders, chat marking the host's lines, a co-op cutscene's sound
 carrying how far the host has played it, an MCC conversion's allowance at a
-round's start, and players riding the vehicles they stand on. */
-#define HALO_PORT_NETWORK_VERSION 49
+round's start, and players riding the vehicles they stand on. Version 50:
+network co-op again (Create Game's campaign maps), at most two players. */
+#define HALO_PORT_NETWORK_VERSION 50
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

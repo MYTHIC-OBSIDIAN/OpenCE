@@ -28,11 +28,11 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   tick and others less often; a client drives each unit with the latest
   it has, as it drives a remote player's, until it hears nothing of it for
   two seconds (`port/linux/game/network_actors.c`).
-- **Co-op.** A network game on a campaign level with no game engine is
-  co-op. Nothing hosts one any more (version 48): Create Game's Map screen
-  lists no SINGLEPLAYER maps and refuses a campaign map, and a dedicated
-  server's rotation refuses campaign levels and `<level>:coop` entries; co-op
-  is split screen's. The code below stays, unused. Only the host runs the
+- **Co-op.** A network game on a campaign level with no game engine
+  (Create Game's Map screen hosting over system link: its SINGLEPLAYER,
+  CUSTOM CAMPAIGNS and MCC SINGLEPLAYER maps) is co-op, of two players at
+  most (`HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS`), its settings split screen
+  co-op's. Only the host runs the
   level's scripts and spawns players. `network_coop.c` sends the clients
   everything the scripts do that they would otherwise miss:
   - every tick: the cinematic, camera, screen fade, the HUD settings the
@@ -469,6 +469,10 @@ ones, so a config change on the host waits for the next map; a co-op host's
 revert or saved-game load reads the config again, and the new values are
 sent again then. It ships with
 the rest of version 43, which stays 43.
+
+Then version 50 sends nothing new, but Create Game's Map screen hosts
+network co-op again (Co-op, above), of two players at most, so that a build
+of 50 never joins a build of 48 or 49, which host none.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

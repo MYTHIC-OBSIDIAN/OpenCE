@@ -93,7 +93,7 @@ key, whose public key is [deploy/release-key.pub](deploy/release-key.pub).
 
 - **Supports up to 128 players** on up to 128 machines and up to 4 players on each device in split screen.
 - **Peer-to-peer internet hosting:** join through the server browser or an invite link. A host lists a game as public in the server browser, or keeps it private for players with the invite link. With the Discord integration, the host can also send the invite through Discord.
-- **Co-op campaign:** split screen on one computer (Multiplayer > CO-OP CAMPAIGN); the campaign is not played over the network.
+- **Co-op campaign:** split screen on one computer (Multiplayer > CO-OP CAMPAIGN), or over system link: Create Game's Map screen has the SINGLEPLAYER, CUSTOM CAMPAIGNS and MCC SINGLEPLAYER tabs, for two players at most, with split screen co-op's settings.
 - **Voice Chat:** push to talk (V) or an open microphone (can be changed in the menu's audio settings)
 - **Map sharing:** a player who does not have the game's Custom Edition map downloads it from the other players.
 - **Moderation:** the host can kick and ban players from the scoreboard menu or the `kick` and `ban` console commands. Players can vote to kick. 
@@ -135,14 +135,15 @@ Halo 1 maps and campaigns made for the Master Chief Collection (MCC version
 13: Steam Workshop items, or packages copied by hand) are played from New
 Game's **MCC SINGLEPLAYER** (campaign maps) and Create Game's **MCC
 MULTIPLAYER** (multiplayer maps), with an independent loader and their own
-`mcc_maps` folder. There is no network co-op in this build, so a campaign map is
-played alone or in split screen.
+`mcc_maps` folder. A campaign map is played alone or in split screen, or
+hosted over system link as network co-op of two players (Create Game's **MCC
+SINGLEPLAYER**, shown while hosting a system link game).
 
 MCC maps can also go in `custom_maps`, beside the Custom Edition maps: loose,
 or each package in a folder of its own (`custom_maps/MercuryRising/`). They are
 found as the lists open and listed after the Custom Edition maps: multiplayer
-maps in Create Game's **CUSTOM EDITION**, campaign maps in New Game's **CUSTOM
-CAMPAIGNS**. A loose map uses the [shared resources](#shared-mcc-resources),
+maps in Create Game's **CUSTOM EDITION**, campaign maps in New Game's (and,
+hosting, Create Game's) **CUSTOM CAMPAIGNS**. A loose map uses the [shared resources](#shared-mcc-resources),
 never `custom_maps`' own `bitmaps.map` and `sounds.map` (Custom Edition's); a
 package folder's own resources go in that folder.
 

@@ -67,9 +67,12 @@ their files give (solo or multiplayer). A map is played as its kind says
   campaign's levels are, at the difficulty chosen next (alone, or with
   split screen co-op's two players). No multiplayer map is listed.
 - **The Map screen**: MULTIPLAYER (Halo PC's maps), DIGSITE and CUSTOM
-  EDITION (the maps built as multiplayer); a campaign map chosen there is
-  refused (the campaign is not hosted over the network); a CUSTOM EDITION
-  map goes on to the gametypes, as MULTIPLAYER's do.
+  EDITION (the maps built as multiplayer); a CUSTOM EDITION map goes on to
+  the gametypes, as MULTIPLAYER's do. Hosting a system link game, it has
+  New Game's kinds too: a campaign map (a Digsite one built as singleplayer
+  too) lists the difficulties and is hosted as a network co-op game of two
+  players, as the campaign's levels are, then the lobby. Split screen hosts
+  only the multiplayer kinds, and refuses a campaign map.
 
 The Xbox menus' multiplayer level list offers the Custom Edition multiplayer
 maps after the thirteen Xbox levels. The pregame lobby shows a Custom

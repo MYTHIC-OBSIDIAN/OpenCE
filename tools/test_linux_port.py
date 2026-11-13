@@ -608,13 +608,13 @@ def riding_function(text, name):
 
 
 def riding_version_check(text):
-    # (this LAN fork's own numbers: 49 takes OpenCE's 43)
-    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 49\b", text["limits"])
+    # (this LAN fork's own numbers: 49 takes OpenCE's 43, 50 hosts network co-op again)
+    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 50\b", text["limits"])
 
 
 RIDING_CHECKS["version"] = riding_version_check
-RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 49",
-                                      "#define HALO_PORT_NETWORK_VERSION 48", "version")
+RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 50",
+                                      "#define HALO_PORT_NETWORK_VERSION 49", "version")
 
 RIDING_MCC_GUARD = "\tif (mcc_script_effects_host_movement())\n\t\treturn;\n"
 
@@ -671,9 +671,8 @@ def riding_entry_check(text):
     assert apply.count(RIDING_ENTRY_CALL.strip()) == 1, "the entry rule is not set exactly once"
     before = apply.split(RIDING_ENTRY_CALL.strip())[0]
     lines = [line for line in re.sub(r"/\*.*?\*/", "", before, flags=re.S).split("\n") if line.strip()]
-    # (this LAN fork's dedicated server has no co-op entries: the rule is set
-    # once the gametype's variant is applied)
-    assert lines[-1].startswith("\tserver_variant_name("), lines[-1]
+    # (after the co-op entry's or the gametype's branch, for either)
+    assert lines[-1] == "\t}", lines[-1]
 
 
 RIDING_CHECKS["entry-wiring"] = riding_entry_check
