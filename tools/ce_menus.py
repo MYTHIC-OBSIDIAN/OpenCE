@@ -450,6 +450,13 @@ class Art:
             lines.append(f"\t\t<frame{attributes([('map', source), ('index', index), ('width', width), ('height', height), ('x', x or None), ('y', y or None)])}/>")
         # (and another of our bitmaps' PNGs: port_settings.PNG_FRAMES)
         for png, width, height in port_settings.PNG_FRAMES.get(our_name(tag), []):
+            # (one of this bitmap's PC frames none of its frames is: drawn
+            # as they are)
+            own = f"ce/{relative}__"
+            if png.startswith(own) and png not in self.pngs and png[len(own):-4].isdigit():
+                self.draw(relative, int(png[len(own):-4]), len(data), width, height, MENUS / png,
+                          self.shown.get(tag, []))
+                self.pngs.append(png)
             lines.append(f"\t\t<frame{attributes([('png', png), ('width', width), ('height', height)])}/>")
         lines.append("\t</bitmap>")
         return "\n".join(lines)

@@ -323,6 +323,7 @@
 		<frame map="ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options" index="5"/>
 		<frame map="ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options" index="0"/>
 		<frame map="ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options" index="1"/>
+		<frame png="ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__2.png" width="512" height="256"/>
 	</bitmap>
 	<bitmap name="main_menu/settings_select/player_setup/player_profile_edit/video_settings/header_profile_video_settings">
 		<frame png="ce/shell/main_menu/settings_select/player_setup/player_profile_edit/video_settings/header_profile_video_settings__0.png" width="512" height="64"/>

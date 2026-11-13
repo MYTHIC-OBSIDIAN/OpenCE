@@ -1296,6 +1296,11 @@ BITMAP_FRAMES = {
 # frames added after those, one of another of our bitmaps' PNGs: its PNG,
 # width and height
 PNG_FRAMES = {
+    # (GAMEPADS' with PLATFORM "pc", whatever the button settings: Halo PC's
+    # frame 2, drawn as the placeholder until the player's is in the menus
+    # folder; frame 18: menu_functions.c's PROFILE_PC_GAMEPAD_FRAME)
+    f"{PE}/profile_options": [
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__2.png", 512, 256)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png", 512, 256)],
 }

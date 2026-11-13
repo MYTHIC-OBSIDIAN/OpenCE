@@ -8,7 +8,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, function, mutated, read, run
 
-NAMES = ('ok_picture_xbox', 'profile_ok_picture', 'gametype_ok_picture', 'multiplayer_picture')
+NAMES = ('ok_picture_xbox', 'profile_ok_picture', 'gametype_ok_picture', 'multiplayer_picture',
+         'profile_gamepad_layout')
 
 
 def generated(fault=None):
@@ -21,7 +22,7 @@ def generated(fault=None):
     return (('under_test.inc', code),)
 
 
-@pytest.mark.parametrize('case', ['profile', 'gametype', 'multiplayer'])
+@pytest.mark.parametrize('case', ['profile', 'gametype', 'gamepads', 'multiplayer'])
 def test_case(case):
     status, output = run(build('ok_pictures', generated()), case)
     assert status == 0, output
@@ -36,6 +37,9 @@ def test_case(case):
     (('profile_pictures[index][xbox_platform];', 'profile_pictures[index][1];'), 'profile'),
     (('profile_pictures[index][xbox_platform];', 'profile_pictures[index][0];'), 'profile'),
     (('\t\t{ PROFILE_CONTROLS_FRAME, PROFILE_XBOX_CONTROLS_FRAME },\n', ''), 'profile'),
+    # (gamepads: the layouts' pictures with PLATFORM "pc", or Halo PC's with "xbox")
+    (('if (gamepads && !ok_picture_xbox())', 'if (0)'), 'gamepads'),
+    (('if (gamepads && !ok_picture_xbox())', 'if (gamepads)'), 'gamepads'),
     # (multiplayer: the Xbox's pictures whatever PLATFORM is, or CREATE
     # GAME's INTERNET left Halo PC's)
     (('\tif (ok_picture_xbox())\n\t{\n\t\tif (frame == MULTIPLAYER_JOIN_INTERNET_FRAME',

@@ -2,7 +2,12 @@
 /* The OK pictures of the settings menu and Edit Multiplayer Gametype: one
 picture for both, the Xbox's with display.intro "xbox", else Halo PC's
 (menu_functions.c's profile_ok_picture, gametype_ok_picture) */
+#define _button_preset_standard 0
 #define _button_preset_swap_b_and_right_thumb 4
+/* (the edited profile's button settings, for profile_gamepad_layout) */
+struct player_profile { struct { unsigned char button_preset; } controller_settings; };
+static struct player_profile edited;
+static struct player_profile *player_ui_get_edit_player_profile(void) { return &edited; }
 #define NUMBEROF(array) (sizeof(array) / sizeof((array)[0]))
 struct widget_instance
 {
@@ -127,6 +132,29 @@ int main(int argc, char **argv)
 			intro = "pc"; gametype_ok_picture(&list);
 			CHECK(picture.animation.current_frame_index == intro_row, "row %d's picture changed", intro_row);
 		}
+	} else CASE("gamepads") {
+		/* (GAMEPADS: the button settings' Xbox pictures with PLATFORM
+		"xbox", Halo PC's whatever they are with "pc") */
+		static char const *const intros[] = { "xbox", "pc", "xbox" };
+		short pass;
+		picture.name = "profile_edit_extended_desc_pic";
+		for (pass = 0; pass < 3; pass++)
+		{
+			intro = intros[pass];
+			picture.animation.current_frame_index = 2;
+			for (edited.controller_settings.button_preset = 0; edited.controller_settings.button_preset < 6;
+				edited.controller_settings.button_preset++)
+			{
+				short expected = !strcmp(intro, "pc") ? 18 :
+					edited.controller_settings.button_preset < 5 ? 10 + edited.controller_settings.button_preset : 2;
+				profile_gamepad_layout(&picture);
+				CHECK(picture.animation.current_frame_index == expected, "%s, preset %d: frame %d, not %d", intro,
+					edited.controller_settings.button_preset, picture.animation.current_frame_index, expected);
+			}
+		}
+		/* (another row's left be) */
+		intro = "pc"; picture.animation.current_frame_index = 3; profile_gamepad_layout(&picture);
+		CHECK(picture.animation.current_frame_index == 3, "row 3's picture changed");
 	} else CASE("multiplayer") {
 		/* (the Multiplayer menu's: JOIN GAME's and CREATE GAME's INTERNET
 		and LAN the Xbox's with PLATFORM "xbox") */

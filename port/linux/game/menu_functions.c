@@ -2266,6 +2266,9 @@ and CONTROLS SETUP's (the Xbox's profile settings' second) */
 #define PROFILE_XBOX_OK_FRAME (PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES)
 #define PROFILE_XBOX_NAME_FRAME (PROFILE_XBOX_OK_FRAME + 1)
 #define PROFILE_XBOX_CONTROLS_FRAME (PROFILE_XBOX_OK_FRAME + 2)
+/* (GAMEPADS' with PLATFORM "pc", whatever the button settings: Halo PC's
+picture, port_settings.py's PNG_FRAMES) */
+#define PROFILE_PC_GAMEPAD_FRAME (PROFILE_XBOX_OK_FRAME + 3)
 
 /* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
 its button bar's (OK's), the Xbox's; then the Xbox's ITEM OPTIONS, GAME
@@ -2412,9 +2415,15 @@ static void profile_gamepad_layout(struct widget_instance *picture)
 {
 	struct player_profile *profile = player_ui_get_edit_player_profile();
 	short frame = picture->animation.current_frame_index;
+	boolean gamepads = frame == PROFILE_GAMEPAD_FRAME || frame == PROFILE_PC_GAMEPAD_FRAME ||
+		(frame >= PROFILE_FIRST_LAYOUT_FRAME && frame < PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES);
 
-	if (frame == PROFILE_GAMEPAD_FRAME ||
-		(frame >= PROFILE_FIRST_LAYOUT_FRAME && frame < PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES))
+	/* (PLATFORM "pc": Halo PC's picture, whatever the button settings) */
+	if (gamepads && !ok_picture_xbox())
+	{
+		picture->animation.current_frame_index = PROFILE_PC_GAMEPAD_FRAME;
+	}
+	else if (gamepads)
 	{
 		byte preset = profile ? profile->controller_settings.button_preset : (byte)_button_preset_standard;
 
