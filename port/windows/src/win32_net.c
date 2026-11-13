@@ -325,12 +325,18 @@ posix_ulong posix_local_ipv4_address(void)
 	ULONG size = 16 * 1024;
 	IP_ADAPTER_ADDRESSES *adapters = NULL, *adapter;
 	posix_ulong result = default_route_address();
+	posix_ulong link_local;
 	ULONG status;
 
-	/* no route out (a network without the internet): the first adapter
-	that is up and not loopback */
-	if (result)
+	/* port: no route out (a network without the internet), or one from a
+	link-local address (169.254: an adapter that found no network): the
+	first adapter that is up and not loopback, one with a link-local
+	address only if no other has an address. A host's address is what its
+	games name, which other machines must reach. */
+	if (result && (ntohl(result) >> 16) != 0xA9FE)
 		return result;
+	link_local = result;
+	result = 0;
 	do
 	{
 		free(adapters);
@@ -353,16 +359,21 @@ posix_ulong posix_local_ipv4_address(void)
 			{
 				struct sockaddr_in *ipv4 = (struct sockaddr_in *)address->Address.lpSockaddr;
 
-				if (ipv4->sin_family == AF_INET && ipv4->sin_addr.s_addr != htonl(INADDR_LOOPBACK))
+				if (ipv4->sin_family != AF_INET || (ntohl(ipv4->sin_addr.s_addr) >> 24) == 127)
+					continue;
+				if ((ntohl(ipv4->sin_addr.s_addr) >> 16) == 0xA9FE)
 				{
-					result = ipv4->sin_addr.s_addr;
-					break;
+					if (!link_local)
+						link_local = ipv4->sin_addr.s_addr;
+					continue;
 				}
+				result = ipv4->sin_addr.s_addr;
+				break;
 			}
 		}
 	}
 	free(adapters);
-	return result;
+	return result ? result : link_local;
 }
 
 int posix_directed_broadcasts(posix_ulong *targets, int maximum)

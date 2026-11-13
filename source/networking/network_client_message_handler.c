@@ -196,6 +196,7 @@ symbols in this file:
 #include "bungie_net/network/transport_endpoint_winsock.h"
 #include "game/game_engine.h"
 #include "game/players.h"
+#include "memory/byte_swapping.h"
 #include "networking/network_client_manager.h"
 #include "networking/network_client_message_handler.h"
 #include "networking/network_game_manager.h"
@@ -795,6 +796,20 @@ static boolean network_game_client_handle_message_server_game_advertise(
 		{
 			if (transport_is_nonce(&advertisement, TRANSPORT_NONCE_LENGTH))
 			{
+				/* port: the game is joined at the address its advertisement
+				came from, not the one the host put in it: a host with
+				another adapter (a 169.254 address of one with no network, a
+				VPN's) may name that one, which this machine cannot reach.
+				Not from 127.0.0.1 (this machine's own game, or one at
+				network.address), nor from an internet play peer's address
+				(100.64.0.0/10), which its XNADDR's identifier gives. */
+				if (source_address && source_address->address_length == IPV4_ADDRESS_LENGTH)
+				{
+					unsigned long source = source_address->address.long_words[0];
+
+					if (source != 0 && source != 0x7F000001 && (source & 0xFFC00000) != 0x64400000)
+						advertisement.xnaddr.ina.s_addr = SWAP4(source);
+				}
 				network_game_client_new_advertised_game(client, &advertisement);
 			}
 		}

@@ -435,11 +435,13 @@ int posix_socket_select(int *read, int *read_count, int *write, int *write_count
 }
 
 /* the first IPv4 address of an interface that is up, running, not
-loopback and has these flags; or 0 */
+loopback and has these flags, a link-local one (169.254: an interface that
+found no network) only if no other has one (port); or 0 */
 static posix_ulong interface_address(unsigned int flags)
 {
 	struct ifaddrs *addresses, *entry;
 	posix_ulong result = 0;
+	posix_ulong link_local = 0;
 
 	if (getifaddrs(&addresses) != 0)
 		return 0;
@@ -451,7 +453,12 @@ static posix_ulong interface_address(unsigned int flags)
 		{
 			struct sockaddr_in *address = (struct sockaddr_in *)entry->ifa_addr;
 
-			if ((ntohl(address->sin_addr.s_addr) >> 24) != 127)
+			if ((ntohl(address->sin_addr.s_addr) >> 16) == 0xA9FE)
+			{
+				if (!link_local)
+					link_local = address->sin_addr.s_addr;
+			}
+			else if ((ntohl(address->sin_addr.s_addr) >> 24) != 127)
 			{
 				result = address->sin_addr.s_addr;
 				break;
@@ -459,7 +466,7 @@ static posix_ulong interface_address(unsigned int flags)
 		}
 	}
 	freeifaddrs(addresses);
-	return result;
+	return result ? result : link_local;
 }
 
 posix_ulong posix_local_ipv4_address(void)
@@ -486,8 +493,15 @@ posix_ulong posix_local_ipv4_address(void)
 		}
 		close(probe);
 	}
-	/* no route out (a network without the internet): the first interface
-	that is up, running and not loopback */
+	/* no route out (a network without the internet), or one from a
+	link-local address: the first interface that is up, running and not
+	loopback (port: a link-local one only if no other has an address) */
+	if (result && (ntohl(result) >> 16) == 0xA9FE)
+	{
+		posix_ulong other = interface_address(0);
+
+		return other ? other : result;
+	}
 	return result ? result : interface_address(0);
 }
 
