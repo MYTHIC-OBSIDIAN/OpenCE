@@ -408,7 +408,7 @@ the setting for one start of the game. It has priority over the file.
 | `paths.custom_maps` | `""` | `HALO_CUSTOM_MAPS_ROOT` | The `custom_maps` folder (Custom Edition maps, with their `bitmaps.map`, `sounds.map` and `loc.map`). Empty: the one in the data root. |
 | `game.mcc_campaigns` | `true` | `HALO_MCC_CAMPAIGNS` | Use explicit MCC campaign metadata for discovery, mission titles, authored ordering and progression. In co-op only the host chooses the next mission. Reopen the map list after changing this. |
 | `game.mcc_collections` | `true` | `HALO_MCC_COLLECTIONS` | **Not read:** the map lists have no folders (the MCC maps are listed in CUSTOM CAMPAIGNS and CUSTOM EDITION). Before: group MCC packages into folders by the bundled Workshop collection list. |
-| `game.workshop_maps` | `true` | `HALO_WORKSHOP_MAPS` | Discover installed Halo CE Steam Workshop maps on desktop. Local MCC packages take precedence. Android and web use local packages. |
+| `game.workshop_maps` | `true` | `HALO_WORKSHOP_MAPS` | Use MCC's shared `bitmaps.map` and `sounds.map` from its Steam installation when the `mods` folder has none. No Workshop maps are looked for: MCC maps are those of `custom_maps` and `digsite_maps`. |
 | `paths.steam` | `""` | `HALO_STEAM_ROOT` | A Steam folder or library to check first for subscribed Halo CE Workshop items. Automatic discovery also checks Windows registry installations; Linux's `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `$XDG_DATA_HOME/Steam` and home-folder locations; and their library lists. Empty: automatic discovery only. |
 | `network.address` | `""` | `HALO_NET_ADDRESS` | The IPv4 address of this machine for system link. Refer to "Play on one computer". |
 | `network.broadcast` | `""` | `HALO_NET_BROADCAST` | IPv4 addresses, with commas between them, that get the broadcasts of the game. Empty: 255.255.255.255. |
@@ -549,10 +549,14 @@ Mesa. To stop this, set the environment variable `mesa_glthread=false`.
 
 ## MCC maps
 
-Halo 1 MCC packages use a separate `mcc_maps` folder and MCC-owned readers,
-conversion, rendering and script adapters. The game finds installed Steam
-Workshop packages while **WORKSHOP MAPS** is on (`game.workshop_maps`, on by
-default). **CAMPAIGN MISSIONS** enables explicit campaign manifests and mission
+Halo 1 MCC packages use MCC-owned readers, conversion, rendering and script
+adapters. This fork looks for them in `custom_maps` and `digsite_maps` alone:
+not in the `mcc_maps` folder (`mcc_package.c`'s `mcc_package_fork_folder`:
+no other package's map is opened, nor the `mcc_maps` folder's root
+`bitmaps.map` and `sounds.map`), nor in the Steam Workshop
+(`steam_workshop_scan` finds none). **STEAM DISCOVERY**
+(`game.workshop_maps`) now only finds MCC's shared resources in its Steam
+install. **CAMPAIGN MISSIONS** enables explicit campaign manifests and mission
 ordering (off by default). There are no MCC tabs: the MCC maps are listed
 after the Custom Edition maps (`mcc_maps_listed_index`), the campaign maps in
 CUSTOM CAMPAIGNS (New Game's, and Create Game's while hosting a system link
@@ -562,7 +566,7 @@ in `custom_maps` (loose, or in a folder of it for each package; level names
 read from `custom_maps` by `xbox_files.c`'s `translate_custom_mcc`), then
 (campaign maps) those of `digsite_maps` (as `custom_maps`': level names
 `mcc_maps\digsite_maps\<name>` and `mcc_maps\digsite_maps+<folder>\<name>`),
-then those of `mcc_maps` and the Steam Workshop. The multiplayer MCC maps of
+and no others. The multiplayer MCC maps of
 `digsite_maps` are listed in DIGSITE instead, after the Digsite maps
 (`mcc_maps_digsite_index`).
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,

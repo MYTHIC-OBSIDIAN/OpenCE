@@ -56,7 +56,7 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/network_setup/mcc_packages/help_strings">
 		<string text=""/>
-		<string text="Find installed Halo CE Workshop maps on this PC.\nLocal MCC packages take precedence."/>
+		<string text="Use MCC's shared files from its Steam install\nwhen the mods folder has none."/>
 		<string text="Use campaign metadata for mission order and\nprogression. Online, the host chooses the next map."/>
 	</strings>
 </menus>

@@ -2,9 +2,9 @@
 MCC_MAPS.C
 
 The independent MCC menu catalog. Only version 13 Halo 1 MCC caches from
-d:\mcc_maps (and from d:\custom_maps and d:\digsite_maps, listed with the
-Custom Edition maps: MCC_MAPS_CUSTOM_PACKAGE, MCC_MAPS_DIGSITE_PACKAGE) are
-admitted. The on-disk filename is the level identity; the
+d:\custom_maps and d:\digsite_maps, listed with the Custom Edition maps
+(MCC_MAPS_CUSTOM_PACKAGE, MCC_MAPS_DIGSITE_PACKAGE), are admitted: port: not
+d:\mcc_maps' nor the Steam Workshop's. The on-disk filename is the level identity; the
 cache's internal scenario name may differ. No Xbox or Custom Edition map
 list, loader, resource directory or display index is used here.
 */
@@ -278,93 +278,6 @@ static void mcc_maps_menu_metadata(void)
 	}
 }
 
-static boolean mcc_map_package_is_item(char const *package)
-{
-	size_t length;
-
-	for (length = 0; package[length]; length++)
-	{
-		if (package[length] < '0' || package[length] > '9')
-			return FALSE;
-	}
-	return length > 0;
-}
-
-/* The Workshop title and description of a level in an item's package folder: TRUE if the catalog has it. */
-static boolean mcc_map_workshop_title(struct mcc_menu_map *map)
-{
-	char const *base = strrchr(map->file_name, '\\');
-	char package[64];
-	size_t length = base ? (size_t)(base - map->file_name) : 0, index, used;
-	short item;
-
-	if (!base || length >= sizeof(package))
-		return FALSE;
-	memcpy(package, map->file_name, length);
-	package[length] = 0;
-	if (!mcc_map_package_is_item(package))
-		return FALSE;
-	for (item = 0; item < steam_workshop_count(); item++)
-	{
-		struct steam_workshop_map const *entry = steam_workshop_map(item);
-		char const *title, *item_title;
-
-		if (strcmp(entry->item_id, package) || csstrcasecmp(entry->name, base + 1))
-			continue;
-		title = entry->title;
-		item_title = entry->item_title;
-		for (index = 0; title[index] && index < 63; index++)
-			map->name[index] = (unsigned char)title[index] >= 32 && (unsigned char)title[index] < 127 ? title[index] : '?';
-		map->name[index] = 0;
-		{
-			static char const heading[] = "Steam Workshop\r\n";
-
-			for (used = 0; heading[used]; used++)
-				map->description[used] = heading[used];
-			for (index = 0; item_title[index] && used < MCC_MAP_DESCRIPTION_MAXIMUM; index++)
-				map->description[used++] = (unsigned char)item_title[index] >= 32 && (unsigned char)item_title[index] < 127 ?
-					item_title[index] : '?';
-			map->description[used] = 0;
-		}
-		map->titled = TRUE;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-/* Exactly one package level; directory entries never become arbitrary paths. */
-static void mcc_maps_scan_directory(char const *package)
-{
-    WIN32_FIND_DATAA data;
-    HANDLE find;
-    char pattern[128];
-    snprintf(pattern,sizeof(pattern),"%s%s%s*.*",MCC_MAPS_DIRECTORY,package,package[0] ? "\\" : "");
-    find=FindFirstFileA(pattern,&data);
-    if (find==INVALID_HANDLE_VALUE) return;
-    do {
-        char name[sizeof(data.cFileName)+1], relative[128], candidate[128], canonical[64];
-        char *extension;
-        size_t length;
-        memcpy(name,data.cFileName,sizeof(data.cFileName));
-        name[sizeof(data.cFileName)]=0;
-        length=strlen(name);
-        if (!length || strpbrk(name,"/\\") || length>58) continue;
-        if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (package[0] || !csstrcasecmp(name,"_shared")) continue;
-            snprintf(candidate,sizeof(candidate),"%s%s\\x",MCC_MAPS_LEVEL_PREFIX,name);
-            if (mcc_package_name(candidate,canonical)) mcc_maps_scan_directory(name);
-            continue;
-        }
-        extension=strrchr(name,'.');
-        if (!extension || csstrcasecmp(extension+1,"map")) continue;
-        *extension=0;
-        if (!csstrcasecmp(name,"sounds") || !csstrcasecmp(name,"bitmaps") || !csstrcasecmp(name,"loc")) continue;
-        snprintf(relative,sizeof(relative),"%s%s%s",package,package[0] ? "\\" : "",name);
-        mcc_map_register(relative);
-    } while (FindNextFileA(find,&data));
-    CloseHandle(find);
-}
-
 /* The MCC maps of the custom_maps (or digsite_maps) folder `root`: those
 loose in it (the package `package`), and those of each folder in it
 (<package>+<folder>). The Custom Edition maps beside them are not MCC's,
@@ -420,23 +333,16 @@ static void mcc_maps_scan(void)
     mcc_menu_catalog.campaigns_enabled = campaigns;
     mcc_menu_catalog.scanned=TRUE;
     mcc_menu_catalog.count=0;
-    mcc_maps_scan_directory("");
+    /* port: custom_maps' and digsite_maps' alone; not the mcc_maps folder's
+     * nor the Steam Workshop's */
     mcc_maps_scan_custom(MCC_MAPS_CUSTOM_FOLDER,MCC_MAPS_CUSTOM_PACKAGE,"");
     mcc_maps_scan_custom(MCC_MAPS_DIGSITE_FOLDER,MCC_MAPS_DIGSITE_PACKAGE,"");
-    /* The subscribed Steam Workshop items: each map is the level mcc_maps\<item id>\<map name>. */
-    for (i=0;i<steam_workshop_count();i++) {
-        struct steam_workshop_map const *item=steam_workshop_map(i);
-        char relative[64];
-        snprintf(relative,sizeof(relative),"%s\\%s",item->item_id,item->name);
-        mcc_map_register(relative);
-    }
     qsort(mcc_menu_catalog.maps,(size_t)mcc_menu_catalog.count,sizeof(mcc_menu_catalog.maps[0]),mcc_map_order);
     /* Read supplied titles independently of Steam (also for Android imports).
      * Identities stay in level_name, never in the level's display label. */
     for (i=0;i<mcc_menu_catalog.count;i++) {
         struct mcc_menu_map *map=&mcc_menu_catalog.maps[i];
         char const *base=strrchr(map->file_name,'\\');
-        if (base && mcc_map_workshop_title(map)) continue;
         /* (custom_maps' and digsite_maps' loose maps by their own names; a
          * folder's, with the folder's name after, as mcc_maps' packages) */
         if (map->custom && !strchr(map->file_name,'+')) continue;
@@ -444,7 +350,6 @@ static void mcc_maps_scan(void)
             char package[64];
             size_t n,k,length=(size_t)(base-map->file_name);
             memcpy(package,map->file_name,length);package[length]=0;
-            if (mcc_map_package_is_item(package)) continue;
             if (map->custom) {
                 size_t skip=map->digsite ? sizeof(MCC_MAPS_DIGSITE_PACKAGE) : sizeof(MCC_MAPS_CUSTOM_PACKAGE);
                 memmove(package,package+skip,strlen(package+skip)+1);

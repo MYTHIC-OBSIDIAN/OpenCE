@@ -65,6 +65,31 @@ static int mcc_package_staged(char const *canonical)
     return canonical[i]==mcc_package_staged_name[i];
 }
 
+/* port: this fork's MCC maps are the custom_maps and digsite_maps folders'
+ * alone (mcc_maps.c): the packages custom_maps, custom_maps+<folder>,
+ * digsite_maps and digsite_maps+<folder>, read from those folders
+ * (xbox_files.c's translate_custom_mcc). 1 for one of them; 2 for a loose
+ * map's (custom_maps, digsite_maps), whose folder's bitmaps.map and
+ * sounds.map are Custom Edition's, never its own. */
+static int mcc_package_fork_folder(char const *canonical)
+{
+    static char const *const folders[]={"custom_maps","digsite_maps"};
+    char const *package=canonical+9;
+    size_t i,j,length;
+    for (i=0;i<sizeof(folders)/sizeof(folders[0]);i++) {
+        length=strlen(folders[i]);
+        for (j=0;j<length;j++) {
+            unsigned char c=(unsigned char)package[j];
+            if (c>='A' && c<='Z') c=(unsigned char)(c+'a'-'A');
+            if (c!=(unsigned char)folders[i][j]) break;
+        }
+        if (j<length) continue;
+        if (package[length]=='\\') return 2;
+        if (package[length]=='+') return 1;
+    }
+    return 0;
+}
+
 int mcc_package_map_path(char const *name, char path[128])
 {
     char canonical[64];
@@ -80,6 +105,8 @@ int mcc_package_map_path(char const *name, char path[128])
 #ifdef HALO_WEB
     if (!web_mcc_package_visible(canonical)) return 0;
 #endif
+    /* (the mcc_maps folder's and the Steam Workshop's are not looked for) */
+    if (!mcc_package_fork_folder(canonical)) return 0;
     sprintf(path,"d:\\%s.map",canonical);
     return 1;
 }
@@ -103,17 +130,14 @@ int mcc_package_resource_path(char const *name, unsigned type, char path[128])
 
 FILE *mcc_package_resource_open(char const *name,unsigned type,char path[128])
 {
-    FILE *file;
-    char root[128];
+    char canonical[64];
     path[0]=0;
-    if (!mcc_package_resource_path(name,type,path) ||
-        !mcc_package_resource_path("mcc_maps/root",type,root)) {errno=EINVAL;return NULL;}
+    if (!mcc_package_resource_path(name,type,path) || !mcc_package_name(name,canonical)) {errno=EINVAL;return NULL;}
+    /* port: a package folder's own resource alone; a loose map has none (its
+     * folder's are Custom Edition's), and the mcc_maps folder's root
+     * bitmaps.map and sounds.map are not looked for: absent, the shared
+     * sets (the mods folder's, mcc_resources.c) are used */
+    if (!mcc_package_staged(canonical) && mcc_package_fork_folder(canonical)!=1) {errno=ENOENT;return NULL;}
     errno=0;
-    file=fopen(path,"rb");
-    /* A present but unreadable or invalid override must never be replaced. */
-    if (!file && errno==ENOENT && strcmp(path,root)) {
-        strcpy(path,root);
-        file=fopen(path,"rb");
-    }
-    return file;
+    return fopen(path,"rb");
 }

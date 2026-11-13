@@ -586,8 +586,8 @@ static const struct config_setting config_settings[] =
 		"Use explicit MCC campaign manifests for mission discovery, ordering and\n"
 		"progression. Reopen the map list after changing this." },
 	{ "game.workshop_maps", _config_boolean, "true", "HALO_WORKSHOP_MAPS", _environment_value, _platform_desktop,
-		"Discover installed Halo CE Steam Workshop maps. Read-only desktop\n"
-		"discovery; manually installed mcc_maps packages always remain available." },
+		"Use MCC's shared bitmaps.map and sounds.map from its Steam install\n"
+		"when the mods folder has none (no Workshop maps are looked for)." },
 	{ "game.mcc_collections", _config_boolean, "true", "HALO_MCC_COLLECTIONS", _environment_value, _platform_all,
 		"Not read: the map lists have no folders (the MCC maps are listed in\n"
 		"CUSTOM CAMPAIGNS and CUSTOM EDITION)." },

@@ -438,7 +438,7 @@ SCREENS["network_setup/mcc_packages"] = {
     "screen": "mcc_packages_screen", "header": _network["header"], "title": "MCC PACKAGES", "spacing": 30,
     "rows": [
         ("STEAM DISCOVERY:", "game.workshop_maps", ON_OFF,
-         "Find installed Halo CE Workshop maps on this PC.\nLocal MCC packages take precedence.", "desktop"),
+         "Use MCC's shared files from its Steam install\nwhen the mods folder has none.", "desktop"),
         ("CAMPAIGN MISSIONS:", "game.mcc_campaigns", ON_OFF,
          "Use campaign metadata for mission order and\nprogression. Online, the host chooses the next map.", None),
     ],

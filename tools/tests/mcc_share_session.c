@@ -544,20 +544,26 @@ int main(int argc,char **argv)
 
     CASE("redirect") {
         char path[128];
+        /* (this fork reads MCC maps from custom_maps and digsite_maps alone:
+         * mcc_package.c's mcc_package_fork_folder; an mcc_maps package only
+         * while its download is checked in the staging folder) */
+        CHECK(!mcc_package_map_path("mcc_maps\\solar_flare\\m0",path));
+        CHECK(mcc_package_map_path("mcc_maps\\custom_maps\\m0",path) && !strcmp(path,"d:\\mcc_maps\\custom_maps\\m0.map"));
+        CHECK(mcc_package_map_path("mcc_maps\\Digsite_Maps+pack\\m0",path) && !strcmp(path,"d:\\mcc_maps\\Digsite_Maps+pack\\m0.map"));
+        CHECK(!mcc_package_map_path("mcc_maps\\custom_mapsx\\m0",path));
         /* the package's own files read from the staging folder while the redirect is set, and only that package's */
-        CHECK(mcc_package_map_path("mcc_maps\\solar_flare\\m0",path) && !strcmp(path,"d:\\mcc_maps\\solar_flare\\m0.map"));
         mcc_package_stage_redirect("MCC_MAPS/Solar_Flare/M0","mcc_staging/solar_flare");
         CHECK(mcc_package_map_path("mcc_maps\\solar_flare\\m0",path) && !strcmp(path,"d:\\mcc_staging\\solar_flare\\m0.map"));
         CHECK(mcc_package_resource_path("mcc_maps\\solar_flare\\m0",1,path) && !strcmp(path,"mcc_staging/solar_flare/bitmaps.map"));
         CHECK(mcc_package_resource_path("mcc_maps\\solar_flare\\m0",2,path) && !strcmp(path,"mcc_staging/solar_flare/sounds.map"));
         CHECK(mcc_package_resource_path("mcc_maps/root",1,path) && !strcmp(path,"mcc_maps/bitmaps.map"));
-        CHECK(mcc_package_map_path("mcc_maps\\solar_flare\\m1",path) && !strcmp(path,"d:\\mcc_maps\\solar_flare\\m1.map"));
-        CHECK(mcc_package_map_path("mcc_maps\\other\\m0",path) && !strcmp(path,"d:\\mcc_maps\\other\\m0.map"));
+        CHECK(!mcc_package_map_path("mcc_maps\\solar_flare\\m1",path));
+        CHECK(!mcc_package_map_path("mcc_maps\\other\\m0",path));
         mcc_package_stage_redirect(NULL,NULL);
-        CHECK(mcc_package_map_path("mcc_maps\\solar_flare\\m0",path) && !strcmp(path,"d:\\mcc_maps\\solar_flare\\m0.map"));
+        CHECK(!mcc_package_map_path("mcc_maps\\solar_flare\\m0",path));
         CHECK(mcc_package_resource_path("mcc_maps\\solar_flare\\m0",1,path) && !strcmp(path,"mcc_maps/solar_flare/bitmaps.map"));
         mcc_package_stage_redirect("not a name","x");
-        CHECK(mcc_package_map_path("mcc_maps\\solar_flare\\m0",path) && !strcmp(path,"d:\\mcc_maps\\solar_flare\\m0.map"));
+        CHECK(!mcc_package_map_path("mcc_maps\\solar_flare\\m0",path));
         return 0;
     }
 

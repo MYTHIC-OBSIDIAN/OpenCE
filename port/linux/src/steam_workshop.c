@@ -271,13 +271,6 @@ static int is_directory(const char *path)
 	return posix_stat(path, &information) == 0 && (information.flags & _posix_file_is_directory);
 }
 
-static int is_file(const char *path)
-{
-	struct posix_file_information information;
-
-	return posix_stat(path, &information) == 0 && !(information.flags & _posix_file_is_directory);
-}
-
 static int join(char *out, unsigned size, const char *folder, const char *name)
 {
 	int written = snprintf(out, size, "%s/%s", folder, name);
@@ -320,18 +313,6 @@ static int resolve(const char *folder, const char *relative, char *out, unsigned
 	return 1;
 }
 
-static int has_item(const char *item_id)
-{
-	int index;
-
-	for (index = 0; index < catalog.count; index++)
-	{
-		if (!strcmp(catalog.maps[index].item_id, item_id))
-			return 1;
-	}
-	return 0;
-}
-
 static int digits(const char *text)
 {
 	unsigned length = (unsigned)strlen(text), index;
@@ -344,82 +325,6 @@ static int digits(const char *text)
 			return 0;
 	}
 	return 1;
-}
-
-static void scan_item(const char *item_folder, const char *item_id)
-{
-	static struct steam_workshop_item_text item;
-	static struct steam_workshop_map_text map;
-	static struct mcc_manifest campaign;
-	char path[STEAM_WORKSHOP_PATH_SIZE], maps_folder[STEAM_WORKSHOP_PATH_SIZE], found[256], file_name[96];
-	char reason[128];
-	char *text;
-	int length, index, count;
-
-	if (!resolve(item_folder, "ModInfo.json", path, sizeof(path)) || !(text = read_file(path, &length)))
-		return;
-	index = steam_workshop_read_item(text, length, &item);
-	free(text);
-	if (!index || !item.halo1 || !resolve(item_folder, "maps", maps_folder, sizeof(maps_folder)) ||
-		!is_directory(maps_folder))
-		return;
-	campaign.count = 0;
-	if (item.has_campaign && config_boolean("game.mcc_campaigns") &&
-		mcc_manifest_load(item_folder, &campaign, reason) < 0)
-		fprintf(stderr, "MCC package '%s' (%s): campaign metadata rejected: %s\n",
-			item.title, item_id, reason);
-	count = item.map_count + campaign.count;
-	for (index = 0; index < count && catalog.count < STEAM_WORKSHOP_MAXIMUM_MAPS; index++)
-	{
-		struct steam_workshop_map *entry = &catalog.maps[catalog.count];
-
-		if (index < item.map_count)
-		{
-			if (!resolve(item_folder, item.map_json[index], path, sizeof(path)) || !(text = read_file(path, &length)))
-				continue;
-			length = steam_workshop_read_map(text, length, &map);
-			free(text);
-		}
-		else
-		{
-			map = campaign.missions[index - item.map_count];
-			length = 1;
-		}
-		snprintf(file_name, sizeof(file_name), "%s.map", map.name);
-		if (!length || !posix_find_entry_case_insensitive(maps_folder, file_name, found, sizeof(found)) ||
-			!join(entry->path, sizeof(entry->path), maps_folder, found))
-			continue;
-		/* the name as the file is spelled on disk */
-		found[strlen(found) - 4] = 0;
-		if (!found[0] || strlen(found) >= sizeof(entry->name) || !is_file(entry->path))
-			continue;
-		copy_text(entry->item_id, sizeof(entry->item_id), item_id);
-		copy_text(entry->item_title, sizeof(entry->item_title), item.title);
-		copy_text(entry->name, sizeof(entry->name), found);
-		copy_text(entry->title, sizeof(entry->title), map.title[0] ? map.title : found);
-		entry->preview[0] = 0;
-		if (map.thumbnail[0] && !resolve(item_folder, map.thumbnail, entry->preview, sizeof(entry->preview)))
-			entry->preview[0] = 0;
-		catalog.count++;
-	}
-}
-
-static void scan_library(const char *library)
-{
-	char content[STEAM_WORKSHOP_PATH_SIZE], item_folder[STEAM_WORKSHOP_PATH_SIZE], name[256];
-	void *directory;
-
-	if (!join(content, sizeof(content), library, CONTENT_FOLDER) || !(directory = posix_directory_open(content)))
-		return;
-	while (catalog.count < STEAM_WORKSHOP_MAXIMUM_MAPS && posix_directory_next(directory, name, sizeof(name)))
-	{
-		/* an item already scanned is the same item seen through another path to its library */
-		if (!digits(name) || has_item(name) || !join(item_folder, sizeof(item_folder), content, name) ||
-			!is_directory(item_folder))
-			continue;
-		scan_item(item_folder, name);
-	}
-	posix_directory_close(directory);
 }
 
 #ifndef _WIN32
@@ -522,24 +427,16 @@ static int libraries(char (*paths)[STEAM_WORKSHOP_PATH_SIZE], int maximum)
 	return count;
 }
 
+/* port: no Workshop maps are looked for: this fork's MCC maps are those of
+custom_maps and digsite_maps alone (mcc_maps.c), so the catalog stays empty.
+Steam's libraries still give MCC's shared resources
+(steam_workshop_resource_path). */
 int steam_workshop_scan(void)
 {
-	char (*paths)[STEAM_WORKSHOP_PATH_SIZE];
-	int count, index;
-
 	catalog.scanned = 1;
 	catalog.count = 0;
 	catalog.enabled = discovery_enabled();
-	if (!catalog.enabled)
-		return 0;
-	paths = malloc(sizeof(*paths) * 2 * STEAM_WORKSHOP_MAXIMUM_LIBRARIES);
-	if (!paths)
-		return 0;
-	count = libraries(paths, 2 * STEAM_WORKSHOP_MAXIMUM_LIBRARIES);
-	for (index = 0; index < count && catalog.count < STEAM_WORKSHOP_MAXIMUM_MAPS; index++)
-		scan_library(paths[index]);
-	free(paths);
-	return catalog.count;
+	return 0;
 }
 
 int steam_workshop_count(void)

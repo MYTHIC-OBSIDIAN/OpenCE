@@ -381,7 +381,8 @@ def test_campaign_kind_across_native_metadata_paths(metadata_tool, tmp_path, mon
     original = second.read_bytes()
     assert run(metadata_tool, "manifest", root, True)[0] == "1 2"
     assert run(metadata_tool, "menu", root, True) == ["1 2", "first", "second"]
-    assert run(metadata_tool, "scan", tmp_path, True) == ["2", "first", "second"]
+    # (this fork looks for no Workshop maps: steam_workshop_scan finds none)
+    assert run(metadata_tool, "scan", tmp_path, True) == ["0"]
     assert run(metadata_tool, "scan", tmp_path, False) == ["0"]
     ok, entries = plan(metadata_tool, root, True)
     assert ok and validate(metadata_tool, root, entries, True)[0] == 1
@@ -407,5 +408,6 @@ def test_unsupported_campaign_kind_stays_refused(metadata_tool, tmp_path, kind):
     assert plan(metadata_tool, root, True)[0] == 0
     result = subprocess.run([str(metadata_tool), "scan", str(tmp_path), "1", "first"],
                             capture_output=True, text=True, timeout=20)
+    # (this fork looks for no Workshop maps, so the scan reports nothing of
+    # the item; the manifest's refusal is checked above)
     assert result.returncode == 0 and result.stdout.splitlines() == ["0"]
-    assert "111" in result.stderr and "Unsupported campaign mission kind" in result.stderr

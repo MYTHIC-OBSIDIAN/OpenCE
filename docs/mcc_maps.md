@@ -2,7 +2,11 @@
 
 The companion MCC implementation adds an independent loader for modern Halo 1
 MCC version-13 caches, listed in the map menus with the Custom Edition maps
-(**CUSTOM CAMPAIGNS** and **CUSTOM EDITION**). It is an experimental
+(**CUSTOM CAMPAIGNS** and **CUSTOM EDITION**). **This fork looks for MCC
+maps in `custom_maps` and `digsite_maps` alone** (below): what this document
+says of the `mcc_maps` folder, its root resources and Steam Workshop
+discovery is OpenCE's, not read here; Steam is used only for MCC's shared
+resources. It is an experimental
 runtime adapter, with explicit format limits below. A successful menu
 probe or file audit is not proof that a map plays correctly.
 
