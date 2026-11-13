@@ -940,7 +940,9 @@ asks the hosts for their listings again.
 
 The gametype column names the game engine (SLAYER, CTF, KING OF THE HILL).
 The browser of LAN games, and the preview of a game before joining it, name
-it the same way.
+it the same way. The LAN browser's REFRESH empties its list and searches the
+LAN again, for a game hosted again after one closed that the list lost, or
+after a join that failed.
 
 The browser lists two kinds of games: the dedicated servers that the
 master servers list (`masters.txt`, `network.masters_file`; the official

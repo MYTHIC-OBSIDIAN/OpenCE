@@ -3707,6 +3707,7 @@ short ui_widget_port_gametypes(long *indices, short maximum, short *last_used);
 boolean ui_widget_port_gametype_choose(long profile_index);
 boolean ui_widget_port_host(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
 boolean ui_widget_port_browse(struct widget_instance *widget, struct event_record *event, boolean *widget_deleted);
+boolean ui_widget_port_browse_refresh(void);
 boolean ui_widget_port_open(struct widget_instance *widget, char const *name, boolean *widget_deleted);
 boolean network_game_client_advertised_game_in_progress(void *client, struct advertised_game *game);
 boolean network_game_client_advertised_game_dedicated(void *client, struct advertised_game *game);
@@ -4915,7 +4916,9 @@ static boolean browser_initialize(struct widget_instance *screen, struct event_r
 	if (server_browser && named(screen, "browser_mode_spinner", 0))
 		setting_load(named(screen, "browser_mode_spinner", 0));
 	visible_set(named(screen, "button_clipboard", 0), multiplayer.mode == _multiplayer_mode_direct_link);
-	visible_set(named(screen, "join_game_button_refresh", 0), multiplayer.mode == _multiplayer_mode_server_browser);
+	/* (port: LAN's REFRESH too, which searches again: browser_select) */
+	visible_set(named(screen, "join_game_button_refresh", 0), multiplayer.mode == _multiplayer_mode_server_browser ||
+		multiplayer.mode == _multiplayer_mode_lan);
 	{
 		struct widget_instance *list = named(screen, "join_game_items_list", 0);
 		struct widget_instance *child;
@@ -6419,6 +6422,17 @@ static boolean browser_select(struct widget_instance *widget, struct event_recor
 	}
 	if (multiplayer.mode == _multiplayer_mode_server_browser)
 		return lobby_browser_select(widget, controller, row, widget_deleted);
+	/* port: LAN's REFRESH: the list emptied and the LAN searched again (a
+	game hosted again after one closed, which the list had lost) */
+	if (row == NONE && multiplayer.mode == _multiplayer_mode_lan && strstr(widget->name, "button_refresh"))
+	{
+		multiplayer.game_count = 0;
+		multiplayer.game_chosen = 0;
+		if (!ui_widget_port_browse_refresh())
+			return campaign_fail();
+		ui_play_audio_feedback_sound(SOUND_FORWARD);
+		return TRUE;
+	}
 	if (row != NONE)
 		multiplayer.game_chosen = row;
 	if (row != NONE || strstr(widget->name, "button_join"))

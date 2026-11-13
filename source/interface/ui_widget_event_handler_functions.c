@@ -6130,6 +6130,16 @@ boolean ui_widget_port_browse(
 	return global_network_game_client_get() || network_game_server_list_initialize(widget, event, widget_deleted);
 }
 
+/* port: the game browsing begun again (the LAN list's REFRESH): a new
+client, its list empty, searching again. The client the list had may hold
+a game gone, miss one hosted again, or be gone itself (a join that failed
+disposes it, network_game_abort), and a list left so finds nothing more */
+boolean ui_widget_port_browse_refresh(
+	void)
+{
+	return network_game_server_list_initialize(NULL, NULL, NULL);
+}
+
 /* joining a found game (as network_game_join_game_from_server_list), then
 the lobby (by name) in place of the widget's screen */
 boolean ui_widget_port_join(
