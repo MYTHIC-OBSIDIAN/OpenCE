@@ -31,6 +31,9 @@ def test_case(case):
     (('ok_picture_xbox() ? PROFILE_XBOX_OK_FRAME : PROFILE_OK_FRAME', 'PROFILE_OK_FRAME'), 'profile'),
     (('if (frame != PROFILE_OK_FRAME && frame != PROFILE_XBOX_OK_FRAME)\n\t\t\trow_frame = frame;',
       'row_frame = frame;'), 'profile'),
+    # (CHANGE NAME's Xbox picture whatever PLATFORM is, or never)
+    (('frame == PROFILE_NAME_FRAME && ok_picture_xbox()', 'frame == PROFILE_NAME_FRAME'), 'profile'),
+    (('frame == PROFILE_NAME_FRAME && ok_picture_xbox()', 'frame == PROFILE_NAME_FRAME && 0'), 'profile'),
     # (Halo PC's picture whatever PLATFORM is; the Xbox's)
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][0];'), 'gametype'),
     (('gametype_pictures[index][xbox_platform];', 'gametype_pictures[index][1];'), 'gametype'),

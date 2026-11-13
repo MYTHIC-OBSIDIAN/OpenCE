@@ -2254,12 +2254,15 @@ profile's button settings as the Xbox's Controller Setup shows them */
 FRAME_ORDER, FRAME_REPLACEMENTS and BITMAP_FRAMES): the nine rows', as the
 list numbers its rows (player_profile_edit_select_menu_update_extended_description),
 PREFERENCES's last; OK's, Halo PC's (its About's); then the Xbox's five of
-the button settings; then OK's, the Xbox's (its gametype settings' sixth) */
+the button settings; then OK's, the Xbox's (its gametype settings' sixth);
+then CHANGE NAME's with PLATFORM "xbox" (the gametype settings' first) */
+#define PROFILE_NAME_FRAME 0
 #define PROFILE_GAMEPAD_FRAME 2
 #define PROFILE_OK_FRAME 9
 #define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 #define PROFILE_XBOX_OK_FRAME (PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES)
+#define PROFILE_XBOX_NAME_FRAME (PROFILE_XBOX_OK_FRAME + 1)
 
 /* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
 its button bar's (OK's), the Xbox's; then the Xbox's ITEM OPTIONS, GAME
@@ -2300,6 +2303,12 @@ static void profile_ok_picture(struct widget_instance *list)
 	if (!picture)
 		return;
 	frame = picture->animation.current_frame_index;
+	/* (CHANGE NAME's picture: the Xbox's with PLATFORM "xbox", Halo PC's
+	else; either back when PLATFORM changes) */
+	if (frame == PROFILE_NAME_FRAME && ok_picture_xbox())
+		frame = picture->animation.current_frame_index = PROFILE_XBOX_NAME_FRAME;
+	else if (frame == PROFILE_XBOX_NAME_FRAME && !ok_picture_xbox())
+		frame = picture->animation.current_frame_index = PROFILE_NAME_FRAME;
 	if (on_ok && frame != ok_frame)
 	{
 		if (frame != PROFILE_OK_FRAME && frame != PROFILE_XBOX_OK_FRAME)

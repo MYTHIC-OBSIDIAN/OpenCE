@@ -1269,7 +1269,11 @@ XBOX_CONTROLLER_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\controller_e
 BITMAP_FRAMES = {
     f"{PE}/profile_options": [(XBOX_CONTROLLER_PICTURES, 4 + preset, 279, 279, 0, 34) for preset in range(5)] +
                              [("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
-                               5, None, None, 0, 0)],
+                               5, None, None, 0, 0),
+                              # (CHANGE NAME's with PLATFORM "xbox": the
+                              # gametype settings' first; frame 16)
+                              ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
+                               0, None, None, 0, 0)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
          3, None, None, 0, 0),

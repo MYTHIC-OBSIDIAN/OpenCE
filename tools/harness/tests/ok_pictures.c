@@ -57,6 +57,23 @@ int main(int argc, char **argv)
 		CHECK(picture.animation.current_frame_index == 9, "the intro's change not followed");
 		focus(&row); profile_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 3, "the row's lost: %d", picture.animation.current_frame_index);
+		/* (CHANGE NAME's: the Xbox's with PLATFORM "xbox", Halo PC's else,
+		and back after OK) */
+		intro = "pc"; picture.animation.current_frame_index = 0; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 0, "Halo PC's CHANGE NAME picture replaced");
+		intro = "xbox"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 16, "the Xbox's CHANGE NAME picture not shown: %d",
+			picture.animation.current_frame_index);
+		focus(&ok); profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 15, "OK's picture not shown from CHANGE NAME");
+		focus(&row); profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 16, "CHANGE NAME's picture not back: %d",
+			picture.animation.current_frame_index);
+		intro = "pc"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 0, "Halo PC's CHANGE NAME picture not back");
+		/* (another row's left be) */
+		intro = "xbox"; picture.animation.current_frame_index = 1; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 1, "row 1's picture changed");
 	} else CASE("gametype") {
 		short intro_row;
 		picture.name = "playlist_edit_ext_desc_pic";
