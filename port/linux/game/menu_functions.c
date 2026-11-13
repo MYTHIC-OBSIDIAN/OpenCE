@@ -2269,6 +2269,9 @@ and CONTROLS SETUP's (the Xbox's profile settings' second) */
 /* (GAMEPADS' with PLATFORM "pc", whatever the button settings: Halo PC's
 picture, port_settings.py's PNG_FRAMES) */
 #define PROFILE_PC_GAMEPAD_FRAME (PROFILE_XBOX_OK_FRAME + 3)
+/* (NETWORK SETUP's with PLATFORM "xbox": profile_options__9.png, PNG_FRAMES) */
+#define PROFILE_NETWORK_FRAME 6
+#define PROFILE_XBOX_NETWORK_FRAME (PROFILE_XBOX_OK_FRAME + 4)
 
 /* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
 its button bar's (OK's), the Xbox's; then the Xbox's ITEM OPTIONS, GAME
@@ -2303,6 +2306,7 @@ static void profile_ok_picture(struct widget_instance *list)
 	{
 		{ PROFILE_NAME_FRAME, PROFILE_XBOX_NAME_FRAME },
 		{ PROFILE_CONTROLS_FRAME, PROFILE_XBOX_CONTROLS_FRAME },
+		{ PROFILE_NETWORK_FRAME, PROFILE_XBOX_NETWORK_FRAME },
 	};
 	static short row_frame = 0;
 	struct widget_instance *bar = list->focused_child;
@@ -2350,8 +2354,8 @@ GAMETYPES' (the Xbox's); then the Xbox's INTERNET and LAN pictures
 #define MULTIPLAYER_COOP_FRAME 4
 #define MULTIPLAYER_XBOX_INTERNET_FRAME 6
 #define MULTIPLAYER_XBOX_LAN_FRAME 7
-/* (CO-OP CAMPAIGN's with PLATFORM "pc": Halo PC's profile settings' frame
-7, port_settings.py's PNG_FRAMES) */
+/* (CO-OP CAMPAIGN's with PLATFORM "pc": profile_options__10.png,
+port_settings.py's PNG_FRAMES) */
 #define MULTIPLAYER_PC_COOP_FRAME 8
 
 /* "port multiplayer picture" (the list's, after the Xbox's description

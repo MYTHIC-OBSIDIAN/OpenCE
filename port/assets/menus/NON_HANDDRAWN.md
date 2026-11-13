@@ -56,14 +56,12 @@ Xbox's third and second).
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 0 |
 
 These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's
-CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK; the profile
-menu's PREFERENCES).
+CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK).
 
 | Our bitmap | Our frame | The Xbox's frame |
 | --- | --- | --- |
 | `main_menu/multiplayer_type_select/mp_options` | 4 | `ui\shell\main_menu\multiplayer_type_select\mp_options` frame 0 |
 | `main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options` | 7 | `ui\shell\main_menu\settings_select\multiplayer_setup\playlist_edit\gametype_options` frame 5 |
-| `main_menu/settings_select/player_setup/player_profile_edit/profile_options` | 8 | `ui\shell\main_menu\settings_select\player_setup\player_profile_edit\profile_options` frame 2 |
 
 ## Placeholders, to be redrawn
 
@@ -86,9 +84,11 @@ until it is redrawn.
 | `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__5.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__5.png` |
 | `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__6.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__6.png` |
 | `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png` |
+| `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__9.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__9.png` |
+| `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__10.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__10.png` |
 | `ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png` | 512x256 | `shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png` |
 
-15 of 185 frames are placeholders.
+17 of 187 frames are placeholders.
 
 The PC version's `ui\gamespy` and `ui\ticker` fonts are drawn with `ui\small_ui`, which
 the Xbox's map has.

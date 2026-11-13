@@ -438,6 +438,11 @@ class Art:
             width, height = data[indices[0]]["width"], data[indices[0]]["height"]
             # (another bitmap's PNG, which it draws)
             if isinstance(pc_index, str):
+                frame_png = re.fullmatch(r"ce/(.+)__(\d+)\.png", pc_index)
+                if frame_png and pc_index not in self.pngs and not (MENUS / pc_index).is_file():
+                    self.draw(frame_png.group(1), int(frame_png.group(2)), 2, width, height, MENUS / pc_index,
+                              self.shown.get(tag, []))
+                    self.pngs.append(pc_index)
                 lines[1 + position] = f"\t\t<frame{attributes([('png', pc_index), ('width', width), ('height', height)])}/>"
                 continue
             png = f"ce/{relative}__{pc_index}.png"
@@ -802,8 +807,7 @@ def main() -> None:
     report += [
         "",
         "These frames are drawn instead from a frame of the Xbox map's bitmaps (the Multiplayer menu's",
-        "CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK; the profile",
-        "menu's PREFERENCES).",
+        "CO-OP CAMPAIGN: the Xbox's split screen picture; Edit Multiplayer Gametype's OK).",
         "",
         "| Our bitmap | Our frame | The Xbox's frame |",
         "| --- | --- | --- |",

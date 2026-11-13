@@ -84,6 +84,14 @@ int main(int argc, char **argv)
 			picture.animation.current_frame_index);
 		intro = "pc"; profile_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 1, "Halo PC's CONTROLS SETUP picture not back");
+		/* (NETWORK SETUP's the same) */
+		intro = "pc"; picture.animation.current_frame_index = 6; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 6, "Halo PC's NETWORK SETUP picture replaced");
+		intro = "xbox"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 19, "the Xbox's NETWORK SETUP picture not shown: %d",
+			picture.animation.current_frame_index);
+		intro = "pc"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 6, "Halo PC's NETWORK SETUP picture not back");
 		/* (another row's left be) */
 		intro = "xbox"; picture.animation.current_frame_index = 3; profile_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 3, "row 3's picture changed");

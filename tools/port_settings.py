@@ -1296,16 +1296,19 @@ BITMAP_FRAMES = {
 # frames added after those, one of another of our bitmaps' PNGs: its PNG,
 # width and height
 PNG_FRAMES = {
-    # (the Multiplayer menu's CO-OP CAMPAIGN with PLATFORM "pc": Halo PC's
-    # profile settings' frame 7; frame 8: menu_functions.c's
+    # (the Multiplayer menu's CO-OP CAMPAIGN with PLATFORM "pc":
+    # profile_options__10.png; frame 8: menu_functions.c's
     # MULTIPLAYER_PC_COOP_FRAME)
     f"{MT}/mp_options": [
-        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png", 512, 256)],
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__10.png", 512, 256)],
     # (GAMEPADS' with PLATFORM "pc", whatever the button settings: Halo PC's
     # frame 2, drawn as the placeholder until the player's is in the menus
     # folder; frame 18: menu_functions.c's PROFILE_PC_GAMEPAD_FRAME)
+    # (and NETWORK SETUP's with PLATFORM "xbox": profile_options__9.png;
+    # frame 19: PROFILE_XBOX_NETWORK_FRAME)
     f"{PE}/profile_options": [
-        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__2.png", 512, 256)],
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__2.png", 512, 256),
+        ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__9.png", 512, 256)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__8.png", 512, 256)],
 }
@@ -1315,8 +1318,7 @@ PNG_FRAMES = {
 # Multiplayer menu's CREATE GAME INTERNET and LAN show JOIN GAME's
 # (FRAME_ORDER), and CO-OP CAMPAIGN the Xbox's split screen picture (the first: one television, two
 # controllers, one Xbox); Edit Multiplayer Gametype's OK (its button bar:
-# the list's eighth item) the Xbox's gametype settings' sixth; the profile
-# menu's PREFERENCES the Xbox's profile settings' third
+# the list's eighth item) the Xbox's gametype settings' sixth
 XBOX_MULTIPLAYER_PICTURES = "ui\\shell\\main_menu\\multiplayer_type_select\\mp_options"
 XBOX_GAMETYPE_PICTURES = "ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options"
 XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options"
@@ -1327,10 +1329,12 @@ XBOX_PROFILE_PICTURES = f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options
 # beside halo.exe (tools/extract_pc_ui_images.py names them so). A name (a
 # PNG another bitmap's frame has) instead of a number: that PNG; the
 # profile menu's CHANGE NAME is the gametype menu's CHANGE NAME picture
-# (Halo PC's), as with PLATFORM "xbox" it is the Xbox's (BITMAP_FRAMES).
+# (Halo PC's), as with PLATFORM "xbox" it is the Xbox's (BITMAP_FRAMES);
+# its PREFERENCES is profile_options__7.png, whatever PLATFORM is.
 PNG_REPLACEMENTS = {
     f"{PE}/profile_options": {
-        0: "ce/shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__0.png"},
+        0: "ce/shell/main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options__0.png",
+        8: "ce/shell/main_menu/settings_select/player_setup/player_profile_edit/profile_options__7.png"},
 }
 FRAME_REPLACEMENTS = {
     f"{MT}/mp_options": {
@@ -1338,9 +1342,6 @@ FRAME_REPLACEMENTS = {
     },
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": {
         7: (XBOX_GAMETYPE_PICTURES, 5),
-    },
-    f"{PE}/profile_options": {
-        8: (XBOX_PROFILE_PICTURES, 2),
     },
 }
 
