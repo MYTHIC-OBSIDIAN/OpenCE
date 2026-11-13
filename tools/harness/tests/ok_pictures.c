@@ -71,9 +71,17 @@ int main(int argc, char **argv)
 			picture.animation.current_frame_index);
 		intro = "pc"; profile_ok_picture(&list);
 		CHECK(picture.animation.current_frame_index == 0, "Halo PC's CHANGE NAME picture not back");
+		/* (CONTROLS SETUP's the same) */
+		intro = "pc"; picture.animation.current_frame_index = 1; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 1, "Halo PC's CONTROLS SETUP picture replaced");
+		intro = "xbox"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 17, "the Xbox's CONTROLS SETUP picture not shown: %d",
+			picture.animation.current_frame_index);
+		intro = "pc"; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 1, "Halo PC's CONTROLS SETUP picture not back");
 		/* (another row's left be) */
-		intro = "xbox"; picture.animation.current_frame_index = 1; profile_ok_picture(&list);
-		CHECK(picture.animation.current_frame_index == 1, "row 1's picture changed");
+		intro = "xbox"; picture.animation.current_frame_index = 3; profile_ok_picture(&list);
+		CHECK(picture.animation.current_frame_index == 3, "row 3's picture changed");
 	} else CASE("gametype") {
 		short intro_row;
 		picture.name = "playlist_edit_ext_desc_pic";

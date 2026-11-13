@@ -1273,7 +1273,10 @@ BITMAP_FRAMES = {
                               # (CHANGE NAME's with PLATFORM "xbox": the
                               # gametype settings' first; frame 16)
                               ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
-                               0, None, None, 0, 0)],
+                               0, None, None, 0, 0),
+                              # (CONTROLS SETUP's with PLATFORM "xbox": the
+                              # Xbox's profile settings' second; frame 17)
+                              (f"ui\\shell\\{PE.replace('/', chr(92))}\\profile_options", 1, None, None, 0, 0)],
     "main_menu/settings_select/multiplayer_setup/playlist_edit/gametype_options": [
         ("ui\\shell\\main_menu\\settings_select\\multiplayer_setup\\playlist_edit\\gametype_options",
          3, None, None, 0, 0),

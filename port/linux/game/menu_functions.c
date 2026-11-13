@@ -2255,14 +2255,17 @@ FRAME_ORDER, FRAME_REPLACEMENTS and BITMAP_FRAMES): the nine rows', as the
 list numbers its rows (player_profile_edit_select_menu_update_extended_description),
 PREFERENCES's last; OK's, Halo PC's (its About's); then the Xbox's five of
 the button settings; then OK's, the Xbox's (its gametype settings' sixth);
-then CHANGE NAME's with PLATFORM "xbox" (the gametype settings' first) */
+then CHANGE NAME's with PLATFORM "xbox" (the gametype settings' first),
+and CONTROLS SETUP's (the Xbox's profile settings' second) */
 #define PROFILE_NAME_FRAME 0
+#define PROFILE_CONTROLS_FRAME 1
 #define PROFILE_GAMEPAD_FRAME 2
 #define PROFILE_OK_FRAME 9
 #define PROFILE_FIRST_LAYOUT_FRAME 10
 #define PROFILE_LAYOUT_FRAMES (_button_preset_swap_b_and_right_thumb + 1)
 #define PROFILE_XBOX_OK_FRAME (PROFILE_FIRST_LAYOUT_FRAME + PROFILE_LAYOUT_FRAMES)
 #define PROFILE_XBOX_NAME_FRAME (PROFILE_XBOX_OK_FRAME + 1)
+#define PROFILE_XBOX_CONTROLS_FRAME (PROFILE_XBOX_OK_FRAME + 2)
 
 /* Edit Multiplayer Gametype's picture's frames: the list's seven rows', and
 its button bar's (OK's), the Xbox's; then the Xbox's ITEM OPTIONS, GAME
@@ -2291,24 +2294,36 @@ button bar's OK has the focus, and the row's before it back after. (The
 picture cannot see the list: an extended description has no parent.) */
 static void profile_ok_picture(struct widget_instance *list)
 {
+	/* (the rows' pictures of which there are two: Halo PC's frame, the
+	Xbox's) */
+	static short const profile_pictures[][2] =
+	{
+		{ PROFILE_NAME_FRAME, PROFILE_XBOX_NAME_FRAME },
+		{ PROFILE_CONTROLS_FRAME, PROFILE_XBOX_CONTROLS_FRAME },
+	};
 	static short row_frame = 0;
 	struct widget_instance *bar = list->focused_child;
 	struct widget_instance *picture = named(list->parameters.list.extended_description,
 		"profile_edit_extended_desc_pic", 0);
 	boolean on_ok = bar && !strcmp(bar->name, "profile_edit_button_bar") && bar->focused_child &&
 		!strcmp(bar->focused_child->name, "profile_edit_button_ok");
-	short ok_frame = ok_picture_xbox() ? PROFILE_XBOX_OK_FRAME : PROFILE_OK_FRAME;
-	short frame;
+	boolean xbox_platform = ok_picture_xbox();
+	short ok_frame = xbox_platform ? PROFILE_XBOX_OK_FRAME : PROFILE_OK_FRAME;
+	short frame, index;
 
 	if (!picture)
 		return;
 	frame = picture->animation.current_frame_index;
-	/* (CHANGE NAME's picture: the Xbox's with PLATFORM "xbox", Halo PC's
-	else; either back when PLATFORM changes) */
-	if (frame == PROFILE_NAME_FRAME && ok_picture_xbox())
-		frame = picture->animation.current_frame_index = PROFILE_XBOX_NAME_FRAME;
-	else if (frame == PROFILE_XBOX_NAME_FRAME && !ok_picture_xbox())
-		frame = picture->animation.current_frame_index = PROFILE_NAME_FRAME;
+	/* (CHANGE NAME's and CONTROLS SETUP's pictures: the Xbox's with
+	PLATFORM "xbox", Halo PC's else; either back when PLATFORM changes) */
+	for (index = 0; index < (short)NUMBEROF(profile_pictures); index++)
+	{
+		if (frame == profile_pictures[index][!xbox_platform])
+		{
+			frame = picture->animation.current_frame_index = profile_pictures[index][xbox_platform];
+			break;
+		}
+	}
 	if (on_ok && frame != ok_frame)
 	{
 		if (frame != PROFILE_OK_FRAME && frame != PROFILE_XBOX_OK_FRAME)
