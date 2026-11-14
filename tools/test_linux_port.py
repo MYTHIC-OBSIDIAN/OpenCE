@@ -608,13 +608,14 @@ def riding_function(text, name):
 
 
 def riding_version_check(text):
-    # (this LAN fork's own numbers: 49 takes OpenCE's 43, 50 hosts network co-op again)
-    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 50\b", text["limits"])
+    # (this LAN fork's own numbers: 49 takes OpenCE's 43, 50 hosts network co-op again,
+    # 51 says a rider has begun getting out of its seat)
+    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 51\b", text["limits"])
 
 
 RIDING_CHECKS["version"] = riding_version_check
-RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 50",
-                                      "#define HALO_PORT_NETWORK_VERSION 49", "version")
+RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 51",
+                                      "#define HALO_PORT_NETWORK_VERSION 50", "version")
 
 RIDING_MCC_GUARD = "\tif (mcc_script_effects_host_movement())\n\t\treturn;\n"
 

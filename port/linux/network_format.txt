@@ -1,4 +1,4 @@
-version 50
+version 51
 bound CHAT_TEXT_SIZE 64
 bound DISCORD_ID_SIZE 24
 bound DISCORD_NAME_SIZE 40
@@ -159,6 +159,7 @@ enum _distributed_to_host 2
 enum _distributed_to_host_reliably 3
 enum _distributed_unit_alive_bit 0
 enum _distributed_unit_camouflaged_bit 0
+enum _distributed_unit_exiting_seat_bit 3
 enum _distributed_unit_friendly_fire_bit 2
 enum _distributed_unit_killed_by_vehicle_bit 3
 enum _distributed_unit_part_camouflage_bit 4

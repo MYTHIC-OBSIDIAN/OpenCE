@@ -70,6 +70,7 @@ struct object_datum {
         real active_camouflage;
         real_vector3d desired_facing_vector,desired_aiming_vector,desired_looking_vector;
         real_vector3d aiming_vector,looking_vector;
+        struct {short state;} animation;
     } unit;
     struct {struct weapon_magazine magazines[2];real age;long game_time_last_fired;} weapon;
 };
@@ -252,6 +253,8 @@ static short unit_weapon_next_index(long index,long previous,int direction) {
 }
 static void first_person_weapon_message_from_unit(long index,int message) {(void)index;CHECK(message==13,"weapon removal");}
 static void unit_exit_seat_end(long index) {object_detach(index);unit_get(index)->unit.parent_seat_index=NONE;}
+enum {_unit_state_exiting_seat=34};
+static int unit_port_play_seat_exit(long index) {(void)index;return 0;}
 static void unit_set_actively_controlled(long index,int active) {(void)index;(void)active;}
 static void player_control_new_unit(short local,long index) {CHECK(local==0,"local controller");control_unit=index;controls_changed++;}
 static void observer_obsolete_position(short local) {CHECK(local==0,"local observer");}

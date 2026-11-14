@@ -269,6 +269,10 @@ enum
 	_distributed_unit_camouflaged_bit = 0,
 	_distributed_unit_super_camouflaged_bit,
 	_distributed_unit_suspended_bit,
+	/* (riding) getting out of its seat: its seat's exit animation, which
+	carries it out (a10's cryotube) and is long; a client plays it from its
+	start, not once the host has the unit out */
+	_distributed_unit_exiting_seat_bit,
 };
 
 /* a unit state's parts on the wire: which of those that are not always
@@ -1952,6 +1956,8 @@ static void distributed_state_from_player(
 			TEST_FLAG(unit->unit.flags, _unit_active_camouflaged_bit));
 		SET_FLAG(state->unit_flags, _distributed_unit_super_camouflaged_bit,
 			TEST_FLAG(unit->unit.flags, _unit_super_camouflaged_bit));
+		SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&
+			unit->unit.animation.state == _unit_state_exiting_seat);
 		camouflage = camouflage > 1.0f ? 1.0f : camouflage < 0.0f ? 0.0f : camouflage;
 		state->active_camouflage = (byte)(long)floor(camouflage * 255.0f + 0.5f);
 		distributed_scripted_pose_from_unit(unit, state);
@@ -3778,6 +3784,15 @@ static void distributed_handle_unit_state(
 			(vehicle_index == NONE || unit->unit.parent_seat_index == state->seat_index);
 		short *disagreement = &distributed_seat_disagreements[state->player_index];
 
+		/* (the host's has begun getting out of the seat this one is in: by
+		its exit animation from now, as the host's, a client's own player's
+		too, whose seat is otherwise its own until the host's word comes
+		back; then out of the seat, it agrees) */
+		if (same && vehicle_index != NONE && TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&
+			unit->unit.animation.state != _unit_state_exiting_seat)
+		{
+			unit_port_play_seat_exit(unit_index);
+		}
 		if (same)
 			*disagreement = 0;
 		else if (!local || ++*disagreement > MAX(SEAT_DISAGREEMENT_TICKS,

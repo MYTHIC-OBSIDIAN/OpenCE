@@ -77,8 +77,13 @@ damage impulses along the damage's direction, a vehicle on its side
 throwing its riders, chat marking the host's lines, a co-op cutscene's sound
 carrying how far the host has played it, an MCC conversion's allowance at a
 round's start, and players riding the vehicles they stand on. Version 50:
-network co-op again (Create Game's campaign maps), at most two players. */
-#define HALO_PORT_NETWORK_VERSION 50
+network co-op again (Create Game's campaign maps), at most two players.
+Version 51: a player's unit state says it has begun getting out of its seat
+(_distributed_unit_exiting_seat_bit), which a client then plays as the host
+does, not once it is out; and a co-op object look says, above a vehicle's
+hatches, that the host's scripts fly it (UNIT_LOOK_POWERED), so a client's
+copy powers its seats as the host's does. */
+#define HALO_PORT_NETWORK_VERSION 51
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

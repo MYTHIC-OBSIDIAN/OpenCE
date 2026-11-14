@@ -116,7 +116,12 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   host's are (opening or held open, closing or held shut, or neither: The
   Maw's Banshee canopy) ride in the object looks' padding and are sent
   again every refresh; a client's copy is opened, closed or shut at once to
-  match, unless its own player rides it. Every refresh the host also
+  match, unless its own player rides it. Above the hatches the padding
+  carries whether the host's vehicle is actively controlled with no driver
+  (`recording_play`: The Maw's cinematic Banshee), which a client's copy
+  takes, so its seats power up as the host's do and the colours seat power
+  sets match (the Banshee's canards red, not blue at rest; network version
+  51). Every refresh the host also
   resends the custom animation each of its units (not players') plays, at
   its frame (`_coop_event_unit_animation_resync`), which a copy made after
   it began (a level's opening) plays and one playing it already ignores.
@@ -126,7 +131,14 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   the scripts' camera looks from its copy's eyes in the host's direction.
   A client's copy of a unit gets out of its seat as the host's did, by its
   seat's exit animation (`unit_port_play_seat_exit`: out of a10's
-  cryotube, down a Pelican's ramp), not dropped where it sat.
+  cryotube, down a Pelican's ramp), not dropped where it sat, and starts it
+  when the host's starts it (`_distributed_unit_exiting_seat_bit`), not
+  once the host's copy is out.
+  A client plays the host's presentations two ticks behind the newest it
+  has (`PRESENTATION_DELAY_TICKS`), so a datagram a little late is in before
+  its tick is played, and on a tick with nothing newer the view it draws
+  holds still (`client_view_hold`) rather than being drawn again from the
+  last tick's: with no ticks behind, the cutscene camera stood and jumped.
   A host's script-named object a client's copy is not named by here
   (`object_create_anew`: The Maw's `banshee_cinematic`) is found by its
   index (`object_find`), so its looks, hatches and animations reach it.
@@ -523,6 +535,13 @@ the rest of version 43, which stays 43.
 Then version 50 sends nothing new, but Create Game's Map screen hosts
 network co-op again (Co-op, above), of two players at most, so that a build
 of 50 never joins a build of 48 or 49, which host none.
+
+Version 51 says in a riding unit's state that it has begun getting out of
+its seat (`_distributed_unit_exiting_seat_bit`), so a client starts the seat's
+exit animation when the host's copy does: out of a10's cryotubes and down a
+Pelican's ramp together, not when the host's long animation has ended and
+the seat is already empty (the cryotube's hatch closed on a client's player
+still inside it).
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

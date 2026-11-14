@@ -138,7 +138,7 @@ def test_vehicle_hatches_and_custom_animations_are_resent():
     assert "case _unit_state_opening:\n\t\treturn UNIT_HATCHES_OPEN;" in hatches
     assert "return UNIT_HATCHES_IDLE;" in hatches
     looks = function(coop, "host_send_object_looks")
-    assert "short hatches = host_unit_hatches(iterator.index);" in looks
+    assert "short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);" in looks
     assert "look->pad = hatches;" in looks
     client = function(coop, "network_coop_handle_object_looks")
     assert "boolean ridden = client_vehicle_ridden_here(object_index);" in client
@@ -189,6 +189,45 @@ def test_a_client_gets_out_of_a_seat_by_its_exit_animation():
     assert "unit_open(" not in play
 
 
-def test_the_camera_is_played_with_the_newest_objects():
+def test_the_camera_moves_evenly_when_a_datagram_is_late():
+    # two ticks behind the newest, so a late datagram is in before its tick;
+    # a tick with nothing newer holds the view rather than drawing the last
+    # tick's move again
     coop = source("port/linux/game/network_coop.c")
-    assert "PRESENTATION_DELAY_TICKS = 0," in coop
+    assert "PRESENTATION_DELAY_TICKS = 2," in coop
+    play = function(coop, "client_play_presentation")
+    assert "else\n\t{\n\t\tclient_view_hold();\n\t\treturn;\n\t}" in play
+    hold = function(coop, "client_view_hold")
+    assert "client_view_record(&coop_presentation.view_source, coop_presentation.view_source_host_view);" in hold
+    record = function(coop, "client_view_record")
+    assert "coop_presentation.view_source = *presentation;" in record
+
+
+def test_a_client_starts_getting_out_when_the_host_does():
+    # the host's copy's exit begins with the rider still seated: the state
+    # says so, and the client's copy starts the seat's exit animation then
+    distributed = source("port/linux/game/network_distributed.c")
+    assert "_distributed_unit_exiting_seat_bit," in distributed
+    assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
+    assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
+    assert "#define HALO_PORT_NETWORK_VERSION 51" in source("port/linux/include/halo_port_limits.h")
+
+
+def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
+    # The Maw's banshee_cinematic: recording_play makes it actively controlled
+    # on the host, its seat powers up and its canards turn red; the client's
+    # copy, moved by the host's states, stayed blue at rest
+    coop = source("port/linux/game/network_coop.c")
+    powered = function(coop, "host_unit_powered")
+    assert "TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit) ? UNIT_LOOK_POWERED : 0" in powered
+    looks = function(coop, "host_send_object_looks")
+    assert "short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);" in looks
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "powered = (look->pad & UNIT_LOOK_POWERED) != 0;" in client
+    assert "SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit," in client
+    assert client.index("if (ridden)\n\t\t\t\tcontinue;") < client.index("SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit,")
+    # the hatches stay below the powered bit
+    assert "#define UNIT_LOOK_HATCHES_MASK 0x00FF" in coop
+    assert "#define UNIT_LOOK_POWERED 0x0100" in coop
+    units = source("source/units/units.c")
+    assert "unit->unit.driver_object_index!=NONE || TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit)" in units

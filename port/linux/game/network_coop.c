@@ -184,11 +184,12 @@ enum
 	/* a client ends the cinematic after this long without hearing from the host */
 	PRESENTATION_SILENCE_TICKS = 2 * TICKS_PER_SECOND,
 	/* A client plays the host's presentations (its cutscene camera, fades,
-	letterbox) one a tick, the newest it has (port: no ticks behind it):
-	the objects the camera films are where the host's newest states put
-	them, and a camera two ticks behind them showed a Banshee flying through
-	The Maw's opening metres from where the host's shot had it. */
-	PRESENTATION_DELAY_TICKS = 0,
+	letterbox) one a tick, this many ticks behind the newest it has, so a
+	datagram a little late still arrives before its tick is played. (port:
+	none behind left nothing new to play on a tick whose datagram came late,
+	and two the next: the camera stood, then jumped, through every cutscene's
+	moves. The Banshee of The Maw's opening was no nearer the host's for it.) */
+	PRESENTATION_DELAY_TICKS = 2,
 	PRESENTATION_BUFFER_COUNT = 8,
 	/* the field of view (radians) is sent as a word, scaled by this */
 	FIELD_OF_VIEW_SCALE = 10000,
@@ -499,6 +500,13 @@ enum
 	value ignores it) */
 	UNIT_HATCHES_IDLE,
 };
+/* (port, network version 51) the hatches are the low byte; above them, a
+vehicle the host's scripts fly without a driver (recording_play: The Maw's
+cinematic Banshee), actively controlled, whose seats power up as a driver's
+would: its engine's glow and the colours its seat power sets (the Banshee's
+canards red, not blue at rest) */
+#define UNIT_LOOK_HATCHES_MASK 0x00FF
+#define UNIT_LOOK_POWERED 0x0100
 
 struct distributed_coop_object_looks_message
 {
@@ -549,6 +557,11 @@ static struct
 	boolean view_previous_valid;
 	struct network_coop_view view_previous;
 	struct network_coop_view view_latest;
+	/* the presentation the view was last recorded from, recorded again on a
+	tick with none newer to play (client_view_hold) */
+	struct distributed_coop_presentation view_source;
+	boolean view_source_host_view;
+	boolean view_source_valid;
 	real_point3d watching_host_position;
 	real_vector3d watching_host_forward;
 	long heard_time;
@@ -1306,6 +1319,15 @@ static short host_unit_hatches(
 	}
 }
 
+/* host: UNIT_LOOK_POWERED for a vehicle the host's scripts drive (above) */
+static short host_unit_powered(
+	long object_index)
+{
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(object_index, _object_mask_vehicle);
+
+	return unit && TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit) ? UNIT_LOOK_POWERED : 0;
+}
+
 /* host, every refresh: the custom animations its units (not players') play,
 at their frames (_coop_event_unit_animation_resync), MAXIMUM_ANIMATION_RESYNCS
 at most */
@@ -1354,7 +1376,7 @@ static void host_send_object_looks(
 	{
 		short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.index);
 		struct distributed_coop_object_look *look;
-		short hatches = host_unit_hatches(iterator.index);
+		short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);
 		boolean changing;
 
 		if (absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
@@ -1382,8 +1404,9 @@ static void host_send_object_looks(
 		host_sent_looks[absolute_index].scale = object->object.scale;
 		if (host_sent_looks[absolute_index].hatches != hatches)
 		{
-			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)",
-				coop_trace_tag(iterator.index), iterator.index, hatches);
+			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)%s",
+				coop_trace_tag(iterator.index), iterator.index, hatches & UNIT_LOOK_HATCHES_MASK,
+				(hatches & UNIT_LOOK_POWERED) ? ", powered (actively controlled)" : "");
 		}
 		host_sent_looks[absolute_index].hatches = hatches;
 		csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
@@ -4067,6 +4090,8 @@ void network_coop_handle_object_looks(
 		long model_index = object ? object_definition_get(object->definition_index)->object.model.index : NONE;
 		struct model *model = model_index != NONE ? model_definition_get(model_index) : NULL;
 		short region_index;
+		short hatches;
+		boolean powered;
 
 		if (!object)
 			continue;
@@ -4092,10 +4117,13 @@ void network_coop_handle_object_looks(
 		opened where the host's is not, shut; shut where the host's is open,
 		opened. Each unit_open or unit_close plays it again, so only on a
 		difference) */
-		if (look->pad >= UNIT_HATCHES_OPEN && look->pad <= UNIT_HATCHES_IDLE &&
+		hatches = (short)(look->pad & UNIT_LOOK_HATCHES_MASK);
+		powered = (look->pad & UNIT_LOOK_POWERED) != 0;
+		if (((hatches >= UNIT_HATCHES_OPEN && hatches <= UNIT_HATCHES_IDLE) || powered) &&
 			object_try_and_get_and_verify_type(object_index, _object_mask_vehicle))
 		{
-			short state = unit_get(object_index)->unit.animation.state;
+			struct unit_datum *vehicle = unit_get(object_index);
+			short state = vehicle->unit.animation.state;
 			boolean ridden = client_vehicle_ridden_here(object_index);
 
 			/* (trace: each vehicle's hatches the host has and this copy's state,
@@ -4104,26 +4132,33 @@ void network_coop_handle_object_looks(
 				static long traced_objects[16];
 				static short traced_values[16];
 				short slot = (short)(DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index) & 15);
-				short value = (short)(look->pad * 1000 + state * 2 + ridden);
+				short value = (short)(hatches * 1000 + state * 4 + powered * 2 + ridden);
 
 				if (traced_objects[slot] != object_index || traced_values[slot] != value)
 				{
 					traced_objects[slot] = object_index;
 					traced_values[slot] = value;
-					error(_error_silent, "co-op hatches (client): %s %ld host %d (1 open, 2 closed, 3 neither), "
+					error(_error_silent, "co-op hatches (client): %s %ld host %d (1 open, 2 closed, 3 neither)%s, "
 						"here state %d (opening %d, closing %d, custom %d)%s", coop_trace_tag(object_index), object_index,
-						look->pad, state, _unit_state_opening, _unit_state_closing, _unit_state_user_animation,
-						ridden ? ", ridden here: left be" : "");
+						hatches, powered ? ", powered" : "", state, _unit_state_opening, _unit_state_closing,
+						_unit_state_user_animation, ridden ? ", ridden here: left be" : "");
 				}
 			}
 			if (ridden)
 				continue;
 
-			if (look->pad == UNIT_HATCHES_OPEN && state != _unit_state_opening)
+			/* (port) powered as the host's: a vehicle a recording flies on the
+			host is actively controlled there and its seats power up (units.c's
+			seat power); its copy here is moved by the host's states, so is
+			marked so here. Only the flag: the recording's controls are the
+			host's, and it is cleared again as the host's is. */
+			SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit,
+				powered && !TEST_FLAG(vehicle->object.damage_flags, _object_dead_bit));
+			if (hatches == UNIT_HATCHES_OPEN && state != _unit_state_opening)
 				unit_open(object_index);
-			else if (look->pad == UNIT_HATCHES_CLOSED && state == _unit_state_opening)
+			else if (hatches == UNIT_HATCHES_CLOSED && state == _unit_state_opening)
 				unit_close(object_index);
-			else if (look->pad == UNIT_HATCHES_IDLE && state == _unit_state_opening)
+			else if (hatches == UNIT_HATCHES_IDLE && state == _unit_state_opening)
 				unit_port_animation_idle(object_index);
 		}
 	}
@@ -4385,6 +4420,22 @@ static void client_view_record(
 	coop_presentation.view_previous = coop_presentation.view_latest;
 	coop_presentation.view_latest = view;
 	coop_presentation.view_active = valid && host_view;
+	if (presentation != &coop_presentation.view_source)
+		coop_presentation.view_source = *presentation;
+	coop_presentation.view_source_host_view = host_view;
+	coop_presentation.view_source_valid = TRUE;
+}
+
+/* client: a tick with no presentation newer than the last to play. The
+view is recorded again from it, so the view drawn holds still (or moves
+with the object it is placed by) through the tick, rather than being drawn
+again from the last tick's to this one's: the camera stepped back and
+forth a tick each time the host's datagram came late. */
+static void client_view_hold(
+	void)
+{
+	if (coop_presentation.view_source_valid)
+		client_view_record(&coop_presentation.view_source, coop_presentation.view_source_host_view);
 }
 
 /* client: whether it draws the host's view: while the host's scripts hold
@@ -4597,7 +4648,10 @@ static void client_play_presentation(
 	else if (lag > 0)
 		coop_presentation.played_time++;
 	else
+	{
+		client_view_hold();
 		return;
+	}
 	coop_presentation.playing = TRUE;
 	for (index = 0; index < PRESENTATION_BUFFER_COUNT; index++)
 	{
