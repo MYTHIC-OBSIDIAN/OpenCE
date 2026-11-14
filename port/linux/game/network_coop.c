@@ -184,9 +184,11 @@ enum
 	/* a client ends the cinematic after this long without hearing from the host */
 	PRESENTATION_SILENCE_TICKS = 2 * TICKS_PER_SECOND,
 	/* A client plays the host's presentations (its cutscene camera, fades,
-	letterbox) one a tick, about this many ticks behind the newest it has,
-	so they keep an even pace however unevenly the network delivers them. */
-	PRESENTATION_DELAY_TICKS = 2,
+	letterbox) one a tick, the newest it has (port: no ticks behind it):
+	the objects the camera films are where the host's newest states put
+	them, and a camera two ticks behind them showed a Banshee flying through
+	The Maw's opening metres from where the host's shot had it. */
+	PRESENTATION_DELAY_TICKS = 0,
 	PRESENTATION_BUFFER_COUNT = 8,
 	/* the field of view (radians) is sent as a word, scaled by this */
 	FIELD_OF_VIEW_SCALE = 10000,

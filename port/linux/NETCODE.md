@@ -96,9 +96,11 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   copy of that unit, the unit not drawn), as split screen co-op shows every
   player the scripts' camera; where a cutscene leaves the camera with the
   players (Halo's lifepod crash) each player has their own first person.
+  A client plays the newest presentation it has (no ticks behind it), so
+  its camera films objects where the host's newest states put them.
   The cutscene's events (lines, titles, animations) are held for the
   presentation of the host tick that sent them, and so start with its
-  camera and fades, as on the host, not two ticks before them.
+  camera and fades, as on the host.
   A level's first cutscene camera, set before its players have had their
   controls (an opening cutscene: Halo's, The Maw's), is where the host's
   camera starts, as in a solo game, whose observer takes its first command
@@ -122,6 +124,9 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing
   the scripts' camera looks from its copy's eyes in the host's direction.
+  A client's copy of a unit gets out of its seat as the host's did, by its
+  seat's exit animation (`unit_port_play_seat_exit`: out of a10's
+  cryotube, down a Pelican's ramp), not dropped where it sat.
   A host's script-named object a client's copy is not named by here
   (`object_create_anew`: The Maw's `banshee_cinematic`) is found by its
   index (`object_find`), so its looks, hatches and animations reach it.

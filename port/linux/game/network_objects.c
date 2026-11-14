@@ -3520,6 +3520,18 @@ void network_objects_set_seat(
 			}
 		}
 	}
+	/* Out of the seat as the host's got out: by its exit animation, which
+	carries a biped out of the seat (out of a cryotube, down a Pelican's
+	ramp), as the host's copy played it. Dropped where it sat, a player stood
+	inside the cryotube as its hatch shut, or in the Pelican's hull. One
+	getting out already is left to finish; one with no exit animation, or
+	busy with another, gets out at once. */
+	if (vehicle_index == NONE && unit->object.parent_object_index != NONE && unit->unit.parent_seat_index != NONE &&
+		unit->object.type != _object_type_vehicle &&
+		(unit->unit.animation.state == _unit_state_exiting_seat || unit_port_play_seat_exit(unit_index)))
+	{
+		return;
+	}
 	if (unit->object.parent_object_index != NONE && unit->unit.parent_seat_index != NONE)
 		unit_exit_seat_end(unit_index);
 	if (vehicle_index == NONE || unit->object.parent_object_index != NONE)

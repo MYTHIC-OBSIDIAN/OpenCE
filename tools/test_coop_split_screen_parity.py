@@ -172,3 +172,23 @@ def test_a_copy_its_name_does_not_lead_to_is_found_by_index():
     find = function(coop, "object_find")
     assert "long named_index = object_index_from_name_index(name_index);" in find
     assert "object = object_try_and_get_and_verify_type(object_index, type_mask);\n\t\treturn object && object->definition_index == definition_index" in find
+
+
+def test_a_client_gets_out_of_a_seat_by_its_exit_animation():
+    # out of a10's cryotube and down a Pelican's ramp as the host's copy did,
+    # not dropped where it sat
+    objects = source("port/linux/game/network_objects.c")
+    seat = function(objects, "network_objects_set_seat")
+    assert "unit->unit.animation.state == _unit_state_exiting_seat || unit_port_play_seat_exit(unit_index)" in seat
+    assert seat.index("unit_port_play_seat_exit(unit_index)") < seat.index("unit_exit_seat_end(unit_index);")
+    units = source("source/units/units.c")
+    play = function(units, "unit_port_play_seat_exit")
+    assert "unit->unit.animation.state = _unit_state_exiting_seat;" in play
+    # without the AI's word of it, or the vehicle's opening: the host's give them
+    assert "ai_handle_exit_vehicle" not in play
+    assert "unit_open(" not in play
+
+
+def test_the_camera_is_played_with_the_newest_objects():
+    coop = source("port/linux/game/network_coop.c")
+    assert "PRESENTATION_DELAY_TICKS = 0," in coop

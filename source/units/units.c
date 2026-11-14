@@ -4370,6 +4370,41 @@ boolean unit_port_correct_damage_animation(
 	return TRUE;
 }
 
+boolean unit_port_play_seat_exit(
+	long unit_index)
+{
+	struct unit_datum *unit = unit_get(unit_index);
+	struct unit_definition *unit_definition = unit_definition_get(unit->definition_index);
+	struct animation_graph *animation_graph;
+	struct animation_graph_unit_seat *unit_seat;
+	short animation_index;
+
+	/* (unit_try_and_exit_seat's, without the AI's word of it or the
+	vehicle's opening, which the host's give) */
+	if (unit->object.parent_object_index == NONE || unit->unit.parent_seat_index == NONE ||
+		unit->object.type == _object_type_vehicle || unit_animation_busy(&unit->unit.animation) ||
+		unit_definition->object.animation_graph.index == NONE)
+	{
+		return FALSE;
+	}
+	animation_graph = animation_graph_definition_get(unit_definition->object.animation_graph.index);
+	if (unit->unit.animation.seat_index < 0 || unit->unit.animation.seat_index >= animation_graph->unit_seats.count)
+		return FALSE;
+	unit_seat = TAG_BLOCK_GET_ELEMENT(&animation_graph->unit_seats, unit->unit.animation.seat_index,
+		struct animation_graph_unit_seat);
+	if (unit_seat->animations.count <= 8)
+		return FALSE;
+	animation_index = animation_graph_animation_index_get(&unit_seat->animations)[8].animation_index;
+	if (animation_index == NONE)
+		return FALSE;
+	animation_index = animation_choose_random_permutation(unit_definition->object.animation_graph.index,
+		animation_index);
+	unit_set_animation(unit_index, unit_definition->object.animation_graph.index, animation_index);
+	object_set_visibility(unit_index, TRUE);
+	unit->unit.animation.state = _unit_state_exiting_seat;
+	return TRUE;
+}
+
 void unit_port_animation_idle(
 	long unit_index)
 {

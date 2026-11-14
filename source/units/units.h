@@ -779,6 +779,11 @@ boolean unit_port_correct_damage_animation(
 	long unit_index,
 	short type,
 	short animation_index);
+/* port: a client's copy of a unit gets out of its seat as the host's did,
+by its seat's exit animation (port/linux/game/network_objects.c); FALSE
+where it has none or is busy with another */
+boolean unit_port_play_seat_exit(
+	long unit_index);
 /* port: network co-op (port/linux/game/network_coop.c): a client's copy of
 a vehicle opened where its host's is not (its rider's seat put right),
 shut at once as the host's is */
