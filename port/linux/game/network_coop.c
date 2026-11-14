@@ -1265,6 +1265,8 @@ static struct
 	short hatches;
 } host_sent_looks[MAXIMUM_OBJECTS_PER_MAP];
 
+static char const *coop_trace_tag(long object_index);
+
 /* host: a vehicle's hatches as they are (UNIT_HATCHES_), from its
 animation's state: opening or closing holds its last frame until another
 state. Not one in a custom animation, which _coop_event_unit_animation_resync
@@ -1366,6 +1368,11 @@ static void host_send_object_looks(
 			continue;
 		host_sent_looks[absolute_index].changed = TRUE;
 		host_sent_looks[absolute_index].scale = object->object.scale;
+		if (host_sent_looks[absolute_index].hatches != hatches)
+		{
+			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)",
+				coop_trace_tag(iterator.index), iterator.index, hatches);
+		}
 		host_sent_looks[absolute_index].hatches = hatches;
 		csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
 			sizeof(object->object.region_permutations));
@@ -1653,6 +1660,43 @@ static long camera_object_get(
 	return object_try_and_get(scripted_camera_object_relative_to()) ? scripted_camera_object_relative_to() : NONE;
 }
 
+/* (trace, in debug.txt: an object's tag, short) */
+static char const *coop_trace_tag(
+	long object_index)
+{
+	struct object_datum *object = object_index != NONE ? object_try_and_get(object_index) : NULL;
+	char const *name;
+	char const *last;
+
+	if (!object)
+		return "none";
+	name = tag_get_name(object->definition_index);
+	last = strrchr(name, '\\');
+	return last ? last + 1 : name;
+}
+
+/* (trace: where this machine's first player sits, as "vehicle seat N" or
+"on foot") */
+static void coop_trace_seat(
+	char *text,
+	long size)
+{
+	long player_index = local_player_get_player_index(0);
+	struct player_datum *player = player_index != NONE ? player_try_and_get(player_index) : NULL;
+	struct unit_datum *unit = player ? (struct unit_datum *)object_try_and_get_and_verify_type(player->unit_index,
+		_object_mask_unit) : NULL;
+
+	if (!unit)
+		snprintf(text, (size_t)size, "no unit");
+	else if (unit->object.parent_object_index == NONE)
+		snprintf(text, (size_t)size, "on foot");
+	else
+	{
+		snprintf(text, (size_t)size, "%s seat %d", coop_trace_tag(unit->object.parent_object_index),
+			unit->unit.parent_seat_index);
+	}
+}
+
 /* host: the unit whose own eyes its camera is: its player's first person,
 or the scripts' first-person camera (camera_set_first_person); else NONE */
 static long host_camera_eyes_unit(
@@ -1736,6 +1780,28 @@ static void host_presentation(
 	SET_FLAG(presentation->flags, _presentation_skippable_bit, skip_vote.offered);
 	presentation->skip_votes = (byte)(MIN(skip_vote.votes, PRESENTATION_SKIP_VOTES_MASK) |
 		(eyes_unit_index != NONE ? PRESENTATION_EYES_BIT : 0));
+	/* (trace: what a client is told of the host's view, as it changes) */
+	{
+		static long traced[7] = { -1, -1, -1, -1, -1, -1, -1 };
+		long now[7];
+		char seat[96];
+
+		now[0] = TEST_FLAG(presentation->flags, _presentation_cinematic_bit);
+		now[1] = presentation->camera_scripted;
+		now[2] = presentation->input_disabled;
+		now[3] = !player_control_port_camera_control_enabled();
+		now[4] = director_get_perspective(0);
+		now[5] = eyes_unit_index;
+		now[6] = presentation->camera_object_index;
+		if (csmemcmp(traced, now, sizeof(now)))
+		{
+			csmemcpy(traced, now, sizeof(now));
+			coop_trace_seat(seat, sizeof(seat));
+			error(_error_silent, "co-op view (host): cinematic %ld scripted %ld input off %ld camera locked %ld "
+				"perspective %ld eyes %s camera object %s; player 0 %s",
+				now[0], now[1], now[2], now[3], now[4], coop_trace_tag(now[5]), coop_trace_tag(now[6]), seat);
+		}
+	}
 	presentation->skip_voters = (byte)(MIN(skip_vote.voters, PRESENTATION_SKIP_VOTERS_MASK) |
 		(PIN(players_get_respawn_failure(), 0, NUMBER_OF_RESPAWN_FAILURES - 1) << PRESENTATION_RESPAWN_FAILURE_SHIFT) |
 		(player_control_port_camera_control_enabled() ? 0 : PRESENTATION_CAMERA_LOCKED_BIT));
@@ -1954,7 +2020,12 @@ static void client_apply_unit_animation_resync(
 		return;
 	}
 	if (distributed_graph_animation(event->tag_index, event->value))
+	{
+		error(_error_silent, "co-op: %s %ld plays the host's custom animation %d again, at frame %d (here state %d)",
+			coop_trace_tag(event->object_index), event->object_index, event->value, event->frame,
+			unit->unit.animation.state);
 		unit_port_play_user_animation(event->object_index, event->tag_index, event->value, FALSE, event->frame);
+	}
 }
 
 static void client_apply_scenery_animation(
@@ -3874,10 +3945,31 @@ void network_coop_handle_object_looks(
 		opened. Each unit_open or unit_close plays it again, so only on a
 		difference) */
 		if (look->pad >= UNIT_HATCHES_OPEN && look->pad <= UNIT_HATCHES_IDLE &&
-			object_try_and_get_and_verify_type(object_index, _object_mask_vehicle) &&
-			!client_vehicle_ridden_here(object_index))
+			object_try_and_get_and_verify_type(object_index, _object_mask_vehicle))
 		{
 			short state = unit_get(object_index)->unit.animation.state;
+			boolean ridden = client_vehicle_ridden_here(object_index);
+
+			/* (trace: each vehicle's hatches the host has and this copy's state,
+			as they change) */
+			{
+				static long traced_objects[16];
+				static short traced_values[16];
+				short slot = (short)(DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index) & 15);
+				short value = (short)(look->pad * 1000 + state * 2 + ridden);
+
+				if (traced_objects[slot] != object_index || traced_values[slot] != value)
+				{
+					traced_objects[slot] = object_index;
+					traced_values[slot] = value;
+					error(_error_silent, "co-op hatches (client): %s %ld host %d (1 open, 2 closed, 3 neither), "
+						"here state %d (opening %d, closing %d, custom %d)%s", coop_trace_tag(object_index), object_index,
+						look->pad, state, _unit_state_opening, _unit_state_closing, _unit_state_user_animation,
+						ridden ? ", ridden here: left be" : "");
+				}
+			}
+			if (ridden)
+				continue;
 
 			if (look->pad == UNIT_HATCHES_OPEN && state != _unit_state_opening)
 				unit_open(object_index);
@@ -4242,6 +4334,30 @@ static void client_presentation_apply(
 	client_view_record(presentation, host_view);
 	client_host_camera_set((coop_presentation.cinematic_started && presentation->camera_scripted) ||
 		coop_presentation.view_active || coop_spectate_nothing_to_watch(0));
+	/* (trace: what this client makes of the host's view, as it changes) */
+	{
+		static long traced[9] = { -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+		long now[9];
+		char seat[96];
+
+		now[0] = cinematic;
+		now[1] = presentation->camera_scripted;
+		now[2] = presentation->input_disabled;
+		now[3] = (presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) != 0;
+		now[4] = (presentation->skip_votes & PRESENTATION_EYES_BIT) != 0;
+		now[5] = host_view;
+		now[6] = coop_presentation.view_active;
+		now[7] = presentation->camera_object_index;
+		now[8] = director_get_perspective(0);
+		if (csmemcmp(traced, now, sizeof(now)))
+		{
+			csmemcpy(traced, now, sizeof(now));
+			coop_trace_seat(seat, sizeof(seat));
+			error(_error_silent, "co-op view (client): host's cinematic %ld scripted %ld input off %ld camera locked %ld "
+				"eyes %ld; wanted %ld drawn %ld; camera object %s; perspective here %ld; player 0 %s",
+				now[0], now[1], now[2], now[3], now[4], now[5], now[6], coop_trace_tag(now[7]), now[8], seat);
+		}
+	}
 	/* (also outside a cinematic: a cutscene that leaves the players their
 	controls shows the bars too). Only as it changes: each call restarts the
 	bars' clock (cinematics.c), so called every tick they never grew in */

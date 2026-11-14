@@ -145,7 +145,8 @@ def test_vehicle_hatches_and_custom_animations_are_resent():
     assert "short hatches = host_unit_hatches(iterator.index);" in looks
     assert "look->pad = hatches;" in looks
     client = function(coop, "network_coop_handle_object_looks")
-    assert "!client_vehicle_ridden_here(object_index)" in client
+    assert "boolean ridden = client_vehicle_ridden_here(object_index);" in client
+    assert "if (ridden)\n\t\t\t\tcontinue;" in client
     assert "unit_port_animation_idle(object_index);" in client
     # custom animations again every refresh, left be where already played
     resync = function(coop, "host_resync_unit_animations")
