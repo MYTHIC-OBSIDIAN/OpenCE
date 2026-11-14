@@ -12,11 +12,12 @@ that clients need to see is sent from this file:
   is shown, the mission timer), the players' maximum vitality, and
   whether the cutscene can be skipped. A client plays them one a tick by the host's clock, a
   couple of ticks behind the newest, so the camera keeps an even pace. It
-  starts and stops its own cinematic to match, and from the cutscene's start
-  until the players have their controls back draws exactly the host's view:
-  the scripts' camera, or the host's own first person (through its unit's
-  eyes, the unit not drawn). If the host goes quiet for two seconds, the
-  client ends the cinematic so its players aren't stuck.
+  starts and stops its own cinematic to match, and while the host's scripts
+  hold the camera draws the host's view (a shot, or the eyes of the unit the
+  scripts' first-person camera is on, that unit not drawn), as split screen
+  co-op shows every player the scripts' camera; otherwise its own. If the
+  host goes quiet for two seconds, the client ends the cinematic so its
+  players aren't stuck.
 - Events, which happen once: script sounds (dialogue, music, ambience),
   chapter titles, help and objective text, "Checkpoint" messages, screen
   shake, nav points, and custom animations on units and scenery. Each is
@@ -142,9 +143,6 @@ void local_player_set_player_index(short local_player_index, long player_index);
 from this far behind and above the host's eyes, easing a fraction of the way
 toward it each tick. */
 #define WATCH_HOST_DISTANCE 3.0f
-/* how far (world units) from another player's unit's eyes the host's view
-may be, and still be that unit's own first person (client_host_eyes_unit) */
-#define HOST_EYES_DISTANCE 1.0f
 #define WATCH_HOST_HEIGHT 1.0f
 #define WATCH_HOST_FOLLOW 0.2f
 
@@ -538,15 +536,13 @@ static struct
 	/* the object the host's cutscene camera is placed relative to, here
 	(NONE: none), which the camera is drawn moving with between ticks */
 	long camera_object_index;
-	/* the host's player whose eyes the host's view is (its own first person,
-	not a scripted camera), as this machine's scripted first-person camera,
-	which is not drawn in its own way (render_objects.c's
-	object_is_first_person_camera); NONE for none */
+	/* the unit whose eyes the host's scripts' camera is (camera_set_first_person),
+	as this machine's scripted first-person camera, which is not drawn in its
+	own way (render_objects.c's object_is_first_person_camera); NONE for none */
 	long first_person_unit_index;
 	/* the host's own view on the last two ticks played, drawn instead of
-	this machine's while view_active (network_coop_client_host_view): from
-	the host's cutscene's start until the players have their controls back,
-	every view the host has between (client_host_view_wanted) */
+	this machine's while view_active (network_coop_client_host_view): while
+	the host's scripts hold the camera (client_host_view_wanted) */
 	boolean view_active;
 	boolean view_previous_valid;
 	struct network_coop_view view_previous;
@@ -817,11 +813,25 @@ static long object_find(
 	struct object_datum *object;
 
 	if (name_index != NONE)
-		object_index = object_index_from_name_index(name_index);
+	{
+		long named_index = object_index_from_name_index(name_index);
+
+		object = named_index != NONE ? object_try_and_get_and_verify_type(named_index, type_mask) : NULL;
+		if (object && object->definition_index == definition_index)
+			return named_index;
+		/* (port: a copy of the host's that its name does not lead to here, as
+		the scripts made it there (object_create_anew: The Maw's
+		banshee_cinematic): by its index, which is the host's) */
+		if (object_index == NONE)
+			return NONE;
+		object = object_try_and_get_and_verify_type(object_index, type_mask);
+		return object && object->definition_index == definition_index &&
+			(object->object.name_index == NONE || object->object.name_index == name_index) ? object_index : NONE;
+	}
 	if (object_index == NONE)
 		return NONE;
 	object = object_try_and_get_and_verify_type(object_index, type_mask);
-	if (!object && name_index == NONE)
+	if (!object)
 	{
 		struct object_iterator iterator;
 		struct object_datum *candidate;
@@ -4239,47 +4249,16 @@ static void client_view_record(
 	coop_presentation.view_active = valid && host_view;
 }
 
-/* client: whether it draws the host's view, exactly as the host has it: from
-the moment the host's cutscene begins (a cinematic, the scripts' camera, or
-the players' controls or their camera taken: Halo's lifepod) until the
-players have their controls again at
-its end. Split screen co-op drew one view through a cinematic and gave each
-player their own as it ended, before the controls came back; a client of a
-network game sees all of it as the host does. */
+/* client: whether it draws the host's view: while the host's scripts hold
+its camera (camera_control: a cutscene's shots, or camera_set_first_person's
+eyes), as split screen co-op shows every player the scripts' camera. Where a
+cutscene leaves the camera with the players (Halo's lifepod crash, the
+moments before the controls come back) each player has their own view, their
+own first person with their own arms, as split screen's do. */
 static boolean client_host_view_wanted(
 	struct distributed_coop_presentation const *presentation)
 {
-	return TEST_FLAG(presentation->flags, _presentation_cinematic_bit) || presentation->camera_scripted ||
-		presentation->input_disabled || (presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) != 0;
-}
-
-/* client: the unit of another machine's player whose eyes the host's view
-is at (the host's own first person), else NONE */
-static long client_host_eyes_unit(
-	real_point3d const *camera_position)
-{
-	struct data_iterator iterator;
-	struct player_datum *player;
-	real nearest = HOST_EYES_DISTANCE * HOST_EYES_DISTANCE;
-	long found = NONE;
-
-	data_iterator_new(&iterator, player_data);
-	while ((player = data_iterator_next(&iterator)) != NULL)
-	{
-		real_point3d eyes;
-		real distance;
-
-		if (player->local_player_index != NONE || !unit_try_and_get(player->unit_index))
-			continue;
-		unit_get_camera_position(player->unit_index, &eyes);
-		distance = distance_squared3d(&eyes, camera_position);
-		if (distance <= nearest)
-		{
-			nearest = distance;
-			found = player->unit_index;
-		}
-	}
-	return found;
+	return presentation->camera_scripted != 0;
 }
 
 static void client_presentation_apply(
@@ -4323,12 +4302,11 @@ static void client_presentation_apply(
 	{
 		client_cinematic_end();
 	}
-	/* Use the host's view, exactly as the host has it, from its cutscene's
-	start until the players have their controls back (client_host_view_wanted),
-	a dead player's too: the cutscene's camera wins over spectating (shots
-	filmed by a moving Pelican follow this machine's copy of it:
-	camera_object_offset), and a cutscene that leaves the camera with the
-	host shows the host's own first person. A player with no unit and nobody
+	/* Use the host's view while its scripts hold the camera
+	(client_host_view_wanted), a dead player's too: the cutscene's camera wins
+	over spectating (shots filmed by a moving Pelican follow this machine's
+	copy of it: camera_object_offset; the scripts' first-person camera, the
+	eyes of this machine's copy of its unit). A player with no unit and nobody
 	to watch also gets the host's view, rather than a dead camera at the
 	world origin. */
 	client_view_record(presentation, host_view);
@@ -4397,15 +4375,13 @@ static void client_presentation_apply(
 		{
 			long eyes_unit = NONE;
 
-			/* (the host says whose eyes: PRESENTATION_EYES_BIT; a host
-			without it, its own first person found by where it is) */
+			/* (the host says whose eyes the scripts' camera is:
+			PRESENTATION_EYES_BIT) */
 			if (coop_presentation.view_active && (presentation->skip_votes & PRESENTATION_EYES_BIT))
 			{
 				eyes_unit = distributed_object_index_valid(presentation->camera_object_index) &&
 					unit_try_and_get(presentation->camera_object_index) ? presentation->camera_object_index : NONE;
 			}
-			else if (coop_presentation.view_active && !presentation->camera_scripted)
-				eyes_unit = client_host_eyes_unit(&presentation->camera_position);
 
 			if (eyes_unit != NONE)
 			{

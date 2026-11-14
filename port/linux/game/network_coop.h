@@ -176,8 +176,8 @@ boolean network_coop_pause_request(short request);
 between ticks (the host's camera point's relative to it), or NONE */
 long network_coop_client_camera_object(void);
 /* render_interpolation.c: the host's own view, which a client draws instead
-of its own from the host's cutscene's start until the players have their
-controls back, as
+of its own while the host's scripts hold the camera (as split screen co-op
+shows every player the scripts' camera), as
 the host had it on the last two ticks played (its position relative to this
 machine's copy of a filmed object, object_index, else NONE); FALSE when the
 client draws its own */

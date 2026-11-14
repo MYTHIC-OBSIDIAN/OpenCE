@@ -91,11 +91,12 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   `volume_test_objects_all` on the players waits for both, and
   `game_safe_to_save` (before a cutscene, and checkpoints) for both alive
   and safe. Only a larger game takes one player for all (`coop_scripts.c`).
-  From a cutscene's start (a cinematic, the scripts' camera, or the
-  players' controls taken) until the players have their controls back, a
-  client draws exactly the host's view: the scripts' camera, or the host's
-  own first person through its unit's eyes (that unit not drawn), never its
-  own. The cutscene's events (lines, titles, animations) are held for the
+  A client draws the host's view while the host's scripts hold the camera
+  (a cutscene's shots, or `camera_set_first_person`'s eyes, through its
+  copy of that unit, the unit not drawn), as split screen co-op shows every
+  player the scripts' camera; where a cutscene leaves the camera with the
+  players (Halo's lifepod crash) each player has their own first person.
+  The cutscene's events (lines, titles, animations) are held for the
   presentation of the host tick that sent them, and so start with its
   camera and fades, as on the host, not two ticks before them.
   A level's first cutscene camera, set before its players have had their
@@ -105,9 +106,9 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   game's frames before it had given the observer
   (`network_coop_opening_camera`, `observer_port_cut_to_next_command`).
   The players' camera taken by the scripts (`player_camera_control`:
-  Halo's lifepod crash) counts as a cutscene too, carried in the top bit of
-  the presentation's `skip_voters` (the respawn failure keeps the three
-  below it), and a client takes it on its own players. Through a cutscene
+  Halo's lifepod crash) is carried in the top bit of the presentation's
+  `skip_voters` (the respawn failure keeps the three below it), and a
+  client takes it on its own players. Through a cutscene
   a client's copies follow every move the host sends, however small (a
   cutscene's biped bobbed within the tolerance). A vehicle's hatches as the
   host's are (opening or held open, closing or held shut, or neither: The
@@ -118,10 +119,12 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   its frame (`_coop_event_unit_animation_resync`), which a copy made after
   it began (a level's opening) plays and one playing it already ignores.
   Where the host's camera is a unit's own eyes (its player's first person,
-  or `camera_set_first_person`: Halo's lifepod) the presentation names the
-  unit (`camera_object_index`, the top bit of `skip_votes`), and a client
-  looks from its copy's eyes in the host's direction, not from an offset
-  two ticks old in a tumbling lifepod.
+  or `camera_set_first_person`) the presentation names the unit
+  (`camera_object_index`, the top bit of `skip_votes`); a client drawing
+  the scripts' camera looks from its copy's eyes in the host's direction.
+  A host's script-named object a client's copy is not named by here
+  (`object_create_anew`: The Maw's `banshee_cinematic`) is found by its
+  index (`object_find`), so its looks, hatches and animations reach it.
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.

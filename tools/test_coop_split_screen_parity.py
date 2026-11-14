@@ -57,24 +57,21 @@ def test_respawn_is_split_screens_beside_the_partner():
     assert "players_respawn_coop())" in function(main, "main_respawn_private")
 
 
-def test_client_sees_the_hosts_view_until_control_returns():
+def test_client_sees_the_scripts_camera_as_split_screen_does():
     coop = source("port/linux/game/network_coop.c")
     wanted = function(coop, "client_host_view_wanted")
-    # a cinematic, the scripts' camera, or the controls taken: until the
-    # players have them back
-    assert "_presentation_cinematic_bit" in wanted
-    assert "presentation->camera_scripted" in wanted
-    assert "presentation->input_disabled" in wanted
+    # the host's view only while its scripts hold the camera, as split screen
+    # shows every player the scripts' camera; else each player's own
+    assert "return presentation->camera_scripted != 0;" in wanted
+    assert "input_disabled" not in wanted
+    assert "CAMERA_LOCKED" not in wanted
     record = function(coop, "client_view_record")
     assert "coop_presentation.view_active = valid && host_view;" in record
     apply = function(coop, "client_presentation_apply")
     assert "client_view_record(presentation, host_view);" in apply
-    # the host's own first person: through its unit's eyes, which is not drawn
-    assert "client_host_eyes_unit(&presentation->camera_position)" in apply
+    # the scripts' first-person camera: through the named unit's eyes here
     assert "scripted_camera_set_first_person(eyes_unit);" in apply
-    eyes = function(coop, "client_host_eyes_unit")
-    assert "player->local_player_index != NONE" in eyes
-    assert "unit_get_camera_position(" in eyes
+    assert "client_host_eyes_unit" not in coop
 
 
 def test_events_start_on_their_presentations_tick():
@@ -114,11 +111,10 @@ def test_opening_cutscene_starts_where_solos_does():
     assert "csmemset(&coop_opening, 0, sizeof(coop_opening));" in function(coop, "network_coop_new_game")
 
 
-def test_lifepod_camera_lock_shows_the_hosts_view():
+def test_lifepod_camera_lock_reaches_the_client():
     coop = source("port/linux/game/network_coop.c")
     host = function(coop, "host_presentation")
     assert "player_control_port_camera_control_enabled() ? 0 : PRESENTATION_CAMERA_LOCKED_BIT" in host
-    assert "(presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) != 0" in function(coop, "client_host_view_wanted")
     apply = function(coop, "client_presentation_apply")
     assert "scripted_player_control_set_camera_control((presentation->skip_voters & PRESENTATION_CAMERA_LOCKED_BIT) == 0);" in apply
     # the respawn failure's three bits, below the lock's
@@ -168,3 +164,11 @@ def test_host_names_the_eyes_it_looks_through():
     record = function(coop, "client_view_record")
     assert "unit_get_camera_position(presentation->camera_object_index, &view.position);" in record
     assert "skip_vote.votes = presentation->skip_votes & PRESENTATION_SKIP_VOTES_MASK;" in coop
+
+
+def test_a_copy_its_name_does_not_lead_to_is_found_by_index():
+    # The Maw's banshee_cinematic: the host's looks (its canopy) reached no copy
+    coop = source("port/linux/game/network_coop.c")
+    find = function(coop, "object_find")
+    assert "long named_index = object_index_from_name_index(name_index);" in find
+    assert "object = object_try_and_get_and_verify_type(object_index, type_mask);\n\t\treturn object && object->definition_index == definition_index" in find
