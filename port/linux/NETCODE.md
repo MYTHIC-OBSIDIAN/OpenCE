@@ -142,7 +142,15 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   (`_coop_event_scenery_animation_resync`, network version 52); and one
   that reaches a client before its copy of the scenery (made from the
   object names a moment after the host's) is held until the copy is made,
-  then started where the host's has got to.
+  then started where the host's has got to. So is a unit's custom
+  animation that reaches a client before its unit, and an attach before
+  its parent or child (a10's batons, c40's Index came a moment late). A
+  unit's weapon in hand on the host is in hand on a client at once, rather
+  than once a custom animation its copy plays lets it be readied.
+  Through a cutscene a client also holds the host's object and actor states
+  and applies each on the tick its host tick is played, with the camera:
+  applied as they came, a character walking through the shot (Sgt Johnson
+  in a10) stepped back and forth as datagrams bunched.
   Where the host's camera is a unit's own eyes (its player's first person,
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing

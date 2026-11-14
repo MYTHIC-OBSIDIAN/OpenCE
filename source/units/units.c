@@ -4411,6 +4411,23 @@ void unit_port_animation_idle(
 	unit_animation_set_state(unit_index, _unit_state_idle);
 }
 
+void unit_port_ready_desired_weapon(
+	long unit_index)
+{
+	struct unit_datum *unit = unit_get(unit_index);
+	long weapon_index;
+
+	if (unit->unit.desired_weapon_index == unit->unit.current_weapon_index ||
+		TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ||
+		TEST_FLAG(unit->object.damage_flags, _object_cannot_hold_weapon_bit))
+	{
+		return;
+	}
+	weapon_index = unit_get_desired_weapon_index(unit_index);
+	if (weapon_index != NONE && unit_can_use_weapon(unit_index, weapon_index))
+		unit_ready_desired_weapon(unit_index, TRUE);
+}
+
 boolean unit_port_set_base_animation(
 	long unit_index,
 	long animation_graph_index,
@@ -4424,7 +4441,17 @@ boolean unit_port_set_base_animation(
 	{
 		return FALSE;
 	}
-	unit_set_animation(unit_index, animation_graph_index, animation_index);
+	{
+		/* (at the frame this copy had reached: the host's began its own as
+		this one began its, a tick or two apart, and from its start again
+		it stepped back) */
+		short frame_index = unit->object.animation.state.frame_index;
+		short frame_count = TAG_BLOCK_GET_ELEMENT(&animation_graph_definition_get(animation_graph_index)->animations,
+			animation_index, struct animation)->frame_count;
+
+		unit_set_animation(unit_index, animation_graph_index, animation_index);
+		unit->object.animation.state.frame_index = (short)MAX(0, MIN(frame_index, frame_count - 1));
+	}
 	return TRUE;
 }
 

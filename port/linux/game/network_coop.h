@@ -54,6 +54,10 @@ boolean network_coop_opening_camera(void);
 its view (from the cutscene's start until the players have their controls
 back): its copies then follow the host's every move */
 boolean network_coop_client_cutscene(void);
+/* (port) a client's host tick of the presentation last played, NONE while
+it plays none: the objects' and actors' states it holds through a cutscene
+are applied on it (network_distributed.c) */
+long network_coop_client_played_time(void);
 /* Host: retain the current session roster when loading a checkpoint. */
 void network_coop_restore_players(void);
 /* game_state.c: remember the team only after a checkpoint write succeeds. */

@@ -5969,6 +5969,109 @@ static boolean distributed_message_epoch_valid(
 
 /* a message of the distributed kind; machine_index is the sender's on the
 host, NONE on a client */
+/* A co-op client through a cutscene plays the host's camera, fades and
+events a couple of ticks behind the newest (network_coop.c's presentation
+delay), so a datagram a little late is in before its tick. The objects' and
+actors' states are held the same way and applied on the tick their host
+tick is played: applied as they came, a character walking through the shot
+(Sgt Johnson in a10) stepped back and forth as datagrams bunched, the
+copies that follow the host in a cutscene being put exactly where each
+state says. Held only while it follows a cutscene; any held are applied
+as it ends. */
+#define MAXIMUM_HELD_STATE_MESSAGES 32
+#define HELD_STATE_MESSAGE_BYTES 4096
+
+static struct
+{
+	long host_time;
+	unsigned long checkpoint_epoch;
+	byte type;
+	short count;
+	byte entries[HELD_STATE_MESSAGE_BYTES];
+} distributed_held_states[MAXIMUM_HELD_STATE_MESSAGES];
+static short distributed_held_state_count;
+
+static void distributed_apply_state_message(
+	byte type,
+	void const *entries,
+	short count,
+	long host_time,
+	unsigned long checkpoint_epoch)
+{
+	/* (one from before a revert since: stale, as it would have been had it
+	come now) */
+	if (checkpoint_epoch != distributed_checkpoint_epoch)
+		return;
+	if (type == _distributed_message_object_states)
+		network_objects_handle_states(entries, count, host_time);
+	else
+		network_actors_handle_states(entries, count);
+}
+
+/* the oldest held, applied and let go */
+static void distributed_play_oldest_held_state(
+	void)
+{
+	if (!distributed_held_state_count)
+		return;
+	distributed_apply_state_message(distributed_held_states[0].type, distributed_held_states[0].entries,
+		distributed_held_states[0].count, distributed_held_states[0].host_time, distributed_held_states[0].checkpoint_epoch);
+	distributed_held_state_count--;
+	csmemmove(&distributed_held_states[0], &distributed_held_states[1],
+		distributed_held_state_count * sizeof(distributed_held_states[0]));
+}
+
+/* (a client) whether a message of the host's states is held for its tick */
+static boolean distributed_hold_state_message(
+	long machine_index,
+	struct distributed_message_header const *header,
+	void const *entries,
+	short count,
+	long entries_size)
+{
+	long played_time = network_coop_client_played_time();
+
+	if (machine_index != NONE || !network_coop_client_cutscene() || played_time == NONE ||
+		header->game_time <= played_time || entries_size < 0 || entries_size > HELD_STATE_MESSAGE_BYTES)
+	{
+		return FALSE;
+	}
+	if (distributed_held_state_count == MAXIMUM_HELD_STATE_MESSAGES)
+		distributed_play_oldest_held_state();
+	distributed_held_states[distributed_held_state_count].host_time = header->game_time;
+	distributed_held_states[distributed_held_state_count].checkpoint_epoch = header->checkpoint_epoch;
+	distributed_held_states[distributed_held_state_count].type = header->type;
+	distributed_held_states[distributed_held_state_count].count = count;
+	csmemcpy(distributed_held_states[distributed_held_state_count].entries, entries, entries_size);
+	distributed_held_state_count++;
+	return TRUE;
+}
+
+void network_distributed_play_held_states(
+	void)
+{
+	long played_time = network_coop_client_played_time();
+	boolean all = !network_coop_client_cutscene() || played_time == NONE;
+	short index = 0;
+
+	while (index < distributed_held_state_count)
+	{
+		if (all || distributed_held_states[index].host_time <= played_time)
+		{
+			distributed_apply_state_message(distributed_held_states[index].type, distributed_held_states[index].entries,
+				distributed_held_states[index].count, distributed_held_states[index].host_time,
+				distributed_held_states[index].checkpoint_epoch);
+			distributed_held_state_count--;
+			csmemmove(&distributed_held_states[index], &distributed_held_states[index + 1],
+				(distributed_held_state_count - index) * sizeof(distributed_held_states[0]));
+		}
+		else
+		{
+			index++;
+		}
+	}
+}
+
 void network_distributed_handle_message(
 	long machine_index,
 	word const *message,
@@ -6230,7 +6333,11 @@ void network_distributed_handle_message(
 			header.count);
 		break;
 	case _distributed_message_actor_states:
-		network_actors_handle_states(entries, header.count);
+		if (!distributed_hold_state_message(machine_index, &header, entries, header.count,
+			(long)size - (long)sizeof(header)))
+		{
+			network_actors_handle_states(entries, header.count);
+		}
 		break;
 	case _distributed_message_structure_bsp:
 		distributed_handle_structure_bsp((struct distributed_structure_bsp const *)entries);
@@ -6331,7 +6438,11 @@ void network_distributed_handle_message(
 		network_objects_handle_changes(entries, header.count);
 		break;
 	case _distributed_message_object_states:
-		network_objects_handle_states(entries, header.count, header.game_time);
+		if (!distributed_hold_state_message(machine_index, &header, entries, header.count,
+			(long)size - (long)sizeof(header)))
+		{
+			network_objects_handle_states(entries, header.count, header.game_time);
+		}
 		break;
 	case _distributed_message_game_state:
 		game_engine_read_network_state((byte const *)entries, size - sizeof(header));

@@ -255,6 +255,7 @@ static void first_person_weapon_message_from_unit(long index,int message) {(void
 static void unit_exit_seat_end(long index) {object_detach(index);unit_get(index)->unit.parent_seat_index=NONE;}
 enum {_unit_state_exiting_seat=34};
 static int unit_port_play_seat_exit(long index) {(void)index;return 0;}
+static void unit_port_ready_desired_weapon(long index) {(void)index;}
 static void unit_set_actively_controlled(long index,int active) {(void)index;(void)active;}
 static void player_control_new_unit(short local,long index) {CHECK(local==0,"local controller");control_unit=index;controls_changed++;}
 static void observer_obsolete_position(short local) {CHECK(local==0,"local observer");}

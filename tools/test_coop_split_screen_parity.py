@@ -259,11 +259,11 @@ def test_scenery_animations_reach_a_copy_made_since():
     assert "event_new(_coop_event_scenery_animation_resync)" in resync
     assert "host_resync_scenery_animations();" in function(coop, "network_coop_host_tick")
     apply = function(coop, "client_apply_scenery_animation")
-    assert "if (!client_start_scenery_animation(event, 0, resync))\n\t\tclient_hold_scenery_animation(event);" in apply
+    assert "if (!client_start_scenery_animation(event, 0, resync))\n\t\tclient_hold_event(event);" in apply
     start = function(coop, "client_start_scenery_animation")
     assert "scenery->object.object.animation.state.index == event->value" in start
     assert "frame = event->frame + frames_since;" in start
-    assert "client_play_held_scenery_animations();" in function(coop, "network_coop_client_tick")
+    assert "client_play_held_events();" in function(coop, "network_coop_client_tick")
     events = function(coop, "client_apply_event")
     assert "case _coop_event_scenery_animation_resync:\n\t\tclient_apply_scenery_animation(event, TRUE);" in events
 
@@ -301,5 +301,50 @@ def test_an_item_the_scripts_hang_on_an_object_is_shown():
     show = function(coop, "client_show_attached_item")
     assert "_item_attached_to_unit_bit" in show
     assert "object_set_visibility(child_index, TRUE);" in show
-    attach = function(coop, "client_apply_attach")
+    attach = function(coop, "client_try_attach")
     assert attach.count("client_show_attached_item(child_index);") == 2
+
+
+def test_an_event_reaching_a_client_before_its_objects_is_held():
+    # the batons and the Index came a moment late: their unit's animation or
+    # their attach played before the client had the objects, and was lost
+    # until a refresh
+    coop = source("port/linux/game/network_coop.c")
+    assert "if (!client_start_unit_animation(event, 0))\n\t\tclient_hold_event(event);" in function(coop, "client_apply_unit_animation")
+    assert "if (!client_try_attach(event))\n\t\tclient_hold_event(event);" in function(coop, "client_apply_attach")
+    held = function(coop, "client_play_held_events")
+    assert "done = client_start_unit_animation(event, since);" in held
+    assert "done = client_try_attach(event);" in held
+    assert "done = client_start_scenery_animation(event, since, FALSE);" in held
+    start = function(coop, "client_start_unit_animation")
+    assert "frame = event->frame + frames_since;" in start
+
+
+def test_a_units_weapon_is_in_hand_when_the_hosts_is():
+    # a custom animation begun before the host's inventory came held the
+    # marine's batons back until it ended
+    objects = source("port/linux/game/network_objects.c")
+    apply = function(objects, "distributed_client_apply_inventory")
+    assert "if (!local)\n\t\t\tunit_port_ready_desired_weapon(inventory->unit_index);" in apply
+    units = source("source/units/units.c")
+    ready = function(units, "unit_port_ready_desired_weapon")
+    assert "unit_ready_desired_weapon(unit_index, TRUE);" in ready
+    assert "unit_animation_busy" not in ready
+
+
+def test_states_play_with_the_camera_through_a_cutscene():
+    # Sgt Johnson stepped back and forth: states applied as they came while
+    # the camera played two ticks behind
+    distributed = source("port/linux/game/network_distributed.c")
+    hold = function(distributed, "distributed_hold_state_message")
+    assert "!network_coop_client_cutscene()" in hold
+    assert "header->game_time <= played_time" in hold
+    play = function(distributed, "network_distributed_play_held_states")
+    assert "distributed_held_states[index].host_time <= played_time" in play
+    apply = function(distributed, "distributed_apply_state_message")
+    assert "if (checkpoint_epoch != distributed_checkpoint_epoch)\n\t\treturn;" in apply
+    handle = function(distributed, "network_distributed_handle_message")
+    assert handle.count("distributed_hold_state_message(machine_index, &header, entries, header.count,") == 2
+    coop = source("port/linux/game/network_coop.c")
+    tick = function(coop, "network_coop_client_tick")
+    assert tick.index("client_play_presentation();") < tick.index("network_distributed_play_held_states();")

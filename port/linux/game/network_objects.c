@@ -3296,6 +3296,12 @@ static void distributed_client_apply_inventory(
 			unit->unit.weapon_object_indices[unit->unit.current_weapon_index] == NONE))
 	{
 		unit->unit.desired_weapon_index = inventory->current_weapon_index;
+		/* (port: in hand now, as the host's already is, not once an
+		animation this copy plays lets it: a cutscene's custom animation
+		begun before this came, which held the marine's batons back in a10
+		till it ended. A client's own player readies its own.) */
+		if (!local)
+			unit_port_ready_desired_weapon(inventory->unit_index);
 	}
 	/* the ammunition (as much as the weapon's magazines hold): a client's
 	own player spends its own as it fires and reloads (the host's count

@@ -791,12 +791,18 @@ void unit_port_animation_idle(
 	long unit_index);
 /* port: network co-op (port/linux/game/network_coop.c): a client's copy of
 a cutscene character takes the base animation (an idle's permutation, a
-step) the host's copy has chosen, from its start; FALSE where it plays a
-custom animation, or the graph lacks it */
+step) the host's copy has chosen, at the frame its own had reached; FALSE
+where it plays a custom animation, or the graph lacks it */
 boolean unit_port_set_base_animation(
 	long unit_index,
 	long animation_graph_index,
 	short animation_index);
+/* port: distributed client: a unit the host's inventory says holds a
+weapon in hand takes it in hand now, not once an animation it plays lets
+it (a cutscene's custom animation, begun here before the host's inventory
+came: the marine's batons in a10, held only once his animation ended) */
+void unit_port_ready_desired_weapon(
+	long unit_index);
 /* port: network co-op (port/linux/game/network_coop.c) */
 void unit_port_play_user_animation(
 	long unit_index,

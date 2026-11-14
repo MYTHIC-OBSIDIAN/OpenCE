@@ -2165,18 +2165,48 @@ static void client_apply_nav_point(
 	}
 }
 
-static void client_apply_unit_animation(
-	struct distributed_coop_event const *event)
+/* FALSE without the unit here yet (client_hold_event); frames_since past
+the event's frame */
+static boolean client_start_unit_animation(
+	struct distributed_coop_event const *event,
+	long frames_since)
 {
+	struct animation *animation;
+	long frame;
+
 	if (!distributed_object_index_valid(event->object_index) || !network_objects_client_has(event->object_index) ||
 		!object_try_and_get_and_verify_type(event->object_index, _object_mask_unit))
 	{
-		return;
+		return FALSE;
 	}
 	if (event->tag_index == NONE)
+	{
 		unit_stop_custom_animation(event->object_index);
-	else if (distributed_graph_animation(event->tag_index, event->value))
-		unit_port_play_user_animation(event->object_index, event->tag_index, event->value, event->interpolate, event->frame);
+		return TRUE;
+	}
+	animation = distributed_graph_animation(event->tag_index, event->value);
+	if (!animation)
+		return TRUE;
+	frame = event->frame + frames_since;
+	if (frame >= animation->frame_count)
+		frame = animation->frame_count - 1;
+	if (frames_since)
+	{
+		error(_error_silent, "co-op: %s %ld plays the host's custom animation %d late (made since), at frame %ld",
+			coop_trace_tag(event->object_index), event->object_index, event->value, frame);
+	}
+	unit_port_play_user_animation(event->object_index, event->tag_index, event->value,
+		frames_since ? FALSE : event->interpolate, (short)frame);
+	return TRUE;
+}
+
+static void client_hold_event(struct distributed_coop_event const *event);
+
+static void client_apply_unit_animation(
+	struct distributed_coop_event const *event)
+{
+	if (!client_start_unit_animation(event, 0))
+		client_hold_event(event);
 }
 
 /* client: the custom animation the host's unit plays, if its copy is not
@@ -2187,11 +2217,13 @@ static void client_apply_unit_animation_resync(
 	struct unit_datum *unit;
 
 	if (!distributed_object_index_valid(event->object_index) || !network_objects_client_has(event->object_index) ||
-		!(unit = (struct unit_datum *)object_try_and_get_and_verify_type(event->object_index, _object_mask_unit)) ||
-		unit->unit.player_index != NONE)
+		!(unit = (struct unit_datum *)object_try_and_get_and_verify_type(event->object_index, _object_mask_unit)))
 	{
+		client_hold_event(event);
 		return;
 	}
+	if (unit->unit.player_index != NONE)
+		return;
 	if (unit->unit.animation.state == _unit_state_user_animation &&
 		unit->object.animation.animation_graph_index == event->tag_index &&
 		unit->object.animation.state.index == event->value)
@@ -2207,18 +2239,21 @@ static void client_apply_unit_animation_resync(
 	}
 }
 
-/* client: scenery animations whose scenery this machine has not made yet
-(the scripts made it this tick: its copy follows the object names a moment
-after), started once it has, at the frame the host's is at by then */
-#define MAXIMUM_HELD_SCENERY_ANIMATIONS 16
-#define HELD_SCENERY_ANIMATION_TICKS (5 * TICKS_PER_SECOND)
+/* client: events about objects this machine has not made yet (the
+scripts made them this tick: a unit or item's copy follows a moment after
+in the object stream, a scenery's after the object names): a unit's or a
+scenery's animation, at the frame the host's has reached by then, and an
+attach. Played as soon as their objects are here, for a few seconds; the
+host's refreshes resend what was missed past that. */
+#define MAXIMUM_HELD_EVENTS 32
+#define HELD_EVENT_TICKS (5 * TICKS_PER_SECOND)
 
 static struct
 {
-	struct distributed_coop_event events[MAXIMUM_HELD_SCENERY_ANIMATIONS];
-	long times[MAXIMUM_HELD_SCENERY_ANIMATIONS];
+	struct distributed_coop_event events[MAXIMUM_HELD_EVENTS];
+	long times[MAXIMUM_HELD_EVENTS];
 	short count;
-} client_held_scenery_animations;
+} client_held_events;
 
 /* starts the host's scenery animation on this machine's copy, frames_since
 past the event's frame; FALSE without the copy (or the animation). A
@@ -2256,46 +2291,73 @@ static boolean client_start_scenery_animation(
 	return TRUE;
 }
 
-static void client_hold_scenery_animation(
+/* the held event's kind, as one: a resync is its event's */
+static byte held_event_kind(
+	byte kind)
+{
+	return kind == _coop_event_scenery_animation_resync ? _coop_event_scenery_animation :
+		kind == _coop_event_unit_animation_resync ? _coop_event_unit_animation : kind;
+}
+
+/* client: an event whose objects are not here yet, kept (the newest of a
+kind for an object replaces its older: an animation, or an attach of the
+same child) */
+static void client_hold_event(
 	struct distributed_coop_event const *event)
 {
 	short index;
 
-	if (!distributed_graph_animation(event->tag_index, event->value))
-		return;
-	/* (the newest for a scenery replaces its older) */
-	for (index = 0; index < client_held_scenery_animations.count; index++)
+	for (index = 0; index < client_held_events.count; index++)
 	{
-		if (client_held_scenery_animations.events[index].object_index == event->object_index)
+		struct distributed_coop_event const *held = &client_held_events.events[index];
+
+		if (held_event_kind(held->kind) == held_event_kind(event->kind) && held->object_index == event->object_index &&
+			(event->kind != _coop_event_attach || held->target == event->target))
+		{
+			break;
+		}
+		/* (an attach's child elsewhere: the older attach of it is gone) */
+		if (event->kind == _coop_event_attach && held->kind == _coop_event_attach && held->target == event->target)
 			break;
 	}
-	if (index == client_held_scenery_animations.count)
+	if (index == client_held_events.count)
 	{
-		if (client_held_scenery_animations.count == MAXIMUM_HELD_SCENERY_ANIMATIONS)
+		if (client_held_events.count == MAXIMUM_HELD_EVENTS)
 			return;
-		client_held_scenery_animations.count++;
+		client_held_events.count++;
 	}
-	client_held_scenery_animations.events[index] = *event;
-	client_held_scenery_animations.times[index] = coop_presentation.played_time;
+	client_held_events.events[index] = *event;
+	client_held_events.times[index] = coop_presentation.played_time;
 }
 
-/* client, each tick: the held ones whose scenery it has now */
-static void client_play_held_scenery_animations(
+static boolean client_try_attach(struct distributed_coop_event const *event);
+
+/* client, each tick: the held events whose objects it has now */
+static void client_play_held_events(
 	void)
 {
 	short index;
 
-	for (index = 0; index < client_held_scenery_animations.count; index++)
+	for (index = 0; index < client_held_events.count; index++)
 	{
-		long since = coop_presentation.played_time - client_held_scenery_animations.times[index];
+		struct distributed_coop_event const *event = &client_held_events.events[index];
+		long since = coop_presentation.played_time - client_held_events.times[index];
+		boolean done;
 
-		if (since < 0 || since > HELD_SCENERY_ANIMATION_TICKS ||
-			client_start_scenery_animation(&client_held_scenery_animations.events[index], since, FALSE))
+		if (since < 0 || since > HELD_EVENT_TICKS)
+			done = TRUE;
+		else if (held_event_kind(event->kind) == _coop_event_scenery_animation)
+			done = client_start_scenery_animation(event, since, FALSE);
+		else if (held_event_kind(event->kind) == _coop_event_unit_animation)
+			done = client_start_unit_animation(event, since);
+		else if (event->kind == _coop_event_attach)
+			done = client_try_attach(event);
+		else
+			done = TRUE;
+		if (done)
 		{
-			client_held_scenery_animations.events[index] =
-				client_held_scenery_animations.events[--client_held_scenery_animations.count];
-			client_held_scenery_animations.times[index] =
-				client_held_scenery_animations.times[client_held_scenery_animations.count];
+			client_held_events.events[index] = client_held_events.events[--client_held_events.count];
+			client_held_events.times[index] = client_held_events.times[client_held_events.count];
 			index--;
 		}
 	}
@@ -2306,7 +2368,7 @@ static void client_apply_scenery_animation(
 	boolean resync)
 {
 	if (!client_start_scenery_animation(event, 0, resync))
-		client_hold_scenery_animation(event);
+		client_hold_event(event);
 }
 
 /* index of the looping sound in client_looping_sounds, or NONE */
@@ -2467,7 +2529,8 @@ static void client_show_attached_item(
 	object_set_visibility(child_index, TRUE);
 }
 
-static void client_apply_attach(
+/* FALSE while its parent or child is not here (client_hold_event) */
+static boolean client_try_attach(
 	struct distributed_coop_event const *event)
 {
 	long parent_index = object_find(event->name_index, event->object_index, event->definition_index, _object_mask_all);
@@ -2475,13 +2538,15 @@ static void client_apply_attach(
 		_object_mask_all);
 	long ancestor_index;
 
-	if (parent_index == NONE || child_index == NONE || parent_index == child_index)
-		return;
+	if (parent_index == NONE || child_index == NONE)
+		return FALSE;
+	if (parent_index == child_index)
+		return TRUE;
 	/* a resent attach this machine already has (shown, below) */
 	if (event->type == _coop_attach && object_get(child_index)->object.parent_object_index == parent_index)
 	{
 		client_show_attached_item(child_index);
-		return;
+		return TRUE;
 	}
 	/* (not to one of its own children, which objects.c cannot do: copies
 	of the hierarchy that differ here, or a host's mistake) */
@@ -2489,7 +2554,7 @@ static void client_apply_attach(
 		ancestor_index != NONE; ancestor_index = object_get(ancestor_index)->object.parent_object_index)
 	{
 		if (ancestor_index == child_index)
-			return;
+			return TRUE;
 	}
 	if (event->type == _coop_detach)
 		objects_scripting_detach(parent_index, child_index);
@@ -2499,6 +2564,14 @@ static void client_apply_attach(
 			object_marker_name(child_index, event->frame));
 		client_show_attached_item(child_index);
 	}
+	return TRUE;
+}
+
+static void client_apply_attach(
+	struct distributed_coop_event const *event)
+{
+	if (!client_try_attach(event))
+		client_hold_event(event);
 }
 
 /* client: the cutscene was skipped, so the dialogue it started stops (the
@@ -2729,7 +2802,7 @@ void network_coop_new_game(
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
 	csmemset(&coop_opening, 0, sizeof(coop_opening));
-	csmemset(&client_held_scenery_animations, 0, sizeof(client_held_scenery_animations));
+	csmemset(&client_held_events, 0, sizeof(client_held_events));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -3977,6 +4050,12 @@ static void coop_opening_update(
 		coop_opening.control_ticks = 0;
 }
 
+long network_coop_client_played_time(
+	void)
+{
+	return coop_client() && coop_presentation.playing ? coop_presentation.played_time : NONE;
+}
+
 boolean network_coop_client_cutscene(
 	void)
 {
@@ -4291,7 +4370,9 @@ void network_coop_client_tick(
 	if (!coop_client())
 		return;
 	client_play_presentation();
-	client_play_held_scenery_animations();
+	client_play_held_events();
+	/* (the objects' and actors' states of the ticks played: with the camera) */
+	network_distributed_play_held_states();
 	coop_trace_scene(FALSE);
 	players_vitality_keep();
 	if (game_time_get() - coop_presentation.heard_time > PRESENTATION_SILENCE_TICKS)

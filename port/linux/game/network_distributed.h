@@ -494,6 +494,9 @@ void network_objects_handle_changes(void const *entries, short count);
 void network_objects_handle_synchronized(void);
 /* (host_time: the message's, the host's tick its states are of) */
 void network_objects_handle_states(void const *entries, short count, long host_time);
+/* (a co-op client) the held states whose host tick has been played,
+applied; all of them once it follows no cutscene */
+void network_distributed_play_held_states(void);
 void network_objects_handle_inventories(void const *entries, short count);
 /* (a client) its own player picked up the weapon, to ready once its unit has it */
 void network_objects_client_picked_up_weapon(short local_player_index, long unit_index, long definition_index);
