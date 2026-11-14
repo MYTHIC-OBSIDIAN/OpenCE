@@ -293,7 +293,6 @@ def test_coop_recovery_retires_queued_events_and_preserves_checkpoint_metadata(t
 static struct {int cinematic_started,host_camera,buffered[4];long camera_object_index,first_person_unit_index;struct {long object_index;} view_latest,view_previous;} coop_presentation;
 static struct {int count,applied_any,next_number,applied_number;} coop_events;
 static struct {int count;} client_pending_events;
-static struct {long object_index;short hatches;} coop_unit_hatches[4];
 static int client_devices[4],client_names_differing[4],host_player_structure_bsps[4];
 static struct {int machine_count,joined,refresh;} host_resend;
 static struct {int voted,votes,client_heard_times[4],client_vote_times[4],cooldown_until;} skip_vote;
@@ -317,7 +316,6 @@ int main(void){
   assert(!coop_events.count && !coop_events.applied_any && !coop_events.next_number && !coop_events.applied_number);
   assert(!coop_presentation.cinematic_started && !coop_presentation.host_camera && !coop_presentation.buffered[0]);
   assert(!client_pending_events.count && coop_presentation.first_person_unit_index==NONE && coop_presentation.camera_object_index==NONE);
-  for(i=0;i<4;i++)assert(coop_unit_hatches[i].object_index==NONE);
   assert(!host_resend.machine_count && !host_resend.joined && !host_resend.refresh);
   assert(!skip_vote.voted && !skip_vote.votes && skip_vote.cooldown_until==77);
   for(i=0;i<4;i++)assert(!client_devices[i] && !client_names_differing[i] && host_player_structure_bsps[i]==NONE &&

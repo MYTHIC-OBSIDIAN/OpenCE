@@ -4370,6 +4370,12 @@ boolean unit_port_correct_damage_animation(
 	return TRUE;
 }
 
+void unit_port_animation_idle(
+	long unit_index)
+{
+	unit_animation_set_state(unit_index, _unit_state_idle);
+}
+
 /* port: a co-op client plays the custom animation the host's unit started
 (network_coop.c): exactly that animation, not another random permutation */
 void unit_port_play_user_animation(

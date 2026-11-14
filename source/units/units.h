@@ -779,6 +779,11 @@ boolean unit_port_correct_damage_animation(
 	long unit_index,
 	short type,
 	short animation_index);
+/* port: network co-op (port/linux/game/network_coop.c): a client's copy of
+a vehicle opened where its host's is not (its rider's seat put right),
+shut at once as the host's is */
+void unit_port_animation_idle(
+	long unit_index);
 /* port: network co-op (port/linux/game/network_coop.c) */
 void unit_port_play_user_animation(
 	long unit_index,

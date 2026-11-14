@@ -158,6 +158,13 @@ scripts (player_camera_control) */
 #define PRESENTATION_RESPAWN_FAILURE_MASK 0x07
 #define PRESENTATION_SKIP_VOTERS_MASK 0x0F
 #define PRESENTATION_CAMERA_LOCKED_BIT 0x80
+/* distributed_coop_presentation.skip_votes' top bit (port; the count below
+it): the host's camera is the eyes of camera_object_index, a unit (its
+player's first person, or the scripts' first-person camera), which a client
+then looks through on its own copy of the unit. A host without it: as
+filmed (camera_object_offset, from where it is to the camera) */
+#define PRESENTATION_EYES_BIT 0x80
+#define PRESENTATION_SKIP_VOTES_MASK 0x7F
 
 /* how often the host sends again the state a client that joined since, or
 missed a message, would lack (host_resend) */
@@ -192,6 +199,8 @@ enum
 	/* how long the players must have had their controls, out of a
 	cutscene, before a level's opening is over (coop_opening_update) */
 	COOP_OPENING_CONTROL_TICKS = 2 * TICKS_PER_SECOND,
+	/* the most custom animations resent a refresh (host_resync_unit_animations) */
+	MAXIMUM_ANIMATION_RESYNCS = 32,
 	/* a client's events held for the presentation of their host tick
 	(client_pending_events): a few ticks' worth */
 	MAXIMUM_PENDING_EVENTS = 256,
@@ -247,6 +256,11 @@ enum
 	/* a breakable surface broke: value its index, frame its BSP, reals the
 	damage's epicenter */
 	_coop_event_surface_broken,
+	/* (port) the custom animation a unit plays, again every refresh (as
+	_coop_event_unit_animation, at its frame): a copy that had not been made
+	when it began (a level's opening) or lost it plays it; one playing it
+	already is left be. A client without it ignores it */
+	_coop_event_unit_animation_resync,
 };
 
 /* distributed_coop_event.type of an effect: at a cutscene flag (value), or on
@@ -460,11 +474,12 @@ helmet off, a ship scaled) and so does damage. */
 struct distributed_coop_object_look
 {
 	short name_index;
-	/* (port) a unit's hatches as the scripts last set them (unit_open,
-	unit_close: a Banshee's canopy, a dropship's doors): UNIT_HATCHES_OPEN or
-	UNIT_HATCHES_CLOSED; 0, from a host without it (whose padding this was,
-	sent as 0), or for one the scripts never set: none. Its name is the
-	padding's still, the format older builds read (tools/network_format.py) */
+	/* (port) a vehicle's hatches as the host's are (a Banshee's canopy, a
+	dropship's doors): UNIT_HATCHES_OPEN while opening or held open,
+	UNIT_HATCHES_CLOSED while closing or held shut, UNIT_HATCHES_IDLE for
+	neither; 0, from a host without it (whose padding this was, sent as 0),
+	or for anything else: none. Its name is the padding's still, the format
+	older builds read (tools/network_format.py) */
 	short pad;
 	long object_index;
 	long definition_index;
@@ -480,6 +495,9 @@ enum
 	UNIT_HATCHES_NONE = 0,
 	UNIT_HATCHES_OPEN,
 	UNIT_HATCHES_CLOSED,
+	/* a vehicle neither opening nor closing: shut (a client before this
+	value ignores it) */
+	UNIT_HATCHES_IDLE,
 };
 
 struct distributed_coop_object_looks_message
@@ -1247,40 +1265,64 @@ static struct
 	short hatches;
 } host_sent_looks[MAXIMUM_OBJECTS_PER_MAP];
 
-/* host: each unit's hatches as its scripts last set them; client: as last
-put on its copy (by its absolute index: the object it is of, and
-UNIT_HATCHES_). The event of unit_open or unit_close reached a copy only
-if it had it then: a level's opening (The Maw's Banshee) set them before a
-client had the host's objects, and nothing set them again. */
-static struct
-{
-	long object_index;
-	short hatches;
-} coop_unit_hatches[MAXIMUM_OBJECTS_PER_MAP];
-
-static short coop_unit_hatches_get(
+/* host: a vehicle's hatches as they are (UNIT_HATCHES_), from its
+animation's state: opening or closing holds its last frame until another
+state. Not one in a custom animation, which _coop_event_unit_animation_resync
+gives. The event of unit_open or unit_close reached a copy only if it had it
+then (a level's opening: The Maw's Banshee), and a copy opens of itself as
+this machine puts its rider's seat right (unit_exit_seat_end) where the
+host's never opened. */
+static short host_unit_hatches(
 	long object_index)
 {
-	short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(object_index, _object_mask_vehicle);
 
-	if (object_index == NONE || absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP ||
-		coop_unit_hatches[absolute_index].object_index != object_index)
-	{
+	if (!unit)
 		return UNIT_HATCHES_NONE;
+	switch (unit->unit.animation.state)
+	{
+	case _unit_state_opening:
+		return UNIT_HATCHES_OPEN;
+	case _unit_state_closing:
+		return UNIT_HATCHES_CLOSED;
+	case _unit_state_user_animation:
+		return UNIT_HATCHES_NONE;
+	default:
+		return UNIT_HATCHES_IDLE;
 	}
-	return coop_unit_hatches[absolute_index].hatches;
 }
 
-static void coop_unit_hatches_set(
-	long object_index,
-	short hatches)
+/* host, every refresh: the custom animations its units (not players') play,
+at their frames (_coop_event_unit_animation_resync), MAXIMUM_ANIMATION_RESYNCS
+at most */
+static void host_resync_unit_animations(
+	void)
 {
-	short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(object_index);
+	struct object_iterator iterator;
+	struct unit_datum *unit;
+	short count = 0;
 
-	if (object_index == NONE || absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
+	if (!host_resend.refresh)
 		return;
-	coop_unit_hatches[absolute_index].object_index = object_index;
-	coop_unit_hatches[absolute_index].hatches = hatches;
+	object_iterator_new(&iterator, _object_mask_unit, 0);
+	while (count < MAXIMUM_ANIMATION_RESYNCS && (unit = (struct unit_datum *)object_iterator_next(&iterator)) != NULL)
+	{
+		struct distributed_coop_event *event;
+
+		if (unit->unit.animation.state != _unit_state_user_animation || unit->unit.player_index != NONE ||
+			unit->object.animation.animation_graph_index == NONE)
+		{
+			continue;
+		}
+		event = event_new(_coop_event_unit_animation_resync);
+		if (!event)
+			return;
+		event->object_index = iterator.index;
+		event->tag_index = unit->object.animation.animation_graph_index;
+		event->value = unit->object.animation.state.index;
+		event->frame = unit->object.animation.state.frame_index;
+		count++;
+	}
 }
 
 /* host, each tick: the objects whose looks changed (and, every
@@ -1298,7 +1340,7 @@ static void host_send_object_looks(
 	{
 		short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.index);
 		struct distributed_coop_object_look *look;
-		short hatches = coop_unit_hatches_get(iterator.index);
+		short hatches = host_unit_hatches(iterator.index);
 		boolean changing;
 
 		if (absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
@@ -1306,7 +1348,7 @@ static void host_send_object_looks(
 		if (host_sent_looks[absolute_index].object_index != iterator.index)
 		{
 			/* an object seen for the first time looks the same on every machine
-			(but for hatches the scripts set as they made it) */
+			(but for a vehicle's hatches: every refresh sends them) */
 			host_sent_looks[absolute_index].object_index = iterator.index;
 			host_sent_looks[absolute_index].changed = FALSE;
 			host_sent_looks[absolute_index].scale = object->object.scale;
@@ -1611,6 +1653,32 @@ static long camera_object_get(
 	return object_try_and_get(scripted_camera_object_relative_to()) ? scripted_camera_object_relative_to() : NONE;
 }
 
+/* host: the unit whose own eyes its camera is: its player's first person,
+or the scripts' first-person camera (camera_set_first_person); else NONE */
+static long host_camera_eyes_unit(
+	void)
+{
+	switch (director_get_perspective(0))
+	{
+	case _director_perspective_scripted:
+	{
+		long unit_index = scripted_camera_object_relative_to();
+
+		return unit_index != NONE && scripted_camera_object_is_first_person_camera(unit_index) &&
+			unit_try_and_get(unit_index) ? unit_index : NONE;
+	}
+	case _director_perspective_first_person:
+	{
+		long player_index = local_player_get_player_index(0);
+		struct player_datum *player = player_index != NONE ? player_try_and_get(player_index) : NULL;
+
+		return player && unit_try_and_get(player->unit_index) ? player->unit_index : NONE;
+	}
+	default:
+		return NONE;
+	}
+}
+
 /* host: the presentation sent to every client this tick */
 static void host_presentation(
 	struct distributed_coop_presentation *presentation)
@@ -1620,6 +1688,7 @@ static void host_presentation(
 	real_rgb_color fade_color;
 	boolean fading_out;
 	long elapsed;
+	long eyes_unit_index = NONE;
 
 	csmemset(presentation, 0, sizeof(*presentation));
 	SET_FLAG(presentation->flags, _presentation_cinematic_bit, cinematic_in_progress());
@@ -1640,6 +1709,13 @@ static void host_presentation(
 		presentation->camera_field_of_view =
 			(word)PIN(camera->field_of_view * FIELD_OF_VIEW_SCALE + 0.5f, 1, UNSIGNED_SHORT_MAX);
 		presentation->camera_object_index = camera_object_get(camera);
+		/* (port: a unit's own eyes, which a client looks through on its copy:
+		PRESENTATION_EYES_BIT. A filmed vehicle and an offset from it, two
+		ticks apart on a client, put the view somewhere else in a tumbling
+		lifepod) */
+		eyes_unit_index = host_camera_eyes_unit();
+		if (eyes_unit_index != NONE)
+			presentation->camera_object_index = eyes_unit_index;
 		if (presentation->camera_object_index != NONE)
 		{
 			vector_from_points3d(&object_get(presentation->camera_object_index)->object.position, &camera->position,
@@ -1658,7 +1734,8 @@ static void host_presentation(
 	presentation->players_maximum_shield_vitality = players_vitality.maximum_shield;
 	game_allegiance_get_teams(presentation->ally_teams, presentation->friendly_teams);
 	SET_FLAG(presentation->flags, _presentation_skippable_bit, skip_vote.offered);
-	presentation->skip_votes = (byte)MIN(skip_vote.votes, 255);
+	presentation->skip_votes = (byte)(MIN(skip_vote.votes, PRESENTATION_SKIP_VOTES_MASK) |
+		(eyes_unit_index != NONE ? PRESENTATION_EYES_BIT : 0));
 	presentation->skip_voters = (byte)(MIN(skip_vote.voters, PRESENTATION_SKIP_VOTERS_MASK) |
 		(PIN(players_get_respawn_failure(), 0, NUMBER_OF_RESPAWN_FAILURES - 1) << PRESENTATION_RESPAWN_FAILURE_SHIFT) |
 		(player_control_port_camera_control_enabled() ? 0 : PRESENTATION_CAMERA_LOCKED_BIT));
@@ -1855,6 +1932,29 @@ static void client_apply_unit_animation(
 		unit_stop_custom_animation(event->object_index);
 	else if (distributed_graph_animation(event->tag_index, event->value))
 		unit_port_play_user_animation(event->object_index, event->tag_index, event->value, event->interpolate, event->frame);
+}
+
+/* client: the custom animation the host's unit plays, if its copy is not
+playing it already (_coop_event_unit_animation_resync) */
+static void client_apply_unit_animation_resync(
+	struct distributed_coop_event const *event)
+{
+	struct unit_datum *unit;
+
+	if (!distributed_object_index_valid(event->object_index) || !network_objects_client_has(event->object_index) ||
+		!(unit = (struct unit_datum *)object_try_and_get_and_verify_type(event->object_index, _object_mask_unit)) ||
+		unit->unit.player_index != NONE)
+	{
+		return;
+	}
+	if (unit->unit.animation.state == _unit_state_user_animation &&
+		unit->object.animation.animation_graph_index == event->tag_index &&
+		unit->object.animation.state.index == event->value)
+	{
+		return;
+	}
+	if (distributed_graph_animation(event->tag_index, event->value))
+		unit_port_play_user_animation(event->object_index, event->tag_index, event->value, FALSE, event->frame);
 }
 
 static void client_apply_scenery_animation(
@@ -2089,6 +2189,9 @@ static void client_apply_event(
 	case _coop_event_reverted:
 		client_stop_script_sounds();
 		break;
+	case _coop_event_unit_animation_resync:
+		client_apply_unit_animation_resync(event);
+		break;
 	case _coop_event_surface_broken:
 		if (event->frame == global_structure_bsp_index)
 		{
@@ -2258,7 +2361,6 @@ void network_coop_new_game(
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
 	csmemset(&coop_opening, 0, sizeof(coop_opening));
-	csmemset(coop_unit_hatches, NONE, sizeof(coop_unit_hatches));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -3035,10 +3137,6 @@ void network_coop_note_unit_open(
 {
 	struct distributed_coop_event *event;
 
-	/* (the host's, for its clients' copies; a client's, as put on its own:
-	both by unit_open and unit_close) */
-	if (network_coop_active())
-		coop_unit_hatches_set(unit_index, open ? UNIT_HATCHES_OPEN : UNIT_HATCHES_CLOSED);
 	event = event_new(_coop_event_unit_open);
 
 	if (!event)
@@ -3448,7 +3546,6 @@ void network_coop_reset_recovery(void)
 	coop_presentation.view_previous.object_index = NONE;
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
-	csmemset(coop_unit_hatches, NONE, sizeof(coop_unit_hatches));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
 	csmemset(&host_resend, 0, sizeof(host_resend));
@@ -3549,6 +3646,7 @@ void network_coop_host_tick(
 	host_send_object_transforms();
 	host_send_device_states();
 	host_send_object_looks();
+	host_resync_unit_animations();
 	host_send_screen_effect();
 	host_send_attachments();
 	host_send_looping_sounds();
@@ -3710,6 +3808,29 @@ word network_coop_object_look_entry_size(
 	return sizeof(struct distributed_coop_object_look);
 }
 
+/* client: whether one of this machine's players rides the vehicle */
+static boolean client_vehicle_ridden_here(
+	long vehicle_index)
+{
+	long child_index = object_get(vehicle_index)->object.first_child_object_index;
+
+	while (child_index != NONE)
+	{
+		struct object_datum *child = object_get(child_index);
+
+		if (TEST_FLAG(_object_mask_unit, child->object.type))
+		{
+			struct unit_datum *rider = (struct unit_datum *)child;
+			struct player_datum *player = rider->unit.player_index != NONE ? player_try_and_get(rider->unit.player_index) : NULL;
+
+			if (player && player->local_player_index != NONE)
+				return TRUE;
+		}
+		child_index = child->object.next_object_index;
+	}
+	return FALSE;
+}
+
 void network_coop_handle_object_looks(
 	void const *entries,
 	short count)
@@ -3747,16 +3868,23 @@ void network_coop_handle_object_looks(
 		{
 			objects_scripting_set_scale(object_index, look->scale, 0);
 		}
-		/* (its hatches, once as they change here: each unit_open or
-		unit_close plays the opening or closing again) */
-		if ((look->pad == UNIT_HATCHES_OPEN || look->pad == UNIT_HATCHES_CLOSED) &&
-			look->pad != coop_unit_hatches_get(object_index) &&
-			object_try_and_get_and_verify_type(object_index, _object_mask_unit))
+		/* (a vehicle's hatches as the host's are, unless this machine's player
+		rides it, whose entering and leaving open and shut them here first:
+		opened where the host's is not, shut; shut where the host's is open,
+		opened. Each unit_open or unit_close plays it again, so only on a
+		difference) */
+		if (look->pad >= UNIT_HATCHES_OPEN && look->pad <= UNIT_HATCHES_IDLE &&
+			object_try_and_get_and_verify_type(object_index, _object_mask_vehicle) &&
+			!client_vehicle_ridden_here(object_index))
 		{
-			if (look->pad == UNIT_HATCHES_OPEN)
+			short state = unit_get(object_index)->unit.animation.state;
+
+			if (look->pad == UNIT_HATCHES_OPEN && state != _unit_state_opening)
 				unit_open(object_index);
-			else
+			else if (look->pad == UNIT_HATCHES_CLOSED && state == _unit_state_opening)
 				unit_close(object_index);
+			else if (look->pad == UNIT_HATCHES_IDLE && state == _unit_state_opening)
+				unit_port_animation_idle(object_index);
 		}
 	}
 }
@@ -3993,7 +4121,17 @@ static void client_view_record(
 	filmed = presentation->camera_object_index != NONE &&
 		distributed_object_index_valid(presentation->camera_object_index) ?
 		object_try_and_get(presentation->camera_object_index) : NULL;
-	if (filmed && distributed_real_valid(presentation->camera_object_offset.i) &&
+	/* (port: the host's camera is that unit's own eyes: at its copy's eyes
+	here, which move with it as it is drawn, looking where the host looks.
+	An offset from it two ticks old, in a lifepod tumbling as it crashed,
+	put the view elsewhere) */
+	if (filmed && (presentation->skip_votes & PRESENTATION_EYES_BIT) &&
+		unit_try_and_get(presentation->camera_object_index))
+	{
+		unit_get_camera_position(presentation->camera_object_index, &view.position);
+		view.object_index = presentation->camera_object_index;
+	}
+	else if (filmed && distributed_real_valid(presentation->camera_object_offset.i) &&
 		distributed_real_valid(presentation->camera_object_offset.j) &&
 		distributed_real_valid(presentation->camera_object_offset.k) &&
 		magnitude_squared3d(&presentation->camera_object_offset) < CAMERA_OBJECT_DISTANCE * CAMERA_OBJECT_DISTANCE * 4.0f)
@@ -4141,8 +4279,17 @@ static void client_presentation_apply(
 		host does not draw its own (the view drawn is still the host's,
 		network_coop_client_host_view) */
 		{
-			long eyes_unit = coop_presentation.view_active && !presentation->camera_scripted ?
-				client_host_eyes_unit(&presentation->camera_position) : NONE;
+			long eyes_unit = NONE;
+
+			/* (the host says whose eyes: PRESENTATION_EYES_BIT; a host
+			without it, its own first person found by where it is) */
+			if (coop_presentation.view_active && (presentation->skip_votes & PRESENTATION_EYES_BIT))
+			{
+				eyes_unit = distributed_object_index_valid(presentation->camera_object_index) &&
+					unit_try_and_get(presentation->camera_object_index) ? presentation->camera_object_index : NONE;
+			}
+			else if (coop_presentation.view_active && !presentation->camera_scripted)
+				eyes_unit = client_host_eyes_unit(&presentation->camera_position);
 
 			if (eyes_unit != NONE)
 			{
@@ -4195,7 +4342,7 @@ static void client_presentation_apply(
 	}
 
 	skip_vote.offered = TEST_FLAG(presentation->flags, _presentation_skippable_bit);
-	skip_vote.votes = presentation->skip_votes;
+	skip_vote.votes = presentation->skip_votes & PRESENTATION_SKIP_VOTES_MASK;
 	skip_vote.voters = presentation->skip_voters & PRESENTATION_SKIP_VOTERS_MASK;
 	client_apply_hud_state(presentation);
 }

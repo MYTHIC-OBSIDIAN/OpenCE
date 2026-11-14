@@ -135,13 +135,35 @@ def test_cutscene_copies_follow_every_host_move():
     assert "if (distributed_object_follows_host(state->object_index) && !own_vehicle)\n\t\t{\n\t\t\ttolerance = 0.0f;" in states
 
 
-def test_unit_hatches_are_resent():
+def test_vehicle_hatches_and_custom_animations_are_resent():
     coop = source("port/linux/game/network_coop.c")
+    hatches = function(coop, "host_unit_hatches")
+    # the host's vehicle as it is, not only as its scripts last set it
+    assert "case _unit_state_opening:\n\t\treturn UNIT_HATCHES_OPEN;" in hatches
+    assert "return UNIT_HATCHES_IDLE;" in hatches
     looks = function(coop, "host_send_object_looks")
-    assert "host_sent_looks[absolute_index].hatches != hatches" in looks
+    assert "short hatches = host_unit_hatches(iterator.index);" in looks
     assert "look->pad = hatches;" in looks
     client = function(coop, "network_coop_handle_object_looks")
-    assert "look->pad != coop_unit_hatches_get(object_index)" in client
-    assert "unit_close(object_index);" in client
-    note = function(coop, "network_coop_note_unit_open")
-    assert "coop_unit_hatches_set(unit_index, open ? UNIT_HATCHES_OPEN : UNIT_HATCHES_CLOSED);" in note
+    assert "!client_vehicle_ridden_here(object_index)" in client
+    assert "unit_port_animation_idle(object_index);" in client
+    # custom animations again every refresh, left be where already played
+    resync = function(coop, "host_resync_unit_animations")
+    assert "if (!host_resend.refresh)" in resync
+    assert "_coop_event_unit_animation_resync" in resync
+    apply = function(coop, "client_apply_unit_animation_resync")
+    assert "unit->object.animation.state.index == event->value" in apply
+    assert "unit_port_play_user_animation(event->object_index, event->tag_index, event->value, FALSE, event->frame);" in apply
+    assert "host_resync_unit_animations();" in function(coop, "network_coop_host_tick")
+
+
+def test_host_names_the_eyes_it_looks_through():
+    coop = source("port/linux/game/network_coop.c")
+    eyes = function(coop, "host_camera_eyes_unit")
+    assert "scripted_camera_object_is_first_person_camera(unit_index)" in eyes
+    assert "_director_perspective_first_person" in eyes
+    host = function(coop, "host_presentation")
+    assert "(eyes_unit_index != NONE ? PRESENTATION_EYES_BIT : 0)" in host
+    record = function(coop, "client_view_record")
+    assert "unit_get_camera_position(presentation->camera_object_index, &view.position);" in record
+    assert "skip_vote.votes = presentation->skip_votes & PRESENTATION_SKIP_VOTES_MASK;" in coop

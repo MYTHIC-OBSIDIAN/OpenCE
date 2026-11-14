@@ -109,10 +109,19 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   the presentation's `skip_voters` (the respawn failure keeps the three
   below it), and a client takes it on its own players. Through a cutscene
   a client's copies follow every move the host sends, however small (a
-  cutscene's biped bobbed within the tolerance). A unit's hatches as the
-  scripts last set them (`unit_open`, `unit_close`: The Maw's Banshee
-  canopy) ride in the object looks' padding and are sent again with them,
-  for a client that had no copy when the event came.
+  cutscene's biped bobbed within the tolerance). A vehicle's hatches as the
+  host's are (opening or held open, closing or held shut, or neither: The
+  Maw's Banshee canopy) ride in the object looks' padding and are sent
+  again every refresh; a client's copy is opened, closed or shut at once to
+  match, unless its own player rides it. Every refresh the host also
+  resends the custom animation each of its units (not players') plays, at
+  its frame (`_coop_event_unit_animation_resync`), which a copy made after
+  it began (a level's opening) plays and one playing it already ignores.
+  Where the host's camera is a unit's own eyes (its player's first person,
+  or `camera_set_first_person`: Halo's lifepod) the presentation names the
+  unit (`camera_object_index`, the top bit of `skip_votes`), and a client
+  looks from its copy's eyes in the host's direction, not from an offset
+  two ticks old in a tumbling lifepod.
   With everyone dead, the host reverts to the last checkpoint, as split
   screen does; one saved with other players or machines is not reverted
   to, and the host logs the fallback and respawns them.
