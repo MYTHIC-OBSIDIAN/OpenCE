@@ -4827,7 +4827,8 @@ void network_game_reset_to_pregame_ui(
 	 * the ready lobby. The ordinary host map picker pauses its countdown. */
 	{
 
-		if (mcc_ui_network_restart_pregame())
+		/* port: and network co-op's RESTART LEVEL, the same level again */
+		if (mcc_ui_network_restart_pregame() || network_game_server_port_cooperative_restart_pregame())
 		{
 			char const *screen = network_game_is_splitscreen_local() ?
 				"ui\\shell\\main_menu\\multiplayer_type_select\\split_screen\\pregame\\splitscreen_pregame_wrapper_normal" :

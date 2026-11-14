@@ -167,7 +167,7 @@ both (a client's sent to the host), as either player's does in split
 screen co-op. */
 boolean network_coop_skip_offered(void);
 boolean network_coop_vote_skip(void);
-/* the pause menu's REVERT TO SAVED in network co-op
+/* the pause menu's REVERT TO SAVED and RESTART LEVEL in network co-op
 (ui_widget_event_handler_functions.c), and a client's skip key in a
 skippable cutscene (network_coop_vote_skip): the host's are done for every
 machine (main_revert_map, the skip), a client's sent to the host to do.
@@ -177,6 +177,9 @@ enum
 	_coop_pause_request_none,
 	_coop_pause_request_revert,
 	_coop_pause_request_skip,
+	/* (port, network version 55) RESTART LEVEL: the round again, through
+	the lobby (main_port_coop_restart) */
+	_coop_pause_request_restart,
 	NUMBER_OF_COOP_PAUSE_REQUESTS
 };
 boolean network_coop_pause_request(short request);

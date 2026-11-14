@@ -4572,6 +4572,42 @@ void network_game_server_port_cooperative_won(
 	network_game_server_reset_to_pregame(server);
 }
 
+/* port: a co-op restart's server and the round it began in, until its
+lobby opens */
+static struct network_game_server *network_game_server_cooperative_restart_server;
+static long network_game_server_cooperative_restart_round;
+
+void network_game_server_port_cooperative_restart(
+	void)
+{
+	struct network_game_server *server = global_network_game_server_get();
+
+	if (!server || server->state != _network_game_server_state_ingame)
+		return;
+	network_game_server_cooperative_restart_server = server;
+	network_game_server_cooperative_restart_round = server->game.number_of_games_played;
+	/* (the same level again: as a won level's next round) */
+	network_game_server_port_cooperative_won(server->game.map.name);
+}
+
+boolean network_game_server_port_cooperative_restart_pregame(
+	void)
+{
+	struct network_game_server *server = global_network_game_server_get();
+	struct network_game_server *restarting = network_game_server_cooperative_restart_server;
+
+	network_game_server_cooperative_restart_server = NULL;
+	if (!restarting || server != restarting || server->state != _network_game_server_state_pregame ||
+		server->game.number_of_games_played < network_game_server_cooperative_restart_round)
+	{
+		return FALSE;
+	}
+	/* (every machine's readiness still gates the start) */
+	network_game_server_pause_countdown(server, FALSE);
+	network_game_server_begin_game_start_countdown(server, 3000);
+	return TRUE;
+}
+
 /* port: reapply the co-op settings after a won round, since the playlist
 the next round is set up from (network_game_server_setup_game_from_playlist)
 has a multiplayer gametype and map */

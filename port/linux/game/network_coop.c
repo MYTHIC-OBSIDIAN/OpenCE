@@ -103,6 +103,7 @@ index and tag, since the map placed them at the same index everywhere.
 #include "objects/object_lights.h"
 #include "objects/object_lights_rendering.h"
 #include "render/render.h"
+#include "rasterizer/rasterizer.h"
 #include "main/main.h"
 #include "models/model_animation_definitions.h"
 #include "models/model_definitions.h"
@@ -271,7 +272,15 @@ enum
 	(as _coop_event_scenery_animation, at its frame): a copy made since it
 	began, or one that lost it, plays it; one playing it already is left be */
 	_coop_event_scenery_animation_resync,
+	/* (port, network version 55) the scripts' tint of the models'
+	reflections (rasterizer_model_ambient_reflection_tint: d20's opening
+	sets it so the Chief's visor and armour shine in the dark; a client's
+	stayed none, the visor black and the armour flat), red, green and blue
+	in reals, alpha in value (of REFLECTION_TINT_ALPHA_SCALE); every refresh
+	again */
+	_coop_event_reflection_tint,
 };
+#define REFLECTION_TINT_ALPHA_SCALE 4096.0f
 
 /* distributed_coop_event.type of an effect: at a cutscene flag (value), or on
 an object's marker (value: its index in the object's model's markers) */
@@ -1377,6 +1386,36 @@ static short host_unit_powered(
 	return flags;
 }
 
+/* host: the scripts' reflection tint, as it changes and every refresh */
+static void host_send_reflection_tint(
+	void)
+{
+	static real_argb_color sent;
+	static boolean sent_any = FALSE;
+	struct distributed_coop_event *event;
+	real_argb_color tint;
+
+	if (!global_rasterizer_model_ambient_reflection_tint)
+		return;
+	tint = *global_rasterizer_model_ambient_reflection_tint;
+	if (sent_any && csmemcmp(&sent, &tint, sizeof(tint)) == 0 && !host_resend.refresh)
+		return;
+	event = event_new(_coop_event_reflection_tint);
+	if (!event)
+		return;
+	event->reals[0] = tint.red;
+	event->reals[1] = tint.green;
+	event->reals[2] = tint.blue;
+	event->value = (short)PIN(tint.alpha * REFLECTION_TINT_ALPHA_SCALE, -32767.0f, 32767.0f);
+	if (!sent_any || csmemcmp(&sent, &tint, sizeof(tint)) != 0)
+	{
+		error(_error_silent, "co-op: reflection tint %.2f %.2f %.2f %.2f to the clients", tint.alpha, tint.red,
+			tint.green, tint.blue);
+	}
+	sent = tint;
+	sent_any = TRUE;
+}
+
 /* host, every refresh: the animations the scripts play on scenery, at their
 frames (_coop_event_scenery_animation_resync), MAXIMUM_ANIMATION_RESYNCS at
 most. A client makes a script's named scenery a moment after the host does
@@ -1800,20 +1839,51 @@ camera films when the scripts don't name it */
 #define CAMERA_MAXIMUM_FIELD_OF_VIEW (_pi / 2.0f)
 
 /* Host: the object the cutscene camera films: the nearest vehicle moving
-close to it (a camera riding along with a drop pod or a Pelican), else the
-one the scripts set it relative to; NONE for a camera on its own. The last
-one is kept while it stays close, so the camera doesn't jump between two. */
+close to it, the camera moving with it (a camera riding along with a drop
+pod or a Pelican), else the one the scripts set it relative to; NONE for a
+camera on its own. The last one is kept while it stays close and the camera
+keeps moving with it, so the camera doesn't jump between two. (port: with
+it: a still camera by a vehicle rocking at rest, a Warthog in a10's hangar
+by Sgt Johnson's close-ups, was placed on a client by the Warthog, and shook
+with it) */
+static boolean camera_moves_with(
+	real_vector3d const *camera_velocity,
+	struct object_datum const *object)
+{
+	real_vector3d difference;
+	real speed_squared = magnitude_squared3d(&object->object.translational_velocity);
+
+	if (speed_squared <= CAMERA_OBJECT_SPEED)
+		return FALSE;
+	vector_from_points3d((real_point3d const *)camera_velocity,
+		(real_point3d const *)&object->object.translational_velocity, &difference);
+	/* (within a quarter of the vehicle's speed) */
+	return magnitude_squared3d(&difference) < speed_squared / 16.0f;
+}
+
 static long camera_object_get(
 	struct observer_result const *camera)
 {
 	static long filmed = NONE;
+	static real_point3d last_position;
+	static long last_time = NONE;
 	real nearest = CAMERA_OBJECT_DISTANCE * CAMERA_OBJECT_DISTANCE;
+	real_vector3d camera_velocity = *global_zero_vector3d;
 	struct object_iterator iterator;
 	struct object_datum *object;
 
+	/* (how far the camera moved since the last tick: a world unit a tick,
+	as an object's velocity is) */
+	if (last_time == game_time_get() - 1)
+		vector_from_points3d(&last_position, &camera->position, &camera_velocity);
+	last_position = camera->position;
+	last_time = game_time_get();
 	object = object_try_and_get_and_verify_type(filmed, _object_mask_vehicle);
-	if (object && distance_squared3d(&camera->position, &object->object.position) < nearest)
+	if (object && distance_squared3d(&camera->position, &object->object.position) < nearest &&
+		camera_moves_with(&camera_velocity, object))
+	{
 		return filmed;
+	}
 	filmed = NONE;
 	object_iterator_new(&iterator, _object_mask_vehicle, 0);
 	while ((object = object_iterator_next(&iterator)) != NULL)
@@ -1821,7 +1891,7 @@ static long camera_object_get(
 		real distance = distance_squared3d(&camera->position, &object->object.position);
 
 		if (distance < nearest && object->object.parent_object_index == NONE &&
-			magnitude_squared3d(&object->object.translational_velocity) > CAMERA_OBJECT_SPEED)
+			camera_moves_with(&camera_velocity, object))
 		{
 			nearest = distance;
 			filmed = iterator.index;
@@ -2193,6 +2263,8 @@ resync's frame is the host's after its update already.) */
 #define EVENT_ANIMATION_FRAMES_STEPPED 1
 
 static byte held_event_kind(byte kind);
+/* (rasterizer_xbox_models.c: the scripts' tint of the models' reflections) */
+void rasterizer_model_ambient_reflection_tint(real alpha, real red, real green, real blue);
 
 /* FALSE without the unit here yet (client_hold_event); frames_since past
 the event's frame */
@@ -2731,6 +2803,24 @@ static void client_apply_event(
 	case _coop_event_unit_open:
 		if (!client_start_unit_open(event, 0))
 			client_hold_event(event);
+		break;
+	case _coop_event_reflection_tint:
+		if (distributed_real_valid(event->reals[0]) && distributed_real_valid(event->reals[1]) &&
+			distributed_real_valid(event->reals[2]))
+		{
+			real alpha = (real)event->value / REFLECTION_TINT_ALPHA_SCALE;
+
+			if (!global_rasterizer_model_ambient_reflection_tint ||
+				global_rasterizer_model_ambient_reflection_tint->alpha != alpha ||
+				global_rasterizer_model_ambient_reflection_tint->red != event->reals[0] ||
+				global_rasterizer_model_ambient_reflection_tint->green != event->reals[1] ||
+				global_rasterizer_model_ambient_reflection_tint->blue != event->reals[2])
+			{
+				error(_error_silent, "co-op: reflection tint %.2f %.2f %.2f %.2f as the host's", alpha,
+					event->reals[0], event->reals[1], event->reals[2]);
+			}
+			rasterizer_model_ambient_reflection_tint(alpha, event->reals[0], event->reals[1], event->reals[2]);
+		}
 		break;
 	default:
 		break;
@@ -3911,6 +4001,11 @@ static void host_pause_request(
 		error(_error_silent, "co-op: skip asked (machine %ld)", machine_index);
 		skip_vote.voted = TRUE;
 	}
+	else if (request == _coop_pause_request_restart)
+	{
+		error(_error_silent, "co-op: RESTART LEVEL (machine %ld)", machine_index);
+		main_port_coop_restart();
+	}
 }
 
 /* (render_interpolation.c) a client's cutscene camera's object, which it
@@ -4450,6 +4545,7 @@ void network_coop_host_tick(
 	host_send_object_looks();
 	host_resync_unit_animations();
 	host_resync_scenery_animations();
+	host_send_reflection_tint();
 	host_send_screen_effect();
 	host_send_attachments();
 	host_send_looping_sounds();

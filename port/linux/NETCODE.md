@@ -171,6 +171,17 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   made, had its canopy open). The look of a vehicle the host's scripts fly
   carries its function inputs, which a recording's controls drive on the
   host (the Banshee's canards red; network version 54).
+  The host ties a client's cutscene camera to a vehicle only while the
+  camera moves with it (`camera_moves_with`): a still camera by a vehicle
+  rocking at rest (a Warthog by Sgt Johnson's close-ups in a10) was placed
+  on a client by the Warthog, and shook with it. The scripts' tint of the
+  models' reflections (`rasterizer_model_ambient_reflection_tint`: d20's
+  opening, the Chief's visor and armour) is sent as it changes and every
+  refresh (`_coop_event_reflection_tint`, network version 55).
+- RESTART LEVEL in network co-op: the host (asked by a client's,
+  `_coop_pause_request_restart`) ends the round for every machine and starts
+  the same level again from the lobby, its countdown begun at once
+  (`network_game_server_port_cooperative_restart`).
   Where the host's camera is a unit's own eyes (its player's first person,
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing
@@ -598,6 +609,9 @@ Version 53 adds a cutscene character's vehicle seat, face, stance,
 blinking, aim and base animation to its object look (`UNIT_LOOK_CHARACTER`).
 
 Version 54 adds a scripted vehicle's function inputs to its object look.
+
+Version 55 sends the scripts' reflection tint (`_coop_event_reflection_tint`)
+and carries a client's RESTART LEVEL to the host (`_coop_pause_request_restart`).
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

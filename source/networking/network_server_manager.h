@@ -91,6 +91,15 @@ void network_game_server_port_set_settings(
 multiplayer; the next round is on next_map (NULL repeats the level). */
 void network_game_server_port_cooperative_won(
 	char const *next_map);
+/* port: the pause menu's RESTART LEVEL in network co-op (main.c): the round
+ends for everyone and starts again on the same level, from the lobby, at
+once (network_game_server_port_cooperative_restart_pregame) */
+void network_game_server_port_cooperative_restart(
+	void);
+/* port: the host's lobby opened after such a restart: its countdown
+started; FALSE for any other lobby (ui_widget.c) */
+boolean network_game_server_port_cooperative_restart_pregame(
+	void);
 /* port: co-op server settings: the difficulty, sent to clients, and the
 most players a co-op game starts with (Server Setup sets its own) */
 void network_game_server_port_set_cooperative(

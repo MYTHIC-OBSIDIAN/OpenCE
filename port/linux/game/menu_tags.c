@@ -2509,8 +2509,8 @@ static void pause_coop_centre_dialogs(long tag_index, long revert, long quit, lo
 
 /* network co-op's pause menu: the full-screen list's rows made the split
 screen co-op pause menu's (the same options, in its order, from its own
-widgets, at the full-screen list's place: no SETTINGS), but RESTART LEVEL
-(a network co-op game is not restarted from its pause menu); TRUE if done */
+widgets, at the full-screen list's place: no SETTINGS), RESTART LEVEL among
+them (the host restarts every machine); TRUE if done */
 static boolean pause_coop_rows(struct ui_widget_definition *list)
 {
 	long screen = tag_loaded(UI_WIDGET_DEFINITION_TAG, SPLIT_SCREEN_PAUSE_SCREEN);
@@ -2547,17 +2547,13 @@ static boolean pause_coop_rows(struct ui_widget_definition *list)
 			return FALSE;
 		for (row = 0; row < split->child_widgets.count; row++)
 		{
-			/* (not one that runs the revert too: a confirmation offering
-			both; the restart does nothing in co-op anyway) */
-			if (widget_runs_function(split_rows[row].widget_tag.index, restart, 0) &&
-				!widget_runs_function(split_rows[row].widget_tag.index, revert, 0))
-			{
-				continue;
-			}
+			/* (RESTART LEVEL too: the host restarts every machine,
+			main_port_coop_restart) */
 			placed[count] = split_rows[row];
 			placed[count].horizontal_offset = rows[0].horizontal_offset;
 			placed[count].vertical_offset = rows[0].vertical_offset;
 			pause_coop_centre_dialogs(split_rows[row].widget_tag.index, revert, quit, leave, centred, &centred_count, 0);
+			pause_coop_centre_dialogs(split_rows[row].widget_tag.index, restart, NONE, NONE, centred, &centred_count, 0);
 			count++;
 		}
 		if (!count)

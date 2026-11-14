@@ -972,6 +972,15 @@ void main_reset_map(
 	return;
 }
 
+/* port: (main_port_coop_restart) */
+static boolean main_port_coop_restart_pending = FALSE;
+
+void main_port_coop_restart(
+	void)
+{
+	main_port_coop_restart_pending = TRUE;
+}
+
 void main_revert_map(
 	void)
 {
@@ -3492,6 +3501,17 @@ void main_loop(
 			if (main_globals.revert_map)
 			{
 				main_revert_map_private();
+			}
+
+			/* port: network co-op's RESTART LEVEL, its host's (main_port_coop_restart) */
+			if (main_port_coop_restart_pending)
+			{
+				main_port_coop_restart_pending = FALSE;
+				if (main_coop_host())
+				{
+					error(_error_silent, "co-op: RESTART LEVEL");
+					network_game_server_port_cooperative_restart();
+				}
 			}
 
 			if (main_globals.skip_cinematic)

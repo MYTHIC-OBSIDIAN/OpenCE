@@ -90,8 +90,11 @@ Version 53: an object look carries a cutscene character's vehicle seat,
 face (emotion), stance, blinking, aim and base animation (UNIT_LOOK_CHARACTER
 and the look's character fields).
 Version 54: the look of a vehicle the host's scripts fly carries its
-function inputs (function_values), which a recording's controls drive. */
-#define HALO_PORT_NETWORK_VERSION 54
+function inputs (function_values), which a recording's controls drive.
+Version 55: the scripts' reflection tint reaches clients
+(_coop_event_reflection_tint), and a client's RESTART LEVEL asks the host
+(_coop_pause_request_restart). */
+#define HALO_PORT_NETWORK_VERSION 55
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

@@ -63,6 +63,10 @@ void main_lost_map(
 
 void main_revert_map(
 	void);
+/* port: network co-op's RESTART LEVEL on its host: the round ends for every
+machine and starts again on the same level, at the end of the frame */
+void main_port_coop_restart(
+	void);
 
 void main_skip_cinematic(
 	void);

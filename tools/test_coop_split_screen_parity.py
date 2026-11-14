@@ -212,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 54" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 55" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -409,3 +409,40 @@ def test_a_scripted_vehicles_hatches_and_functions_are_the_hosts():
     assert "client_set_function_values(object_index, powered ? look->function_values : NULL);" in client
     objects = source("source/objects/objects.c")
     assert "network_coop_object_function_values(object_index, object->object.incoming_function_values);" in objects
+
+
+def test_a_still_camera_is_not_tied_to_a_vehicle_rocking_by_it():
+    # Sgt Johnson's close-ups: a still camera tied on the client to a Warthog
+    # rocking at rest in the hangar, shaking with it
+    coop = source("port/linux/game/network_coop.c")
+    get = function(coop, "camera_object_get")
+    assert get.count("camera_moves_with(&camera_velocity, object)") == 2
+    moves = function(coop, "camera_moves_with")
+    assert "magnitude_squared3d(&difference) < speed_squared / 16.0f" in moves
+
+
+def test_the_scripts_reflection_tint_reaches_the_client():
+    # d20's opening: the Chief's visor black and armour flat on the client
+    coop = source("port/linux/game/network_coop.c")
+    send = function(coop, "host_send_reflection_tint")
+    assert "event_new(_coop_event_reflection_tint)" in send
+    assert "host_resend.refresh" in send
+    assert "host_send_reflection_tint();" in function(coop, "network_coop_host_tick")
+    events = function(coop, "client_apply_event")
+    assert "rasterizer_model_ambient_reflection_tint(alpha, event->reals[0], event->reals[1], event->reals[2]);" in events
+
+
+def test_restart_level_restarts_every_machine():
+    handlers = source("source/interface/ui_widget_event_handler_functions.c")
+    restart = function(handlers, "pause_game_restart_level")
+    assert "return network_coop_pause_request(_coop_pause_request_restart);" in restart
+    coop = source("port/linux/game/network_coop.c")
+    assert "main_port_coop_restart();" in function(coop, "host_pause_request")
+    main = source("source/main/main.c")
+    assert "network_game_server_port_cooperative_restart();" in main
+    server = source("source/networking/network_server_manager.c")
+    assert "network_game_server_port_cooperative_won(server->game.map.name);" in function(server, "network_game_server_port_cooperative_restart")
+    assert "network_game_server_begin_game_start_countdown(server, 3000);" in function(server, "network_game_server_port_cooperative_restart_pregame")
+    tags = source("port/linux/game/menu_tags.c")
+    rows = function(tags, "pause_coop_rows")
+    assert "widget_runs_function(split_rows[row].widget_tag.index, restart, 0) &&" not in rows
