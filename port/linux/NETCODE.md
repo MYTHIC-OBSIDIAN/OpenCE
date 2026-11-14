@@ -158,6 +158,19 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   scripts start is started a frame on (`EVENT_ANIMATION_FRAMES_STEPPED`): the
   host's objects step it once in the tick it began, before its states are
   sent, and every cutscene animation ran a frame behind.
+  The two machines' clocks run apart, so the presentations a client wants
+  fall a tick behind (or ahead) now and then; in a cutscene its clock is
+  brought toward the host's a tenth of a tick a tick while the buffer holds
+  a tick more or less than it should (`game_time_port_nudge`), rather than
+  two of the host's ticks played in one (a jerk, about every seven seconds:
+  Sgt Johnson's walk). A tick that still plays two, or none, steps every
+  animation here on or back a frame (`client_shift_animations`), or each
+  left them a frame off the host's. A vehicle's hatches opened or closed by
+  the scripts before a client has its copy are held like the other events,
+  and played as far on as the host's (The Maw's Banshee, closed as it is
+  made, had its canopy open). The look of a vehicle the host's scripts fly
+  carries its function inputs, which a recording's controls drive on the
+  host (the Banshee's canards red; network version 54).
   Where the host's camera is a unit's own eyes (its player's first person,
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing
@@ -583,6 +596,8 @@ and props stand and move on a client where they do on the host.
 
 Version 53 adds a cutscene character's vehicle seat, face, stance,
 blinking, aim and base animation to its object look (`UNIT_LOOK_CHARACTER`).
+
+Version 54 adds a scripted vehicle's function inputs to its object look.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

@@ -88,8 +88,10 @@ refresh (_coop_event_scenery_animation_resync), and an object look says a
 unit no player's is held still (UNIT_LOOK_SUSPENDED).
 Version 53: an object look carries a cutscene character's vehicle seat,
 face (emotion), stance, blinking, aim and base animation (UNIT_LOOK_CHARACTER
-and the look's character fields). */
-#define HALO_PORT_NETWORK_VERSION 53
+and the look's character fields).
+Version 54: the look of a vehicle the host's scripts fly carries its
+function inputs (function_values), which a recording's controls drive. */
+#define HALO_PORT_NETWORK_VERSION 54
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

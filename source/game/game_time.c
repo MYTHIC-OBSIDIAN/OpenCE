@@ -369,6 +369,18 @@ boolean game_time_held(
 	return client && !network_game_client_server_has_started_game(client);
 }
 
+void game_time_port_nudge(
+	real ticks)
+{
+	real tick = 1.0f / (real)TICKS_PER_SECOND;
+
+	if (!game_time_globals || game_connection() != _game_connection_network_client)
+		return;
+	/* (within the tick it has: never a second tick in one frame for it, nor
+	time owed) */
+	game_time_globals->leftover_dt = PIN(game_time_globals->leftover_dt + ticks * tick, 0.0f, 0.95f * tick);
+}
+
 /* port: whether the main menu's scene is what ticks. It runs on this
 machine's clock and takes no player input: a tick waits for the players'
 input, an action for each, and the menus change who the local players are

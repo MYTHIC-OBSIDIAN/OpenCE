@@ -509,6 +509,12 @@ struct distributed_coop_object_look
 	char emotion_index;
 	char magic_seat_index;
 	short animation_index;
+	/* (port, network version 54) a vehicle the host's scripts fly
+	(UNIT_LOOK_POWERED): its functions' inputs (A to D in), out of 255. A
+	recording's controls drive them on the host (its engine's glow, the
+	colours they set: The Maw's Banshee's canards red); its copy here, moved
+	by the host's states, has none, and they stayed at rest. */
+	byte function_values[NUMBER_OF_INCOMING_OBJECT_FUNCTIONS];
 };
 
 #define MAXIMUM_OBJECT_LOOKS_PER_MESSAGE 64
@@ -1457,6 +1463,16 @@ static void host_object_look(
 	look->definition_index = object->definition_index;
 	csmemcpy(look->region_permutations, object->object.region_permutations, sizeof(look->region_permutations));
 	look->scale = object->object.scale;
+	if (look->pad & UNIT_LOOK_POWERED)
+	{
+		short function;
+
+		for (function = 0; function < NUMBER_OF_INCOMING_OBJECT_FUNCTIONS; function++)
+		{
+			look->function_values[function] =
+				(byte)(PIN(object->object.incoming_function_values[function], 0.0f, 1.0f) * 255.0f + 0.5f);
+		}
+	}
 	look->vehicle_index = NONE;
 	look->seat_index = NONE;
 	look->emotion_animation_index = NONE;
@@ -2259,6 +2275,17 @@ in the object stream, a scenery's after the object names): a unit's or a
 scenery's animation, at the frame the host's has reached by then, and an
 attach. Played as soon as their objects are here, for a few seconds; the
 host's refreshes resend what was missed past that. */
+/* client: the function inputs of the vehicles the host's scripts fly
+(client_set_function_values) */
+#define MAXIMUM_HOST_FUNCTION_VALUES 16
+
+static struct
+{
+	long object_indices[MAXIMUM_HOST_FUNCTION_VALUES];
+	byte values[MAXIMUM_HOST_FUNCTION_VALUES][NUMBER_OF_INCOMING_OBJECT_FUNCTIONS];
+	short count;
+} client_function_values;
+
 #define MAXIMUM_HELD_EVENTS 32
 #define HELD_EVENT_TICKS (5 * TICKS_PER_SECOND)
 
@@ -2347,6 +2374,49 @@ static void client_hold_event(
 
 static boolean client_try_attach(struct distributed_coop_event const *event);
 
+/* client: a vehicle's hatches opened or closed as the host's scripts did
+(unit_open, unit_close), as far on as the host's are by now: a vehicle the
+scripts close as they make it (The Maw's cinematic Banshee) had its canopy
+open on a client, whose copy came after the close and missed it. FALSE
+without the unit here yet. */
+static boolean client_start_unit_open(
+	struct distributed_coop_event const *event,
+	long frames_since)
+{
+	struct unit_datum *unit;
+	long graph_index;
+	short animation_index;
+
+	if (!distributed_object_index_valid(event->object_index) || !network_objects_client_has(event->object_index) ||
+		!(unit = (struct unit_datum *)object_try_and_get_and_verify_type(event->object_index, _object_mask_unit)))
+	{
+		return FALSE;
+	}
+	if (event->value)
+		unit_open(event->object_index);
+	else
+		unit_close(event->object_index);
+	graph_index = unit->object.animation.animation_graph_index;
+	animation_index = unit->object.animation.state.index;
+	if ((unit->unit.animation.state == _unit_state_opening || unit->unit.animation.state == _unit_state_closing) &&
+		graph_index != NONE && animation_index >= 0 &&
+		animation_index < animation_graph_definition_get(graph_index)->animations.count)
+	{
+		short frame_count = TAG_BLOCK_GET_ELEMENT(&animation_graph_definition_get(graph_index)->animations,
+			animation_index, struct animation)->frame_count;
+		long frame = unit->object.animation.state.frame_index + frames_since + EVENT_ANIMATION_FRAMES_STEPPED;
+
+		if (frames_since)
+		{
+			error(_error_silent, "co-op: %s %ld %s as the host's, late (made since), at frame %ld",
+				coop_trace_tag(event->object_index), event->object_index, event->value ? "opened" : "closed",
+				MIN(frame, frame_count - 1));
+		}
+		unit->object.animation.state.frame_index = (short)MAX(0, MIN(frame, frame_count - 1));
+	}
+	return TRUE;
+}
+
 /* client, each tick: the held events whose objects it has now */
 static void client_play_held_events(
 	void)
@@ -2367,6 +2437,8 @@ static void client_play_held_events(
 			done = client_start_unit_animation(event, since);
 		else if (event->kind == _coop_event_attach)
 			done = client_try_attach(event);
+		else if (event->kind == _coop_event_unit_open)
+			done = client_start_unit_open(event, since);
 		else
 			done = TRUE;
 		if (done)
@@ -2657,14 +2729,8 @@ static void client_apply_event(
 		}
 		break;
 	case _coop_event_unit_open:
-		if (distributed_object_index_valid(event->object_index) && network_objects_client_has(event->object_index) &&
-			object_try_and_get_and_verify_type(event->object_index, _object_mask_unit))
-		{
-			if (event->value)
-				unit_open(event->object_index);
-			else
-				unit_close(event->object_index);
-		}
+		if (!client_start_unit_open(event, 0))
+			client_hold_event(event);
 		break;
 	default:
 		break;
@@ -2818,6 +2884,7 @@ void network_coop_new_game(
 	client_pending_events.count = 0;
 	csmemset(&coop_opening, 0, sizeof(coop_opening));
 	csmemset(&client_held_events, 0, sizeof(client_held_events));
+	csmemset(&client_function_values, 0, sizeof(client_function_values));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -4571,6 +4638,62 @@ static boolean client_vehicle_ridden_here(
 	return FALSE;
 }
 
+/* client: the function inputs of the vehicles the host's scripts fly, as
+the host's are (network_coop_object_function_values) */
+static void client_set_function_values(
+	long object_index,
+	byte const *values)
+{
+	short index;
+
+	for (index = 0; index < client_function_values.count; index++)
+	{
+		if (client_function_values.object_indices[index] == object_index)
+			break;
+	}
+	if (!values)
+	{
+		if (index < client_function_values.count)
+		{
+			client_function_values.count--;
+			client_function_values.object_indices[index] = client_function_values.object_indices[client_function_values.count];
+			csmemcpy(client_function_values.values[index], client_function_values.values[client_function_values.count],
+				sizeof(client_function_values.values[0]));
+		}
+		return;
+	}
+	if (index == client_function_values.count)
+	{
+		if (client_function_values.count == MAXIMUM_HOST_FUNCTION_VALUES)
+			return;
+		client_function_values.count++;
+		client_function_values.object_indices[index] = object_index;
+	}
+	csmemcpy(client_function_values.values[index], values, sizeof(client_function_values.values[0]));
+}
+
+boolean network_coop_object_function_values(
+	long object_index,
+	real *values)
+{
+	short index;
+
+	if (!coop_client())
+		return FALSE;
+	for (index = 0; index < client_function_values.count; index++)
+	{
+		if (client_function_values.object_indices[index] == object_index)
+		{
+			short function;
+
+			for (function = 0; function < NUMBER_OF_INCOMING_OBJECT_FUNCTIONS; function++)
+				values[function] = (real)client_function_values.values[index][function] / 255.0f;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* client: a cutscene character as the host's scripts set it (the look's
 character fields): in the vehicle seat they put it in or on foot, its face
 and stance, its blinking and aim. Its copy here is no player's or actor's
@@ -4726,6 +4849,8 @@ void network_coop_handle_object_looks(
 			host's, and it is cleared again as the host's is. */
 			SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit,
 				powered && !TEST_FLAG(vehicle->object.damage_flags, _object_dead_bit));
+			/* (and its functions' inputs the host's, which its controls drive) */
+			client_set_function_values(object_index, powered ? look->function_values : NULL);
 			if (hatches == UNIT_HATCHES_OPEN && state != _unit_state_opening)
 				unit_open(object_index);
 			else if (hatches == UNIT_HATCHES_CLOSED && state == _unit_state_opening)
@@ -5203,27 +5328,84 @@ static void client_presentation_apply(
 /* client, each tick: plays the next of the host's presentations. It moves
 one host tick a tick, two when it has fallen behind, and waits when it has
 caught up with the newest; a lost tick's place is taken by the one before. */
+/* client: through a cutscene, the animations here a tick on (or back) to the
+host's ticks played: a tick that played two of the host's, or none, stepped
+this machine's animations once, and each such tick left every animation
+playing a frame off the host's (a10's crew, two behind by their idles) */
+static void client_shift_animations(
+	long frames)
+{
+	struct object_iterator iterator;
+	struct object_datum *object;
+
+	object_iterator_new(&iterator, _object_mask_unit | _object_mask_scenery, 0);
+	while ((object = object_iterator_next(&iterator)) != NULL)
+	{
+		long graph_index = object->object.animation.animation_graph_index;
+		short animation_index = object->object.animation.state.index;
+		struct animation_graph *graph;
+		long frame;
+		short frame_count;
+
+		if (TEST_FLAG(_object_mask_unit, object->object.type) &&
+			((struct unit_datum *)object)->unit.player_index != NONE)
+		{
+			continue;
+		}
+		if (graph_index == NONE || animation_index < 0)
+			continue;
+		graph = animation_graph_definition_get(graph_index);
+		if (animation_index >= graph->animations.count)
+			continue;
+		frame_count = TAG_BLOCK_GET_ELEMENT(&graph->animations, animation_index, struct animation)->frame_count;
+		frame = object->object.animation.state.frame_index + frames;
+		object->object.animation.state.frame_index = (short)MAX(0, MIN(frame, frame_count - 1));
+	}
+}
+
+/* The client's clock and the host's run apart (two machines' clocks), so
+the presentations wanted fall a tick behind (or ahead) now and then. In a
+cutscene the client's clock is brought toward the host's by this much of a
+tick a tick while the buffer holds a tick more (or less) than it should
+(game_time_port_nudge): a tick's catching up spread over ten, where two of
+the host's ticks played in one jerked the camera and what it filmed (Sgt
+Johnson's walk in a10, about every seven seconds) */
+#define PRESENTATION_CLOCK_NUDGE 0.1f
+
 static void client_play_presentation(
 	void)
 {
 	struct distributed_coop_presentation const *presentation = NULL;
 	long lag, best_time = NONE;
+	long previous_time = coop_presentation.played_time;
+	boolean was_playing = coop_presentation.playing;
+	boolean cutscene = network_coop_client_cutscene();
 	short index;
 
 	if (!coop_presentation.heard_any)
 		return;
 	lag = coop_presentation.newest_time - coop_presentation.played_time;
+	if (cutscene && lag > PRESENTATION_DELAY_TICKS + 1)
+		game_time_port_nudge(PRESENTATION_CLOCK_NUDGE);
+	else if (cutscene && lag < PRESENTATION_DELAY_TICKS + 1)
+		game_time_port_nudge(-PRESENTATION_CLOCK_NUDGE);
 	if (!coop_presentation.playing || lag > PRESENTATION_BUFFER_COUNT || lag < -PRESENTATION_BUFFER_COUNT)
 		coop_presentation.played_time = coop_presentation.newest_time - PRESENTATION_DELAY_TICKS;
-	else if (lag > PRESENTATION_DELAY_TICKS + 1)
+	/* (two at once only when the nudges have not kept up: in a cutscene, two
+	ticks behind; out of one, a tick) */
+	else if (lag > PRESENTATION_DELAY_TICKS + (cutscene ? 3 : 1))
 		coop_presentation.played_time += 2;
 	else if (lag > 0)
 		coop_presentation.played_time++;
 	else
 	{
 		client_view_hold();
+		if (cutscene && was_playing)
+			client_shift_animations(-1);
 		return;
 	}
+	if (cutscene && was_playing && coop_presentation.played_time - previous_time == 2)
+		client_shift_animations(1);
 	coop_presentation.playing = TRUE;
 	for (index = 0; index < PRESENTATION_BUFFER_COUNT; index++)
 	{

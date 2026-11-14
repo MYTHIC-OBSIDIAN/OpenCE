@@ -58,6 +58,10 @@ boolean network_coop_client_cutscene(void);
 it plays none: the objects' and actors' states it holds through a cutscene
 are applied on it (network_distributed.c) */
 long network_coop_client_played_time(void);
+/* (port) a co-op client: the function inputs of an object the host's
+scripts fly (a recording's vehicle), the host's (objects.c, after its own
+are exported); FALSE for any other */
+boolean network_coop_object_function_values(long object_index, real *values);
 /* Host: retain the current session roster when loading a checkpoint. */
 void network_coop_restore_players(void);
 /* game_state.c: remember the team only after a checkpoint write succeeds. */

@@ -1,4 +1,4 @@
-version 53
+version 54
 bound CHAT_TEXT_SIZE 64
 bound DISCORD_ID_SIZE 24
 bound DISCORD_NAME_SIZE 40
@@ -34,6 +34,7 @@ bound NETWORK_MAP_VOTE_MAP_SIZE 32
 bound NETWORK_MAP_VOTE_MAXIMUM_CHOICES 8
 bound NUMBER_OF_ANGLES enum f0ce7d0319b6
 bound NUMBER_OF_DISTRIBUTED_POSE_VECTORS enum 5538f02632fd
+bound NUMBER_OF_INCOMING_OBJECT_FUNCTIONS 4
 bound NUMBER_OF_OBJECT_CHANGE_COLORS enum b00724872e2d
 bound NUMBER_OF_PLAYER_POWERUPS enum 43075f42087c
 bound NUMBER_OF_UNIT_GRENADE_TYPES enum a0462dbcbdd9
@@ -305,7 +306,7 @@ struct distributed_coop_device_state 727444a5c79b
 struct distributed_coop_device_states_message 48f17c3da6f5
 struct distributed_coop_event 62bbd76ba4af
 struct distributed_coop_events_message 562bdd70bfae
-struct distributed_coop_object_look 908e1a8781b3
+struct distributed_coop_object_look 8e0971cccabb
 struct distributed_coop_object_looks_message 51dbb474aa17
 struct distributed_coop_object_names f3ecad927448
 struct distributed_coop_object_names_message 7d743ad3710e

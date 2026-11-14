@@ -188,6 +188,10 @@ boolean game_map_loaded(void);
 boolean game_time_get_paused(void);
 /* whether a client's clock waits for the host's first game update */
 boolean game_time_held(void);
+/* port: a distributed client's clock brought a fraction of a tick sooner
+(or, negative, later) toward the host's, its next tick so much nearer or
+further (port/linux/game/network_coop.c: a co-op cutscene's buffer) */
+void game_time_port_nudge(real ticks);
 /* port: whether the main menu's scene is what ticks (game_time.c) */
 boolean game_time_menu_scene(void);
 void game_time_set_paused(boolean paused);

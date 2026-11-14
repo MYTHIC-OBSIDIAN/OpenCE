@@ -198,7 +198,7 @@ def test_the_camera_moves_evenly_when_a_datagram_is_late():
     coop = source("port/linux/game/network_coop.c")
     assert "PRESENTATION_DELAY_TICKS = 2," in coop
     play = function(coop, "client_play_presentation")
-    assert "else\n\t{\n\t\tclient_view_hold();\n\t\treturn;\n\t}" in play
+    assert "else\n\t{\n\t\tclient_view_hold();" in play
     hold = function(coop, "client_view_hold")
     assert "client_view_record(&coop_presentation.view_source, coop_presentation.view_source_host_view);" in hold
     record = function(coop, "client_view_record")
@@ -212,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 53" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 54" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -379,3 +379,33 @@ def test_network_coop_confirmations_are_centred():
     centre = function(tags, "pause_coop_centre_dialog")
     assert "dy = (short)((480 - (top + bottom)) / 2);" in centre
     assert "children[child].vertical_offset = (short)(children[child].vertical_offset + dy);" in centre
+
+
+def test_the_clients_clock_follows_the_hosts_through_a_cutscene():
+    # two of the host's ticks played in one jerked the camera about every
+    # seven seconds (Sgt Johnson), and left animations a frame off
+    coop = source("port/linux/game/network_coop.c")
+    play = function(coop, "client_play_presentation")
+    assert "game_time_port_nudge(PRESENTATION_CLOCK_NUDGE);" in play
+    assert "game_time_port_nudge(-PRESENTATION_CLOCK_NUDGE);" in play
+    assert "lag > PRESENTATION_DELAY_TICKS + (cutscene ? 3 : 1)" in play
+    assert "client_shift_animations(1);" in play and "client_shift_animations(-1);" in play
+    game_time = source("source/game/game_time.c")
+    nudge = function(game_time, "game_time_port_nudge")
+    assert "0.95f * tick" in nudge
+
+
+def test_a_scripted_vehicles_hatches_and_functions_are_the_hosts():
+    # The Maw's Banshee: closed by the scripts as it is made, open on a client
+    # that made it after; its canards blue for want of the recording's controls
+    coop = source("port/linux/game/network_coop.c")
+    events = function(coop, "client_apply_event")
+    assert "if (!client_start_unit_open(event, 0))\n\t\t\tclient_hold_event(event);" in events
+    held = function(coop, "client_play_held_events")
+    assert "done = client_start_unit_open(event, since);" in held
+    look = function(coop, "host_object_look")
+    assert "look->function_values[function] =" in look
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "client_set_function_values(object_index, powered ? look->function_values : NULL);" in client
+    objects = source("source/objects/objects.c")
+    assert "network_coop_object_function_values(object_index, object->object.incoming_function_values);" in objects

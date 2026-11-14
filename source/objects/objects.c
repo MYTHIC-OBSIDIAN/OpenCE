@@ -10,6 +10,7 @@ OBJECTS.C
 #include "mcc_objects.h" /* port: port/linux/game/mcc_objects.c */
 #include "coop_pickups.h" /* port: the host's extra campaign pickups */
 #include "coop_vehicles.h" /* port: the host's extra campaign vehicles */
+#include "network_coop.h" /* port: port/linux/game/network_coop.c */
 
 #include "damage.h"
 #include "light_definitions.h"
@@ -4040,6 +4041,10 @@ static boolean object_update(
 		}
 
 		object_type_export_function_values(object_index);
+		/* port: a co-op client's copy of a vehicle the host's scripts fly
+		takes the host's function inputs, which a recording's controls drive
+		(port/linux/game/network_coop.c) */
+		network_coop_object_function_values(object_index, object->object.incoming_function_values);
 
 		if (!TEST_FLAG(object->object.flags, _object_do_not_recompute_node_matrices_bit))
 		{
