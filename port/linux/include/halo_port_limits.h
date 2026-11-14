@@ -85,8 +85,11 @@ hatches, that the host's scripts fly it (UNIT_LOOK_POWERED), so a client's
 copy powers its seats as the host's does.
 Version 52: the host resends the animations scripts play on scenery every
 refresh (_coop_event_scenery_animation_resync), and an object look says a
-unit no player's is held still (UNIT_LOOK_SUSPENDED). */
-#define HALO_PORT_NETWORK_VERSION 52
+unit no player's is held still (UNIT_LOOK_SUSPENDED).
+Version 53: an object look carries a cutscene character's vehicle seat,
+face (emotion), stance, blinking, aim and base animation (UNIT_LOOK_CHARACTER
+and the look's character fields). */
+#define HALO_PORT_NETWORK_VERSION 53
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

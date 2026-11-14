@@ -124,7 +124,17 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   51). It also carries whether a unit no player's is held still
   (`unit_suspended`: a cutscene's character set at its flag), which a
   client's copy is too, rather than falling or being pushed from where the
-  scripts put it (network version 52). Every refresh the host also
+  scripts put it (network version 52). For a cutscene's character (a
+  biped neither a player's nor an actor's) the look also carries the vehicle
+  seat its scripts put it in (`vehicle_load_magic`: a10's bridge crew in
+  their chairs), its face (`unit_set_emotion`, `unit_set_emotion_animation`:
+  Cortana's expressions), its stance (`unit_set_seat`), its blinking and
+  aim, and the base animation it plays out of a custom one (the idle
+  permutation the host's chose, which a client's copy chose otherwise); a
+  client's copy takes each (network version 53). An item the scripts hang
+  on another object (`objects_attach`: c40's Index) is shown on a client,
+  where its copy waited hidden for an inventory that never places it.
+  Every refresh the host also
   resends the custom animation each of its units (not players') plays, at
   its frame (`_coop_event_unit_animation_resync`), which a copy made after
   it began (a level's opening) plays and one playing it already ignores.
@@ -555,6 +565,9 @@ Version 52 resends the animations the scripts play on scenery every refresh
 (`_coop_event_scenery_animation_resync`), and an object look says a unit no
 player's is held still (`UNIT_LOOK_SUSPENDED`), so a cutscene's characters
 and props stand and move on a client where they do on the host.
+
+Version 53 adds a cutscene character's vehicle seat, face, stance,
+blinking, aim and base animation to its object look (`UNIT_LOOK_CHARACTER`).
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

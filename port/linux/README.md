@@ -572,7 +572,7 @@ and no others. The multiplayer MCC maps of
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,
 and [MCC previews](../../docs/reading/mcc_level_previews.md) for menu discovery.
 
-All map families use this build's network version (52). MCC content identity, sharing
+All map families use this build's network version (53). MCC content identity, sharing
 consent and load-progress checks remain separate from the existing Xbox/CE paths;
 see [the network agreement](NETCODE.md#opence-network-agreement).
 

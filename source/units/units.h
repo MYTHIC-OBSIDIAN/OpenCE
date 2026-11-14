@@ -789,6 +789,14 @@ a vehicle opened where its host's is not (its rider's seat put right),
 shut at once as the host's is */
 void unit_port_animation_idle(
 	long unit_index);
+/* port: network co-op (port/linux/game/network_coop.c): a client's copy of
+a cutscene character takes the base animation (an idle's permutation, a
+step) the host's copy has chosen, from its start; FALSE where it plays a
+custom animation, or the graph lacks it */
+boolean unit_port_set_base_animation(
+	long unit_index,
+	long animation_graph_index,
+	short animation_index);
 /* port: network co-op (port/linux/game/network_coop.c) */
 void unit_port_play_user_animation(
 	long unit_index,

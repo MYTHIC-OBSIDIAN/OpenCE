@@ -4411,6 +4411,23 @@ void unit_port_animation_idle(
 	unit_animation_set_state(unit_index, _unit_state_idle);
 }
 
+boolean unit_port_set_base_animation(
+	long unit_index,
+	long animation_graph_index,
+	short animation_index)
+{
+	struct unit_datum *unit = unit_get(unit_index);
+
+	if (unit->unit.animation.state == _unit_state_user_animation ||
+		animation_graph_index == NONE || animation_graph_index != unit->object.animation.animation_graph_index ||
+		animation_index < 0 || animation_index >= animation_graph_definition_get(animation_graph_index)->animations.count)
+	{
+		return FALSE;
+	}
+	unit_set_animation(unit_index, animation_graph_index, animation_index);
+	return TRUE;
+}
+
 /* port: a co-op client plays the custom animation the host's unit started
 (network_coop.c): exactly that animation, not another random permutation */
 void unit_port_play_user_animation(

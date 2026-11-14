@@ -137,9 +137,11 @@ def test_vehicle_hatches_and_custom_animations_are_resent():
     # the host's vehicle as it is, not only as its scripts last set it
     assert "case _unit_state_opening:\n\t\treturn UNIT_HATCHES_OPEN;" in hatches
     assert "return UNIT_HATCHES_IDLE;" in hatches
+    look = function(coop, "host_object_look")
+    assert "look->pad = (short)(host_unit_hatches(object_index) | host_unit_powered(object_index));" in look
     looks = function(coop, "host_send_object_looks")
-    assert "short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);" in looks
-    assert "look->pad = hatches;" in looks
+    assert "host_object_look(iterator.index, object, &now);" in looks
+    assert "changing = csmemcmp(&host_sent_looks[absolute_index].look, &now, sizeof(now)) != 0;" in looks
     client = function(coop, "network_coop_handle_object_looks")
     assert "boolean ridden = client_vehicle_ridden_here(object_index);" in client
     assert "if (ridden)\n\t\t\t\tcontinue;" in client
@@ -210,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 52" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 53" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -220,8 +222,8 @@ def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
     coop = source("port/linux/game/network_coop.c")
     powered = function(coop, "host_unit_powered")
     assert "unit->object.type == _object_type_vehicle && TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit)" in powered
-    looks = function(coop, "host_send_object_looks")
-    assert "short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);" in looks
+    look = function(coop, "host_object_look")
+    assert "host_unit_powered(object_index)" in look
     client = function(coop, "network_coop_handle_object_looks")
     assert "powered = (look->pad & UNIT_LOOK_POWERED) != 0;" in client
     assert "SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit," in client
@@ -264,3 +266,40 @@ def test_scenery_animations_reach_a_copy_made_since():
     assert "client_play_held_scenery_animations();" in function(coop, "network_coop_client_tick")
     events = function(coop, "client_apply_event")
     assert "case _coop_event_scenery_animation_resync:\n\t\tclient_apply_scenery_animation(event, TRUE);" in events
+
+
+def test_a_cutscene_character_sits_and_looks_as_the_hosts():
+    # a10's crewmen in their chairs (vehicle_load_magic), Cortana's face
+    # (unit_set_emotion), stances (unit_set_seat), idles: a biped neither a
+    # player's nor an actor's, which nothing else sets on a client
+    coop = source("port/linux/game/network_coop.c")
+    look = function(coop, "host_object_look")
+    assert "unit->object.type != _object_type_biped || unit->unit.player_index != NONE" in look
+    assert "unit->unit.actor_index != NONE" in look
+    assert "look->emotion_index = unit->unit.animation.emotion_index;" in look
+    assert "look->emotion_animation_index = unit->unit.override_emotion_animation_index;" in look
+    assert "look->magic_seat_index = unit->unit.magic_seat_index;" in look
+    assert "look->vehicle_index = unit->object.parent_object_index;" in look
+    assert "look->animation_index = unit->object.animation.state.index;" in look
+    apply = function(coop, "client_apply_character_look")
+    assert "unit_set_emotion(object_index, (word)(short)look->emotion_index);" in apply
+    assert "unit->unit.override_emotion_animation_index = look->emotion_animation_index;" in apply
+    assert "unit->unit.magic_seat_index = look->magic_seat_index;" in apply
+    assert "network_objects_set_seat(object_index, look->vehicle_index, look->seat_index);" in apply
+    assert "unit_port_set_base_animation(object_index, unit->object.animation.animation_graph_index, look->animation_index);" in apply
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "client_apply_character_look(object_index, character, look);" in client
+    units = source("source/units/units.c")
+    base = function(units, "unit_port_set_base_animation")
+    assert "unit->unit.animation.state == _unit_state_user_animation" in base
+
+
+def test_an_item_the_scripts_hang_on_an_object_is_shown():
+    # c40's Index: a copy of an item the host had attached waits hidden for an
+    # inventory; hung by a script, nothing else shows it
+    coop = source("port/linux/game/network_coop.c")
+    show = function(coop, "client_show_attached_item")
+    assert "_item_attached_to_unit_bit" in show
+    assert "object_set_visibility(child_index, TRUE);" in show
+    attach = function(coop, "client_apply_attach")
+    assert attach.count("client_show_attached_item(child_index);") == 2

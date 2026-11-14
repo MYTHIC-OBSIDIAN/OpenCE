@@ -99,6 +99,7 @@ index and tag, since the map placed them at the same index everywhere.
 #include "interface/hud_messaging.h"
 #include "interface/hud_unit.h"
 #include "interface/hud_weapon.h"
+#include "items/items.h"
 #include "main/main.h"
 #include "models/model_animation_definitions.h"
 #include "models/model_definitions.h"
@@ -491,6 +492,20 @@ struct distributed_coop_object_look
 	long definition_index;
 	byte region_permutations[MAXIMUM_REGIONS_PER_OBJECT];
 	real scale;
+	/* (port, network version 53) a cutscene's character, a unit neither a
+	player's nor an actor's (UNIT_LOOK_CHARACTER; NONE each for anything
+	else): the vehicle seat its scripts put it in (vehicle_load_magic: a10's
+	bridge crew in their chairs), its face (unit_set_emotion's frame of its
+	seat's emotions, or unit_set_emotion_animation's animation) and its
+	stance (unit_set_seat); and the base animation it plays, out of a custom
+	one (the permutation of an idle it chose, which a client's copy, choosing
+	its own, chose otherwise: Keyes and the Chief stood differently) */
+	long vehicle_index;
+	short seat_index;
+	short emotion_animation_index;
+	char emotion_index;
+	char magic_seat_index;
+	short animation_index;
 };
 
 #define MAXIMUM_OBJECT_LOOKS_PER_MESSAGE 64
@@ -517,6 +532,15 @@ still (unit_suspended: a cutscene's character set at its flag, a pilot in
 the a10 bridge's chair): neither falling nor pushed out of where it was put,
 which a copy not held still was, sometimes out of sight */
 #define UNIT_LOOK_SUSPENDED 0x0200
+/* (port, network version 53) the look's character fields are a cutscene
+character's (above), and what more the scripts set on it: its eyes not
+blinking (unit_can_blink) and its aim apart from its body
+(unit_aim_without_turning) */
+#define UNIT_LOOK_CHARACTER 0x0400
+#define UNIT_LOOK_CANNOT_BLINK 0x0800
+#define UNIT_LOOK_AIM_WITHOUT_TURNING 0x1000
+/* the flags traced as they change */
+#define UNIT_LOOK_TRACED (UNIT_LOOK_HATCHES_MASK | UNIT_LOOK_POWERED | UNIT_LOOK_SUSPENDED)
 
 struct distributed_coop_object_looks_message
 {
@@ -1295,9 +1319,7 @@ static struct
 {
 	long object_index;
 	boolean changed;
-	byte region_permutations[MAXIMUM_REGIONS_PER_OBJECT];
-	real scale;
-	short hatches;
+	struct distributed_coop_object_look look;
 } host_sent_looks[MAXIMUM_OBJECTS_PER_MAP];
 
 static char const *coop_trace_tag(long object_index);
@@ -1417,6 +1439,50 @@ static void host_resync_unit_animations(
 	}
 }
 
+/* host: how the object looks now */
+static void host_object_look(
+	long object_index,
+	struct object_datum *object,
+	struct distributed_coop_object_look *look)
+{
+	struct unit_datum *unit = TEST_FLAG(_object_mask_unit, object->object.type) ? (struct unit_datum *)object : NULL;
+
+	csmemset(look, 0, sizeof(*look));
+	look->name_index = object->object.name_index;
+	look->pad = (short)(host_unit_hatches(object_index) | host_unit_powered(object_index));
+	look->object_index = object_index;
+	look->definition_index = object->definition_index;
+	csmemcpy(look->region_permutations, object->object.region_permutations, sizeof(look->region_permutations));
+	look->scale = object->object.scale;
+	look->vehicle_index = NONE;
+	look->seat_index = NONE;
+	look->emotion_animation_index = NONE;
+	look->emotion_index = NONE;
+	look->magic_seat_index = NONE;
+	look->animation_index = NONE;
+	/* (a biped: a vehicle's look is its hatches and power) */
+	if (!unit || unit->object.type != _object_type_biped || unit->unit.player_index != NONE ||
+		unit->unit.actor_index != NONE)
+	{
+		return;
+	}
+	look->pad |= UNIT_LOOK_CHARACTER;
+	if (TEST_FLAG(unit->unit.flags, _unit_cannot_blink_bit))
+		look->pad |= UNIT_LOOK_CANNOT_BLINK;
+	if (TEST_FLAG(unit->unit.flags, _unit_aim_without_turning_bit))
+		look->pad |= UNIT_LOOK_AIM_WITHOUT_TURNING;
+	look->emotion_index = unit->unit.animation.emotion_index;
+	look->emotion_animation_index = unit->unit.override_emotion_animation_index;
+	look->magic_seat_index = unit->unit.magic_seat_index;
+	if (unit->unit.animation.state != _unit_state_user_animation)
+		look->animation_index = unit->object.animation.state.index;
+	if (unit->object.parent_object_index != NONE && unit->unit.parent_seat_index != NONE)
+	{
+		look->vehicle_index = unit->object.parent_object_index;
+		look->seat_index = unit->unit.parent_seat_index;
+	}
+}
+
 /* host, each tick: the objects whose looks changed (and, every
 OBJECT_REFRESH_TICKS, all whose looks ever have) */
 static void host_send_object_looks(
@@ -1431,50 +1497,45 @@ static void host_send_object_looks(
 	while ((object = object_iterator_next(&iterator)) != NULL)
 	{
 		short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.index);
-		struct distributed_coop_object_look *look;
-		short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);
+		struct distributed_coop_object_look now;
 		boolean changing;
 
 		if (absolute_index < 0 || absolute_index >= MAXIMUM_OBJECTS_PER_MAP)
 			continue;
+		host_object_look(iterator.index, object, &now);
 		if (host_sent_looks[absolute_index].object_index != iterator.index)
 		{
 			/* an object seen for the first time looks the same on every machine
-			(but for a vehicle's hatches: every refresh sends them) */
+			(but for what the flags say: a vehicle's hatches, a character's
+			seat and face; every refresh sends them) */
 			host_sent_looks[absolute_index].object_index = iterator.index;
 			host_sent_looks[absolute_index].changed = FALSE;
-			host_sent_looks[absolute_index].scale = object->object.scale;
-			host_sent_looks[absolute_index].hatches = UNIT_HATCHES_NONE;
-			csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
-				sizeof(object->object.region_permutations));
-			if (hatches == UNIT_HATCHES_NONE)
+			host_sent_looks[absolute_index].look = now;
+			host_sent_looks[absolute_index].look.pad = 0;
+			if (now.pad == 0)
 				continue;
 		}
-		changing = host_sent_looks[absolute_index].scale != object->object.scale ||
-			host_sent_looks[absolute_index].hatches != hatches ||
-			csmemcmp(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
-				sizeof(object->object.region_permutations));
+		changing = csmemcmp(&host_sent_looks[absolute_index].look, &now, sizeof(now)) != 0;
 		if (!changing && !(host_resend.refresh && host_sent_looks[absolute_index].changed))
 			continue;
-		host_sent_looks[absolute_index].changed = TRUE;
-		host_sent_looks[absolute_index].scale = object->object.scale;
-		if (host_sent_looks[absolute_index].hatches != hatches)
+		if ((host_sent_looks[absolute_index].look.pad & UNIT_LOOK_TRACED) != (now.pad & UNIT_LOOK_TRACED))
 		{
 			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)%s%s",
-				coop_trace_tag(iterator.index), iterator.index, hatches & UNIT_LOOK_HATCHES_MASK,
-				(hatches & UNIT_LOOK_POWERED) ? ", powered (actively controlled)" : "",
-				(hatches & UNIT_LOOK_SUSPENDED) ? ", suspended" : "");
+				coop_trace_tag(iterator.index), iterator.index, now.pad & UNIT_LOOK_HATCHES_MASK,
+				(now.pad & UNIT_LOOK_POWERED) ? ", powered (actively controlled)" : "",
+				(now.pad & UNIT_LOOK_SUSPENDED) ? ", suspended" : "");
 		}
-		host_sent_looks[absolute_index].hatches = hatches;
-		csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
-			sizeof(object->object.region_permutations));
-		look = &message.looks[count++];
-		look->name_index = object->object.name_index;
-		look->pad = hatches;
-		look->object_index = iterator.index;
-		look->definition_index = object->definition_index;
-		csmemcpy(look->region_permutations, object->object.region_permutations, sizeof(look->region_permutations));
-		look->scale = object->object.scale;
+		if ((now.pad & UNIT_LOOK_CHARACTER) && (host_sent_looks[absolute_index].look.vehicle_index != now.vehicle_index ||
+			host_sent_looks[absolute_index].look.seat_index != now.seat_index ||
+			host_sent_looks[absolute_index].look.magic_seat_index != now.magic_seat_index))
+		{
+			error(_error_silent, "co-op character (host): %s %ld in %s seat %d, stance %d",
+				coop_trace_tag(iterator.index), iterator.index, coop_trace_tag(now.vehicle_index), now.seat_index,
+				now.magic_seat_index);
+		}
+		host_sent_looks[absolute_index].changed = TRUE;
+		host_sent_looks[absolute_index].look = now;
+		message.looks[count++] = now;
 		if (count == MAXIMUM_OBJECT_LOOKS_PER_MESSAGE)
 		{
 			send_to_clients(&message, _distributed_message_coop_object_looks, count, sizeof(message.looks[0]));
@@ -2385,6 +2446,27 @@ static short object_marker_index(
 definition_index; the child is target, with its definition in tag_index and
 its name index in reals[0]; value and frame are the parent's and the child's
 markers. */
+/* client: an item (a weapon, equipment) the host's scripts hung on another
+object is shown. A copy made of an item the host had attached or carried
+waits hidden for a unit's inventory to place it (network_objects.c); hung by
+a script on a parent of the host's (c40's Index), no inventory places it, and
+it stayed hidden. One in a unit's inventory is left to it. */
+static void client_show_attached_item(
+	long child_index)
+{
+	struct object_datum *child = object_try_and_get(child_index);
+
+	if (!child || !TEST_FLAG(_object_mask_item, child->object.type) ||
+		TEST_FLAG(item_get(child_index)->item.flags, _item_attached_to_unit_bit) ||
+		!TEST_FLAG(child->object.flags, _object_invisible_bit))
+	{
+		return;
+	}
+	error(_error_silent, "co-op: %s %ld shown, hung on %s by the host's scripts", coop_trace_tag(child_index), child_index,
+		coop_trace_tag(child->object.parent_object_index));
+	object_set_visibility(child_index, TRUE);
+}
+
 static void client_apply_attach(
 	struct distributed_coop_event const *event)
 {
@@ -2395,9 +2477,12 @@ static void client_apply_attach(
 
 	if (parent_index == NONE || child_index == NONE || parent_index == child_index)
 		return;
-	/* a resent attach this machine already has */
+	/* a resent attach this machine already has (shown, below) */
 	if (event->type == _coop_attach && object_get(child_index)->object.parent_object_index == parent_index)
+	{
+		client_show_attached_item(child_index);
 		return;
+	}
 	/* (not to one of its own children, which objects.c cannot do: copies
 	of the hierarchy that differ here, or a host's mistake) */
 	for (ancestor_index = object_get(parent_index)->object.parent_object_index; event->type == _coop_attach &&
@@ -2412,6 +2497,7 @@ static void client_apply_attach(
 	{
 		objects_scripting_attach(parent_index, object_marker_name(parent_index, event->value), child_index,
 			object_marker_name(child_index, event->frame));
+		client_show_attached_item(child_index);
 	}
 }
 
@@ -3918,6 +4004,7 @@ scenery a script animates */
 #define SCENE_TRACE_CHARACTERS 4
 #define SCENE_TRACE_CHARACTER_DISTANCE 40.0f
 #define SCENE_TRACE_SCENERY 3
+#define SCENE_TRACE_ITEMS 3
 #define SCENE_TRACE_SCENERY_DISTANCE 120.0f
 #define SCENE_TRACE_MOST 4
 
@@ -4103,20 +4190,41 @@ static void coop_trace_scene(
 				struct unit_datum *unit = (struct unit_datum *)object_get(characters[index]);
 
 				error(_error_silent, "co-op scene (%s) %ld: character %s (%s) %ld at %.2f %.2f %.2f facing %.2f %.2f %.2f, "
-					"moving %.2f %.2f %.2f; %s %s; animation state %d, graph %s animation %d frame %d; %s%s%s%s%s",
+					"moving %.2f %.2f %.2f; %s %s seat %d; animation state %d, graph %s animation %d frame %d; "
+					"emotion %d animation %d, stance %d; %s%s%s%s%s%s",
 					who, time, coop_trace_object_name(characters[index]), coop_trace_tag(characters[index]), characters[index],
 					unit->object.position.x,
 					unit->object.position.y, unit->object.position.z, unit->object.forward.i, unit->object.forward.j,
 					unit->object.forward.k, unit->object.translational_velocity.i, unit->object.translational_velocity.j,
 					unit->object.translational_velocity.k, unit->object.parent_object_index != NONE ? "in" : "on foot",
-					coop_trace_tag(unit->object.parent_object_index), unit->unit.animation.state,
+					coop_trace_tag(unit->object.parent_object_index), unit->unit.parent_seat_index, unit->unit.animation.state,
 					coop_trace_tag_name(unit->object.animation.animation_graph_index), unit->object.animation.state.index,
-					unit->object.animation.state.frame_index,
+					unit->object.animation.state.frame_index, unit->unit.animation.emotion_index,
+					unit->unit.override_emotion_animation_index, unit->unit.magic_seat_index,
 					TEST_FLAG(unit->unit.flags, _unit_suspended_bit) ? "suspended" : "free",
+					TEST_FLAG(unit->unit.flags, _unit_cannot_blink_bit) ? ", no blinking" : "",
 					TEST_FLAG(unit->object.flags, _object_invisible_bit) ? ", invisible" : "",
 					TEST_FLAG(unit->object.flags, _object_connected_to_map_bit) ? "" : ", not in the map",
 					TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ? ", dead" : "",
 					unit->unit.actor_index != NONE ? ", an actor's" : "");
+			}
+		}
+		/* the items: on what, shown or hidden */
+		{
+			long items[SCENE_TRACE_MOST];
+			short count = coop_trace_nearest(&camera, _object_mask_item, SCENE_TRACE_CHARACTER_DISTANCE,
+				SCENE_TRACE_ITEMS, items);
+
+			for (index = 0; index < count; index++)
+			{
+				struct object_datum *item = object_get(items[index]);
+
+				error(_error_silent, "co-op scene (%s) %ld: item %s (%s) %ld at %.2f %.2f %.2f on %s%s%s", who, time,
+					coop_trace_object_name(items[index]), coop_trace_tag(items[index]), items[index], item->object.position.x,
+					item->object.position.y, item->object.position.z, coop_trace_tag(item->object.parent_object_index),
+					TEST_FLAG(item->object.flags, _object_invisible_bit) ? ", invisible" : "",
+					TEST_FLAG(item->object.flags, _object_connected_to_map_bit) || item->object.parent_object_index != NONE ?
+					"" : ", not in the map");
 			}
 		}
 		/* the scenery the scripts animate: its animation and frame */
@@ -4353,6 +4461,49 @@ static boolean client_vehicle_ridden_here(
 	return FALSE;
 }
 
+/* client: a cutscene character as the host's scripts set it (the look's
+character fields): in the vehicle seat they put it in or on foot, its face
+and stance, its blinking and aim. Its copy here is no player's or actor's
+either (a client makes no actors), so nothing else sets these. */
+static void client_apply_character_look(
+	long object_index,
+	struct unit_datum *unit,
+	struct distributed_coop_object_look const *look)
+{
+	long graph_index = unit->object.animation.animation_graph_index;
+	boolean seated = unit->object.parent_object_index != NONE && unit->unit.parent_seat_index != NONE;
+
+	SET_FLAG(unit->unit.flags, _unit_cannot_blink_bit, (look->pad & UNIT_LOOK_CANNOT_BLINK) != 0);
+	SET_FLAG(unit->unit.flags, _unit_aim_without_turning_bit, (look->pad & UNIT_LOOK_AIM_WITHOUT_TURNING) != 0);
+	/* (as unit_set_emotion: the frame of its seat's emotions, eased to) */
+	if (unit->unit.animation.emotion_index != look->emotion_index)
+		unit_set_emotion(object_index, (word)(short)look->emotion_index);
+	/* (an animation its graph has, or none) */
+	if (look->emotion_animation_index == NONE || (graph_index != NONE && look->emotion_animation_index >= 0 &&
+		look->emotion_animation_index < animation_graph_definition_get(graph_index)->animations.count))
+	{
+		unit->unit.override_emotion_animation_index = look->emotion_animation_index;
+	}
+	if (look->magic_seat_index == NONE ||
+		(look->magic_seat_index >= 0 && look->magic_seat_index < NUMBER_OF_UNIT_BASE_SEATS))
+	{
+		unit->unit.magic_seat_index = look->magic_seat_index;
+	}
+	/* the base animation the host's chose, from its start (as the host's
+	started it as this look was sent) */
+	if (look->animation_index != NONE && unit->object.animation.state.index != look->animation_index)
+		unit_port_set_base_animation(object_index, unit->object.animation.animation_graph_index, look->animation_index);
+	/* in the host's seat (a10's crewmen in their chairs), or out of one */
+	if (look->vehicle_index != NONE ? !seated || unit->object.parent_object_index != look->vehicle_index ||
+		unit->unit.parent_seat_index != look->seat_index : seated)
+	{
+		error(_error_silent, "co-op character (client): %s %ld into %s seat %d as the host's (here %s seat %d)",
+			coop_trace_tag(object_index), object_index, coop_trace_tag(look->vehicle_index), look->seat_index,
+			coop_trace_tag(seated ? unit->object.parent_object_index : NONE), seated ? unit->unit.parent_seat_index : NONE);
+		network_objects_set_seat(object_index, look->vehicle_index, look->seat_index);
+	}
+}
+
 void network_coop_handle_object_looks(
 	void const *entries,
 	short count)
@@ -4399,6 +4550,15 @@ void network_coop_handle_object_looks(
 		difference) */
 		hatches = (short)(look->pad & UNIT_LOOK_HATCHES_MASK);
 		powered = (look->pad & UNIT_LOOK_POWERED) != 0;
+		/* (port) a cutscene character as the host's scripts set it */
+		if (look->pad & UNIT_LOOK_CHARACTER)
+		{
+			struct unit_datum *character = (struct unit_datum *)object_try_and_get_and_verify_type(object_index,
+				_object_mask_biped);
+
+			if (character && character->unit.player_index == NONE)
+				client_apply_character_look(object_index, character, look);
+		}
 		/* (port) held still as the host's scripts hold the host's
 		(unit_suspended), a unit no player's: as units.c's
 		unit_scripting_suspended, without its players' followers */

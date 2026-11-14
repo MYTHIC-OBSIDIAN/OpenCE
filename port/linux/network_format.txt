@@ -1,4 +1,4 @@
-version 52
+version 53
 bound CHAT_TEXT_SIZE 64
 bound DISCORD_ID_SIZE 24
 bound DISCORD_NAME_SIZE 40
@@ -305,7 +305,7 @@ struct distributed_coop_device_state 727444a5c79b
 struct distributed_coop_device_states_message 48f17c3da6f5
 struct distributed_coop_event 62bbd76ba4af
 struct distributed_coop_events_message 562bdd70bfae
-struct distributed_coop_object_look 77cbae00e4ad
+struct distributed_coop_object_look 908e1a8781b3
 struct distributed_coop_object_looks_message 51dbb474aa17
 struct distributed_coop_object_names f3ecad927448
 struct distributed_coop_object_names_message 7d743ad3710e
