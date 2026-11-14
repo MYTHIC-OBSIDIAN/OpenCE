@@ -3706,6 +3706,140 @@ boolean network_coop_opening_camera(
 	return TRUE;
 }
 
+/* (trace, in debug.txt: through a cutscene, or while the players' controls
+or camera are taken, every SCENE_TRACE_TICKS: the camera, each player's unit
+and seat, and the vehicles nearest the camera; and every player's unit and
+seat as they change, any time. Host and client both, by the host's clock) */
+#define SCENE_TRACE_TICKS 15
+#define SCENE_TRACE_VEHICLES 3
+#define SCENE_TRACE_VEHICLE_DISTANCE 60.0f
+
+static void coop_trace_scene(
+	boolean host)
+{
+	static long traced_units[MAXIMUM_TRACKED_PLAYERS];
+	static long traced_parents[MAXIMUM_TRACKED_PLAYERS];
+	static short traced_seats[MAXIMUM_TRACKED_PLAYERS];
+	static boolean traced_any;
+	char const *who = host ? "host" : "client";
+	long time = host ? game_time_get() : coop_presentation.played_time;
+	struct data_iterator iterator;
+	struct player_datum *player;
+	boolean scene;
+
+	if (!traced_any)
+	{
+		csmemset(traced_units, NONE, sizeof(traced_units));
+		csmemset(traced_parents, NONE, sizeof(traced_parents));
+		csmemset(traced_seats, NONE, sizeof(traced_seats));
+		traced_any = TRUE;
+	}
+	/* every player's unit and seat, as they change */
+	data_iterator_new(&iterator, player_data);
+	while ((player = data_iterator_next(&iterator)) != NULL)
+	{
+		short absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.datum_index);
+		struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(player->unit_index,
+			_object_mask_unit);
+		long parent = unit ? unit->object.parent_object_index : NONE;
+		short seat = unit ? unit->unit.parent_seat_index : NONE;
+
+		if (absolute_index < 0 || absolute_index >= MAXIMUM_TRACKED_PLAYERS)
+			continue;
+		if (traced_units[absolute_index] == player->unit_index && traced_parents[absolute_index] == parent &&
+			traced_seats[absolute_index] == seat)
+		{
+			continue;
+		}
+		traced_units[absolute_index] = player->unit_index;
+		traced_parents[absolute_index] = parent;
+		traced_seats[absolute_index] = seat;
+		if (!unit)
+		{
+			error(_error_silent, "co-op scene (%s) %ld: player %d%s has no unit", who, time, absolute_index,
+				player->local_player_index != NONE ? " (here)" : "");
+			continue;
+		}
+		error(_error_silent, "co-op scene (%s) %ld: player %d%s is %s %ld at %.2f %.2f %.2f, %s %s seat %d, "
+			"animation state %d", who, time, absolute_index, player->local_player_index != NONE ? " (here)" : "",
+			coop_trace_tag(player->unit_index), player->unit_index, unit->object.position.x, unit->object.position.y,
+			unit->object.position.z, parent != NONE ? "in" : "on foot", coop_trace_tag(parent), seat,
+			unit->unit.animation.state);
+	}
+	scene = host ? (cinematic_in_progress() || !player_input_enabled() || !player_control_port_camera_control_enabled()) :
+		(coop_presentation.cinematic_started || !player_input_enabled() || !player_control_port_camera_control_enabled());
+	if (!scene || time % SCENE_TRACE_TICKS)
+		return;
+	{
+		struct observer_result const *observer = observer_get_camera(0);
+		real_point3d camera;
+		real_vector3d forward;
+		long nearest[SCENE_TRACE_VEHICLES];
+		real distances[SCENE_TRACE_VEHICLES];
+		struct object_iterator objects;
+		struct object_datum *object;
+		short index;
+
+		if (!host && coop_presentation.view_active)
+		{
+			camera = coop_presentation.view_latest.position;
+			forward = coop_presentation.view_latest.forward;
+		}
+		else if (observer)
+		{
+			camera = observer->position;
+			forward = observer->forward;
+		}
+		else
+			return;
+		error(_error_silent, "co-op scene (%s) %ld: camera at %.2f %.2f %.2f looking %.2f %.2f %.2f%s", who, time,
+			camera.x, camera.y, camera.z, forward.i, forward.j, forward.k,
+			host ? "" : coop_presentation.view_active ? " (the host's)" : " (its own)");
+		for (index = 0; index < SCENE_TRACE_VEHICLES; index++)
+		{
+			nearest[index] = NONE;
+			distances[index] = SCENE_TRACE_VEHICLE_DISTANCE * SCENE_TRACE_VEHICLE_DISTANCE;
+		}
+		object_iterator_new(&objects, _object_mask_vehicle, 0);
+		while ((object = object_iterator_next(&objects)) != NULL)
+		{
+			real distance = distance_squared3d(&camera, &object->object.position);
+			short slot;
+
+			for (slot = 0; slot < SCENE_TRACE_VEHICLES && distance >= distances[slot]; slot++)
+				;
+			if (slot == SCENE_TRACE_VEHICLES)
+				continue;
+			for (index = SCENE_TRACE_VEHICLES - 1; index > slot; index--)
+			{
+				nearest[index] = nearest[index - 1];
+				distances[index] = distances[index - 1];
+			}
+			nearest[slot] = objects.index;
+			distances[slot] = distance;
+		}
+		for (index = 0; index < SCENE_TRACE_VEHICLES && nearest[index] != NONE; index++)
+		{
+			struct unit_datum *vehicle = (struct unit_datum *)object_get(nearest[index]);
+
+			error(_error_silent, "co-op scene (%s) %ld: near the camera %s %ld at %.2f %.2f %.2f facing %.2f %.2f %.2f, "
+				"moving %.2f %.2f %.2f; driver %s, animation state %d, colors %.2f %.2f %.2f / %.2f %.2f %.2f, "
+				"shader permutation %d, region permutations %d %d %d %d, variant %d", who, time,
+				coop_trace_tag(nearest[index]), nearest[index],
+				vehicle->object.position.x, vehicle->object.position.y, vehicle->object.position.z, vehicle->object.forward.i,
+				vehicle->object.forward.j, vehicle->object.forward.k, vehicle->object.translational_velocity.i,
+				vehicle->object.translational_velocity.j, vehicle->object.translational_velocity.k,
+				coop_trace_tag(vehicle->unit.driver_object_index), vehicle->unit.animation.state,
+				vehicle->object.outgoing_change_colors[0].red, vehicle->object.outgoing_change_colors[0].green,
+				vehicle->object.outgoing_change_colors[0].blue, vehicle->object.outgoing_change_colors[1].red,
+				vehicle->object.outgoing_change_colors[1].green, vehicle->object.outgoing_change_colors[1].blue,
+				vehicle->object.forced_shader_permutation_index, vehicle->object.region_permutations[0],
+				vehicle->object.region_permutations[1], vehicle->object.region_permutations[2],
+				vehicle->object.region_permutations[3], vehicle->object.variant_number);
+		}
+	}
+}
+
 void network_coop_host_tick(
 	void)
 {
@@ -3714,6 +3848,7 @@ void network_coop_host_tick(
 	if (!coop_game())
 		return;
 	coop_opening_update();
+	coop_trace_scene(TRUE);
 	host_resend_update();
 	players_vitality_keep();
 	host_friendly_fire_update();
@@ -3746,6 +3881,7 @@ void network_coop_client_tick(
 	if (!coop_client())
 		return;
 	client_play_presentation();
+	coop_trace_scene(FALSE);
 	players_vitality_keep();
 	if (game_time_get() - coop_presentation.heard_time > PRESENTATION_SILENCE_TICKS)
 	{
