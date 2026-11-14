@@ -262,7 +262,7 @@ def test_scenery_animations_reach_a_copy_made_since():
     assert "if (!client_start_scenery_animation(event, 0, resync))\n\t\tclient_hold_event(event);" in apply
     start = function(coop, "client_start_scenery_animation")
     assert "scenery->object.object.animation.state.index == event->value" in start
-    assert "frame = event->frame + frames_since;" in start
+    assert "frame = event->frame + frames_since +" in start
     assert "client_play_held_events();" in function(coop, "network_coop_client_tick")
     events = function(coop, "client_apply_event")
     assert "case _coop_event_scenery_animation_resync:\n\t\tclient_apply_scenery_animation(event, TRUE);" in events
@@ -317,7 +317,7 @@ def test_an_event_reaching_a_client_before_its_objects_is_held():
     assert "done = client_try_attach(event);" in held
     assert "done = client_start_scenery_animation(event, since, FALSE);" in held
     start = function(coop, "client_start_unit_animation")
-    assert "frame = event->frame + frames_since;" in start
+    assert "frame = event->frame + frames_since +" in start
 
 
 def test_a_units_weapon_is_in_hand_when_the_hosts_is():
@@ -344,7 +344,38 @@ def test_states_play_with_the_camera_through_a_cutscene():
     apply = function(distributed, "distributed_apply_state_message")
     assert "if (checkpoint_epoch != distributed_checkpoint_epoch)\n\t\treturn;" in apply
     handle = function(distributed, "network_distributed_handle_message")
-    assert handle.count("distributed_hold_state_message(machine_index, &header, entries, header.count,") == 2
+    # the objects', the actors' and the looks' (a character's seat, face, idle)
+    assert handle.count("distributed_hold_state_message(machine_index, &header, entries, header.count,") == 3
     coop = source("port/linux/game/network_coop.c")
     tick = function(coop, "network_coop_client_tick")
     assert tick.index("client_play_presentation();") < tick.index("network_distributed_play_held_states();")
+
+
+def test_cutscene_animations_start_on_the_hosts_frame():
+    # the host's scripts start an animation before its objects step it a
+    # frame on in the same tick; every cutscene animation ran a frame behind
+    coop = source("port/linux/game/network_coop.c")
+    assert "#define EVENT_ANIMATION_FRAMES_STEPPED 1" in coop
+    unit = function(coop, "client_start_unit_animation")
+    assert "(held_event_kind(event->kind) == event->kind ? EVENT_ANIMATION_FRAMES_STEPPED : 0)" in unit
+    scenery = function(coop, "client_start_scenery_animation")
+    assert "_coop_event_scenery_animation_resync ? 0 : EVENT_ANIMATION_FRAMES_STEPPED" in scenery
+
+
+def test_what_a_cutscene_films_is_sent_every_tick():
+    # Sgt Johnson, walked by a recording on the host, slowed between states
+    # sent every other tick and was pulled on by the next
+    objects = source("port/linux/game/network_objects.c")
+    period = function(objects, "distributed_host_object_period")
+    assert "if (nearest < FAR_OBJECT_DISTANCE * FAR_OBJECT_DISTANCE)\n\t\t\treturn 1;" in period
+
+
+def test_network_coop_confirmations_are_centred():
+    # REVERT TO SAVED's and QUIT's confirmations, split screen's, sat where a
+    # half screen's viewport has them
+    tags = source("port/linux/game/menu_tags.c")
+    rows = function(tags, "pause_coop_rows")
+    assert "pause_coop_centre_dialogs(split_rows[row].widget_tag.index, revert, quit, leave, centred, &centred_count, 0);" in rows
+    centre = function(tags, "pause_coop_centre_dialog")
+    assert "dy = (short)((480 - (top + bottom)) / 2);" in centre
+    assert "children[child].vertical_offset = (short)(children[child].vertical_offset + dy);" in centre

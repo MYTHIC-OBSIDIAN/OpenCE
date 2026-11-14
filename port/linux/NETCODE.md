@@ -150,7 +150,14 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   Through a cutscene a client also holds the host's object and actor states
   and applies each on the tick its host tick is played, with the camera:
   applied as they came, a character walking through the shot (Sgt Johnson
-  in a10) stepped back and forth as datagrams bunched.
+  in a10) stepped back and forth as datagrams bunched. The object looks
+  (a character's seat, face and idle) are held with them. What the
+  cutscene's camera might film (within 120 units of it) is sent every tick:
+  a copy walked by a recording on the host has no controls on a client,
+  and slowed between states sent every other tick. An animation the host's
+  scripts start is started a frame on (`EVENT_ANIMATION_FRAMES_STEPPED`): the
+  host's objects step it once in the tick it began, before its states are
+  sent, and every cutscene animation ran a frame behind.
   Where the host's camera is a unit's own eyes (its player's first person,
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing

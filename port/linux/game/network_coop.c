@@ -100,6 +100,9 @@ index and tag, since the map placed them at the same index everywhere.
 #include "interface/hud_unit.h"
 #include "interface/hud_weapon.h"
 #include "items/items.h"
+#include "objects/object_lights.h"
+#include "objects/object_lights_rendering.h"
+#include "render/render.h"
 #include "main/main.h"
 #include "models/model_animation_definitions.h"
 #include "models/model_definitions.h"
@@ -2165,6 +2168,16 @@ static void client_apply_nav_point(
 	}
 }
 
+/* The host's scripts (and AI) start an animation before its objects update
+in the same tick, which steps it a frame on; the event carries the frame it
+began at, and the states of that tick the stepped one. A client starts it
+here on that tick after its own objects' update, so a frame on, or every
+cutscene animation ran a frame behind the host's for its length. (A
+resync's frame is the host's after its update already.) */
+#define EVENT_ANIMATION_FRAMES_STEPPED 1
+
+static byte held_event_kind(byte kind);
+
 /* FALSE without the unit here yet (client_hold_event); frames_since past
 the event's frame */
 static boolean client_start_unit_animation(
@@ -2187,7 +2200,8 @@ static boolean client_start_unit_animation(
 	animation = distributed_graph_animation(event->tag_index, event->value);
 	if (!animation)
 		return TRUE;
-	frame = event->frame + frames_since;
+	frame = event->frame + frames_since +
+		(held_event_kind(event->kind) == event->kind ? EVENT_ANIMATION_FRAMES_STEPPED : 0);
 	if (frame >= animation->frame_count)
 		frame = animation->frame_count - 1;
 	if (frames_since)
@@ -2278,7 +2292,8 @@ static boolean client_start_scenery_animation(
 	{
 		return TRUE;
 	}
-	frame = event->frame + frames_since;
+	frame = event->frame + frames_since +
+		(resync || event->kind == _coop_event_scenery_animation_resync ? 0 : EVENT_ANIMATION_FRAMES_STEPPED);
 	if (frame >= animation->frame_count)
 		frame = animation->frame_count - 1;
 	if (resync || frames_since)
@@ -4267,6 +4282,20 @@ static void coop_trace_scene(
 			for (index = 0; index < count; index++)
 			{
 				struct unit_datum *unit = (struct unit_datum *)object_get(characters[index]);
+				struct render_lighting lighting;
+
+				/* how it is lit: the level's light where it stands, and the
+				lights near it (a flashlight, an effect's, a device's) */
+				csmemset(&lighting, 0, sizeof(lighting));
+				lights_prepare_for_object_static(characters[index], &lighting);
+				lights_prepare_for_object_dynamic(characters[index], &lighting);
+				error(_error_silent, "co-op scene (%s) %ld: character %ld lit ambient %.2f %.2f %.2f, %d distant (first %.2f %.2f %.2f), "
+					"%d point lights, its light %s", who, time, characters[index], lighting.ambient_color.red,
+					lighting.ambient_color.green, lighting.ambient_color.blue, lighting.distant_light_count,
+					lighting.distant_light_count > 0 ? lighting.distant_lights[0].color.red : 0.0f,
+					lighting.distant_light_count > 0 ? lighting.distant_lights[0].color.green : 0.0f,
+					lighting.distant_light_count > 0 ? lighting.distant_lights[0].color.blue : 0.0f,
+					lighting.point_light_count, TEST_FLAG(unit->unit.flags, _unit_integrated_light_on_bit) ? "on" : "off");
 
 				error(_error_silent, "co-op scene (%s) %ld: character %s (%s) %ld at %.2f %.2f %.2f facing %.2f %.2f %.2f, "
 					"moving %.2f %.2f %.2f; %s %s seat %d; animation state %d, graph %s animation %d frame %d; "

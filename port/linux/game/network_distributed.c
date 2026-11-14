@@ -5978,7 +5978,7 @@ tick is played: applied as they came, a character walking through the shot
 copies that follow the host in a cutscene being put exactly where each
 state says. Held only while it follows a cutscene; any held are applied
 as it ends. */
-#define MAXIMUM_HELD_STATE_MESSAGES 32
+#define MAXIMUM_HELD_STATE_MESSAGES 64
 #define HELD_STATE_MESSAGE_BYTES 4096
 
 static struct
@@ -6004,6 +6004,8 @@ static void distributed_apply_state_message(
 		return;
 	if (type == _distributed_message_object_states)
 		network_objects_handle_states(entries, count, host_time);
+	else if (type == _distributed_message_coop_object_looks)
+		network_coop_handle_object_looks(entries, count);
 	else
 		network_actors_handle_states(entries, count);
 }
@@ -6381,7 +6383,13 @@ void network_distributed_handle_message(
 		network_actors_handle_damage(entries, header.count);
 		break;
 	case _distributed_message_coop_object_looks:
-		network_coop_handle_object_looks(entries, header.count);
+		/* (with the states: a character's seat, face and idle on the tick the
+		camera and its place are) */
+		if (!distributed_hold_state_message(machine_index, &header, entries, header.count,
+			(long)size - (long)sizeof(header)))
+		{
+			network_coop_handle_object_looks(entries, header.count);
+		}
 		break;
 	case _distributed_message_damage_animations:
 		network_objects_handle_damage_animations(entries, header.count);

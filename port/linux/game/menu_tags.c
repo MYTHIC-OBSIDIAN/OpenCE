@@ -2404,6 +2404,109 @@ static boolean widget_runs_function(long tag_index, long function, short depth)
 	return FALSE;
 }
 
+/* network co-op: a confirmation split screen's rows open (REVERT TO SAVED's,
+QUIT's) centred on the whole screen, as the pause menu is: split screen's
+sits where a half screen's viewport has it, off-centre on a whole one. Its
+children move together (their offsets, to which a widget's are added); a
+backdrop as wide as the screen is made as tall, the box within it centred,
+and a root that is the box itself moves with them. Only in network co-op's
+build of the menus, whose split screen pause menu nobody opens. */
+static void pause_coop_centre_dialog(long tag_index)
+{
+	struct ui_widget_definition *dialog;
+	struct ui_widget_child_reference *children;
+	boolean backdrop;
+	short top, bottom, left, right, dx, dy;
+	long child;
+
+	if (tag_index == NONE)
+		return;
+	dialog = tag_get(UI_WIDGET_DEFINITION_TAG, tag_index);
+	if (!dialog)
+		return;
+	children = dialog->child_widgets.address;
+	backdrop = dialog->bounds.x0 <= 0 && dialog->bounds.x1 >= 640 && dialog->child_widgets.count > 0;
+	top = backdrop ? 32767 : dialog->bounds.y0;
+	bottom = backdrop ? -32767 : dialog->bounds.y1;
+	left = backdrop ? 32767 : dialog->bounds.x0;
+	right = backdrop ? -32767 : dialog->bounds.x1;
+	for (child = 0; child < dialog->child_widgets.count; child++)
+	{
+		struct ui_widget_definition const *widget;
+
+		if (children[child].widget_tag.index == NONE)
+			continue;
+		widget = tag_get(UI_WIDGET_DEFINITION_TAG, children[child].widget_tag.index);
+		top = (short)MIN(top, widget->bounds.y0 + children[child].vertical_offset);
+		bottom = (short)MAX(bottom, widget->bounds.y1 + children[child].vertical_offset);
+		left = (short)MIN(left, widget->bounds.x0 + children[child].horizontal_offset);
+		right = (short)MAX(right, widget->bounds.x1 + children[child].horizontal_offset);
+	}
+	if (top > bottom || left > right)
+		return;
+	dy = (short)((480 - (top + bottom)) / 2);
+	dx = (short)((640 - (left + right)) / 2);
+	if (!dx && !dy)
+		return;
+	for (child = 0; child < dialog->child_widgets.count; child++)
+	{
+		children[child].vertical_offset = (short)(children[child].vertical_offset + dy);
+		children[child].horizontal_offset = (short)(children[child].horizontal_offset + dx);
+	}
+	if (backdrop)
+	{
+		dialog->bounds.y0 = 0;
+		dialog->bounds.y1 = 480;
+	}
+	else
+	{
+		dialog->bounds.y0 = (short)(dialog->bounds.y0 + dy);
+		dialog->bounds.y1 = (short)(dialog->bounds.y1 + dy);
+		dialog->bounds.x0 = (short)(dialog->bounds.x0 + dx);
+		dialog->bounds.x1 = (short)(dialog->bounds.x1 + dx);
+	}
+	platform_log("menus: network co-op's %s centred (moved %d across, %d down)", tag_get_name(tag_index), dx, dy);
+}
+
+/* ... the confirmations a row (or a widget in it) opens that revert or quit */
+static void pause_coop_centre_dialogs(long tag_index, long revert, long quit, long leave, long *centred,
+	long *centred_count, short depth)
+{
+	struct ui_widget_definition const *widget;
+	struct ui_widget_event_handler_reference const *handlers;
+	struct ui_widget_child_reference const *children;
+	long handler;
+
+	if (tag_index == NONE || depth > 3)
+		return;
+	widget = tag_get(UI_WIDGET_DEFINITION_TAG, tag_index);
+	if (!widget)
+		return;
+	children = widget->child_widgets.address;
+	for (handler = 0; handler < widget->child_widgets.count; handler++)
+		pause_coop_centre_dialogs(children[handler].widget_tag.index, revert, quit, leave, centred, centred_count,
+			(short)(depth + 1));
+	handlers = widget->event_handlers.address;
+	for (handler = 0; handler < widget->event_handlers.count; handler++)
+	{
+		long dialog = handlers[handler].widget_tag.index;
+		long index;
+
+		if (!TEST_FLAG(handlers[handler].flags, _event_handler_open_widget_bit) || dialog == NONE ||
+			(!widget_runs_function(dialog, revert, 0) && !widget_runs_function(dialog, quit, 0) &&
+				!widget_runs_function(dialog, leave, 0)))
+		{
+			continue;
+		}
+		for (index = 0; index < *centred_count && centred[index] != dialog; index++)
+			;
+		if (index < *centred_count || *centred_count >= 8)
+			continue;
+		centred[(*centred_count)++] = dialog;
+		pause_coop_centre_dialog(dialog);
+	}
+}
+
 /* network co-op's pause menu: the full-screen list's rows made the split
 screen co-op pause menu's (the same options, in its order, from its own
 widgets, at the full-screen list's place: no SETTINGS), but RESTART LEVEL
@@ -2416,6 +2519,10 @@ static boolean pause_coop_rows(struct ui_widget_definition *list)
 	struct ui_widget_child_reference const *rows = list->child_widgets.address;
 	long restart = function_index("pause game restart level", "pause", 0);
 	long revert = function_index("pause game restart at checkpoint", "pause", 0);
+	long quit = function_index("pause game return to main menu", "pause", 0);
+	long leave = ui_function_named("mp game player quit");
+	long centred[8];
+	long centred_count = 0;
 	long child, count = 0;
 
 	if (screen == NONE || list->child_widgets.count <= 0)
@@ -2450,6 +2557,7 @@ static boolean pause_coop_rows(struct ui_widget_definition *list)
 			placed[count] = split_rows[row];
 			placed[count].horizontal_offset = rows[0].horizontal_offset;
 			placed[count].vertical_offset = rows[0].vertical_offset;
+			pause_coop_centre_dialogs(split_rows[row].widget_tag.index, revert, quit, leave, centred, &centred_count, 0);
 			count++;
 		}
 		if (!count)

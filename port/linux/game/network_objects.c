@@ -1546,6 +1546,12 @@ static short distributed_host_object_period(
 		real dz = position->z - camera->z;
 
 		nearest = dx * dx + dy * dy + dz * dz;
+		/* (port) every tick, all it might film: a client's copy that follows
+		the host's through a cutscene has no controls of its own (a recording
+		walks the host's: Sgt Johnson in a10), so it slowed between states
+		sent every other tick and was pulled on by the next, a stutter */
+		if (nearest < FAR_OBJECT_DISTANCE * FAR_OBJECT_DISTANCE)
+			return 1;
 	}
 	/* nobody is alive anywhere, so nothing needs to be sent often */
 	if (!count && nearest < 0.0f)
