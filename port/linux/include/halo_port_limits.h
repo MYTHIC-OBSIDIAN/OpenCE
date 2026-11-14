@@ -82,8 +82,11 @@ Version 51: a player's unit state says it has begun getting out of its seat
 (_distributed_unit_exiting_seat_bit), which a client then plays as the host
 does, not once it is out; and a co-op object look says, above a vehicle's
 hatches, that the host's scripts fly it (UNIT_LOOK_POWERED), so a client's
-copy powers its seats as the host's does. */
-#define HALO_PORT_NETWORK_VERSION 51
+copy powers its seats as the host's does.
+Version 52: the host resends the animations scripts play on scenery every
+refresh (_coop_event_scenery_animation_resync), and an object look says a
+unit no player's is held still (UNIT_LOOK_SUSPENDED). */
+#define HALO_PORT_NETWORK_VERSION 52
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

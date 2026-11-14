@@ -121,10 +121,18 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   (`recording_play`: The Maw's cinematic Banshee), which a client's copy
   takes, so its seats power up as the host's do and the colours seat power
   sets match (the Banshee's canards red, not blue at rest; network version
-  51). Every refresh the host also
+  51). It also carries whether a unit no player's is held still
+  (`unit_suspended`: a cutscene's character set at its flag), which a
+  client's copy is too, rather than falling or being pushed from where the
+  scripts put it (network version 52). Every refresh the host also
   resends the custom animation each of its units (not players') plays, at
   its frame (`_coop_event_unit_animation_resync`), which a copy made after
   it began (a level's opening) plays and one playing it already ignores.
+  So it does the animations the scripts play on scenery
+  (`_coop_event_scenery_animation_resync`, network version 52); and one
+  that reaches a client before its copy of the scenery (made from the
+  object names a moment after the host's) is held until the copy is made,
+  then started where the host's has got to.
   Where the host's camera is a unit's own eyes (its player's first person,
   or `camera_set_first_person`) the presentation names the unit
   (`camera_object_index`, the top bit of `skip_votes`); a client drawing
@@ -542,6 +550,11 @@ exit animation when the host's copy does: out of a10's cryotubes and down a
 Pelican's ramp together, not when the host's long animation has ended and
 the seat is already empty (the cryotube's hatch closed on a client's player
 still inside it).
+
+Version 52 resends the animations the scripts play on scenery every refresh
+(`_coop_event_scenery_animation_resync`), and an object look says a unit no
+player's is held still (`UNIT_LOOK_SUSPENDED`), so a cutscene's characters
+and props stand and move on a client where they do on the host.
 
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the

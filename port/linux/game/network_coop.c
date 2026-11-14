@@ -120,6 +120,7 @@ index and tag, since the map placed them at the same index everywhere.
 #include "sound/game_sound.h"
 #include "sound/sound_manager.h"
 #include "sound/sound_definitions.h"
+#include "units/bipeds.h"
 #include "units/units.h"
 #include "coop_enemies.h"
 #include "coop_pickups.h"
@@ -262,6 +263,10 @@ enum
 	when it began (a level's opening) or lost it plays it; one playing it
 	already is left be. A client without it ignores it */
 	_coop_event_unit_animation_resync,
+	/* (port, network version 52) a scenery's animation, again every refresh
+	(as _coop_event_scenery_animation, at its frame): a copy made since it
+	began, or one that lost it, plays it; one playing it already is left be */
+	_coop_event_scenery_animation_resync,
 };
 
 /* distributed_coop_event.type of an effect: at a cutscene flag (value), or on
@@ -507,6 +512,11 @@ would: its engine's glow and the colours its seat power sets (the Banshee's
 canards red, not blue at rest) */
 #define UNIT_LOOK_HATCHES_MASK 0x00FF
 #define UNIT_LOOK_POWERED 0x0100
+/* (port, network version 52) a unit not a player's the host's scripts hold
+still (unit_suspended: a cutscene's character set at its flag, a pilot in
+the a10 bridge's chair): neither falling nor pushed out of where it was put,
+which a copy not held still was, sometimes out of sight */
+#define UNIT_LOOK_SUSPENDED 0x0200
 
 struct distributed_coop_object_looks_message
 {
@@ -1319,13 +1329,59 @@ static short host_unit_hatches(
 	}
 }
 
-/* host: UNIT_LOOK_POWERED for a vehicle the host's scripts drive (above) */
+/* host: UNIT_LOOK_POWERED for a vehicle the host's scripts drive, and
+UNIT_LOOK_SUSPENDED for a unit not a player's they hold still (above) */
 static short host_unit_powered(
 	long object_index)
 {
-	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(object_index, _object_mask_vehicle);
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(object_index, _object_mask_unit);
+	short flags = 0;
 
-	return unit && TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit) ? UNIT_LOOK_POWERED : 0;
+	if (!unit)
+		return 0;
+	if (unit->object.type == _object_type_vehicle && TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit))
+		flags |= UNIT_LOOK_POWERED;
+	if (unit->unit.player_index == NONE && TEST_FLAG(unit->unit.flags, _unit_suspended_bit))
+		flags |= UNIT_LOOK_SUSPENDED;
+	return flags;
+}
+
+/* host, every refresh: the animations the scripts play on scenery, at their
+frames (_coop_event_scenery_animation_resync), MAXIMUM_ANIMATION_RESYNCS at
+most. A client makes a script's named scenery a moment after the host does
+(the object names, network_coop_handle_object_names), and one that joined
+since had none of it: either missed the animation's start, and a scenery
+animation is the scenery's whole movement (a cutscene's prop, flown or
+walked through its shot) */
+static void host_resync_scenery_animations(
+	void)
+{
+	struct object_iterator iterator;
+	struct scenery_datum *scenery;
+	short count = 0;
+
+	if (!host_resend.refresh)
+		return;
+	object_iterator_new(&iterator, _object_mask_scenery, 0);
+	while (count < MAXIMUM_ANIMATION_RESYNCS &&
+		(scenery = (struct scenery_datum *)object_iterator_next(&iterator)) != NULL)
+	{
+		struct distributed_coop_event *event;
+
+		/* (bit 0: playing a script's animation, scenery.c) */
+		if (!TEST_FLAG(scenery->flags, 0) || scenery->object.object.animation.animation_graph_index == NONE)
+			continue;
+		event = event_new(_coop_event_scenery_animation_resync);
+		if (!event)
+			return;
+		event->object_index = iterator.index;
+		event->name_index = scenery->object.object.name_index;
+		event->definition_index = scenery->object.definition_index;
+		event->tag_index = scenery->object.object.animation.animation_graph_index;
+		event->value = scenery->object.object.animation.state.index;
+		event->frame = scenery->object.object.animation.state.frame_index;
+		count++;
+	}
 }
 
 /* host, every refresh: the custom animations its units (not players') play,
@@ -1404,9 +1460,10 @@ static void host_send_object_looks(
 		host_sent_looks[absolute_index].scale = object->object.scale;
 		if (host_sent_looks[absolute_index].hatches != hatches)
 		{
-			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)%s",
+			error(_error_silent, "co-op hatches (host): %s %ld now %d (1 open, 2 closed, 3 neither)%s%s",
 				coop_trace_tag(iterator.index), iterator.index, hatches & UNIT_LOOK_HATCHES_MASK,
-				(hatches & UNIT_LOOK_POWERED) ? ", powered (actively controlled)" : "");
+				(hatches & UNIT_LOOK_POWERED) ? ", powered (actively controlled)" : "",
+				(hatches & UNIT_LOOK_SUSPENDED) ? ", suspended" : "");
 		}
 		host_sent_looks[absolute_index].hatches = hatches;
 		csmemcpy(host_sent_looks[absolute_index].region_permutations, object->object.region_permutations,
@@ -1708,6 +1765,32 @@ static char const *coop_trace_tag(
 	name = tag_get_name(object->definition_index);
 	last = strrchr(name, '\\');
 	return last ? last + 1 : name;
+}
+
+/* (trace) a tag's name's last part, "none" for none */
+static char const *coop_trace_tag_name(
+	long tag_index)
+{
+	char const *name;
+	char const *last;
+
+	if (tag_index == NONE)
+		return "none";
+	name = tag_get_name(tag_index);
+	last = strrchr(name, '\\');
+	return last ? last + 1 : name;
+}
+
+/* (trace) an object's scenario name, "unnamed" for none */
+static char const *coop_trace_object_name(
+	long object_index)
+{
+	struct object_datum *object = object_index != NONE ? object_try_and_get(object_index) : NULL;
+	struct scenario *scenario = global_scenario_get();
+
+	if (!object || object->object.name_index < 0 || object->object.name_index >= scenario->object_names.count)
+		return "unnamed";
+	return TAG_BLOCK_GET_ELEMENT(&scenario->object_names, object->object.name_index, struct scenario_object_name)->name;
 }
 
 /* (trace: where this machine's first player sits, as "vehicle seat N" or
@@ -2063,16 +2146,106 @@ static void client_apply_unit_animation_resync(
 	}
 }
 
-static void client_apply_scenery_animation(
-	struct distributed_coop_event const *event)
+/* client: scenery animations whose scenery this machine has not made yet
+(the scripts made it this tick: its copy follows the object names a moment
+after), started once it has, at the frame the host's is at by then */
+#define MAXIMUM_HELD_SCENERY_ANIMATIONS 16
+#define HELD_SCENERY_ANIMATION_TICKS (5 * TICKS_PER_SECOND)
+
+static struct
+{
+	struct distributed_coop_event events[MAXIMUM_HELD_SCENERY_ANIMATIONS];
+	long times[MAXIMUM_HELD_SCENERY_ANIMATIONS];
+	short count;
+} client_held_scenery_animations;
+
+/* starts the host's scenery animation on this machine's copy, frames_since
+past the event's frame; FALSE without the copy (or the animation). A
+resync leaves a copy playing the animation already be. */
+static boolean client_start_scenery_animation(
+	struct distributed_coop_event const *event,
+	long frames_since,
+	boolean resync)
 {
 	long scenery_index = object_find(event->name_index, event->object_index, event->definition_index,
 		_object_mask_scenery);
 	struct animation *animation = distributed_graph_animation(event->tag_index, event->value);
+	struct scenery_datum *scenery;
+	long frame;
 
+	if (scenery_index == NONE || !animation)
+		return FALSE;
+	scenery = scenery_get(scenery_index);
+	if (resync && TEST_FLAG(scenery->flags, 0) &&
+		scenery->object.object.animation.animation_graph_index == event->tag_index &&
+		scenery->object.object.animation.state.index == event->value)
+	{
+		return TRUE;
+	}
+	frame = event->frame + frames_since;
+	if (frame >= animation->frame_count)
+		frame = animation->frame_count - 1;
+	if (resync || frames_since)
+	{
+		error(_error_silent, "co-op: %s %ld plays the host's scenery animation %d %s, at frame %ld",
+			coop_trace_tag(scenery_index), scenery_index, event->value, resync ? "again" : "late (made since)", frame);
+	}
 	/* scenery animations have no random permutations, so the name finds the same one */
-	if (scenery_index != NONE && animation)
-		scenery_animation_start_at_frame(scenery_index, event->tag_index, animation->name, event->frame);
+	scenery_animation_start_at_frame(scenery_index, event->tag_index, animation->name, (short)frame);
+	return TRUE;
+}
+
+static void client_hold_scenery_animation(
+	struct distributed_coop_event const *event)
+{
+	short index;
+
+	if (!distributed_graph_animation(event->tag_index, event->value))
+		return;
+	/* (the newest for a scenery replaces its older) */
+	for (index = 0; index < client_held_scenery_animations.count; index++)
+	{
+		if (client_held_scenery_animations.events[index].object_index == event->object_index)
+			break;
+	}
+	if (index == client_held_scenery_animations.count)
+	{
+		if (client_held_scenery_animations.count == MAXIMUM_HELD_SCENERY_ANIMATIONS)
+			return;
+		client_held_scenery_animations.count++;
+	}
+	client_held_scenery_animations.events[index] = *event;
+	client_held_scenery_animations.times[index] = coop_presentation.played_time;
+}
+
+/* client, each tick: the held ones whose scenery it has now */
+static void client_play_held_scenery_animations(
+	void)
+{
+	short index;
+
+	for (index = 0; index < client_held_scenery_animations.count; index++)
+	{
+		long since = coop_presentation.played_time - client_held_scenery_animations.times[index];
+
+		if (since < 0 || since > HELD_SCENERY_ANIMATION_TICKS ||
+			client_start_scenery_animation(&client_held_scenery_animations.events[index], since, FALSE))
+		{
+			client_held_scenery_animations.events[index] =
+				client_held_scenery_animations.events[--client_held_scenery_animations.count];
+			client_held_scenery_animations.times[index] =
+				client_held_scenery_animations.times[client_held_scenery_animations.count];
+			index--;
+		}
+	}
+}
+
+static void client_apply_scenery_animation(
+	struct distributed_coop_event const *event,
+	boolean resync)
+{
+	if (!client_start_scenery_animation(event, 0, resync))
+		client_hold_scenery_animation(event);
 }
 
 /* index of the looping sound in client_looping_sounds, or NONE */
@@ -2284,7 +2457,10 @@ static void client_apply_event(
 		client_apply_unit_animation(event);
 		break;
 	case _coop_event_scenery_animation:
-		client_apply_scenery_animation(event);
+		client_apply_scenery_animation(event, FALSE);
+		break;
+	case _coop_event_scenery_animation_resync:
+		client_apply_scenery_animation(event, TRUE);
 		break;
 	case _coop_event_effect:
 		client_apply_effect(event);
@@ -2467,6 +2643,7 @@ void network_coop_new_game(
 	csmemset(&coop_events, 0, sizeof(coop_events));
 	client_pending_events.count = 0;
 	csmemset(&coop_opening, 0, sizeof(coop_opening));
+	csmemset(&client_held_scenery_animations, 0, sizeof(client_held_scenery_animations));
 	csmemset(&host_devices, 0, sizeof(host_devices));
 	csmemset(&client_devices, 0, sizeof(client_devices));
 	csmemset(client_names_differing, 0, sizeof(client_names_differing));
@@ -3736,6 +3913,61 @@ seat as they change, any time. Host and client both, by the host's clock) */
 #define SCENE_TRACE_TICKS 15
 #define SCENE_TRACE_VEHICLES 3
 #define SCENE_TRACE_VEHICLE_DISTANCE 60.0f
+/* ... and the cutscene's characters nearest it (units no player's), and the
+scenery a script animates */
+#define SCENE_TRACE_CHARACTERS 4
+#define SCENE_TRACE_CHARACTER_DISTANCE 40.0f
+#define SCENE_TRACE_SCENERY 3
+#define SCENE_TRACE_SCENERY_DISTANCE 120.0f
+#define SCENE_TRACE_MOST 4
+
+/* (trace) the objects of the mask nearest the point, within the distance,
+nearest first, at most count (SCENE_TRACE_MOST); characters: units no
+player's; scenery: those a script animates */
+static short coop_trace_nearest(
+	real_point3d const *point,
+	unsigned long mask,
+	real distance,
+	short count,
+	long *nearest)
+{
+	real distances[SCENE_TRACE_MOST];
+	struct object_iterator objects;
+	struct object_datum *object;
+	short index, found = 0;
+
+	count = MIN(count, SCENE_TRACE_MOST);
+	for (index = 0; index < count; index++)
+	{
+		nearest[index] = NONE;
+		distances[index] = distance * distance;
+	}
+	object_iterator_new(&objects, mask, 0);
+	while ((object = object_iterator_next(&objects)) != NULL)
+	{
+		real squared = distance_squared3d(point, &object->object.position);
+		short slot;
+
+		if (TEST_FLAG(_object_mask_unit, object->object.type) && ((struct unit_datum *)object)->unit.player_index != NONE)
+			continue;
+		if (object->object.type == _object_type_scenery && !TEST_FLAG(((struct scenery_datum *)object)->flags, 0))
+			continue;
+		for (slot = 0; slot < count && squared >= distances[slot]; slot++)
+			;
+		if (slot == count)
+			continue;
+		for (index = count - 1; index > slot; index--)
+		{
+			nearest[index] = nearest[index - 1];
+			distances[index] = distances[index - 1];
+		}
+		nearest[slot] = objects.index;
+		distances[slot] = squared;
+	}
+	for (index = 0; index < count && nearest[index] != NONE; index++)
+		found++;
+	return found;
+}
 
 static void coop_trace_scene(
 	boolean host)
@@ -3860,6 +4092,52 @@ static void coop_trace_scene(
 				vehicle->object.region_permutations[1], vehicle->object.region_permutations[2],
 				vehicle->object.region_permutations[3], vehicle->object.variant_number);
 		}
+		/* the characters: where, playing what, held still or hidden */
+		{
+			long characters[SCENE_TRACE_MOST];
+			short count = coop_trace_nearest(&camera, _object_mask_biped, SCENE_TRACE_CHARACTER_DISTANCE,
+				SCENE_TRACE_CHARACTERS, characters);
+
+			for (index = 0; index < count; index++)
+			{
+				struct unit_datum *unit = (struct unit_datum *)object_get(characters[index]);
+
+				error(_error_silent, "co-op scene (%s) %ld: character %s (%s) %ld at %.2f %.2f %.2f facing %.2f %.2f %.2f, "
+					"moving %.2f %.2f %.2f; %s %s; animation state %d, graph %s animation %d frame %d; %s%s%s%s%s",
+					who, time, coop_trace_object_name(characters[index]), coop_trace_tag(characters[index]), characters[index],
+					unit->object.position.x,
+					unit->object.position.y, unit->object.position.z, unit->object.forward.i, unit->object.forward.j,
+					unit->object.forward.k, unit->object.translational_velocity.i, unit->object.translational_velocity.j,
+					unit->object.translational_velocity.k, unit->object.parent_object_index != NONE ? "in" : "on foot",
+					coop_trace_tag(unit->object.parent_object_index), unit->unit.animation.state,
+					coop_trace_tag_name(unit->object.animation.animation_graph_index), unit->object.animation.state.index,
+					unit->object.animation.state.frame_index,
+					TEST_FLAG(unit->unit.flags, _unit_suspended_bit) ? "suspended" : "free",
+					TEST_FLAG(unit->object.flags, _object_invisible_bit) ? ", invisible" : "",
+					TEST_FLAG(unit->object.flags, _object_connected_to_map_bit) ? "" : ", not in the map",
+					TEST_FLAG(unit->object.damage_flags, _object_dead_bit) ? ", dead" : "",
+					unit->unit.actor_index != NONE ? ", an actor's" : "");
+			}
+		}
+		/* the scenery the scripts animate: its animation and frame */
+		{
+			long scenery[SCENE_TRACE_MOST];
+			short count = coop_trace_nearest(&camera, _object_mask_scenery, SCENE_TRACE_SCENERY_DISTANCE,
+				SCENE_TRACE_SCENERY, scenery);
+
+			for (index = 0; index < count; index++)
+			{
+				struct object_datum *prop = object_get(scenery[index]);
+
+				error(_error_silent, "co-op scene (%s) %ld: scenery %s (%s) %ld at %.2f %.2f %.2f, graph %s animation %d frame %d%s",
+					who, time, coop_trace_object_name(scenery[index]), coop_trace_tag(scenery[index]), scenery[index],
+					prop->object.position.x,
+					prop->object.position.y, prop->object.position.z,
+					coop_trace_tag_name(prop->object.animation.animation_graph_index), prop->object.animation.state.index,
+					prop->object.animation.state.frame_index,
+					TEST_FLAG(prop->object.flags, _object_invisible_bit) ? ", invisible" : "");
+			}
+		}
 	}
 }
 
@@ -3888,6 +4166,7 @@ void network_coop_host_tick(
 	host_send_device_states();
 	host_send_object_looks();
 	host_resync_unit_animations();
+	host_resync_scenery_animations();
 	host_send_screen_effect();
 	host_send_attachments();
 	host_send_looping_sounds();
@@ -3904,6 +4183,7 @@ void network_coop_client_tick(
 	if (!coop_client())
 		return;
 	client_play_presentation();
+	client_play_held_scenery_animations();
 	coop_trace_scene(FALSE);
 	players_vitality_keep();
 	if (game_time_get() - coop_presentation.heard_time > PRESENTATION_SILENCE_TICKS)
@@ -4119,6 +4399,28 @@ void network_coop_handle_object_looks(
 		difference) */
 		hatches = (short)(look->pad & UNIT_LOOK_HATCHES_MASK);
 		powered = (look->pad & UNIT_LOOK_POWERED) != 0;
+		/* (port) held still as the host's scripts hold the host's
+		(unit_suspended), a unit no player's: as units.c's
+		unit_scripting_suspended, without its players' followers */
+		{
+			struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(object_index,
+				_object_mask_unit);
+			boolean suspended = (look->pad & UNIT_LOOK_SUSPENDED) != 0;
+
+			if (unit && unit->unit.player_index == NONE &&
+				TEST_FLAG(unit->unit.flags, _unit_suspended_bit) != suspended)
+			{
+				error(_error_silent, "co-op: %s %ld %s as the host's", coop_trace_tag(object_index), object_index,
+					suspended ? "held still (suspended)" : "let go (no longer suspended)");
+				SET_FLAG(unit->unit.flags, _unit_suspended_bit, suspended);
+				if (suspended)
+				{
+					unit->object.translational_velocity = *global_zero_vector3d;
+					if (unit->object.type == _object_type_biped)
+						SET_FLAG(((struct biped_datum *)unit)->biped.flags, _biped_airborne_bit, FALSE);
+				}
+			}
+		}
 		if (((hatches >= UNIT_HATCHES_OPEN && hatches <= UNIT_HATCHES_IDLE) || powered) &&
 			object_try_and_get_and_verify_type(object_index, _object_mask_vehicle))
 		{

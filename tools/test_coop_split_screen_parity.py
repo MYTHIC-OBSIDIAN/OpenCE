@@ -210,7 +210,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 51" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 52" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -219,7 +219,7 @@ def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
     # copy, moved by the host's states, stayed blue at rest
     coop = source("port/linux/game/network_coop.c")
     powered = function(coop, "host_unit_powered")
-    assert "TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit) ? UNIT_LOOK_POWERED : 0" in powered
+    assert "unit->object.type == _object_type_vehicle && TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit)" in powered
     looks = function(coop, "host_send_object_looks")
     assert "short hatches = host_unit_hatches(iterator.index) | host_unit_powered(iterator.index);" in looks
     client = function(coop, "network_coop_handle_object_looks")
@@ -231,3 +231,36 @@ def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
     assert "#define UNIT_LOOK_POWERED 0x0100" in coop
     units = source("source/units/units.c")
     assert "unit->unit.driver_object_index!=NONE || TEST_FLAG(unit->unit.flags, _unit_actively_controlled_bit)" in units
+
+
+def test_a_character_the_scripts_hold_still_is_held_still_on_the_client():
+    # unit_suspended on a cutscene's character (no player's): the client's
+    # copy, not held, fell or was pushed from where it was put, out of sight
+    coop = source("port/linux/game/network_coop.c")
+    powered = function(coop, "host_unit_powered")
+    assert "unit->unit.player_index == NONE && TEST_FLAG(unit->unit.flags, _unit_suspended_bit)" in powered
+    assert "flags |= UNIT_LOOK_SUSPENDED;" in powered
+    assert "#define UNIT_LOOK_SUSPENDED 0x0200" in coop
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "boolean suspended = (look->pad & UNIT_LOOK_SUSPENDED) != 0;" in client
+    assert "SET_FLAG(unit->unit.flags, _unit_suspended_bit, suspended);" in client
+    assert "unit && unit->unit.player_index == NONE &&" in client
+
+
+def test_scenery_animations_reach_a_copy_made_since():
+    # a script's scenery is made on a client a moment after the host (the
+    # object names), or before a late joiner came: its animation is held for
+    # it and resent every refresh (The Maw's first flyby)
+    coop = source("port/linux/game/network_coop.c")
+    resync = function(coop, "host_resync_scenery_animations")
+    assert "if (!host_resend.refresh)" in resync
+    assert "event_new(_coop_event_scenery_animation_resync)" in resync
+    assert "host_resync_scenery_animations();" in function(coop, "network_coop_host_tick")
+    apply = function(coop, "client_apply_scenery_animation")
+    assert "if (!client_start_scenery_animation(event, 0, resync))\n\t\tclient_hold_scenery_animation(event);" in apply
+    start = function(coop, "client_start_scenery_animation")
+    assert "scenery->object.object.animation.state.index == event->value" in start
+    assert "frame = event->frame + frames_since;" in start
+    assert "client_play_held_scenery_animations();" in function(coop, "network_coop_client_tick")
+    events = function(coop, "client_apply_event")
+    assert "case _coop_event_scenery_animation_resync:\n\t\tclient_apply_scenery_animation(event, TRUE);" in events
