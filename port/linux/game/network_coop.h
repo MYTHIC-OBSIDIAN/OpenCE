@@ -58,6 +58,12 @@ boolean network_coop_client_cutscene(void);
 it plays none: the objects' and actors' states it holds through a cutscene
 are applied on it (network_distributed.c) */
 long network_coop_client_played_time(void);
+/* (port) the host, for a few seconds after it reverted (a skipped cutscene,
+a revert to a checkpoint): its co-op events and its units' inventories then
+go on the reliable stream, behind the checkpoint and the objects' snapshot
+a client must have before it takes the new world's datagrams
+(network_objects.c) */
+boolean network_coop_host_settling(void);
 /* (port) a co-op client: the function inputs of an object the host's
 scripts fly (a recording's vehicle), the host's (objects.c, after its own
 are exported); FALSE for any other */

@@ -33,6 +33,8 @@ typedef struct { real red, green, blue; } real_rgb_color;
 #define DATUM_INDEX_NEW(i,id) (((long)(unsigned short)(id)<<16)|(i))
 #define match_vassert(f,l,c,m) CHECK(c,"data invariant")
 #define platform_log(...) ((void)0)
+#define _error_silent 0
+#define error(...) ((void)0)
 /* Only world capacities are reduced. Behavior limits and flags come from the
    owning production definitions, including the inventory-to-player capacity. */
 #define MAXIMUM_TRACKED_OBJECTS 128

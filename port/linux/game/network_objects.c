@@ -1836,6 +1836,21 @@ while: a change of weapons or grenades to every client at once, one of
 ammunition alone to the unit's own client at once and to the others by how
 near their players are, as the host sends them objects (those further off
 see its shots less) */
+/* the inventories to a client: by datagram, or (just reverted) reliably */
+static void distributed_host_send_inventory_message(
+	long machine_index,
+	struct distributed_inventory_message *message,
+	short count,
+	boolean reliably)
+{
+	word size = (word)(sizeof(message->header) + count * sizeof(struct distributed_inventory));
+
+	if (reliably)
+		distributed_send_to_machine_reliably(machine_index, message, _distributed_message_inventories, count, size);
+	else
+		distributed_send_to_machine(machine_index, message, _distributed_message_inventories, count, size);
+}
+
 static void distributed_host_send_inventories(
 	void)
 {
@@ -1843,9 +1858,15 @@ static void distributed_host_send_inventories(
 	static byte kinds[MAXIMUM_TRACKED_OBJECTS];
 	static real_point3d origins[MAXIMUM_TRACKED_OBJECTS];
 	struct distributed_inventory_message message;
-	short limit = MIN(MAXIMUM_ENTRIES_PER_MESSAGE, DATAGRAM_ENTRIES(struct distributed_inventory));
+	short limit = MIN(MAXIMUM_ENTRIES_PER_MESSAGE,
+		MIN(DATAGRAM_ENTRIES(struct distributed_inventory), RELIABLE_ENTRIES(struct distributed_inventory)));
 	long inventory_count = 0;
 	long round = game_time_get() / INVENTORY_INTERVAL_TICKS;
+	/* (port: just reverted, on the reliable stream behind the checkpoint and
+	the snapshot: a client takes none of the new world's datagrams till it has
+	them, and the weapons the scripts gave after a skip were a second late,
+	at the refresh) */
+	boolean reliably = network_coop_host_settling();
 	struct object_iterator iterator;
 	short machine_number;
 
@@ -1954,16 +1975,12 @@ static void distributed_host_send_inventories(
 			message.inventories[count] = inventories[index];
 			if (++count == limit)
 			{
-				distributed_send_to_machine(machine_index, &message, _distributed_message_inventories, count,
-					(word)(sizeof(message.header) + count * sizeof(struct distributed_inventory)));
+				distributed_host_send_inventory_message(machine_index, &message, count, reliably);
 				count = 0;
 			}
 		}
 		if (count)
-		{
-			distributed_send_to_machine(machine_index, &message, _distributed_message_inventories, count,
-				(word)(sizeof(message.header) + count * sizeof(struct distributed_inventory)));
-		}
+			distributed_host_send_inventory_message(machine_index, &message, count, reliably);
 	}
 }
 

@@ -625,6 +625,17 @@ Version 54 adds a scripted vehicle's function inputs to its object look.
 Version 55 sends the scripts' reflection tint (`_coop_event_reflection_tint`)
 and carries a client's RESTART LEVEL to the host (`_coop_pause_request_restart`).
 
+Version 56 sends, for `REVERT_RELIABLE_TICKS` (three seconds) after the host
+reverts — a skipped cutscene, a revert to a checkpoint — its co-op events
+and its units' inventories on the reliable stream (`network_coop_host_settling`, network version 56).
+A client drops the new world's datagrams until the checkpoint and the
+objects' snapshot ahead of them on the stream have come, which takes longer
+than an event's three sends: a skipped cutscene's music played on there (its
+stop was lost), and the attachments and weapons the scripts gave just after
+the skip appeared only at the next refresh. An event that came reliably is
+applied even if a later datagram's overtook it (it was sent once), and is not
+dropped as stale.
+
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
 sources' messages, kinds, bits, structs sent whole or the sizes of their

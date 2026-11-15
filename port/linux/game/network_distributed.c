@@ -5151,6 +5151,12 @@ static boolean distributed_message_time_bounded(
 	return TRUE;
 }
 
+/* whether the messages handled now came in a batch (the unreliable ones;
+one sent reliably comes on its own): a killing blow sent again reliably is
+not overtaken by the newer damage sent with the ticks since
+(distributed_message_stale) */
+static boolean distributed_handling_batch;
+
 /* whether an unreliable message of the kind is older than one had already
 (then it is dropped: the newer has overtaken it) */
 static boolean distributed_message_stale(
@@ -5191,6 +5197,13 @@ static boolean distributed_message_stale(
 	case _distributed_message_mcc_object_names:
 		break;
 	default:
+		return FALSE;
+	}
+	/* (port: a host's events on its reliable stream, just after it reverted,
+	each sent once: none dropped for a datagram's that overtook it) */
+	if (header->type == _distributed_message_coop_events &&
+		!network_connection_last_read_was_unreliable() && !distributed_handling_batch)
+	{
 		return FALSE;
 	}
 	if (sender < 0 || sender >= MAXIMUM_SENDERS)
@@ -5886,12 +5899,6 @@ boolean distributed_machine_clock_fast(
 		distributed_client_clocks[machine_index].fast;
 }
 
-/* whether the messages handled now came in a batch (the unreliable ones;
-one sent reliably comes on its own): a killing blow sent again reliably is
-not overtaken by the newer damage sent with the ticks since
-(distributed_message_stale) */
-static boolean distributed_handling_batch;
-
 /* Only the host's ordered boundary can change worlds. A new datagram may
 overtake it, and an old reliable kill may trail newer state in its old
 world: neither is authority to adopt a different epoch. */
@@ -5909,6 +5916,9 @@ static boolean distributed_message_epoch_valid(
 		if (distributed_checkpoint_epoch != 0 &&
 			(long)(header->checkpoint_epoch - distributed_checkpoint_epoch) <= 0)
 			return FALSE;
+		error(_error_silent, "co-op: the host's world %lu (from %lu) at its tick %ld, here %ld",
+			(unsigned long)header->checkpoint_epoch, (unsigned long)distributed_checkpoint_epoch,
+			header->game_time, game_time_get());
 		distributed_checkpoint_epoch = header->checkpoint_epoch;
 		distributed_checkpoint_synchronized = FALSE;
 		distributed_restore_checkpoint();
@@ -5953,6 +5963,8 @@ static boolean distributed_message_epoch_valid(
 				can suppress it during an incomplete snapshot. */
 				distributed_identity_sent = FALSE;
 				distributed_build_sent = FALSE;
+				error(_error_silent, "co-op: the host's objects all here at its tick %ld, here %ld",
+					header->game_time, game_time_get());
 			}
 			distributed_checkpoint_synchronized = TRUE;
 		}
@@ -6348,7 +6360,8 @@ void network_distributed_handle_message(
 		network_coop_handle_presentation(entries, header.game_time);
 		break;
 	case _distributed_message_coop_events:
-		network_coop_handle_events(entries, header.count, header.game_time);
+		network_coop_handle_events(entries, header.count, header.game_time,
+			!network_connection_last_read_was_unreliable() && !distributed_handling_batch);
 		break;
 	case _distributed_message_coop_skip_vote:
 		network_coop_handle_skip_vote(machine_index, entries);

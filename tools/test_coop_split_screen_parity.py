@@ -89,7 +89,7 @@ def test_events_start_on_their_presentations_tick():
     # a host gone quiet plays what was held
     assert "client_play_pending_events(TRUE);" in function(coop, "network_coop_client_tick")
     distributed = source("port/linux/game/network_distributed.c")
-    assert "network_coop_handle_events(entries, header.count, header.game_time);" in distributed
+    assert "network_coop_handle_events(entries, header.count, header.game_time,\n\t\t\t!network_connection_last_read_was_unreliable() && !distributed_handling_batch);" in distributed
 
 
 def test_opening_cutscene_starts_where_solos_does():
@@ -212,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 55" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 56" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -480,3 +480,37 @@ def test_held_items_reach_the_client_with_their_unit():
     objects = source("port/linux/game/network_objects.c")
     assert "MAXIMUM_CLIENT_RETRIED_INVENTORIES = 128," in objects
     assert "INVENTORY_REPEAT_ROUNDS * INVENTORY_INTERVAL_TICKS" in objects
+
+
+def test_a_reverted_hosts_events_and_inventories_go_reliably():
+    # a client drops the new world's datagrams until the checkpoint and the
+    # snapshot ahead of them on the stream have come; for a few seconds after
+    # a revert (a skip) the host's events (a skipped cutscene's music stop,
+    # attachments) and inventories (the weapons its scripts gave) go reliably
+    coop = source("port/linux/game/network_coop.c")
+    reverted = function(coop, "network_coop_reverted")
+    assert reverted.index("network_distributed_reverted();") < reverted.index("host_settling.from = game_time_get();")
+    assert "host_settling.until = host_settling.from + REVERT_RELIABLE_TICKS;" in reverted
+    settling = function(coop, "network_coop_host_settling")
+    assert "now >= host_settling.from && now < host_settling.until" in settling
+    send = function(coop, "host_send_events")
+    assert send.index("if (network_coop_host_settling())") < send.index("send_to_clients(")
+    assert "_distributed_to_clients_reliably);" in send
+    handle = function(coop, "network_coop_handle_events")
+    assert "if (!later && !reliable)" in handle
+    objects = source("port/linux/game/network_objects.c")
+    inventories = function(objects, "distributed_host_send_inventories")
+    assert "boolean reliably = network_coop_host_settling();" in inventories
+    assert "distributed_host_send_inventory_message(machine_index, &message, count, reliably);" in inventories
+    message = function(objects, "distributed_host_send_inventory_message")
+    assert "distributed_send_to_machine_reliably(machine_index, message, _distributed_message_inventories, count, size);" in message
+    distributed = source("port/linux/game/network_distributed.c")
+    stale = function(distributed, "distributed_message_stale")
+    assert stale.index("header->type == _distributed_message_coop_events &&") < stale.index("latest = &distributed_received_times")
+
+
+def test_a_scene_traces_each_units_weapon_in_hand_every_tick():
+    coop = source("port/linux/game/network_coop.c")
+    scene = function(coop, "coop_trace_scene")
+    assert scene.index("coop_trace_held(who, time);") < scene.index("if (!scene || time % SCENE_TRACE_TICKS)")
+    assert "co-op held (%s) %ld: %s %s %ld has %s %ld in hand%s" in function(coop, "coop_trace_held")

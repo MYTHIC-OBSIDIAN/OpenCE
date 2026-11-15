@@ -203,6 +203,14 @@ enum
 	MAXIMUM_QUEUED_EVENTS = 128,
 	/* each event is sent in this many ticks' messages */
 	EVENT_SENDS = 3,
+	/* (port) after the host reverts (a skipped cutscene, a revert to a
+	checkpoint) its events and inventories go on the reliable stream this
+	long: its datagrams of the new world are dropped by a client till the
+	checkpoint and the objects' snapshot ahead of them on the stream have
+	come, longer than an event's three sends, and the stops of a skipped
+	cutscene's music, the attachments and the weapons the scripts gave were
+	lost with them (network_coop_host_settling) */
+	REVERT_RELIABLE_TICKS = 3 * TICKS_PER_SECOND,
 	/* how long the players must have had their controls, out of a
 	cutscene, before a level's opening is over (coop_opening_update) */
 	COOP_OPENING_CONTROL_TICKS = 2 * TICKS_PER_SECOND,
@@ -640,6 +648,15 @@ static struct
 	boolean applied_any;
 } coop_events;
 
+/* host: the ticks [from, until) after its last revert, whose events and
+inventories go reliably (REVERT_RELIABLE_TICKS; a new map's clock starts
+before from) */
+static struct
+{
+	long from;
+	long until;
+} host_settling = { NONE, NONE };
+
 /* A level's opening: whether its first cutscene camera point has been set,
 and how long the players have had their controls (network_coop_opening_camera) */
 static struct
@@ -958,6 +975,26 @@ static void host_send_events(
 
 	if (!coop_events.count)
 		return;
+	/* (port: just reverted, each once on the reliable stream, behind the
+	checkpoint and the snapshot, so that none is lost before a client is in
+	the new world: network_coop_host_settling) */
+	if (network_coop_host_settling())
+	{
+		short limit = RELIABLE_ENTRIES(struct distributed_coop_event);
+		short first;
+
+		for (first = 0; first < coop_events.count; first += limit)
+		{
+			short count = (short)MIN(limit, coop_events.count - first);
+
+			csmemcpy(message.events, &coop_events.events[first], count * sizeof(message.events[0]));
+			distributed_send(&message, _distributed_message_coop_events, count,
+				(word)(sizeof(struct distributed_message_header) + count * sizeof(message.events[0])),
+				_distributed_to_clients_reliably);
+		}
+		coop_events.count = 0;
+		return;
+	}
 	csmemcpy(message.events, coop_events.events, coop_events.count * sizeof(message.events[0]));
 	send_to_clients(&message, _distributed_message_coop_events, coop_events.count, sizeof(message.events[0]));
 	/* drop the ones sent EVENT_SENDS times, keeping the rest in order */
@@ -4210,8 +4247,20 @@ void network_coop_reverted(
 	/* (the dropships' riders kept are of the game state reverted from) */
 	coop_enemies_reset();
 	network_distributed_reverted();
+	host_settling.from = game_time_get();
+	host_settling.until = host_settling.from + REVERT_RELIABLE_TICKS;
 	error(_error_silent, "co-op: reverted %ld ticks, clock kept at %ld", ticks, now);
 	event_new(_coop_event_reverted);
+}
+
+/* host: whether it reverted lately, so that its events and inventories go
+on the reliable stream (REVERT_RELIABLE_TICKS) */
+boolean network_coop_host_settling(
+	void)
+{
+	long now = game_time_get();
+
+	return coop_host() && host_settling.from != NONE && now >= host_settling.from && now < host_settling.until;
 }
 
 void network_coop_skip_done(
@@ -4323,6 +4372,51 @@ static short coop_trace_nearest(
 	return found;
 }
 
+/* every unit's weapon in hand as it changes, each tick of a scene: a
+client's late against the host's tick (its played tick) shows how late */
+static void coop_trace_held(
+	char const *who,
+	long time)
+{
+	static long held_units[MAXIMUM_TRACKED_OBJECTS];
+	static long held_weapons[MAXIMUM_TRACKED_OBJECTS];
+	static boolean held_shown[MAXIMUM_TRACKED_OBJECTS];
+	static boolean held_any;
+	struct object_iterator iterator;
+	struct unit_datum *unit;
+
+	if (!held_any)
+	{
+		csmemset(held_units, NONE, sizeof(held_units));
+		csmemset(held_weapons, NONE, sizeof(held_weapons));
+		held_any = TRUE;
+	}
+	object_iterator_new(&iterator, _object_mask_unit, 0);
+	while ((unit = (struct unit_datum *)object_iterator_next(&iterator)) != NULL)
+	{
+		long absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.index);
+		short slot = unit->unit.current_weapon_index;
+		long weapon_index = slot >= 0 && slot < MAXIMUM_WEAPONS_PER_UNIT ? unit->unit.weapon_object_indices[slot] : NONE;
+		struct object_datum *weapon = weapon_index != NONE ? object_try_and_get(weapon_index) : NULL;
+		boolean shown = weapon && !TEST_FLAG(weapon->object.flags, _object_invisible_bit);
+		boolean known;
+
+		if (absolute_index < 0 || absolute_index >= MAXIMUM_TRACKED_OBJECTS)
+			continue;
+		known = held_units[absolute_index] == iterator.index;
+		if (known && held_weapons[absolute_index] == weapon_index && held_shown[absolute_index] == shown)
+			continue;
+		held_units[absolute_index] = iterator.index;
+		held_weapons[absolute_index] = weapon_index;
+		held_shown[absolute_index] = shown;
+		if (!known && weapon_index == NONE)
+			continue;
+		error(_error_silent, "co-op held (%s) %ld: %s %s %ld has %s %ld in hand%s", who, time,
+			unit->unit.player_index != NONE ? "player's" : "character", coop_trace_tag(iterator.index), iterator.index,
+			coop_trace_tag(weapon_index), weapon_index, weapon_index == NONE ? "" : shown ? ", shown" : ", hidden");
+	}
+}
+
 static void coop_trace_scene(
 	boolean host)
 {
@@ -4377,6 +4471,8 @@ static void coop_trace_scene(
 	}
 	scene = host ? (cinematic_in_progress() || !player_input_enabled() || !player_control_port_camera_control_enabled()) :
 		(coop_presentation.cinematic_started || !player_input_enabled() || !player_control_port_camera_control_enabled());
+	if (scene)
+		coop_trace_held(who, time);
 	if (!scene || time % SCENE_TRACE_TICKS)
 		return;
 	{
@@ -5157,11 +5253,14 @@ static void client_event_arrived(
 }
 
 /* client: applies each event once, in order, on the tick its host sent it
-is played (client_event_arrived) */
+is played (client_event_arrived). One on the reliable stream (a host just
+reverted: network_coop_host_settling) came once and is applied though a
+datagram's later one overtook it. */
 void network_coop_handle_events(
 	void const *entries,
 	short count,
-	long host_time)
+	long host_time,
+	boolean reliable)
 {
 	struct distributed_coop_event const *events = entries;
 	short index;
@@ -5171,9 +5270,12 @@ void network_coop_handle_events(
 	for (index = 0; index < count; index++)
 	{
 		/* already applied (the comparison handles the number wrapping) */
-		if (coop_events.applied_any && (short)(events[index].number - coop_events.applied_number) <= 0)
+		boolean later = !coop_events.applied_any || (short)(events[index].number - coop_events.applied_number) > 0;
+
+		if (!later && !reliable)
 			continue;
-		coop_events.applied_number = events[index].number;
+		if (later)
+			coop_events.applied_number = events[index].number;
 		coop_events.applied_any = TRUE;
 		/* (not with a number that isn't one) */
 		if (!distributed_real_valid(events[index].reals[0]) || !distributed_real_valid(events[index].reals[1]) ||
