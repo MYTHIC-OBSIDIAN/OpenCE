@@ -4768,6 +4768,20 @@ static void client_set_function_values(
 	csmemcpy(client_function_values.values[index], values, sizeof(client_function_values.values[0]));
 }
 
+/* whether the vehicle's function inputs are the host's (it was flown) */
+static boolean client_function_values_held(
+	long object_index)
+{
+	short index;
+
+	for (index = 0; index < client_function_values.count; index++)
+	{
+		if (client_function_values.object_indices[index] == object_index)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 boolean network_coop_object_function_values(
 	long object_index,
 	real *values)
@@ -4945,6 +4959,21 @@ void network_coop_handle_object_looks(
 			host's, and it is cleared again as the host's is. */
 			SET_FLAG(vehicle->unit.flags, _unit_actively_controlled_bit,
 				powered && !TEST_FLAG(vehicle->object.damage_flags, _object_dead_bit));
+			/* (kept active as the host's: recording_play keeps its unit from
+			deactivating, recorded_animations.c; this copy, played no
+			recording, deactivated outside the level (The Maw's Banshee, out
+			in space) and was never updated: its canopy never closed, its
+			seats never powered, its canards never turned red) */
+			if (powered && TEST_FLAG(object_header_get(object_index)->flags, _object_header_automatically_deactivate_bit))
+			{
+				error(_error_silent, "co-op: %s %ld kept active as the host's (its scripts fly it)",
+					coop_trace_tag(object_index), object_index);
+				object_set_automatic_deactivation(object_index, FALSE);
+			}
+			else if (!powered && client_function_values_held(object_index))
+			{
+				object_set_automatic_deactivation(object_index, TRUE);
+			}
 			/* (and its functions' inputs the host's, which its controls drive) */
 			client_set_function_values(object_index, powered ? look->function_values : NULL);
 			if (hatches == UNIT_HATCHES_OPEN && state != _unit_state_opening)

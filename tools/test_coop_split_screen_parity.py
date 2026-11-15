@@ -446,3 +446,15 @@ def test_restart_level_restarts_every_machine():
     tags = source("port/linux/game/menu_tags.c")
     rows = function(tags, "pause_coop_rows")
     assert "widget_runs_function(split_rows[row].widget_tag.index, restart, 0) &&" not in rows
+
+
+def test_a_vehicle_the_scripts_fly_is_kept_active_on_the_client():
+    # The Maw's Banshee, out in space: recording_play keeps its unit from
+    # deactivating on the host; the client's copy deactivated outside the
+    # level and was never updated (canopy, seat power, canards)
+    recorded = source("source/cutscene/recorded_animations.c")
+    assert "object_set_automatic_deactivation(unit_index, FALSE);" in recorded
+    coop = source("port/linux/game/network_coop.c")
+    client = function(coop, "network_coop_handle_object_looks")
+    assert "object_set_automatic_deactivation(object_index, FALSE);" in client
+    assert "else if (!powered && client_function_values_held(object_index))\n\t\t\t{\n\t\t\t\tobject_set_automatic_deactivation(object_index, TRUE);" in client

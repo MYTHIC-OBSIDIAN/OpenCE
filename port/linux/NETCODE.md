@@ -170,7 +170,11 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   and played as far on as the host's (The Maw's Banshee, closed as it is
   made, had its canopy open). The look of a vehicle the host's scripts fly
   carries its function inputs, which a recording's controls drive on the
-  host (the Banshee's canards red; network version 54).
+  host (the Banshee's canards red; network version 54). A client keeps such a
+  vehicle active as the host does (`recording_play` stops its unit
+  deactivating): its copy, played no recording, deactivated outside the
+  level (the Banshee out in space) and was never updated, so none of the
+  above showed.
   The host ties a client's cutscene camera to a vehicle only while the
   camera moves with it (`camera_moves_with`): a still camera by a vehicle
   rocking at rest (a Warthog by Sgt Johnson's close-ups in a10) was placed
