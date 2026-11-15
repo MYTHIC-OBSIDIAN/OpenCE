@@ -477,6 +477,10 @@ def test_a_skipped_cutscenes_audio_stops_on_the_client():
     game_sound = source("source/sound/game_sound.c")
     loops = function(game_sound, "game_sound_port_cut_scripted_loops")
     assert loops.index("sound_port_cut_looping(looping_sound_index);") < loops.index("game_looping_sound_delete(looping_sound_index);")
+    # only the scripts' loops and those stopping: the background's and the
+    # HUD's playing loops are kept by index elsewhere (deleted, a crash)
+    assert "(TEST_FLAG(sound->flags, _game_looping_sound_scripted_bit) ||\n\t\t\t\tTEST_FLAG(sound->flags, _game_looping_sound_unattached_stop_bit)) &&" in loops
+    assert "looping_sound_index != game_sound_globals->music_looping_sound_index)" in loops
     assert "game_sound_port_stop_scripted_one_shots" not in game_sound
 
 
