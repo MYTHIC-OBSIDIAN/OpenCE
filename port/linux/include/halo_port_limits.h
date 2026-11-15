@@ -97,8 +97,10 @@ Version 55: the scripts' reflection tint reaches clients
 Version 56: for a few seconds after the host reverts (a skipped cutscene, a
 revert to a checkpoint) its co-op events and inventories go on the reliable
 stream, behind the checkpoint and the objects' snapshot, and a client applies
-an event that came so though a datagram's later one overtook it. */
-#define HALO_PORT_NETWORK_VERSION 56
+an event that came so though a datagram's later one overtook it.
+Version 57: the host sends which named objects there are at once when that
+changes, and the tick after, besides every half second. */
+#define HALO_PORT_NETWORK_VERSION 57
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

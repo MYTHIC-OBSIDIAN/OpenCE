@@ -636,6 +636,20 @@ the skip appeared only at the next refresh. An event that came reliably is
 applied even if a later datagram's overtook it (it was sent once), and is not
 dropped as stale.
 
+Version 57 sends which of the scenario's named objects exist
+(`_distributed_message_coop_object_names`) at once when that changes and
+again the tick after, besides every half second (network version 57). A
+client makes or deletes a named object when two messages running say so, so
+a prop a cutscene's scripts made (the hangar marine's batons in a10's
+opening) appeared half a second to a second late, waiting for the next two.
+
+A client's revert (the host's checkpoint, or its `_coop_event_reverted`)
+cuts every script loop at once (`game_sound_port_cut_scripted_loops`), as the
+host's `sound_stop_all` does: stopped as the scripts stop a loop, a one-shot
+— a cutscene's music and foley — plays on to its end, and a skipped
+cutscene's audio went on off-host. The loops the host's revert kept come
+again with its refresh.
+
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
 sources' messages, kinds, bits, structs sent whole or the sizes of their

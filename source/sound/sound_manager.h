@@ -60,6 +60,10 @@ animation's or an effect's), its loops left playing, as the host's revert
 stops its own (a skipped cutscene's audio: port/linux/game/network_coop.c) */
 void sound_port_stop_impulses(
 	void);
+/* port: the loop of a game looping sound cut off at once, every sound of it
+with it (a stop lets a one-shot play to its end) */
+void sound_port_cut_looping(
+	long looping_sound_identifier);
 void sound_stop_impulse(
 	long sound_index);
 void sound_stop_impulse_by_source_and_definition(

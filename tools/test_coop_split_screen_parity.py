@@ -212,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 56" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 57" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -466,12 +466,18 @@ def test_a_skipped_cutscenes_audio_stops_on_the_client():
     coop = source("port/linux/game/network_coop.c")
     stop = function(coop, "client_stop_script_sounds")
     assert "sound_port_stop_impulses();" in stop
-    assert "game_sound_port_stop_scripted_one_shots();" in stop
+    # every script loop cut at once: stopped as the scripts stop one, a
+    # one-shot (the cutscene's music and foley) played on to its end
+    assert "game_sound_port_cut_scripted_loops();" in stop
     manager = source("source/sound/sound_manager.c")
     assert "if (sound_get(sound_index)->type == _sound_impulse)\n\t\t\tsound_stop(sound_index);" in function(manager, "sound_port_stop_impulses")
+    cut = function(manager, "sound_port_cut_looping")
+    assert "if (sound->type != _sound_impulse && sound->source_identifier == looping_sound_index)\n\t\t\tsound_stop(sound_index);" in cut
+    assert "datum_delete(looping_sound_data, looping_sound_index);" in cut
     game_sound = source("source/sound/game_sound.c")
-    one_shots = function(game_sound, "game_sound_port_stop_scripted_one_shots")
-    assert "_looping_sound_fake_impulse_sound_bit" in one_shots
+    loops = function(game_sound, "game_sound_port_cut_scripted_loops")
+    assert loops.index("sound_port_cut_looping(looping_sound_index);") < loops.index("game_looping_sound_delete(looping_sound_index);")
+    assert "game_sound_port_stop_scripted_one_shots" not in game_sound
 
 
 def test_held_items_reach_the_client_with_their_unit():
@@ -514,3 +520,13 @@ def test_a_scene_traces_each_units_weapon_in_hand_every_tick():
     scene = function(coop, "coop_trace_scene")
     assert scene.index("coop_trace_held(who, time);") < scene.index("if (!scene || time % SCENE_TRACE_TICKS)")
     assert "co-op held (%s) %ld: %s %s %ld has %s %ld in hand%s" in function(coop, "coop_trace_held")
+
+
+def test_named_objects_reach_a_client_as_they_change():
+    # a client makes a named prop when two messages running say so: sent every
+    # half second only, a10's hangar marine's batons came up to a second late
+    coop = source("port/linux/game/network_coop.c")
+    names = function(coop, "host_send_object_names")
+    assert "if (csmemcmp(names, &sent, sizeof(sent)) != 0)" in names
+    assert "(changed_time == NONE || now - changed_time > 1))" in names
+    assert "\thost_send_object_names();\n" in function(coop, "network_coop_host_tick")

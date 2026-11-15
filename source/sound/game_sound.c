@@ -745,7 +745,12 @@ static void scripted_looping_sound_stop_internal(
 	return;
 }
 
-void game_sound_port_stop_scripted_one_shots(
+/* port: network co-op: a client's script loops (each with the scripts' or
+one being stopped) cut off at once, as the host's revert cuts its own
+(sound_stop_all): stopped as the scripts stop one, a cutscene's music and
+foley (one-shots) played on to their ends. The ones the host's revert kept
+come again (port/linux/game/network_coop.c's host_send_looping_sounds). */
+void game_sound_port_cut_scripted_loops(
 	void)
 {
 	long looping_sound_index = data_next_index(game_looping_sound_data, NONE);
@@ -755,11 +760,14 @@ void game_sound_port_stop_scripted_one_shots(
 		long next_index = data_next_index(game_looping_sound_data, looping_sound_index);
 		struct game_looping_sound_datum *sound = game_looping_sound_get(looping_sound_index);
 
-		if (TEST_FLAG(sound->flags, _game_looping_sound_scripted_bit) &&
-			TEST_FLAG(looping_sound_definition_get(sound->definition_index)->flags, _looping_sound_fake_impulse_sound_bit))
+		if (TEST_FLAG(sound->flags, _game_looping_sound_unattached_bit))
 		{
-			/* (not the hook's: this is the client's own stop) */
-			scripted_looping_sound_stop_internal(sound->definition_index, FALSE);
+			struct looping_sound_definition *definition = looping_sound_definition_get(sound->definition_index);
+
+			if (definition->runtime_scripting_sound_index == looping_sound_index)
+				definition->runtime_scripting_sound_index = NONE;
+			sound_port_cut_looping(looping_sound_index);
+			game_looping_sound_delete(looping_sound_index);
 		}
 		looping_sound_index = next_index;
 	}

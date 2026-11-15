@@ -1793,12 +1793,20 @@ static struct
 	short count;
 } client_looping_sounds;
 
+/* host, each tick: which of the scenario's named objects there are, every
+OBJECT_NAMES_INTERVAL_TICKS, and (port) at once when that changes and the
+tick after: a client makes or deletes one when two messages running say so,
+and a cutscene's props the scripts made (the hangar marine's batons in a10)
+came half a second to a second late, at the next two */
 static void host_send_object_names(
 	void)
 {
+	static struct distributed_coop_object_names sent;
+	static long changed_time = NONE;
 	struct distributed_coop_object_names_message message;
 	struct distributed_coop_object_names *names = &message.names;
 	short name_index;
+	long now = game_time_get();
 
 	/* Expanded MCC maps carry all names in their dedicated messages. */
 	if (mcc_object_names_active()) return;
@@ -1809,6 +1817,19 @@ static void host_send_object_names(
 	{
 		if (object_index_from_name_index(name_index) != NONE)
 			names->present[name_index / 8] |= (byte)(1 << (name_index % 8));
+	}
+	if (csmemcmp(names, &sent, sizeof(sent)) != 0)
+	{
+		sent = *names;
+		changed_time = now;
+	}
+	/* (a new map's clock starts again: a change before it is none) */
+	if (changed_time != NONE && changed_time > now)
+		changed_time = NONE;
+	if (!host_resend.joined && now % OBJECT_NAMES_INTERVAL_TICKS != 0 &&
+		(changed_time == NONE || now - changed_time > 1))
+	{
+		return;
 	}
 	send_to_clients(&message, _distributed_message_coop_object_names, 1, sizeof(message.names));
 }
@@ -2773,17 +2794,20 @@ static void client_apply_attach(
 /* client: the host reverted (a skipped cutscene: either player's skip), so
 the cutscene's audio stops here as the host's revert stopped it there: every
 impulse sound (its dialogue, its animations' and effects' sounds, not only
-the last script lines) and its one-shot script loops (music or dialogue
-played once); the loops the host's saved game kept play on, and those it
-lost stop through host_send_looping_sounds. (port: only the last sixteen
-script lines were stopped, and the rest of a skipped cutscene played on.) */
+the last script lines) and every script loop, cut off at once as the host's
+sound_stop_all cuts them. A loop stopped as the scripts stop one lets a
+one-shot (a cutscene's music and foley) play to its end: it played on here
+through the level. The loops the host's saved game kept come again
+(host_send_looping_sounds's refresh, behind the revert's event). (port: only
+the last sixteen script lines were stopped, and the rest of a skipped
+cutscene played on.) */
 static void client_stop_script_sounds(
 	void)
 {
 	short index;
 
 	sound_port_stop_impulses();
-	game_sound_port_stop_scripted_one_shots();
+	game_sound_port_cut_scripted_loops();
 	for (index = 0; index < client_looping_sounds.count; index++)
 		coop_sound_sync_end(client_looping_sounds.definition_indices[index]);
 	client_looping_sounds.count = 0;
@@ -4645,8 +4669,7 @@ void network_coop_host_tick(
 	host_presentation(&message.presentation);
 	send_to_clients(&message, _distributed_message_coop_presentation, 1, sizeof(message.presentation));
 	host_send_device_groups();
-	if (host_resend.joined || game_time_get() % OBJECT_NAMES_INTERVAL_TICKS == 0)
-		host_send_object_names();
+	host_send_object_names();
 	host_send_object_transforms();
 	host_send_device_states();
 	host_send_object_looks();

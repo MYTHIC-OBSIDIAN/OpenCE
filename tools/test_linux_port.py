@@ -612,13 +612,14 @@ def riding_version_check(text):
     # 51 says a rider has begun getting out of its seat, 52 resends scenery animations
     # and holds suspended characters still, 53 sends cutscene characters' seats and faces,
     # 54 a scripted vehicle's function inputs, 55 the reflection tint and RESTART LEVEL,
-    # 56 a reverted host's events and inventories on the reliable stream)
-    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 56\b", text["limits"])
+    # 56 a reverted host's events and inventories on the reliable stream,
+    # 57 the named objects at once when they change)
+    assert re.search(r"#define HALO_PORT_NETWORK_VERSION 57\b", text["limits"])
 
 
 RIDING_CHECKS["version"] = riding_version_check
-RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 56",
-                                      "#define HALO_PORT_NETWORK_VERSION 55", "version")
+RIDING_CONTROLS["version-lowered"] = ("limits", None, "#define HALO_PORT_NETWORK_VERSION 57",
+                                      "#define HALO_PORT_NETWORK_VERSION 56", "version")
 
 RIDING_MCC_GUARD = "\tif (mcc_script_effects_host_movement())\n\t\treturn;\n"
 

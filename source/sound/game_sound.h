@@ -87,10 +87,9 @@ void scripted_looping_sound_start(
 	real gain);
 void scripted_looping_sound_stop(
 	long sound_index);
-/* port: network co-op: a client's one-shot script loops (a cutscene's
-music or dialogue, fake impulse sounds) stopped, as the host's revert drops
-its own (game_sound_restore) */
-void game_sound_port_stop_scripted_one_shots(
+/* port: network co-op: a client's script loops cut off at once, as the
+host's revert cuts its own (a skipped cutscene's music and foley) */
+void game_sound_port_cut_scripted_loops(
 	void);
 void scripted_looping_sound_set_scale(
 	long sound_index,

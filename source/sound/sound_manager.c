@@ -2537,6 +2537,34 @@ void sound_port_stop_impulses(
 	sound_manager_globals.game_time_when_no_scripted_dialog_will_be_playing = 0;
 }
 
+/* port: the loop of the identifier (a game looping sound's index) cut off
+at once, every sound of it with it, as sound_stop_all cuts them: a loop's
+stop otherwise lets a one-shot's (a cutscene's music or foley) play to its
+end */
+void sound_port_cut_looping(
+	long looping_sound_identifier)
+{
+	long looping_sound_index;
+	long sound_index;
+
+	if (!sound_manager_globals.initialized)
+		return;
+	looping_sound_index = looping_sound_find(looping_sound_identifier);
+	if (looping_sound_index == NONE)
+		return;
+	sound_index = data_next_index(sound_data, NONE);
+	while (sound_index != NONE)
+	{
+		long next_index = data_next_index(sound_data, sound_index);
+		struct sound_datum *sound = sound_get(sound_index);
+
+		if (sound->type != _sound_impulse && sound->source_identifier == looping_sound_index)
+			sound_stop(sound_index);
+		sound_index = next_index;
+	}
+	datum_delete(looping_sound_data, looping_sound_index);
+}
+
 long sound_new_impulse(
 	long definition_index,
 	struct sound_source *source,
