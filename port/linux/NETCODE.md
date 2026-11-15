@@ -175,6 +175,14 @@ with ideas from VALORANT's netcode articles, keeping the 30 Hz tick:
   deactivating): its copy, played no recording, deactivated outside the
   level (the Banshee out in space) and was never updated, so none of the
   above showed.
+  Either player's skip of a cutscene is the host's revert, which stops every
+  sound there; on the host's reverted event a client stops every impulse
+  sound and its one-shot script loops as well (`sound_port_stop_impulses`,
+  `game_sound_port_stop_scripted_one_shots`), where it stopped only the
+  last sixteen script lines. A unit's inventory goes to every client again
+  in the rounds after its weapons change (`INVENTORY_REPEAT_ROUNDS`), and a
+  client keeps up to 128 it could not apply yet, so a cutscene's cast holds
+  its items as it appears.
   The host ties a client's cutscene camera to a vehicle only while the
   camera moves with it (`camera_moves_with`): a still camera by a vehicle
   rocking at rest (a Warthog by Sgt Johnson's close-ups in a10) was placed

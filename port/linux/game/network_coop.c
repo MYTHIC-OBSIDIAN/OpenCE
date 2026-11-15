@@ -2733,12 +2733,23 @@ static void client_apply_attach(
 		client_hold_event(event);
 }
 
-/* client: the cutscene was skipped, so the dialogue it started stops (the
-host's went with its revert; its music stops through host_send_looping_sounds) */
+/* client: the host reverted (a skipped cutscene: either player's skip), so
+the cutscene's audio stops here as the host's revert stopped it there: every
+impulse sound (its dialogue, its animations' and effects' sounds, not only
+the last script lines) and its one-shot script loops (music or dialogue
+played once); the loops the host's saved game kept play on, and those it
+lost stop through host_send_looping_sounds. (port: only the last sixteen
+script lines were stopped, and the rest of a skipped cutscene played on.) */
 static void client_stop_script_sounds(
 	void)
 {
 	short index;
+
+	sound_port_stop_impulses();
+	game_sound_port_stop_scripted_one_shots();
+	for (index = 0; index < client_looping_sounds.count; index++)
+		coop_sound_sync_end(client_looping_sounds.definition_indices[index]);
+	client_looping_sounds.count = 0;
 
 	for (index = 0; index < CLIENT_SCRIPT_SOUND_COUNT; index++)
 	{

@@ -458,3 +458,25 @@ def test_a_vehicle_the_scripts_fly_is_kept_active_on_the_client():
     client = function(coop, "network_coop_handle_object_looks")
     assert "object_set_automatic_deactivation(object_index, FALSE);" in client
     assert "else if (!powered && client_function_values_held(object_index))\n\t\t\t{\n\t\t\t\tobject_set_automatic_deactivation(object_index, TRUE);" in client
+
+
+def test_a_skipped_cutscenes_audio_stops_on_the_client():
+    # either player's skip is the host's revert, which stops every sound
+    # there; a client stopped only its last sixteen script lines
+    coop = source("port/linux/game/network_coop.c")
+    stop = function(coop, "client_stop_script_sounds")
+    assert "sound_port_stop_impulses();" in stop
+    assert "game_sound_port_stop_scripted_one_shots();" in stop
+    manager = source("source/sound/sound_manager.c")
+    assert "if (sound_get(sound_index)->type == _sound_impulse)\n\t\t\tsound_stop(sound_index);" in function(manager, "sound_port_stop_impulses")
+    game_sound = source("source/sound/game_sound.c")
+    one_shots = function(game_sound, "game_sound_port_stop_scripted_one_shots")
+    assert "_looping_sound_fake_impulse_sound_bit" in one_shots
+
+
+def test_held_items_reach_the_client_with_their_unit():
+    # a cutscene arms its cast in a tick: the retried inventories overflowed,
+    # and a lost datagram waited a second for the refresh
+    objects = source("port/linux/game/network_objects.c")
+    assert "MAXIMUM_CLIENT_RETRIED_INVENTORIES = 128," in objects
+    assert "INVENTORY_REPEAT_ROUNDS * INVENTORY_INTERVAL_TICKS" in objects

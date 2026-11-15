@@ -745,6 +745,26 @@ static void scripted_looping_sound_stop_internal(
 	return;
 }
 
+void game_sound_port_stop_scripted_one_shots(
+	void)
+{
+	long looping_sound_index = data_next_index(game_looping_sound_data, NONE);
+
+	while (looping_sound_index != NONE)
+	{
+		long next_index = data_next_index(game_looping_sound_data, looping_sound_index);
+		struct game_looping_sound_datum *sound = game_looping_sound_get(looping_sound_index);
+
+		if (TEST_FLAG(sound->flags, _game_looping_sound_scripted_bit) &&
+			TEST_FLAG(looping_sound_definition_get(sound->definition_index)->flags, _looping_sound_fake_impulse_sound_bit))
+		{
+			/* (not the hook's: this is the client's own stop) */
+			scripted_looping_sound_stop_internal(sound->definition_index, FALSE);
+		}
+		looping_sound_index = next_index;
+	}
+}
+
 void scripted_looping_sound_stop(
 	long sound_index)
 {

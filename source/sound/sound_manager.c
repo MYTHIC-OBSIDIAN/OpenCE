@@ -2518,6 +2518,25 @@ void sound_stop_all(
 	return;
 }
 
+void sound_port_stop_impulses(
+	void)
+{
+	long sound_index;
+
+	if (!sound_manager_globals.initialized)
+		return;
+	sound_index = data_next_index(sound_data, NONE);
+	while (sound_index != NONE)
+	{
+		long next_index = data_next_index(sound_data, sound_index);
+
+		if (sound_get(sound_index)->type == _sound_impulse)
+			sound_stop(sound_index);
+		sound_index = next_index;
+	}
+	sound_manager_globals.game_time_when_no_scripted_dialog_will_be_playing = 0;
+}
+
 long sound_new_impulse(
 	long definition_index,
 	struct sound_source *source,

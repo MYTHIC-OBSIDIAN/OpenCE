@@ -149,10 +149,15 @@ enum
 	/* ... the host's inventories it could not apply in full yet, one for
 	each unit that carries anything (a vehicle is a unit, its weapons are
 	objects) whose objects the stream has not brought: most of them while
-	it joins, few after. Room for as many as there are players; past that
-	the oldest goes, and its unit waits for the host's next inventory of it */
-	MAXIMUM_CLIENT_RETRIED_INVENTORIES = MAXIMUM_TRACKED_PLAYERS,
+	it joins, few after. Past that the oldest goes, and its unit waits for
+	the host's next inventory of it. (port: room for many: a cutscene arms
+	its whole cast in a tick, and a list as long as the players' sent most
+	of their items a second late) */
+	MAXIMUM_CLIENT_RETRIED_INVENTORIES = 128,
 	MAXIMUM_ENTRIES_PER_MESSAGE = 64,
+	/* a unit's inventory to every client again in this many rounds after its
+	weapons change (or its refresh) */
+	INVENTORY_REPEAT_ROUNDS = 3,
 	/* the objects the host has at the same indices everywhere */
 	NETWORKED_OBJECT_TYPES =
 		_object_mask_biped | _object_mask_vehicle | _object_mask_weapon | _object_mask_equipment,
@@ -1880,6 +1885,13 @@ static void distributed_host_send_inventories(
 			kind = _host_inventory_to_all;
 			objects_host_inventories[absolute_index].time = game_time_get();
 			objects_host_inventories[absolute_index].ammunition_time = NONE;
+		}
+		/* (port: and in the rounds after: one datagram lost left a held item
+		hidden on a client until the refresh a second on) */
+		else if (game_time_get() - objects_host_inventories[absolute_index].time <
+			INVENTORY_REPEAT_ROUNDS * INVENTORY_INTERVAL_TICKS)
+		{
+			kind = _host_inventory_to_all;
 		}
 		else if (objects_host_inventories[absolute_index].checksum != checksum)
 		{

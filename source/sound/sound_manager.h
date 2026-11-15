@@ -55,6 +55,11 @@ void sound_render(
 
 void sound_stop_all(
 	void);
+/* port: network co-op: a client's impulse sounds stopped (dialogue, an
+animation's or an effect's), its loops left playing, as the host's revert
+stops its own (a skipped cutscene's audio: port/linux/game/network_coop.c) */
+void sound_port_stop_impulses(
+	void);
 void sound_stop_impulse(
 	long sound_index);
 void sound_stop_impulse_by_source_and_definition(
