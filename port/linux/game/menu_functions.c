@@ -3748,6 +3748,7 @@ int platform_clipboard_get(char *text, int size);
 void platform_clipboard_set(char const *text);
 void platform_text_field(int typing, int password);
 int config_boolean(char const *name);
+long network_maximum_players(void);
 void ui_widget_port_post_button(short controller_index, short button_index);
 
 static wchar_t const *const engine_names[] = { L"", L"CTF", L"SLAYER", L"ODDBALL", L"KING OF THE HILL", L"RACE" };
@@ -3978,6 +3979,8 @@ static struct
 	short kind, step;
 	/* hosting over the network, which co-op needs */
 	boolean hosting;
+	/* and offering the campaign's kinds (network.singleplayer_tab) */
+	boolean campaigns;
 	/* the multiplayer maps (ui_widget_port_multiplayer_maps): the Xbox's,
 	then the Custom Edition ones */
 	short map_count;
@@ -4040,6 +4043,9 @@ static boolean map_list_initialize(struct widget_instance *list)
 	short previous_entry = map_list.step == MAP_STEP_DIFFICULTIES ? map_list.level : map_list.chosen;
 
 	map_list.hosting = global_network_game_server_get() != NULL && !network_game_is_splitscreen_local();
+	/* (SINGLEPLAYER and CUSTOM CAMPAIGNS, network co-op, only as
+	network.singleplayer_tab says: off, only the multiplayer kinds) */
+	map_list.campaigns = map_list.hosting && config_boolean("network.singleplayer_tab");
 	/* (the maps folders looked for again as the list opens, the MCC maps'
 	too) */
 	mcc_maps_rescan();
@@ -4053,7 +4059,7 @@ static boolean map_list_initialize(struct widget_instance *list)
 	maps used last do not hold them. CUSTOM CAMPAIGNS only hosting over the
 	network.) */
 	if ((previous_kind == MAP_KIND_CUSTOM_MULTIPLAYER || previous_kind == MAP_KIND_DIGSITE ||
-		(previous_kind == MAP_KIND_CUSTOM_CAMPAIGN && map_list.hosting)) &&
+		(previous_kind == MAP_KIND_CUSTOM_CAMPAIGN && map_list.campaigns)) &&
 		previous_entry < map_kind_count(previous_kind, map_list.map_count) &&
 		custom_mcc_index(previous_kind, previous_entry) != NONE)
 	{
@@ -4069,7 +4075,7 @@ them the level or map chosen: its picture, name and words */
 static void map_list_update(struct widget_instance *list)
 {
 	struct widget_instance *description = list->parameters.list.extended_description;
-	short kind = map_kind_shown(list, map_list.hosting ? MAP_KINDS_ALL : MAP_KINDS_MULTIPLAYER, map_list.kind);
+	short kind = map_kind_shown(list, map_list.campaigns ? MAP_KINDS_ALL : MAP_KINDS_MULTIPLAYER, map_list.kind);
 	short count, entry, shown;
 
 	if (kind != map_list.kind)
@@ -4168,7 +4174,7 @@ static boolean map_list_choose(struct widget_instance *list, boolean *widget_del
 		return ui_widget_port_multiplayer_map_choose(level_index);
 	}
 	/* (a campaign map: hosted as network co-op, which split screen is not) */
-	if (!map_list.hosting)
+	if (!map_list.campaigns)
 		return campaign_fail();
 	ui_play_audio_feedback_sound(SOUND_FORWARD);
 	map_list.level = chosen;
@@ -4524,6 +4530,16 @@ static void server_settings_update(struct widget_instance *list)
 	if (spinner)
 		*server_settings_maximum_players_index() = (short)PIN(spinner->parameters.list.selected_index, 0,
 			NUMBEROF(maximum_players) - 1);
+	/* (no more than network.max_players, whose choice MAX PLAYERS keeps to:
+	the host holds every game to it, network_server_manager.c) */
+	{
+		short *index = server_settings_maximum_players_index();
+
+		while (*index > 0 && maximum_players[*index] > network_maximum_players())
+			(*index)--;
+		if (spinner)
+			spinner->parameters.list.selected_index = *index;
+	}
 	/* (co-op: two players, which MAX PLAYERS shows and keeps) */
 	if (hosting_cooperative())
 	{

@@ -472,6 +472,9 @@ symbols in this file:
 #include "mcc_load_network.h" /* port: bounded MCC conversion progress */
 #include "mcc_share.h" /* port: port/linux/game/mcc_share.c */
 #include "network_link.h" /* port: port/linux/game/network_link.c */
+
+/* port: network.max_players (port/linux/src/port_config.c) */
+long network_maximum_players(void);
 #include "saved games/player_profile.h"
 #include "text/unicode.h"
 
@@ -4539,6 +4542,9 @@ static void network_game_server_port_settings_apply(
 		server->game.maximum_players = (byte)MIN(server->game.maximum_players,
 			HALO_PORT_COOPERATIVE_MAXIMUM_PLAYERS);
 	}
+	/* port: every game hosted (system link, split screen, a dedicated
+	server's) held to network.max_players */
+	server->game.maximum_players = (byte)MIN(server->game.maximum_players, network_maximum_players());
 }
 
 void network_game_server_port_set_settings(

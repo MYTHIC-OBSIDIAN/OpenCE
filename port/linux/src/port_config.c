@@ -786,6 +786,15 @@ static const struct config_setting config_settings[] =
 		"carried by it. In multiplayer each gametype's VEHICLE RIDING rule\n"
 		"overrides it (a gametype without the rule is off). A map's own choice\n"
 		"still wins. Changes count from the next map." },
+	{ "network.singleplayer_tab", _config_boolean, "false", "HALO_NET_SINGLEPLAYER_TAB", _environment_value,
+		_platform_all,
+		"Host: whether a system link game's Map screen offers SINGLEPLAYER and\n"
+		"CUSTOM CAMPAIGNS (the campaign hosted as network co-op). false: only\n"
+		"the multiplayer maps' kinds." },
+	{ "network.max_players", _config_integer, "16", "HALO_NET_MAX_PLAYERS", _environment_value, _platform_all,
+		"Host: the most players any multiplayer game this machine hosts holds\n"
+		"(system link, split screen, a dedicated server's: 2 to 128). Server\n"
+		"Setup's MAX PLAYERS and server.max_players are held to it." },
 	{ "network.brokers_file", _config_string, "\"brokers.txt\"",
 		"HALO_NET_BROKERS_FILE", _environment_value, _platform_all,
 		"The file of the public MQTT brokers through which the machines of an\n"
@@ -2832,6 +2841,18 @@ int halo_fixed_step(void)
 long config_integer(const char *name)
 {
 	return config_value(name, _config_integer)->integer;
+}
+
+/* network.max_players, 2 to the native builds' most */
+long network_maximum_players(void)
+{
+	long players = config_integer("network.max_players");
+
+	if (players < 2)
+		players = 2;
+	if (players > HALO_PORT_MAXIMUM_NETWORK_PLAYERS)
+		players = HALO_PORT_MAXIMUM_NETWORK_PLAYERS;
+	return players;
 }
 
 unsigned long network_client_timeout_milliseconds(void)

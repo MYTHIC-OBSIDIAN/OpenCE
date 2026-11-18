@@ -16,6 +16,8 @@ Settings are named "section.key", as in the file: "display.vsync".
 
 int config_boolean(const char *name);
 long config_integer(const char *name);
+/* network.max_players: the most players a game hosted holds (2 to 128) */
+long network_maximum_players(void);
 double config_real(const char *name);
 /* never NULL; "" when unset */
 const char *config_string(const char *name);

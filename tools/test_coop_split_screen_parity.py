@@ -534,3 +534,25 @@ def test_named_objects_reach_a_client_as_they_change():
     assert "if (csmemcmp(names, &sent, sizeof(sent)) != 0)" in names
     assert "(changed_time == NONE || now - changed_time > 1))" in names
     assert "\thost_send_object_names();\n" in function(coop, "network_coop_host_tick")
+
+
+def test_a_system_link_maps_singleplayer_tab_is_a_setting_off_by_default():
+    config = source("port/linux/src/port_config.c")
+    assert '{ "network.singleplayer_tab", _config_boolean, "false", "HALO_NET_SINGLEPLAYER_TAB",' in config
+    menus = source("port/linux/game/menu_functions.c")
+    initialize = function(menus, "map_list_initialize")
+    assert 'map_list.campaigns = map_list.hosting && config_boolean("network.singleplayer_tab");' in initialize
+    update = function(menus, "map_list_update")
+    assert "map_kind_shown(list, map_list.campaigns ? MAP_KINDS_ALL : MAP_KINDS_MULTIPLAYER, map_list.kind)" in update
+
+
+def test_every_hosted_game_is_held_to_the_player_limit():
+    config = source("port/linux/src/port_config.c")
+    assert '{ "network.max_players", _config_integer, "16", "HALO_NET_MAX_PLAYERS",' in config
+    assert "players = HALO_PORT_MAXIMUM_NETWORK_PLAYERS;" in function(config, "network_maximum_players")
+    server = source("source/networking/network_server_manager.c")
+    apply = function(server, "network_game_server_port_settings_apply")
+    assert apply.rstrip().endswith("server->game.maximum_players = (byte)MIN(server->game.maximum_players, network_maximum_players());\n}") or \
+        "server->game.maximum_players = (byte)MIN(server->game.maximum_players, network_maximum_players());" in apply
+    menus = source("port/linux/game/menu_functions.c")
+    assert "while (*index > 0 && maximum_players[*index] > network_maximum_players())" in function(menus, "server_settings_update")
