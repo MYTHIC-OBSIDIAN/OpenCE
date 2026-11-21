@@ -13,8 +13,8 @@ root's `u` folder (`savegame\u\` next to `halo.exe`, `paths.saves`, or
 
 The list works with the mouse, the keyboard and an Xbox controller: up and
 down (arrow keys, D-pad, left stick) move the selection, Page Up / Page Down
-and the triggers a page, left and right the order (ALL, BY DATE, BY
-GAMERSCORE), Tab and the bumpers the filter (SHOW ALL, UNLOCKED, LOCKED),
+and the triggers a page, left and right (arrow keys, D-pad) or Y the order
+(ALL, BY DATE, BY GAMERSCORE), Tab and the bumpers the filter (SHOW ALL, UNLOCKED, LOCKED),
 and Escape, B or Back close it. `scroll.wav` plays as the selection moves
 and `filter.wav` as the order or the filter changes.
 

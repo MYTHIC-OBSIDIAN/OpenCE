@@ -8,7 +8,8 @@
 //    "Achievement unlocked" pop-up with a sound.
 //  * Opened normally it shows your achievement list (37 achievements, 780G, Data.cs).
 //  * The list: up and down (keys, D-pad, left stick) move the selection, Page Up / Page Down and the
-//    triggers a page, left and right the order, Tab and the bumpers the filter, Escape / B / Back closes it.
+//    triggers a page, left and right (D-pad) or Y the order, Tab and the bumpers the filter, Escape / B /
+//    Back closes it.
 //    scroll.wav plays as the selection moves, filter.wav as the order or filter changes.
 //  * Pictures: any picture named after the achievement in an "Achievement Icons" folder next to this
 //    program or the game is used, else the one built in from assets\icons\<number>.png (Build.bat).
@@ -1077,7 +1078,7 @@ namespace OpenCEAchievements
         }
 
         // ---- the controller: up and down (D-pad or left stick) move the selection, the triggers a page,
-        // left and right the order, the bumpers the filter, B or Back closes the list
+        // left and right (D-pad) or Y the order, the bumpers the filter, B or Back closes the list
         readonly System.Windows.Forms.Timer pad = new System.Windows.Forms.Timer();
         int padHeld;
         DateTime padRepeat;
@@ -1101,7 +1102,7 @@ namespace OpenCEAchievements
             if ((pressed & Pad.LT) != 0) listView.MoveSelection(-1, true);
             if ((pressed & Pad.RT) != 0) listView.MoveSelection(1, true);
             if ((pressed & Pad.Left) != 0) header.CycleSort(-1);
-            if ((pressed & Pad.Right) != 0) header.CycleSort(1);
+            if ((pressed & (Pad.Right | Pad.Y)) != 0) header.CycleSort(1);
             if ((pressed & Pad.LB) != 0) header.CycleShow(-1);
             if ((pressed & Pad.RB) != 0) header.CycleShow(1);
         }
