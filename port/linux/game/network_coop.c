@@ -133,6 +133,7 @@ index and tag, since the map placed them at the same index everywhere.
 #include "coop_spectate.h"
 #include "coop_sound_sync.h"
 #include "network_coop.h"
+#include "achievements.h"
 #include "vehicle_riding.h"
 #include "network_distributed.h"
 #include "../src/server_events.h" /* port: port/linux/src/server_events.c */
@@ -287,6 +288,11 @@ enum
 	in reals, alpha in value (of REFLECTION_TINT_ALPHA_SCALE); every refresh
 	again */
 	_coop_event_reflection_tint,
+	/* (port, network version 58) an achievement a player earned (value: its
+	number, target: the player's index), for the machine whose player it is
+	(port/linux/game/achievements.c); sent alone on the reliable stream, and
+	outside the events' numbering */
+	_coop_event_achievement,
 };
 #define REFLECTION_TINT_ALPHA_SCALE 4096.0f
 
@@ -4277,6 +4283,31 @@ void network_coop_reverted(
 	event_new(_coop_event_reverted);
 }
 
+/* host: a client's player earned an achievement (achievements.c): sent to
+the clients on the reliable stream at once, which carries it even as the
+level ends; the machine whose player it is logs it */
+void network_coop_host_send_achievement(
+	long player_index,
+	short achievement)
+{
+	struct distributed_coop_events_message message;
+
+	if (!coop_host())
+		return;
+	csmemset(&message.events[0], 0, sizeof(message.events[0]));
+	message.events[0].kind = _coop_event_achievement;
+	message.events[0].value = achievement;
+	message.events[0].target = player_index;
+	message.events[0].object_index = NONE;
+	message.events[0].tag_index = NONE;
+	message.events[0].definition_index = NONE;
+	message.events[0].name_index = NONE;
+	distributed_send(&message, _distributed_message_coop_events, 1,
+		(word)(sizeof(struct distributed_message_header) + sizeof(message.events[0])),
+		_distributed_to_clients_reliably);
+	error(_error_silent, "co-op: achievement %d to the clients for player %08lx", achievement, player_index);
+}
+
 /* host: whether it reverted lately, so that its events and inventories go
 on the reliable stream (REVERT_RELIABLE_TICKS) */
 boolean network_coop_host_settling(
@@ -5294,6 +5325,14 @@ void network_coop_handle_events(
 	{
 		/* already applied (the comparison handles the number wrapping) */
 		boolean later = !coop_events.applied_any || (short)(events[index].number - coop_events.applied_number) > 0;
+
+		/* (an achievement: only on the reliable stream, which brings it once) */
+		if (events[index].kind == _coop_event_achievement)
+		{
+			if (reliable)
+				achievements_network_earned(events[index].target, events[index].value);
+			continue;
+		}
 
 		if (!later && !reliable)
 			continue;

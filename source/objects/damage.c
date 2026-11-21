@@ -140,6 +140,7 @@ symbols in this file:
 #include "units/vehicles.h"
 #include "mcc_damage.h" /* port: port/linux/game/mcc_damage.c */
 #include "mcc_ui_teams.h" /* port: port/linux/game/mcc_ui_teams.c */
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -1268,6 +1269,9 @@ static void object_damage_body(
 		}
 
 		object->object.body_vitality -= actual_damage;
+		/* port: a player's health damage (port/linux/game/achievements.c) */
+		if (actual_damage > 0.f)
+			achievements_body_damaged(object_index);
 	}
 
 	/* port: only a region the resistance has and the object holds damage for
@@ -1355,6 +1359,10 @@ static void object_damage_body(
 		if (damage_resistance->body_destroyed_threshold < 0.f &&
 			body_vitality < damage_resistance->body_destroyed_threshold)
 		{
+			/* port: killed by this damage (port/linux/game/achievements.c),
+			before the object goes */
+			if (!TEST_FLAG(object->object.damage_flags, _object_dead_bit))
+				achievements_object_killed(object_index, damage);
 			object_destroy(object_index);
 			*being_damaged_flags |=
 				FLAG(_object_being_damaged_body_depleted_bit) |
@@ -1383,6 +1391,8 @@ static void object_damage_body(
 
 				object_deplete_body(object_index);
 				SET_FLAG(*being_damaged_flags, _object_being_damaged_body_depleted_bit, TRUE);
+				/* port: killed by this damage (port/linux/game/achievements.c) */
+				achievements_object_killed(object_index, damage);
 			}
 		}
 		else if (body_vitality < damage_resistance->body_damaged_effect_threshold &&

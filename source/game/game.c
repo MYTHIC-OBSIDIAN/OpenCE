@@ -189,6 +189,7 @@ struct game_options;
 #include "profile_console.h" /* port: port/linux/game/profile_console.c */
 #endif
 #include "profile_sections.h" /* port: port/linux/include/profile_sections.h */
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -301,6 +302,8 @@ void game_initialize(
 	decals_initialize();
 	collision_log_initialize();
 	players_initialize();
+	/* port: the achievements' record of a level, in the game state */
+	achievements_initialize();
 	contrails_initialize();
 	particles_initialize();
 	effects_initialize();
@@ -392,6 +395,8 @@ void game_tick(
 	profile_scope(game_tick_recorded_animations_section, recorded_animations_update();)
 	profile_scope(game_tick_objects_section, objects_update();)
 	profile_scope(game_tick_players_after_section, players_update_after_game();)
+	/* port: (port/linux/game/achievements.c) */
+	achievements_update();
 	profile_scope(game_tick_hud_section, hud_update();)
 	profile_scope(game_tick_player_effect_section, player_effect_update();)
 	/* port: and at its end, before the frame draws the lights */
@@ -713,6 +718,8 @@ void game_initialize_for_new_map(
 	hs_initialize_for_new_map();
 	recorded_animations_initialize_for_new_map();
 	cheats_initialize_for_new_map();
+	/* port: the level's achievements, from nothing done */
+	achievements_initialize_for_new_map();
 
 	game_globals->active = TRUE;
 	objects_place();

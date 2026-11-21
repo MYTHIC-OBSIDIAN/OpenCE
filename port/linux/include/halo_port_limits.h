@@ -99,8 +99,10 @@ revert to a checkpoint) its co-op events and inventories go on the reliable
 stream, behind the checkpoint and the objects' snapshot, and a client applies
 an event that came so though a datagram's later one overtook it.
 Version 57: the host sends which named objects there are at once when that
-changes, and the tick after, besides every half second. */
-#define HALO_PORT_NETWORK_VERSION 57
+changes, and the tick after, besides every half second.
+Version 58: the host sends a client's player's achievements to it
+(_coop_event_achievement, on the reliable stream). */
+#define HALO_PORT_NETWORK_VERSION 58
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
 then flags (the byte after them, once OpenCE's gametypes' kind, zero) */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0

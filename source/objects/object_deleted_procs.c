@@ -14,6 +14,7 @@ symbols in this file:
 #include "ai/ai.h"
 #include "objects.h"
 #include "game/players.h"
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* ---------- constants */
 
@@ -40,6 +41,8 @@ void object_deleted_procs_call(
 	object_deleted_proc *deleted_proc = object_deleted_procs;
 	long deleted_proc_count = NUMBEROF(object_deleted_procs);
 
+	/* port: an Elite taken out of Keyes alive (port/linux/game/achievements.c) */
+	achievements_object_deleted(deleted_object_index);
 	do
 	{
 		(*deleted_proc)(deleted_object_index);

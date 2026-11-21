@@ -650,6 +650,14 @@ host's `sound_stop_all` does: stopped as the scripts stop a loop, a one-shot
 cutscene's audio went on off-host. The loops the host's revert kept come
 again with its refresh.
 
+Version 58 sends a co-op client's player's achievements to it (network
+version 58). The host decides every player's
+(`port/linux/game/achievements.c`) and sends each one a client's player
+earned as a `_coop_event_achievement` (its number in `value`, the player's
+index in `target`) alone on the reliable stream, outside the events'
+numbering: it arrives once, and still as a level ends. A client logs it
+only for a player of its own, and only a number it knows.
+
 `port/linux/network_format.txt` records the wire format of the current
 version (`tools/network_format.py`): `test_linux_port.py` fails when the
 sources' messages, kinds, bits, structs sent whole or the sizes of their

@@ -105,6 +105,10 @@ static void screen_keyboard_update(void);
 void dsound_sdl_output_device_check(void);
 /* updater.c's: the desktop self-updater */
 void updater_start(void);
+#ifdef HALO_WINDOWS
+/* port/windows/src/win32_achievements.c's */
+void achievements_app_start(void);
+#endif
 void updater_poll(SDL_Window *window);
 /* the windows' icon, a PNG (tools/embed_assets.py, port/assets/icon) */
 extern const unsigned int platform_window_icon[];
@@ -234,6 +238,10 @@ BOOL platform_sdl_initialize(void)
 	if (!halo_server_mode())
 	{
 		updater_start();
+#ifdef HALO_WINDOWS
+		/* (the achievements' companion program, when it is next to the game) */
+		achievements_app_start();
+#endif
 		/* (a player's public game on the master servers too, with a
 		publisher key: server_master.c) */
 		server_master_start_host();

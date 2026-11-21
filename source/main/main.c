@@ -685,6 +685,7 @@ typedef char screenshot_and_framerate_globals_size_assert[
 
 void network_test_update(boolean main_menu_loaded, real seconds);
 #include "server_director.h" /* port: port/linux/game/server_director.c */
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* ---------- prototypes */
 
@@ -2412,6 +2413,8 @@ static void main_won_map_private(
 		main_globals.won_map = FALSE;
 		return;
 	}
+	/* port: the level's achievements, while its players are still in it */
+	achievements_won_map();
 
 	/* port: when a network co-op level is won, the round ends for everyone as
 	in multiplayer, back to the lobby, and the next round is the campaign's

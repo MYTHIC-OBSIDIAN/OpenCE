@@ -407,6 +407,8 @@ the setting for one start of the game. It has priority over the file.
 | `paths.logs` | `""` | `HALO_LOG_ROOT` | The folder of `debug.txt`, `bans.txt` and `cheaters.txt`. Empty: the data root. With it, the data root can be read-only (a dedicated server's maps mounted so). |
 | `paths.custom_maps` | `""` | `HALO_CUSTOM_MAPS_ROOT` | The `custom_maps` folder (Custom Edition maps, with their `bitmaps.map`, `sounds.map` and `loc.map`). Empty: the one in the data root. |
 | `game.mcc_campaigns` | `true` | `HALO_MCC_CAMPAIGNS` | Use explicit MCC campaign metadata for discovery, mission titles, authored ordering and progression. In co-op only the host chooses the next mission. Reopen the map list after changing this. |
+| `game.achievements` | `true` | `HALO_ACHIEVEMENTS` | Earn the campaign's Xbox-style achievements (Refer to "Achievements"): each is written once to `achievements.log` in the save root's `u` folder, which the companion program `Achievements.exe` shows as it is earned. `false`: none are written. |
+| `game.achievements_app` | `true` | `HALO_ACHIEVEMENTS_APP` | Windows: start `Achievements.exe` in the background with the game when it is next to `halo.exe` and `game.achievements` is on. It closes itself after the game. |
 | `game.mcc_collections` | `true` | `HALO_MCC_COLLECTIONS` | **Not read:** the map lists have no folders (the MCC maps are listed in CUSTOM CAMPAIGNS and CUSTOM EDITION). Before: group MCC packages into folders by the bundled Workshop collection list. |
 | `game.workshop_maps` | `true` | `HALO_WORKSHOP_MAPS` | Use MCC's shared `bitmaps.map` and `sounds.map` from its Steam installation when the `mods` folder has none. No Workshop maps are looked for: MCC maps are those of `custom_maps` and `digsite_maps`. |
 | `paths.steam` | `""` | `HALO_STEAM_ROOT` | A Steam folder or library to check first for subscribed Halo CE Workshop items. Automatic discovery also checks Windows registry installations; Linux's `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `$XDG_DATA_HOME/Steam` and home-folder locations; and their library lists. Empty: automatic discovery only. |
@@ -549,6 +551,56 @@ the setting for one start of the game. It has priority over the file.
 With Mesa drivers, the game sends its GL calls through the GL thread of
 Mesa. To stop this, set the environment variable `mesa_glthread=false`.
 
+## Achievements
+
+The campaign has the 37 Xbox-style achievements of Halo: Combat Evolved
+(780 points). The game decides them (`port/linux/game/achievements.c`) and
+writes each one once, when it is earned, to `achievements.log` in the save
+root's `u` folder: 16 bytes a record, the achievement's number (1 to 37, in
+the list's order), 0, and a Windows FILETIME. Numbers from 100 record a
+level finished on a difficulty (100 + level × 4 + difficulty), from which
+Birth of a Spartan, Believe in a Hero and Living Legend are decided; a
+harder difficulty counts for the easier ones. `tools/achievements` is the
+companion program that shows them (its README says how to build it).
+
+What a level's achievements look for (damage taken, pick-ups, vehicles
+entered, kills, deaths) is kept in the game state: a revert to a checkpoint
+undoes what was done since. Kills count when the player's damage killed.
+In network co-op the host decides for every player and sends each client
+its players' achievements; split screen and co-op count as cooperative.
+
+- **Mission and campaign**: a level finished, on any difficulty; the
+  campaign finished on Normal, Heroic or Legendary.
+- **Cooperative**: a level finished by two players or more, on Normal,
+  Heroic or Legendary (a harder one counts for the easier ones).
+- **He's Unstoppable**: a level on Heroic or harder without the player's
+  health damaged (a death counts as damage).
+- **Overshields are for Sissies, Walk it Off**: The Pillar of Autumn on
+  Legendary without taking an overshield, or a health pack.
+- **No-Fly Zone**: three Banshees themselves destroyed in Halo.
+- **How Pedestrian**: Halo without getting into a vehicle.
+- **Close Quarters Combat**: Truth and Reconciliation finished carrying a
+  Sniper Rifle with four rounds or more, loaded and spare.
+- **Wraith Hunter**: four Wraiths destroyed with the Scorpion's guns in
+  Assault on the Control Room. **I'll Be Taking That!**: a Banshee piloted
+  there.
+- **This One's for Jenkins**: 50 Flood combat forms killed in 343 Guilty
+  Spark on Heroic or harder.
+- **That Just Happened, Speed Reader**: The Library on Heroic or harder
+  without dying; on Legendary within 30 minutes of its start.
+- **Look Out for the Little Guys, Leave It Where It Lay**: Two Betrayals on
+  Heroic or harder without killing a Grunt; on Legendary without picking up
+  a weapon other than those the player started it with (their ammunition
+  may be picked up).
+- **Tying Up Loose Ends**: Keyes on Heroic or harder with every Elite dead
+  when it ends, whoever killed them; an Elite taken out of the level alive
+  (deleted, unloaded) loses it. The Flood's Elite combat forms do not count.
+- **Popcorn.gif**: 100 Flood infection forms killed in Keyes on Heroic or
+  harder.
+- Not yet decided by the game: All According to Plan, Beachhead,
+  Grenadier, Breaking Quarantine, This Side Up and Never Tell Me the Odds,
+  which need their levels' scripts' moments.
+
 ## MCC maps
 
 Halo 1 MCC packages use MCC-owned readers, conversion, rendering and script
@@ -574,7 +626,7 @@ and no others. The multiplayer MCC maps of
 See [MCC maps](../../docs/mcc_maps.md) for supported formats, resources and limits,
 and [MCC previews](../../docs/reading/mcc_level_previews.md) for menu discovery.
 
-All map families use this build's network version (57). MCC content identity, sharing
+All map families use this build's network version (58). MCC content identity, sharing
 consent and load-progress checks remain separate from the existing Xbox/CE paths;
 see [the network agreement](NETCODE.md#opence-network-agreement).
 

@@ -212,7 +212,7 @@ def test_a_client_starts_getting_out_when_the_host_does():
     assert "_distributed_unit_exiting_seat_bit," in distributed
     assert "SET_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit, state->vehicle_index != NONE &&\n\t\t\tunit->unit.animation.state == _unit_state_exiting_seat);" in distributed
     assert "TEST_FLAG(state->unit_flags, _distributed_unit_exiting_seat_bit) &&\n\t\t\tunit->unit.animation.state != _unit_state_exiting_seat)" in distributed
-    assert "#define HALO_PORT_NETWORK_VERSION 57" in source("port/linux/include/halo_port_limits.h")
+    assert "#define HALO_PORT_NETWORK_VERSION 58" in source("port/linux/include/halo_port_limits.h")
 
 
 def test_a_vehicle_a_recording_flies_is_powered_on_the_client_too():
@@ -556,3 +556,53 @@ def test_every_hosted_game_is_held_to_the_player_limit():
         "server->game.maximum_players = (byte)MIN(server->game.maximum_players, network_maximum_players());" in apply
     menus = source("port/linux/game/menu_functions.c")
     assert "while (*index > 0 && maximum_players[*index] > network_maximum_players())" in function(menus, "server_settings_update")
+
+
+def test_achievements_are_decided_where_the_game_runs_and_reverted_with_it():
+    module = source("port/linux/game/achievements.c")
+    # the level's record in the game state: a revert undoes what was done since
+    assert 'game_state_malloc("achievements", NULL,' in function(module, "achievements_initialize")
+    deciding = function(module, "achievements_deciding")
+    assert "game_connection() == _game_connection_network_client" in deciding
+    # a client's player's achievement goes to its machine from the host
+    earned = function(module, "achievement_earned")
+    assert "network_coop_host_send_achievement(player_index, achievement);" in earned
+    coop = source("port/linux/game/network_coop.c")
+    send = function(coop, "network_coop_host_send_achievement")
+    assert "_distributed_to_clients_reliably);" in send
+    handle = function(coop, "network_coop_handle_events")
+    assert handle.index("if (events[index].kind == _coop_event_achievement)") < handle.index("if (!later && !reliable)")
+    assert "achievements_network_earned(events[index].target, events[index].value);" in handle
+    # the hooks in the game's sources
+    game = source("source/game/game.c")
+    assert "achievements_initialize_for_new_map();" in function(game, "game_initialize_for_new_map")
+    assert "achievements_update();" in function(game, "game_tick")
+    main = source("source/main/main.c")
+    won = function(main, "main_won_map_private")
+    assert won.index("achievements_won_map();") < won.index("network_game_server_port_cooperative_won(")
+    damage = source("source/objects/damage.c")
+    body = function(damage, "object_damage_body")
+    assert body.index("achievements_object_killed(object_index, damage);") < body.index("object_destroy(object_index);")
+    assert "achievements_body_damaged(object_index);" in body
+    assert "achievements_object_deleted(deleted_object_index);" in source("source/objects/object_deleted_procs.c")
+    assert "achievements_player_died(unit->unit.player_index);" in function(source("source/units/units.c"), "unit_died")
+    players = source("source/game/players.c")
+    assert players.count("achievements_player_picked_up_weapon(player_index,") == 3
+    assert "achievements_player_entered_seat(player_index, player->action_object_index);" in players
+
+
+def test_keyes_elites_and_two_betrayals_weapons_follow_the_rules():
+    module = source("port/linux/game/achievements.c")
+    # every Elite dead at the end, by anyone; one deleted alive voids it; the
+    # Flood's Elite combat forms are another folder
+    deleted = function(module, "achievements_object_deleted")
+    assert "level->elite_left_alive = TRUE;" in deleted
+    assert 'tag_in_folder(object->definition_index, "characters\\\\elite\\\\")' in function(module, "object_is_elite")
+    won = function(module, "achievements_won_map")
+    assert "if (heroic && !level->elite_left_alive && achievements_elites_all_dead())" in won
+    # the starting weapons may be picked up again (their ammunition), no other
+    pickup = function(module, "achievements_player_picked_up_weapon")
+    assert "if (!achievement_starting_weapon(record, definition_index))" in pickup
+    # No-Fly Zone: the Banshee itself
+    killed = function(module, "achievements_object_killed")
+    assert 'object_in_folder(object_index, "vehicles\\\\banshee\\\\")' in killed

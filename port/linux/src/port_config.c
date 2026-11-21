@@ -588,6 +588,14 @@ static const struct config_setting config_settings[] =
 	{ "game.workshop_maps", _config_boolean, "true", "HALO_WORKSHOP_MAPS", _environment_value, _platform_desktop,
 		"Use MCC's shared bitmaps.map and sounds.map from its Steam install\n"
 		"when the mods folder has none (no Workshop maps are looked for)." },
+	{ "game.achievements", _config_boolean, "true", "HALO_ACHIEVEMENTS", _environment_value, _platform_desktop,
+		"Earn the campaign's Xbox-style achievements: written to\n"
+		"achievements.log in the save root's u folder, which the companion\n"
+		"program Achievements.exe shows." },
+	{ "game.achievements_app", _config_boolean, "true", "HALO_ACHIEVEMENTS_APP", _environment_value,
+		_platform_desktop,
+		"Windows: start Achievements.exe in the background with the game, when\n"
+		"it is next to halo.exe and game.achievements is on." },
 	{ "game.mcc_collections", _config_boolean, "true", "HALO_MCC_COLLECTIONS", _environment_value, _platform_all,
 		"Not read: the map lists have no folders (the MCC maps are listed in\n"
 		"CUSTOM CAMPAIGNS and CUSTOM EDITION)." },

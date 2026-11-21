@@ -64,6 +64,9 @@ go on the reliable stream, behind the checkpoint and the objects' snapshot
 a client must have before it takes the new world's datagrams
 (network_objects.c) */
 boolean network_coop_host_settling(void);
+/* (port) the host: a client's player earned an achievement
+(port/linux/game/achievements.c), sent to its machine */
+void network_coop_host_send_achievement(long player_index, short achievement);
 /* (port) a co-op client: the function inputs of an object the host's
 scripts fly (a recording's vehicle), the host's (objects.c, after its own
 are exported); FALSE for any other */

@@ -281,6 +281,7 @@ symbols in this file:
 #include "units/vehicle_definitions.h"
 #include "units/vehicles.h"
 #include "mcc_seats.h" /* port: port/linux/game/mcc_seats.c */
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -1927,10 +1928,14 @@ static boolean player_handle_action(
 			player->action_seat_index,
 			(nearby_unit_index = NONE, &nearby_unit_index)))
 		{
-			unit_enter_seat(
+			/* port: (port/linux/game/achievements.c) */
+			if (unit_enter_seat(
 				player->unit_index,
 				player->action_object_index,
-				player->action_seat_index);
+				player->action_seat_index))
+			{
+				achievements_player_entered_seat(player_index, player->action_object_index);
+			}
 		}
 		else if (nearby_unit_index != NONE)
 		{
@@ -3835,6 +3840,8 @@ static boolean player_handle_weapon_swap(
 				player->local_player_index,
 				weapon->definition_index);
 			player_network_picked_up(player, player_index, _network_pickup_weapon, weapon->definition_index, 0);
+			/* port: (port/linux/game/achievements.c) */
+			achievements_player_picked_up_weapon(player_index, weapon->definition_index);
 			player_control_unzoom(player->unit_index);
 		}
 		result = TRUE;
@@ -3851,6 +3858,8 @@ static boolean player_handle_weapon_swap(
 				player->local_player_index,
 				weapon->definition_index);
 			player_network_picked_up(player, player_index, _network_pickup_weapon, weapon->definition_index, 0);
+			/* port: (port/linux/game/achievements.c) */
+			achievements_player_picked_up_weapon(player_index, weapon->definition_index);
 		}
 		break;
 	}
@@ -4380,6 +4389,8 @@ static void player_examine_nearby_item(
 					weapon_get(weapon_item_index)->definition_index);
 				player_network_picked_up(player, player_index, _network_pickup_weapon,
 					weapon_get(weapon_item_index)->definition_index, 0);
+				/* port: (port/linux/game/achievements.c) */
+				achievements_player_picked_up_weapon(player_index, weapon_get(weapon_item_index)->definition_index);
 				player_control_unzoom(player->unit_index);
 			}
 		}
@@ -4510,6 +4521,8 @@ static void player_handle_powerup_equipment(
 		(unsigned short)player->local_player_index,
 		equipment->definition_index);
 	player_network_picked_up(player, player_index, _network_pickup_powerup, equipment->definition_index, 0);
+	/* port: (port/linux/game/achievements.c) */
+	achievements_player_picked_up_powerup(player_index, equipment->definition_index);
 	if (player->local_player_index != NONE)
 		equipment_handle_pickup(equipment_index);
 	object_delete(equipment_index);
