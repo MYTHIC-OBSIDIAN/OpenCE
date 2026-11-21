@@ -37,6 +37,8 @@ void achievements_player_picked_up_weapon(long player_index, long definition_ind
 void achievements_player_picked_up_powerup(long player_index, long definition_index);
 /* players.c: a player got into a vehicle's seat */
 void achievements_player_entered_seat(long player_index, long vehicle_index);
+/* biped_update: a unit thrown from its flipped vehicle */
+void achievements_player_ejected(long unit_index);
 /* object_deleted_procs_call: an object about to be deleted */
 void achievements_object_deleted(long object_index);
 

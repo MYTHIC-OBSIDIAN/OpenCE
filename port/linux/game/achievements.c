@@ -26,6 +26,8 @@ whose clients' players' achievements it sends them (network_coop.c).
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "game/players.h"
+#include "cutscene/cinematics.h"
+#include "interface/hud_messaging.h"
 #include "items/equipment.h"
 #include "items/equipment_definitions.h"
 #include "items/weapons.h"
@@ -134,6 +136,8 @@ enum
 	_achievement_taking_that_bit,
 	_achievement_jenkins_bit,
 	_achievement_popcorn_bit,
+	/* The Maw: thrown from a flipped vehicle during the ride */
+	_achievement_ejected_bit,
 };
 
 /* No-Fly Zone, Wraith Hunter, This One's for Jenkins, Popcorn.gif */
@@ -145,6 +149,10 @@ enum
 #define SNIPER_ROUNDS_LEFT 4
 /* Speed Reader: the Library within 30 minutes */
 #define SPEED_READER_TICKS (30 * 60 * TICKS_PER_SECOND)
+/* Breaking Quarantine: 343 Guilty Spark within 21 minutes */
+#define BREAKING_QUARANTINE_TICKS (21 * 60 * TICKS_PER_SECOND)
+/* Never Tell Me the Odds: a minute left on the countdown */
+#define NEVER_TELL_ME_THE_ODDS_TICKS (60 * TICKS_PER_SECOND)
 
 /* the log in the save root's u folder (platform_translate_path) */
 #define ACHIEVEMENTS_LOG "u:\\achievements.log"
@@ -161,6 +169,8 @@ struct achievement_player
 	short wraiths_destroyed;
 	short combat_forms_killed;
 	short infection_forms_killed;
+	/* (room for more, as achievement_level's) */
+	long reserved[4];
 	/* the weapons the player started the level with (Leave It Where It
 	Lay): every kind it held before it first picked one up (a level's
 	scripts may hand out its loadout after the player appears) */
@@ -177,7 +187,17 @@ struct achievement_level
 	long start_time;
 	/* Keyes: an Elite left the level alive (Tying Up Loose Ends) */
 	boolean elite_left_alive;
-	byte pad[3];
+	/* The Maw's escape: the countdown began (the ride), and ended (its
+	timer stopped or hidden, or a cinematic began: the Longsword reached),
+	with the ticks it had left then */
+	boolean ride_started;
+	boolean ride_ended;
+	byte pad;
+	short ride_ticks_left;
+	short pad2;
+	/* room for the levels' moments still to come, so that adding them
+	leaves the game state's size, and the saved games, as they are */
+	long reserved[32];
 	struct achievement_player players[ACHIEVEMENT_PLAYERS];
 };
 
@@ -481,6 +501,36 @@ static boolean achievements_elites_all_dead(
 	return TRUE;
 }
 
+/* The Maw: the countdown's start and end (achievements_update, each tick) */
+static void achievements_update_ride(
+	struct achievement_level *level)
+{
+	struct hud_timer_state timer;
+	short ticks;
+	boolean running;
+
+	if (level->level != _level_maw || level->ride_ended)
+		return;
+	hud_messaging_port_timer_get(&timer);
+	ticks = scripted_hud_get_timer_ticks();
+	running = timer.enabled && !timer.paused && ticks > 0;
+	if (!level->ride_started)
+	{
+		if (running && !cinematic_in_progress())
+		{
+			level->ride_started = TRUE;
+			error(_error_silent, "achievements: the Maw's ride begins, %d ticks on the countdown", ticks);
+		}
+		return;
+	}
+	if (!running || cinematic_in_progress())
+	{
+		level->ride_ended = TRUE;
+		level->ride_ticks_left = (short)MAX(ticks, 0);
+		error(_error_silent, "achievements: the Maw's ride ends, %d ticks left", level->ride_ticks_left);
+	}
+}
+
 /* ---------- public code */
 
 void achievements_initialize(
@@ -525,6 +575,7 @@ void achievements_update(
 
 	if (!level)
 		return;
+	achievements_update_ride(level);
 	data_iterator_new(&iterator, player_data);
 	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{
@@ -600,6 +651,22 @@ void achievements_won_map(
 		case _level_truth_and_reconciliation:
 			if (achievement_sniper_rounds(player->unit_index) >= SNIPER_ROUNDS_LEFT)
 				achievement_earned(player_index, ACHIEVEMENT_CLOSE_QUARTERS_COMBAT);
+			break;
+		case _level_guilty_spark:
+			if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)
+				achievement_earned(player_index, ACHIEVEMENT_BREAKING_QUARANTINE);
+			break;
+		case _level_maw:
+			/* (the ride finished: begun, and ended before the level was won) */
+			if (level->ride_started)
+			{
+				short left = level->ride_ended ? level->ride_ticks_left : (short)MAX(scripted_hud_get_timer_ticks(), 0);
+
+				if (!TEST_FLAG(record->flags, _achievement_ejected_bit))
+					achievement_earned(player_index, ACHIEVEMENT_THIS_SIDE_UP);
+				if (legendary && left >= NEVER_TELL_ME_THE_ODDS_TICKS)
+					achievement_earned(player_index, ACHIEVEMENT_NEVER_TELL_ME_THE_ODDS);
+			}
 			break;
 		case _level_library:
 			if (heroic && !TEST_FLAG(record->flags, _achievement_died_bit))
@@ -769,6 +836,27 @@ void achievements_player_entered_seat(
 	{
 		SET_FLAG(record->flags, _achievement_taking_that_bit, TRUE);
 		achievement_earned(player_index, ACHIEVEMENT_ILL_BE_TAKING_THAT);
+	}
+}
+
+void achievements_player_ejected(
+	long unit_index)
+{
+	struct achievement_level *level = achievements_deciding();
+	struct unit_datum *unit;
+	struct achievement_player *record;
+
+	/* (the Maw's ride only: begun and not ended) */
+	if (!level || level->level != _level_maw || !level->ride_started || level->ride_ended)
+		return;
+	unit = (struct unit_datum *)object_try_and_get(unit_index);
+	if (!unit || !TEST_FLAG(_object_mask_unit, unit->object.type))
+		return;
+	record = achievements_player(unit->unit.player_index);
+	if (record && !TEST_FLAG(record->flags, _achievement_ejected_bit))
+	{
+		SET_FLAG(record->flags, _achievement_ejected_bit, TRUE);
+		error(_error_silent, "achievements: player %08lx thrown from a flipped vehicle on the Maw", unit->unit.player_index);
 	}
 }
 

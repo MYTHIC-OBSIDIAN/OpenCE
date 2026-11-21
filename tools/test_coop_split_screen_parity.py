@@ -606,3 +606,18 @@ def test_keyes_elites_and_two_betrayals_weapons_follow_the_rules():
     # No-Fly Zone: the Banshee itself
     killed = function(module, "achievements_object_killed")
     assert 'object_in_folder(object_index, "vehicles\\\\banshee\\\\")' in killed
+
+
+def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
+    module = source("port/linux/game/achievements.c")
+    ride = function(module, "achievements_update_ride")
+    assert "running = timer.enabled && !timer.paused && ticks > 0;" in ride
+    assert "if (!running || cinematic_in_progress())" in ride
+    ejected = function(module, "achievements_player_ejected")
+    assert "!level->ride_started || level->ride_ended" in ejected
+    bipeds = source("source/units/bipeds.c")
+    update = function(bipeds, "biped_update")
+    assert update.index("achievements_player_ejected(biped_index);") < update.index("unit_exit_seat_end(biped_index);")
+    won = function(module, "achievements_won_map")
+    assert "if (legendary && left >= NEVER_TELL_ME_THE_ODDS_TICKS)" in won
+    assert "if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)" in won

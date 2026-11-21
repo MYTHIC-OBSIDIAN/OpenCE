@@ -597,9 +597,15 @@ its players' achievements; split screen and co-op count as cooperative.
   (deleted, unloaded) loses it. The Flood's Elite combat forms do not count.
 - **Popcorn.gif**: 100 Flood infection forms killed in Keyes on Heroic or
   harder.
-- Not yet decided by the game: All According to Plan, Beachhead,
-  Grenadier, Breaking Quarantine, This Side Up and Never Tell Me the Odds,
-  which need their levels' scripts' moments.
+- **Breaking Quarantine**: 343 Guilty Spark finished within 21 minutes of
+  its start.
+- **This Side Up, Never Tell Me the Odds**: The Maw's escape ride is the
+  countdown, from when its timer starts running to when it stops, is hidden
+  or a cinematic begins (the Longsword reached). The level finished without
+  the player being thrown from a flipped vehicle during it; on Legendary,
+  with a minute or more left on the countdown when it ended.
+- Not yet decided by the game: All According to Plan, Beachhead and
+  Grenadier, which need their levels' scripts' moments.
 
 ## MCC maps
 

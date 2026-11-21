@@ -279,6 +279,7 @@ symbols in this file:
 #include "mcc_seats.h" /* port: port/linux/game/mcc_seats.c */
 #include "mcc_script_effects.h" /* port: MCC campaign effects and host-owned possession */
 #include "mcc_movement.h" /* port: MCC weapon-authored movement penalties */
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 /* port: the ticks jump must be let go after a player's biped spawns
 (biped_update_jumping) */
@@ -4286,6 +4287,8 @@ boolean biped_update(
 				vehicle_is_flipped(biped->object.parent_object_index) &&
 				TEST_FLAG(vehicle->object.flags, _object_on_ground_bit))
 			{
+				/* port: (The Maw's ride, port/linux/game/achievements.c) */
+				achievements_player_ejected(biped_index);
 				unit_exit_seat_end(biped_index);
 			}
 		}
