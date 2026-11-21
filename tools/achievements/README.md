@@ -8,10 +8,15 @@ the list of all 37 (780 points) when it is opened.
 The game writes each achievement once to `achievements.log` in its save
 root's `u` folder (`savegame\u\` next to `halo.exe`, `paths.saves`, or
 `%APPDATA%\halo\u\`), 16 bytes a record: the achievement's number (`Data.cs`),
-0, and a Windows FILETIME. The program reads every one of those places. The
-name in the list's header is the one the game writes beside the log
-(`achievements_name.txt`); a `Gamerpic.png` next to the program is the
-picture beside it.
+0, and a Windows FILETIME. The program reads every one of those places. A
+`Gamerpic.png` next to the program is the picture in the list's header.
+
+The list works with the mouse, the keyboard and an Xbox controller: up and
+down (arrow keys, D-pad, left stick) move the selection, Page Up / Page Down
+and the triggers a page, left and right the order (ALL, BY DATE, BY
+GAMERSCORE), Tab and the bumpers the filter (SHOW ALL, UNLOCKED, LOCKED),
+and Escape, B or Back close it. `scroll.wav` plays as the selection moves
+and `filter.wav` as the order or the filter changes.
 
 With `game.achievements_app` on (the default), the game starts
 `Achievements.exe --background` when it is next to `halo.exe`; it closes
@@ -35,8 +40,10 @@ one is drawn plainly:
 | `assets\gscore.png` | The points symbol |
 | `assets\min_*.png`, `assets\close_*.png` | The list window's buttons (`normal`, `focus`, `press`) |
 | `assets\achievement.mp3` | The pop-up's sound |
-| `assets\tile.png` | The picture beside the name, when there is no `Gamerpic.png` |
-| `assets\cursor.cur` | The list window's cursor |
+| `assets\header.png` | The header's background: as wide as the header, a band near its foot shown |
+| `assets\tile.png` | The square picture in the header, when there is no `Gamerpic.png` |
+| `assets\scroll.wav`, `assets\filter.wav` | The list's sounds (WAV); files of those names next to the program win |
+| `assets\cursor.cur` | The list window's cursor (else `cursor.cur` here: the game's menu cursor) |
 | `assets\app.ico` | The program's icon (else `port\windows\opence-icon.ico`) |
 
 Pictures named after an achievement in an `Achievement Icons` folder next to

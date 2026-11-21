@@ -38,7 +38,6 @@ whose clients' players' achievements it sends them (network_coop.c).
 #include "objects/objects.h"
 #include "saved games/game_state.h"
 #include "tag_files/tag_files.h"
-#include "text/unicode.h"
 #include "units/units.h"
 
 #include <stdio.h>
@@ -149,8 +148,6 @@ enum
 
 /* the log in the save root's u folder (platform_translate_path) */
 #define ACHIEVEMENTS_LOG "u:\\achievements.log"
-/* the name the companion program shows: the first local player's */
-#define ACHIEVEMENTS_NAME "u:\\achievements_name.txt"
 
 /* a Windows FILETIME's 100 ns from 1601 to 1970 */
 #define FILETIME_UNIX_EPOCH 116444736000000000ULL
@@ -191,7 +188,6 @@ static struct achievement_level *achievement_level;
 /* which numbers the log has (read once, then kept up to date) */
 static byte achievements_logged[(ACHIEVEMENT_NUMBERS + 7) / 8];
 static boolean achievements_log_read = FALSE;
-static wchar_t achievements_name_written[12];
 
 /* ---------- private code */
 
@@ -485,38 +481,6 @@ static boolean achievements_elites_all_dead(
 	return TRUE;
 }
 
-/* the first local player's name, for the companion program */
-static void achievements_write_name(
-	void)
-{
-	struct data_iterator iterator;
-	struct player_datum *player;
-
-	data_iterator_new(&iterator, player_data);
-	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
-	{
-		char text[NUMBEROF(player->name) + 1];
-		short index;
-		FILE *file;
-
-		if (player->local_player_index != 0 || !player->name[0])
-			continue;
-		if (!ustrncmp(player->name, achievements_name_written, NUMBEROF(achievements_name_written)))
-			return;
-		for (index = 0; index < NUMBEROF(player->name) && player->name[index]; index++)
-			text[index] = player->name[index] >= 0x20 && player->name[index] < 0x7F ? (char)player->name[index] : '?';
-		text[index] = 0;
-		file = fopen(ACHIEVEMENTS_NAME, "wb");
-		if (file)
-		{
-			fputs(text, file);
-			fclose(file);
-		}
-		csmemcpy(achievements_name_written, player->name, sizeof(achievements_name_written));
-		return;
-	}
-}
-
 /* ---------- public code */
 
 void achievements_initialize(
@@ -561,8 +525,6 @@ void achievements_update(
 
 	if (!level)
 		return;
-	if (achievements_on())
-		achievements_write_name();
 	data_iterator_new(&iterator, player_data);
 	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{

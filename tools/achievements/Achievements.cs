@@ -7,7 +7,9 @@
 //    (port/linux/game/achievements.c). This program watches that file and shows the
 //    "Achievement unlocked" pop-up with a sound.
 //  * Opened normally it shows your achievement list (37 achievements, 780G, Data.cs).
-//  * The name in the list's header is the one the game writes to achievements_name.txt beside the log.
+//  * The list: up and down (keys, D-pad, left stick) move the selection, Page Up / Page Down and the
+//    triggers a page, left and right the order, Tab and the bumpers the filter, Escape / B / Back closes it.
+//    scroll.wav plays as the selection moves, filter.wav as the order or filter changes.
 //  * Pictures: any picture named after the achievement in an "Achievement Icons" folder next to this
 //    program or the game is used, else the one built in from assets\icons\<number>.png (Build.bat).
 //
@@ -178,22 +180,8 @@ namespace OpenCEAchievements
             return AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
         }
 
-        // The name shown in the list's header: the game's first player's (achievements_name.txt beside
-        // the log), else "Player".
-        public static string Gamertag()
-        {
-            foreach (var root in SaveRoots)
-            {
-                string p = Path.Combine(Path.Combine(root, "u"), "achievements_name.txt");
-                try
-                {
-                    if (!File.Exists(p)) continue;
-                    foreach (var line in File.ReadAllLines(p)) { var t = line.Trim(); if (t.Length > 0) return t; }
-                }
-                catch { }
-            }
-            return "Player";
-        }
+        // The title of the list's header.
+        public static string Gamertag() { return "Achievements"; }
 
         // Gamerpic.png (or .jpg, .bmp) next to this program, if you put one there.
         public static Image Gamerpic()
@@ -238,6 +226,97 @@ namespace OpenCEAchievements
                 }
             }
             catch { return null; }
+        }
+    }
+
+    // The list's sounds: scroll.wav when the selection moves, filter.wav when the order or the filter
+    // changes. Each is a file of that name next to this program, else the one built in (assets\, Build.bat).
+    static class Sfx
+    {
+        static readonly Dictionary<string, System.Media.SoundPlayer> players = new Dictionary<string, System.Media.SoundPlayer>();
+
+        static System.Media.SoundPlayer Get(string name)
+        {
+            System.Media.SoundPlayer player;
+            if (players.TryGetValue(name, out player)) return player;
+            player = null;
+            try
+            {
+                string file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, name);
+                Stream data = null;
+                if (File.Exists(file)) data = new MemoryStream(File.ReadAllBytes(file));
+                else
+                {
+                    using (var src = Res.Open(name))
+                        if (src != null) { var copy = new MemoryStream(); src.CopyTo(copy); copy.Position = 0; data = copy; }
+                }
+                if (data != null) { player = new System.Media.SoundPlayer(data); player.Load(); }
+            }
+            catch { player = null; }
+            players[name] = player;
+            return player;
+        }
+
+        public static void Play(string name)
+        {
+            var player = Get(name);
+            if (player == null) return;
+            try { player.Stop(); player.Play(); } catch { }
+        }
+
+        public static void Scroll() { Play("scroll.wav"); }
+        public static void Filter() { Play("filter.wav"); }
+    }
+
+    // Xbox controllers through XInput (xinput1_4.dll, else xinput9_1_0.dll): every connected one's buttons
+    // together, with the left stick's directions as the D-pad's and the triggers as two more buttons.
+    static class Pad
+    {
+        public const int Up = 0x1, Down = 0x2, Left = 0x4, Right = 0x8, Start = 0x10, Back = 0x20,
+            LB = 0x100, RB = 0x200, A = 0x1000, B = 0x2000, X = 0x4000, Y = 0x8000, LT = 0x10000, RT = 0x20000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct XInputState
+        {
+            public uint Packet;
+            public ushort Buttons;
+            public byte LeftTrigger, RightTrigger;
+            public short LeftX, LeftY, RightX, RightY;
+        }
+
+        [DllImport("xinput1_4.dll", EntryPoint = "XInputGetState")] static extern uint GetState14(uint index, out XInputState state);
+        [DllImport("xinput9_1_0.dll", EntryPoint = "XInputGetState")] static extern uint GetState910(uint index, out XInputState state);
+
+        static int dll;   // 0: xinput1_4, 1: xinput9_1_0, 2: none
+        const short StickDeadZone = 16000;
+        const byte TriggerThreshold = 100;
+
+        static bool Get(uint index, out XInputState state)
+        {
+            state = new XInputState();
+            while (dll < 2)
+            {
+                try { return (dll == 0 ? GetState14(index, out state) : GetState910(index, out state)) == 0; }
+                catch (DllNotFoundException) { dll++; }
+                catch (EntryPointNotFoundException) { dll++; }
+            }
+            return false;
+        }
+
+        public static int Read()
+        {
+            int held = 0;
+            for (uint i = 0; i < 4; i++)
+            {
+                XInputState st;
+                if (!Get(i, out st)) continue;
+                held |= st.Buttons;
+                if (st.LeftY > StickDeadZone) held |= Up;
+                if (st.LeftY < -StickDeadZone) held |= Down;
+                if (st.LeftTrigger > TriggerThreshold) held |= LT;
+                if (st.RightTrigger > TriggerThreshold) held |= RT;
+            }
+            return held;
         }
     }
 
@@ -983,10 +1062,48 @@ namespace OpenCEAchievements
             listView.Dock = DockStyle.Fill;
             Controls.Add(listView);
             Controls.Add(header);
-            header.SortChanged += delegate { listView.SortMode = header.Sort; };
-            header.FilterChanged += delegate { listView.Filter = header.Show; };
-            KeyDown += delegate(object s, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
+            header.SortChanged += delegate { listView.SortMode = header.Sort; Sfx.Filter(); };
+            header.FilterChanged += delegate { listView.Filter = header.Show; Sfx.Filter(); };
+            KeyDown += delegate(object s, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Escape) Hide();
+                else if (e.KeyCode == Keys.Left) { header.CycleSort(-1); e.Handled = true; }
+                else if (e.KeyCode == Keys.Right) { header.CycleSort(1); e.Handled = true; }
+            };
+            pad.Interval = 30;
+            pad.Tick += delegate { PadTick(); };
+            pad.Start();
             Refresh(store);
+        }
+
+        // ---- the controller: up and down (D-pad or left stick) move the selection, the triggers a page,
+        // left and right the order, the bumpers the filter, B or Back closes the list
+        readonly System.Windows.Forms.Timer pad = new System.Windows.Forms.Timer();
+        int padHeld;
+        DateTime padRepeat;
+
+        void PadTick()
+        {
+            if (!Visible || WindowState == FormWindowState.Minimized || Form.ActiveForm != this) { padHeld = Pad.Read(); return; }
+            int held = Pad.Read(), pressed = held & ~padHeld;
+            const int Repeating = Pad.Up | Pad.Down | Pad.LT | Pad.RT;
+            if ((held & Repeating) != 0 && (held & Repeating) == (padHeld & Repeating) && DateTime.Now >= padRepeat)
+            {
+                pressed |= held & Repeating;
+                padRepeat = DateTime.Now.AddMilliseconds(90);
+            }
+            else if ((pressed & Repeating) != 0) padRepeat = DateTime.Now.AddMilliseconds(380);
+            padHeld = held;
+            if (pressed == 0) return;
+            if ((pressed & (Pad.B | Pad.Back)) != 0) { Hide(); return; }
+            if ((pressed & Pad.Up) != 0) listView.MoveSelection(-1, false);
+            if ((pressed & Pad.Down) != 0) listView.MoveSelection(1, false);
+            if ((pressed & Pad.LT) != 0) listView.MoveSelection(-1, true);
+            if ((pressed & Pad.RT) != 0) listView.MoveSelection(1, true);
+            if ((pressed & Pad.Left) != 0) header.CycleSort(-1);
+            if ((pressed & Pad.Right) != 0) header.CycleSort(1);
+            if ((pressed & Pad.LB) != 0) header.CycleShow(-1);
+            if ((pressed & Pad.RB) != 0) header.CycleShow(1);
         }
 
         public void Refresh(Store store)
@@ -1016,6 +1133,13 @@ namespace OpenCEAchievements
             if (ht != 0) m.Result = (IntPtr)ht;
         }
 
+        protected override bool ProcessDialogKey(Keys keyData)
+        {
+            // (Tab and the arrows go to the list's own handling, not to moving the focus)
+            if ((keyData & Keys.KeyCode) == Keys.Tab) { header.CycleShow((keyData & Keys.Shift) != 0 ? -1 : 1); return true; }
+            return base.ProcessDialogKey(keyData);
+        }
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             // Closing the window only hides it while the pop-up watcher is running.
@@ -1034,7 +1158,7 @@ namespace OpenCEAchievements
         public SortBy Sort = SortBy.Game;
         public event EventHandler FilterChanged;
         public ShowFilter Show = ShowFilter.All;
-        string tag = "Player";
+        string tag = "Achievements";
         Image pic;
         static Image tile;
         int count, total, score, max;
@@ -1054,6 +1178,19 @@ namespace OpenCEAchievements
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
             Cursor = GameCursor.Arrow;
+        }
+
+        // the next or previous order, or filter (keyboard and controller)
+        public void CycleSort(int step)
+        {
+            Sort = (SortBy)(((int)Sort + step + 3) % 3); Invalidate();
+            if (SortChanged != null) SortChanged(this, EventArgs.Empty);
+        }
+
+        public void CycleShow(int step)
+        {
+            Show = (ShowFilter)(((int)Show + step + 3) % 3); Invalidate();
+            if (FilterChanged != null) FilterChanged(this, EventArgs.Empty);
         }
 
         public void Set(Store s)
@@ -1127,8 +1264,8 @@ namespace OpenCEAchievements
             for (int i = 0; i < tabs.Length; i++)
             {
                 if (!tabs[i].Contains(e.Location)) continue;
-                if (i < 3) { Sort = (SortBy)i; Invalidate(); if (SortChanged != null) SortChanged(this, EventArgs.Empty); }
-                else { Show = (ShowFilter)(i - 3); Invalidate(); if (FilterChanged != null) FilterChanged(this, EventArgs.Empty); }
+                if (i < 3) { if ((int)Sort != i) { Sort = (SortBy)i; Invalidate(); if (SortChanged != null) SortChanged(this, EventArgs.Empty); } }
+                else if ((int)Show != i - 3) { Show = (ShowFilter)(i - 3); Invalidate(); if (FilterChanged != null) FilterChanged(this, EventArgs.Empty); }
                 return;
             }
             // anywhere else on the header moves the window
@@ -1161,6 +1298,7 @@ namespace OpenCEAchievements
             g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
             using (var b = new LinearGradientBrush(ClientRectangle, Theme.BgTop, Color.FromArgb(9, 18, 30), LinearGradientMode.Vertical))
                 g.FillRectangle(b, ClientRectangle);
+            DrawBackground(g);
 
             int m = Theme.S(22), ps = Theme.S(96);
             var pr = new Rectangle(m, m, ps, ps);
@@ -1175,7 +1313,7 @@ namespace OpenCEAchievements
                 }
                 else
                 {
-                    // No gamer picture: the game's tile (assets\tile.png, built in), else the program's icon.
+                    // No gamer picture: the tile (assets\tile.png, built in), else the program's icon.
                     if (tile == null) tile = Res.Image("tile.png");
                     if (tile == null) tile = Res.AppIcon().ToBitmap();
                     if (tile != null)
@@ -1235,6 +1373,24 @@ namespace OpenCEAchievements
             }
             using (var pen = new Pen(Theme.Frame, 1)) g.DrawLine(pen, 0, Height - 1, Width, Height - 1);
             DrawButtons(g);
+        }
+
+        // The header's picture (assets\header.png): as wide as the header, the band of it at BackgroundAnchor
+        // of its height shown, a little darkened so the text stays clear.
+        static Image background;
+        static bool backgroundLoaded;
+        const float BackgroundAnchor = 0.72f;
+
+        void DrawBackground(Graphics g)
+        {
+            if (!backgroundLoaded) { background = Res.Image("header.png"); backgroundLoaded = true; }
+            if (background == null) return;
+            float scale = Math.Max((float)Width / background.Width, (float)Height / background.Height);
+            float w = background.Width * scale, h = background.Height * scale;
+            float y = Math.Max(Height - h, Math.Min(0, Height / 2f - h * BackgroundAnchor));
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.DrawImage(background, (Width - w) / 2, y, w, h);
+            using (var b = new SolidBrush(Color.FromArgb(64, 9, 18, 30))) g.FillRectangle(b, ClientRectangle);
         }
 
         protected override void Dispose(bool disposing)
@@ -1333,7 +1489,9 @@ namespace OpenCEAchievements
                 else { scroll += (e.Y < t.Y ? -1 : 1) * Height; Clamp(); Invalidate(); }
                 return;
             }
-            sel = RowAt(e.Y); Invalidate();
+            int row = RowAt(e.Y);
+            if (row >= 0 && row != sel) Sfx.Scroll();
+            sel = row; Invalidate();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -1354,21 +1512,38 @@ namespace OpenCEAchievements
 
         protected override bool IsInputKey(Keys k)
         {
-            return k == Keys.Up || k == Keys.Down || k == Keys.PageUp || k == Keys.PageDown || k == Keys.Home || k == Keys.End || base.IsInputKey(k);
+            return k == Keys.Up || k == Keys.Down || k == Keys.Left || k == Keys.Right || k == Keys.PageUp || k == Keys.PageDown ||
+                k == Keys.Home || k == Keys.End || base.IsInputKey(k);
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
         {
             int n = rows.Count;
             if (n == 0) return;
+            if (e.KeyCode == Keys.Down) MoveSelection(1, false);
+            else if (e.KeyCode == Keys.Up) MoveSelection(-1, false);
+            else if (e.KeyCode == Keys.PageDown) MoveSelection(1, true);
+            else if (e.KeyCode == Keys.PageUp) MoveSelection(-1, true);
+            else if (e.KeyCode == Keys.Home) SelectRow(0);
+            else if (e.KeyCode == Keys.End) SelectRow(n - 1);
+        }
+
+        // a row, or a page of them, up (-1) or down (1), brought into view; the scroll sound when it moved
+        public void MoveSelection(int step, bool page)
+        {
             int per = Math.Max(1, Height / (RowH + Gap));
-            if (e.KeyCode == Keys.Down) sel = Math.Min(n - 1, sel + 1);
-            else if (e.KeyCode == Keys.Up) sel = Math.Max(0, sel - 1);
-            else if (e.KeyCode == Keys.PageDown) sel = Math.Min(n - 1, sel + per);
-            else if (e.KeyCode == Keys.PageUp) sel = Math.Max(0, sel - per);
-            else if (e.KeyCode == Keys.Home) sel = 0;
-            else if (e.KeyCode == Keys.End) sel = n - 1;
-            else return;
+            if (rows.Count == 0) return;
+            if (sel < 0) { SelectRow(step > 0 ? 0 : rows.Count - 1); return; }
+            SelectRow(sel + step * (page ? per : 1));
+        }
+
+        void SelectRow(int row)
+        {
+            int n = rows.Count;
+            if (n == 0) return;
+            row = Math.Max(0, Math.Min(n - 1, row));
+            if (row != sel) Sfx.Scroll();
+            sel = row;
             int top = Edge + sel * (RowH + Gap);
             if (top < scroll) scroll = top - Edge;
             if (top + RowH > scroll + Height) scroll = top + RowH - Height + Edge;

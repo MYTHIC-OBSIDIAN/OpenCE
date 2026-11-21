@@ -32,7 +32,9 @@ if exist "assets\app.ico" (
   set "ICON=/win32icon:..\..\port\windows\opence-icon.ico"
   set "RES=!RES! /resource:..\..\port\windows\opence-icon.ico,app.ico"
 )
-for %%F in (assets\*.png assets\*.mp3 assets\*.cur) do set "RES=!RES! /resource:%%F,%%~nxF"
+for %%F in (assets\*.png assets\*.mp3 assets\*.wav assets\*.cur) do set "RES=!RES! /resource:%%F,%%~nxF"
+rem (the cursor: the game's menu cursor, unless assets has one)
+if not exist "assets\cursor.cur" if exist "cursor.cur" set "RES=!RES! /resource:cursor.cur,cursor.cur"
 for %%F in (assets\icons\*.png) do set "RES=!RES! /resource:%%F,icons.%%~nxF"
 
 "%CSC%" /nologo /target:winexe /optimize+ /platform:anycpu ^

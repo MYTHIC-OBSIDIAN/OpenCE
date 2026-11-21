@@ -12,7 +12,8 @@
   sniper zoom labels (2x, 10x) use artwork supplied by the project owner
   (`port/assets/hud/corrections`); original artist attribution is unverified.
 - **The menus' mouse cursor** (the blue arrow the menus show for the
-  mouse): by pugzysixtyfour (`port/assets/cursor`).
+  mouse): by pugzysixtyfour (`port/assets/cursor`; `tools/achievements/cursor.cur`
+  is made from it).
 
 ## Third-party art
 
