@@ -105,6 +105,11 @@ long player_ui_get_player1_last_used_profile_index(
 	void);
 void player_ui_fast_setup_network_server(
 	void);
+/* port: a built-in profile's name (DEFAULT, INVERTED) as the menus show
+it, when it has none of its own */
+void player_ui_port_default_profile_name(
+	struct player_profile *profile);
+
 boolean player_ui_edit_profile_is_default_profile(
 	void);
 void player_ui_remember_player1_profile(

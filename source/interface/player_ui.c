@@ -1300,6 +1300,32 @@ static void set_local_player_controls_from_player_profile(
 	return;
 }
 
+/* port: a built-in profile (DEFAULT, INVERTED) has no name of its own: the
+menus show the names of default_player_profile_names. The player playing on
+it is named so, as the menus show it, and plays multiplayer by that name,
+which the name check (player_name_valid) asks of a network game's player */
+void player_ui_port_default_profile_name(
+	struct player_profile *profile)
+{
+	static wchar_t const *const fallback_names[NUMBER_OF_DEFAULT_PROFILES] = { L"Default", L"Inverted" };
+	wchar_t const *name = NULL;
+	long default_index;
+	long string_list_index;
+
+	if (!TEST_FLAG(profile->flags, _player_profile_default_profile_bit) || profile->player_name[0])
+		return;
+	default_index = profile->flags >> 8;
+	string_list_index = tag_loaded(UNICODE_STRING_LIST_TAG, "ui\\shell\\strings\\default_player_profile_names");
+	if (string_list_index != NONE)
+		name = unicode_string_list_get_string(string_list_index, (short)default_index);
+	if ((!name || !name[0]) && default_index >= 0 && default_index < NUMBER_OF_DEFAULT_PROFILES)
+		name = fallback_names[default_index];
+	if (!name)
+		return;
+	ustrncpy(profile->player_name, name, MAXIMUM_PLAYER_PROFILE_NAME_LENGTH - 1);
+	profile->player_name[MAXIMUM_PLAYER_PROFILE_NAME_LENGTH - 1] = 0;
+}
+
 void player_ui_set_active_player_profile(
 	short local_player_index,
 	long profile_index,
@@ -1317,6 +1343,8 @@ void player_ui_set_active_player_profile(
 		&player_ui_globals.local_players[local_player_index].profile,
 		profile,
 		sizeof(*profile));
+	/* port: a built-in profile's player named as the menus show it */
+	player_ui_port_default_profile_name(&player_ui_globals.local_players[local_player_index].profile);
 	set_local_player_controls_from_player_profile(local_player_index);
 	return;
 }

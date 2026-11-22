@@ -4115,7 +4115,9 @@ static boolean player_profile_set_for_game_1wide(
 	if (player_profile_get(available_profiles[spinner_list->data3C.selected_index], &profile))
 	{
 		/* port: not a profile whose name the host's ban command could not
-		name (one made before names were checked: player_name_valid) */
+		name (one made before names were checked: player_name_valid); a
+		built-in profile plays by the name the menus show */
+		player_ui_port_default_profile_name(&profile);
 		if (!player_name_valid(profile.player_name, NUMBEROF(profile.player_name)))
 		{
 			display_error_text_deferred(
@@ -6203,6 +6205,8 @@ boolean ui_widget_port_multiplayer_player(
 
 	if (controller_index < 0 || controller_index >= 4 || !player_profile_get(profile_index, &profile))
 		return FALSE;
+	/* port: a built-in profile plays by the name the menus show */
+	player_ui_port_default_profile_name(&profile);
 	if (!player_name_valid(profile.player_name, NUMBEROF(profile.player_name)))
 	{
 		display_error_text_deferred(
