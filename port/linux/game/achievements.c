@@ -265,6 +265,12 @@ static struct
 	short warthog_pelican_name;
 	/* Keyes: the Elites its ending cinematic places (not the level's) */
 	long keyes_outro_encounter;
+	/* Keyes: the Elites its intro cinematic places to fight the Flood for
+	the camera and erases after it (enc3_1_intro and enc3_2_intro: all of
+	enc3_1_cov, and enc3_2_cov's intro squad) */
+	long keyes_intro_encounter;
+	long keyes_intro_squad_encounter;
+	short keyes_intro_squad;
 } achievement_names;
 
 /* each local player's profile's log, and which numbers it has (read when
@@ -741,6 +747,29 @@ static short achievement_sniper_rounds(
 
 static boolean achievements_unit_in_encounter(long unit_index, long encounter_index);
 
+/* Keyes: an Elite of its cinematics', the intro's or the ending's, not the
+level's (Tying Up Loose Ends) */
+static boolean achievements_keyes_cinematic_elite(
+	long unit_index)
+{
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get(unit_index);
+	struct actor_datum *actor;
+
+	if (achievements_unit_in_encounter(unit_index, achievement_names.keyes_outro_encounter) ||
+		achievements_unit_in_encounter(unit_index, achievement_names.keyes_intro_encounter))
+	{
+		return TRUE;
+	}
+	if (!unit || !TEST_FLAG(_object_mask_unit, unit->object.type) || unit->unit.actor_index == NONE ||
+		achievement_names.keyes_intro_squad == NONE)
+	{
+		return FALSE;
+	}
+	actor = actor_try_and_get(unit->unit.actor_index);
+	return actor && achievements_unit_in_encounter(unit_index, achievement_names.keyes_intro_squad_encounter) &&
+		actor->meta.squad_index == achievement_names.keyes_intro_squad;
+}
+
 /* for debug.txt: a unit's encounter and squad (as the scenario names them),
 its character and where it is */
 static void achievements_unit_describe(
@@ -792,7 +821,7 @@ static boolean achievements_elites_all_dead(
 	{
 		if (tag_in_folder(object->definition_index, "characters\\elite\\") &&
 			!TEST_FLAG(object->object.damage_flags, _object_dead_bit) &&
-			!achievements_unit_in_encounter(iterator.index, achievement_names.keyes_outro_encounter))
+			!achievements_keyes_cinematic_elite(iterator.index))
 		{
 			char text[256];
 
@@ -853,6 +882,9 @@ static void achievements_find_names(
 	achievement_names.beach_marine_encounter = NONE;
 	achievement_names.warthog_pelican_name = NONE;
 	achievement_names.keyes_outro_encounter = NONE;
+	achievement_names.keyes_intro_encounter = NONE;
+	achievement_names.keyes_intro_squad_encounter = NONE;
+	achievement_names.keyes_intro_squad = NONE;
 	if (!scenario)
 		return;
 	switch (level)
@@ -886,6 +918,12 @@ static void achievements_find_names(
 		/* (d20's cinematic_outro places outro_cov's Elites just before the
 		level is won) */
 		achievement_names.keyes_outro_encounter = achievements_encounter_named("outro_cov");
+		/* (and the intro's: mission's enc3_1_intro_cleanup and
+		enc3_2_intro_cleanup erase them alive when it ends) */
+		achievement_names.keyes_intro_encounter = achievements_encounter_named("enc3_1_cov");
+		achievement_names.keyes_intro_squad_encounter = achievements_encounter_named("enc3_2_cov");
+		achievement_names.keyes_intro_squad =
+			achievements_squad_named(achievement_names.keyes_intro_squad_encounter, "intro");
 		break;
 	}
 }
@@ -1571,7 +1609,7 @@ void achievements_object_deleted(
 
 	/* Keyes: an Elite taken out of the level alive voids Tying Up Loose Ends */
 	if (!level || level->level != _level_keyes || level->elite_left_alive || !object_is_elite(object_index) ||
-		achievements_unit_in_encounter(object_index, achievement_names.keyes_outro_encounter))
+		achievements_keyes_cinematic_elite(object_index))
 	{
 		return;
 	}

@@ -607,7 +607,11 @@ its players' achievements; split screen and co-op count as cooperative.
 - **Tying Up Loose Ends**: Keyes on Heroic or harder with every Elite dead
   when it ends, whoever killed them; an Elite taken out of the level alive
   (deleted, unloaded) loses it. The Flood's Elite combat forms do not count,
-  nor do the Elites the ending cinematic places (`outro_cov`).
+  nor do the Elites the cinematics place: the intro's, which fight the
+  Flood for the camera and are erased when it ends (`enc3_1_cov`, and
+  `enc3_2_cov`'s `intro` squad), and the ending's (`outro_cov`). The scripts
+  erase the earlier areas' encounters as the player moves on; debug.txt
+  names an Elite erased alive (its encounter, squad and place).
 - **Popcorn.gif**: 100 Flood infection forms killed in Keyes on Heroic or
   harder.
 - **All According to Plan**: Truth and Reconciliation's first encounter,

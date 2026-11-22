@@ -650,5 +650,13 @@ def test_the_levels_moments_come_from_their_scripts():
 def test_keyes_ending_cinematics_elites_are_not_the_levels():
     module = source("port/linux/game/achievements.c")
     assert 'achievements_encounter_named("outro_cov")' in function(module, "achievements_find_names")
-    assert "!achievements_unit_in_encounter(iterator.index, achievement_names.keyes_outro_encounter)" in function(module, "achievements_elites_all_dead")
-    assert "achievements_unit_in_encounter(object_index, achievement_names.keyes_outro_encounter)" in function(module, "achievements_object_deleted")
+    assert "!achievements_keyes_cinematic_elite(iterator.index)" in function(module, "achievements_elites_all_dead")
+    assert "achievements_keyes_cinematic_elite(object_index)" in function(module, "achievements_object_deleted")
+    # (the intro's Elites, erased alive when it ends, are its too)
+    cinematic = function(module, "achievements_keyes_cinematic_elite")
+    assert "achievement_names.keyes_outro_encounter" in cinematic
+    assert "achievement_names.keyes_intro_encounter" in cinematic
+    assert "actor->meta.squad_index == achievement_names.keyes_intro_squad" in cinematic
+    names = function(module, "achievements_find_names")
+    assert 'achievements_encounter_named("enc3_1_cov")' in names
+    assert 'achievements_squad_named(achievement_names.keyes_intro_squad_encounter, "intro")' in names
