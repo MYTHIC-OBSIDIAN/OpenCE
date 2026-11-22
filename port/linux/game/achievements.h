@@ -50,5 +50,8 @@ void achievements_object_deleted(long object_index);
 /* network co-op client: its host says a player earned an achievement
 (port/linux/game/network_coop.c) */
 void achievements_network_earned(long player_index, short achievement);
+/* player 1's profile name, written for the companion program when it changes
+(player_ui.c's active profile) */
+void achievements_profile_name(wchar_t const *name);
 
 #endif // __ACHIEVEMENTS_H

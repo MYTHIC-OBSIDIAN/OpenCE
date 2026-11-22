@@ -8,8 +8,11 @@ the list of all 37 (780 points) when it is opened.
 The game writes each achievement once to `achievements.log` in its save
 root's `u` folder (`savegame\u\` next to `halo.exe`, `paths.saves`, or
 `%APPDATA%\halo\u\`), 16 bytes a record: the achievement's number (`Data.cs`),
-0, and a Windows FILETIME. The program reads every one of those places. A
-`Gamerpic.png` next to the program is the picture in the list's header.
+0, and a Windows FILETIME. The program reads every one of those places. The
+list's header is titled with the name of the profile player 1 plays on, which
+the game writes to `achievements_profile.txt` (UTF-8) in the same `u` folder
+as it changes ("Achievements" until then). A `Gamerpic.png` next to the
+program is the picture in the list's header.
 
 The list works with the mouse, the keyboard and an Xbox controller: up and
 down (arrow keys, D-pad, left stick) move the selection, Page Up / Page Down
@@ -35,7 +38,7 @@ one is drawn plainly:
 
 | File | What |
 | --- | --- |
-| `assets\icons\<number>.png` | Each achievement's picture, by its number in `Data.cs` (1 to 37) |
+| `assets\icons\<number>.png` | Each achievement's picture, by its number in `Data.cs` (1 to 37), with a transparent background (`tools\achievements\clear_icons.py` takes the 360 icons' black off) |
 | `assets\toast.png`, `assets\toast_globe.png` | The pop-up's bar |
 | `assets\gscore.png` | The points symbol |
 | `assets\min_*.png`, `assets\close_*.png` | The list window's buttons (`normal`, `focus`, `press`) |

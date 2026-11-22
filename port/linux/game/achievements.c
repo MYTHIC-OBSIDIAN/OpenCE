@@ -38,6 +38,7 @@ whose clients' players' achievements it sends them (network_coop.c).
 #include "items/equipment.h"
 #include "items/equipment_definitions.h"
 #include "items/weapons.h"
+#include "saved games/player_profile.h"
 #include "main/main.h"
 #include "memory/data.h"
 #include "network_coop.h"
@@ -166,6 +167,8 @@ started within 21 minutes of the level's start */
 
 /* the log in the save root's u folder (platform_translate_path) */
 #define ACHIEVEMENTS_LOG "u:\\achievements.log"
+/* player 1's profile name, for the companion program (achievements_profile_name) */
+#define ACHIEVEMENTS_PROFILE "u:\\achievements_profile.txt"
 
 /* a Windows FILETIME's 100 ns from 1601 to 1970 */
 #define FILETIME_UNIX_EPOCH 116444736000000000ULL
@@ -384,6 +387,67 @@ static void achievements_check_campaign(
 		if (all)
 			achievements_record(earned[index]);
 	}
+}
+
+/* player 1's profile name, for the companion program's header: the name
+of the profile in play, written to the u folder (UTF-8) when it changes */
+void achievements_profile_name(
+	wchar_t const *name)
+{
+	static unsigned char written[64];
+	static boolean has_written = FALSE;
+	unsigned char text[64];
+	long length = 0;
+	long index;
+	FILE *file;
+
+	if (!achievements_on() || !name)
+		return;
+	for (index = 0; index < MAXIMUM_PLAYER_PROFILE_NAME_LENGTH && name[index] && length < (long)sizeof(text) - 5; index++)
+	{
+		unsigned long code = (unsigned long)name[index] & 0xFFFFUL;
+
+		/* (a pair of UTF-16 surrogates, one character) */
+		if (code >= 0xD800 && code < 0xDC00 && index + 1 < MAXIMUM_PLAYER_PROFILE_NAME_LENGTH &&
+			((unsigned long)name[index + 1] & 0xFFFFUL) >= 0xDC00 && ((unsigned long)name[index + 1] & 0xFFFFUL) < 0xE000)
+		{
+			code = 0x10000UL + ((code - 0xD800) << 10) + (((unsigned long)name[index + 1] & 0xFFFFUL) - 0xDC00);
+			index++;
+		}
+		if (code < 0x80)
+			text[length++] = (unsigned char)code;
+		else if (code < 0x800)
+		{
+			text[length++] = (unsigned char)(0xC0 | (code >> 6));
+			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+		}
+		else if (code < 0x10000)
+		{
+			text[length++] = (unsigned char)(0xE0 | (code >> 12));
+			text[length++] = (unsigned char)(0x80 | ((code >> 6) & 0x3F));
+			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+		}
+		else
+		{
+			text[length++] = (unsigned char)(0xF0 | (code >> 18));
+			text[length++] = (unsigned char)(0x80 | ((code >> 12) & 0x3F));
+			text[length++] = (unsigned char)(0x80 | ((code >> 6) & 0x3F));
+			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+		}
+	}
+	text[length] = 0;
+	if (!length || (has_written && !strcmp((char const *)written, (char const *)text)))
+		return;
+	file = fopen(ACHIEVEMENTS_PROFILE, "wb");
+	if (!file)
+	{
+		error(_error_silent, "achievements: could not write %s", ACHIEVEMENTS_PROFILE);
+		return;
+	}
+	fwrite(text, (size_t)length, 1, file);
+	fclose(file);
+	csmemcpy(written, text, (size_t)length + 1);
+	has_written = TRUE;
 }
 
 /* this machine's log gets the number, once */

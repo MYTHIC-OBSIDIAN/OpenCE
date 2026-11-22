@@ -181,8 +181,29 @@ namespace OpenCEAchievements
             return AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
         }
 
-        // The title of the list's header.
-        public static string Gamertag() { return "Achievements"; }
+        // The title of the list's header: the name of the profile player 1 is playing on, which the game
+        // writes to achievements_profile.txt in its save root's u folder (the newest, of the save roots),
+        // else "Achievements".
+        public static string Gamertag()
+        {
+            string name = null;
+            DateTime newest = DateTime.MinValue;
+            foreach (var root in SaveRoots)
+            {
+                try
+                {
+                    string p = Path.Combine(Path.Combine(root, "u"), "achievements_profile.txt");
+                    if (!File.Exists(p)) continue;
+                    DateTime when = File.GetLastWriteTimeUtc(p);
+                    if (when <= newest) continue;
+                    string text = File.ReadAllText(p, System.Text.Encoding.UTF8).Trim();
+                    if (text.Length == 0) continue;
+                    name = text; newest = when;
+                }
+                catch { }
+            }
+            return name ?? "Achievements";
+        }
 
         // Gamerpic.png (or .jpg, .bmp) next to this program, if you put one there.
         public static Image Gamerpic()
@@ -723,8 +744,17 @@ namespace OpenCEAchievements
             if (!Program.Background) ShowList();
         }
 
+        string shownTag;
+
         void Tick()
         {
+            // the profile in play changed in the game: the list's header shows it
+            string tag = Game.Gamertag();
+            if (tag != shownTag)
+            {
+                shownTag = tag;
+                if (list != null && !list.IsDisposed) list.RefreshHeader(store);
+            }
             foreach (var a in store.Poll(true)) pending.Enqueue(a);
             if (pending.Count > 0 && (toast == null || toast.IsDisposed))
             {
@@ -1112,6 +1142,9 @@ namespace OpenCEAchievements
             header.Set(store);
             listView.Set(store.All);
         }
+
+        // the header alone (the profile's name), the list as it is
+        public void RefreshHeader(Store store) { header.Set(store); }
 
         protected override CreateParams CreateParams
         {

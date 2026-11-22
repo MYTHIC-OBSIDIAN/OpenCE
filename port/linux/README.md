@@ -557,7 +557,9 @@ The campaign has the 37 Xbox-style achievements of Halo: Combat Evolved
 (780 points). The game decides them (`port/linux/game/achievements.c`) and
 writes each one once, when it is earned, to `achievements.log` in the save
 root's `u` folder: 16 bytes a record, the achievement's number (1 to 37, in
-the list's order), 0, and a Windows FILETIME. Numbers from 100 record a
+the list's order), 0, and a Windows FILETIME. Next to it, `achievements_profile.txt`
+holds the name of player 1's profile (UTF-8, as it changes), the companion
+program's header. Numbers from 100 record a
 level finished on a difficulty (100 + level × 4 + difficulty), from which
 Birth of a Spartan, Believe in a Hero and Living Legend are decided; a
 harder difficulty counts for the easier ones. `tools/achievements` is the

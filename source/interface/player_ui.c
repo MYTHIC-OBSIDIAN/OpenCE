@@ -162,6 +162,7 @@ symbols in this file:
 #include "main/main.h"
 #include "tag_files/tag_groups.h"
 #include "player_ui.h"
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 #include "mcc_ui.h" /* port: port/linux/game/mcc_ui.c */
 
 /* ---------- constants */
@@ -1345,6 +1346,10 @@ void player_ui_set_active_player_profile(
 		sizeof(*profile));
 	/* port: a built-in profile's player named as the menus show it */
 	player_ui_port_default_profile_name(&player_ui_globals.local_players[local_player_index].profile);
+	/* port: player 1's profile name for the achievements' companion program
+	(port/linux/game/achievements.c) */
+	if (local_player_index == 0)
+		achievements_profile_name(player_ui_globals.local_players[0].profile.player_name);
 	set_local_player_controls_from_player_profile(local_player_index);
 	return;
 }
