@@ -2,8 +2,12 @@
 ACHIEVEMENTS.C
 
 The Xbox-style achievements of Halo: Combat Evolved's campaign, earned in
-the game and written to achievements.log in the save root's u folder, which
-a companion program (tools/achievements) shows as they come.
+the game and written to its profile's achievements.log (the profile's folder
+of the save root's u folder; a built-in profile's, Default or Inverted, is
+the u folder's achievements_default_<n>.log), which a companion program
+(tools/achievements) shows as they come. Each local player earns them for
+the profile they play on; achievements_profile.txt in the u folder names
+player 1's profile and the local players' logs, for the program.
 
 Each record of the log is 16 bytes: the achievement's number (a 32-bit
 little-endian integer), 0, and when it was earned (a Windows FILETIME, 64
@@ -39,6 +43,9 @@ whose clients' players' achievements it sends them (network_coop.c).
 #include "items/equipment_definitions.h"
 #include "items/weapons.h"
 #include "saved games/player_profile.h"
+#include "saved games/saved_game_files.h"
+#include "interface/player_ui.h"
+#include "tag_files/files.h"
 #include "main/main.h"
 #include "memory/data.h"
 #include "network_coop.h"
@@ -166,8 +173,13 @@ started within 21 minutes of the level's start */
 #define NEVER_TELL_ME_THE_ODDS_TICKS (60 * TICKS_PER_SECOND)
 
 /* the log in the save root's u folder (platform_translate_path) */
-#define ACHIEVEMENTS_LOG "u:\\achievements.log"
-/* player 1's profile name, for the companion program (achievements_profile_name) */
+/* a profile's log, in its folder; the logs of the built-in profiles; the one
+log of every profile before (moved to the first profile player 1 plays on) */
+#define ACHIEVEMENTS_LOG_NAME "achievements.log"
+#define ACHIEVEMENTS_DEFAULT_LOG "u:\\achievements_default_%d.log"
+#define ACHIEVEMENTS_SHARED_LOG "u:\\achievements.log"
+/* player 1's profile name and the local players' logs, for the companion
+program (achievements_profiles_changed) */
 #define ACHIEVEMENTS_PROFILE "u:\\achievements_profile.txt"
 
 /* a Windows FILETIME's 100 ns from 1601 to 1970 */
@@ -253,9 +265,13 @@ static struct
 	long keyes_outro_encounter;
 } achievement_names;
 
-/* which numbers the log has (read once, then kept up to date) */
-static byte achievements_logged[(ACHIEVEMENT_NUMBERS + 7) / 8];
-static boolean achievements_log_read = FALSE;
+/* each local player's profile's log, and which numbers it has (read when
+the player's profile changes, then kept up to date) */
+static struct
+{
+	char path[MAXIMUM_FILENAME_LENGTH + 32];
+	byte logged[(ACHIEVEMENT_NUMBERS + 7) / 8];
+} achievements_logs[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS];
 
 /* ---------- private code */
 
@@ -323,44 +339,126 @@ static boolean object_is_elite(
 		tag_in_folder(object->definition_index, "characters\\elite\\");
 }
 
-static void achievements_log_read_once(
-	void)
+/* the log of the profile the local player plays on: in the profile's folder,
+or the u folder's for a built-in one; FALSE without a profile */
+static boolean achievements_log_path(
+	short local_player_index,
+	char *path,
+	size_t size)
 {
+	struct player_profile profile;
+	char directory[MAXIMUM_FILENAME_LENGTH + 1];
+	long profile_index;
+	size_t length;
+
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+		return FALSE;
+	profile_index = player_ui_get_active_player_profile_index(local_player_index);
+	if (profile_index == NONE)
+		return FALSE;
+	csmemset(&profile, 0, sizeof(profile));
+	player_ui_get_active_player_profile(local_player_index, &profile);
+	if (TEST_FLAG(profile.flags, _player_profile_default_profile_bit))
+	{
+		snprintf(path, size, ACHIEVEMENTS_DEFAULT_LOG, (int)(profile.flags >> 8));
+		return TRUE;
+	}
+	if (!saved_game_file_get_path_to_enclosing_directory(profile_index, directory) || !directory[0])
+		return FALSE;
+	length = strlen(directory);
+	snprintf(path, size, "%s%s" ACHIEVEMENTS_LOG_NAME, directory,
+		directory[length - 1] == '\\' || directory[length - 1] == '/' ? "" : "\\");
+	return TRUE;
+}
+
+/* the achievements earned before they were kept per profile (the one log
+of every profile) go to the first profile player 1 plays on, and that log
+is emptied */
+static void achievements_move_shared_log(
+	char const *path)
+{
+	FILE *shared;
+	FILE *file;
+	unsigned char record[16];
+	long moved = 0;
+
+	file = fopen(path, "rb");
+	if (file)
+	{
+		fclose(file);
+		return;
+	}
+	shared = fopen(ACHIEVEMENTS_SHARED_LOG, "rb");
+	if (!shared)
+		return;
+	file = fopen(path, "ab");
+	if (!file)
+	{
+		fclose(shared);
+		return;
+	}
+	while (fread(record, sizeof(record), 1, shared) == 1)
+	{
+		fwrite(record, sizeof(record), 1, file);
+		moved++;
+	}
+	fclose(file);
+	fclose(shared);
+	shared = fopen(ACHIEVEMENTS_SHARED_LOG, "wb");
+	if (shared)
+		fclose(shared);
+	error(_error_silent, "achievements: %ld records of the shared log moved to %s", moved, path);
+}
+
+/* the local player's profile's log, read when it is not the one read
+before; NULL without a profile */
+static byte *achievements_logged_for(
+	short local_player_index)
+{
+	char path[MAXIMUM_FILENAME_LENGTH + 32];
 	FILE *file;
 	unsigned char record[16];
 
-	if (achievements_log_read)
-		return;
-	achievements_log_read = TRUE;
-	csmemset(achievements_logged, 0, sizeof(achievements_logged));
-	file = fopen(ACHIEVEMENTS_LOG, "rb");
-	if (!file)
-		return;
-	while (fread(record, sizeof(record), 1, file) == 1)
+	if (!achievements_log_path(local_player_index, path, sizeof(path)))
+		return NULL;
+	if (!strcmp(achievements_logs[local_player_index].path, path))
+		return achievements_logs[local_player_index].logged;
+	csstrncpy(achievements_logs[local_player_index].path, path, sizeof(achievements_logs[local_player_index].path) - 1);
+	achievements_logs[local_player_index].path[sizeof(achievements_logs[local_player_index].path) - 1] = 0;
+	csmemset(achievements_logs[local_player_index].logged, 0, sizeof(achievements_logs[local_player_index].logged));
+	if (local_player_index == 0)
+		achievements_move_shared_log(path);
+	file = fopen(path, "rb");
+	if (file)
 	{
-		unsigned long number = record[0] | (record[1] << 8) | (record[2] << 16) | ((unsigned long)record[3] << 24);
+		while (fread(record, sizeof(record), 1, file) == 1)
+		{
+			unsigned long number = record[0] | (record[1] << 8) | (record[2] << 16) | ((unsigned long)record[3] << 24);
 
-		if (number < ACHIEVEMENT_NUMBERS)
-			achievements_logged[number / 8] |= (byte)(1 << (number % 8));
+			if (number < ACHIEVEMENT_NUMBERS)
+				achievements_logs[local_player_index].logged[number / 8] |= (byte)(1 << (number % 8));
+		}
+		fclose(file);
 	}
-	fclose(file);
+	return achievements_logs[local_player_index].logged;
 }
 
 static boolean achievements_logged_has(
+	byte const *logged,
 	long number)
 {
-	achievements_log_read_once();
-	return number >= 0 && number < ACHIEVEMENT_NUMBERS &&
-		(achievements_logged[number / 8] & (1 << (number % 8))) != 0;
+	return logged && number >= 0 && number < ACHIEVEMENT_NUMBERS &&
+		(logged[number / 8] & (1 << (number % 8))) != 0;
 }
 
-static void achievements_record(long number);
+static void achievements_record(short local_player_index, long number);
 
 /* the campaign's three: every level finished on the difficulty or a harder
 one (Legendary earns Heroic's and Normal's) */
 static void achievements_check_campaign(
-	void)
+	short local_player_index)
 {
+	byte const *logged = achievements_logged_for(local_player_index);
 	static short const earned[] =
 	{
 		ACHIEVEMENT_BIRTH_OF_A_SPARTAN,
@@ -381,29 +479,24 @@ static void achievements_check_campaign(
 			boolean finished = FALSE;
 
 			for (harder = difficulty; harder < NUMBER_OF_GAME_DIFFICULTY_LEVELS && !finished; harder++)
-				finished = achievements_logged_has(ACHIEVEMENT_LEVEL_FINISHED + level * NUMBER_OF_GAME_DIFFICULTY_LEVELS + harder);
+				finished = achievements_logged_has(logged, ACHIEVEMENT_LEVEL_FINISHED + level * NUMBER_OF_GAME_DIFFICULTY_LEVELS + harder);
 			all = finished;
 		}
 		if (all)
-			achievements_record(earned[index]);
+			achievements_record(local_player_index, earned[index]);
 	}
 }
 
-/* player 1's profile name, for the companion program's header: the name
-of the profile in play, written to the u folder (UTF-8) when it changes */
-void achievements_profile_name(
-	wchar_t const *name)
+/* a profile's name in UTF-8 */
+static long achievements_name_utf8(
+	wchar_t const *name,
+	char *text,
+	long size)
 {
-	static unsigned char written[64];
-	static boolean has_written = FALSE;
-	unsigned char text[64];
 	long length = 0;
 	long index;
-	FILE *file;
 
-	if (!achievements_on() || !name)
-		return;
-	for (index = 0; index < MAXIMUM_PLAYER_PROFILE_NAME_LENGTH && name[index] && length < (long)sizeof(text) - 5; index++)
+	for (index = 0; index < MAXIMUM_PLAYER_PROFILE_NAME_LENGTH && name[index] && length < size - 5; index++)
 	{
 		unsigned long code = (unsigned long)name[index] & 0xFFFFUL;
 
@@ -415,28 +508,70 @@ void achievements_profile_name(
 			index++;
 		}
 		if (code < 0x80)
-			text[length++] = (unsigned char)code;
+			text[length++] = (char)code;
 		else if (code < 0x800)
 		{
-			text[length++] = (unsigned char)(0xC0 | (code >> 6));
-			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+			text[length++] = (char)(0xC0 | (code >> 6));
+			text[length++] = (char)(0x80 | (code & 0x3F));
 		}
 		else if (code < 0x10000)
 		{
-			text[length++] = (unsigned char)(0xE0 | (code >> 12));
-			text[length++] = (unsigned char)(0x80 | ((code >> 6) & 0x3F));
-			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+			text[length++] = (char)(0xE0 | (code >> 12));
+			text[length++] = (char)(0x80 | ((code >> 6) & 0x3F));
+			text[length++] = (char)(0x80 | (code & 0x3F));
 		}
 		else
 		{
-			text[length++] = (unsigned char)(0xF0 | (code >> 18));
-			text[length++] = (unsigned char)(0x80 | ((code >> 12) & 0x3F));
-			text[length++] = (unsigned char)(0x80 | ((code >> 6) & 0x3F));
-			text[length++] = (unsigned char)(0x80 | (code & 0x3F));
+			text[length++] = (char)(0xF0 | (code >> 18));
+			text[length++] = (char)(0x80 | ((code >> 12) & 0x3F));
+			text[length++] = (char)(0x80 | ((code >> 6) & 0x3F));
+			text[length++] = (char)(0x80 | (code & 0x3F));
 		}
 	}
 	text[length] = 0;
-	if (!length || (has_written && !strcmp((char const *)written, (char const *)text)))
+	return length;
+}
+
+/* for the companion program, written to the u folder when it changes: the
+name of player 1's profile (its header), then each local player's log (u
+folder's, player 1's first: the list is player 1's, the pop-ups anyone's) */
+void achievements_profiles_changed(
+	void)
+{
+	static char written[1024];
+	char text[1024];
+	char path[MAXIMUM_FILENAME_LENGTH + 32];
+	struct player_profile profile;
+	long length;
+	short local_player_index;
+	FILE *file;
+
+	if (!achievements_on() || player_ui_get_active_player_profile_index(0) == NONE)
+		return;
+	csmemset(&profile, 0, sizeof(profile));
+	player_ui_get_active_player_profile(0, &profile);
+	length = achievements_name_utf8(profile.player_name, text, 64);
+	if (!length)
+		return;
+	for (local_player_index = 0; local_player_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; local_player_index++)
+	{
+		char const *relative;
+
+		if (!achievements_log_path(local_player_index, path, sizeof(path)))
+			continue;
+		/* (as from the u folder) */
+		relative = path;
+		if ((relative[0] == 'u' || relative[0] == 'U') && relative[1] == ':')
+			relative += relative[2] == '\\' || relative[2] == '/' ? 3 : 2;
+		if (length + (long)strlen(relative) + 2 >= (long)sizeof(text))
+			break;
+		text[length++] = '\n';
+		strcpy(text + length, relative);
+		length += (long)strlen(relative);
+	}
+	text[length++] = '\n';
+	text[length] = 0;
+	if (!strcmp(written, text))
 		return;
 	file = fopen(ACHIEVEMENTS_PROFILE, "wb");
 	if (!file)
@@ -446,20 +581,30 @@ void achievements_profile_name(
 	}
 	fwrite(text, (size_t)length, 1, file);
 	fclose(file);
-	csmemcpy(written, text, (size_t)length + 1);
-	has_written = TRUE;
+	csstrncpy(written, text, sizeof(written) - 1);
+	written[sizeof(written) - 1] = 0;
 }
 
-/* this machine's log gets the number, once */
+/* the local player's profile's log gets the number, once */
 static void achievements_record(
+	short local_player_index,
 	long number)
 {
 	FILE *file;
 	unsigned char record[16];
 	unsigned long long when;
+	byte *logged;
 	short index;
 
-	if (!achievements_on() || number <= 0 || number >= ACHIEVEMENT_NUMBERS || achievements_logged_has(number))
+	if (!achievements_on() || number <= 0 || number >= ACHIEVEMENT_NUMBERS)
+		return;
+	logged = achievements_logged_for(local_player_index);
+	if (!logged)
+	{
+		error(_error_silent, "achievements: local player %d has no profile, %ld not written", (int)local_player_index, number);
+		return;
+	}
+	if (achievements_logged_has(logged, number))
 		return;
 	when = FILETIME_UNIX_EPOCH + (unsigned long long)time(NULL) * 10000000ULL;
 	csmemset(record, 0, sizeof(record));
@@ -467,18 +612,19 @@ static void achievements_record(
 		record[index] = (unsigned char)(number >> (8 * index));
 	for (index = 0; index < 8; index++)
 		record[8 + index] = (unsigned char)(when >> (8 * index));
-	file = fopen(ACHIEVEMENTS_LOG, "ab");
+	file = fopen(achievements_logs[local_player_index].path, "ab");
 	if (!file)
 	{
-		error(_error_silent, "achievements: could not write %s", ACHIEVEMENTS_LOG);
+		error(_error_silent, "achievements: could not write %s", achievements_logs[local_player_index].path);
 		return;
 	}
 	fwrite(record, sizeof(record), 1, file);
 	fclose(file);
-	achievements_logged[number / 8] |= (byte)(1 << (number % 8));
-	error(_error_silent, "achievements: %ld earned", number);
+	logged[number / 8] |= (byte)(1 << (number % 8));
+	error(_error_silent, "achievements: %ld earned by local player %d (%s)", number, (int)local_player_index,
+		achievements_logs[local_player_index].path);
 	if (number >= ACHIEVEMENT_LEVEL_FINISHED)
-		achievements_check_campaign();
+		achievements_check_campaign(local_player_index);
 }
 
 /* a player earned it: this machine's (logged here) or, on a co-op host, a
@@ -492,7 +638,7 @@ static void achievement_earned(
 	if (!player)
 		return;
 	if (player->local_player_index != NONE)
-		achievements_record(achievement);
+		achievements_record(player->local_player_index, achievement);
 	else if (game_connection() == _game_connection_network_server)
 		network_coop_host_send_achievement(player_index, achievement);
 }
@@ -1088,6 +1234,78 @@ void achievements_body_damaged(
 		SET_FLAG(record->flags, _achievement_health_damaged_bit, TRUE);
 }
 
+/* Wraith Hunter: whether the player's unit is in the Scorpion now */
+static boolean achievements_player_in_scorpion(
+	long player_index)
+{
+	struct player_datum *player = player_try_and_get(player_index);
+	struct object_datum *unit = player && player->unit_index != NONE ? object_try_and_get(player->unit_index) : NULL;
+
+	return unit && object_in_folder(unit->object.parent_object_index, "vehicles\\scorpion\\");
+}
+
+/* Wraith Hunter: a Wraith destroyed counts for the player whose Scorpion's
+guns dealt the blow that destroyed it (its shell's or bullet's damage, or
+fired by them in it), and for each player who hurt it and is in the
+Scorpion when it is destroyed (a marine riding on the Scorpion, or its
+burning, may deal the last of it) */
+static void achievements_wraith_destroyed(
+	long object_index,
+	struct damage_data const *damage)
+{
+	struct unit_datum *wraith = (struct unit_datum *)object_try_and_get(object_index);
+	long owner_player_index = damage ? damage->owner_player_index : NONE;
+	long owner_object_index = damage ? damage->owner_object_index : NONE;
+	struct object_datum *owner = owner_object_index != NONE ? object_try_and_get(owner_object_index) : NULL;
+	long credited[MAXIMUM_ATTACKERS_PER_UNIT + 1];
+	short credited_count = 0;
+	short index;
+
+	if (!wraith || !TEST_FLAG(_object_mask_unit, wraith->object.type))
+		return;
+	if (owner_player_index != NONE && damage &&
+		(tag_in_folder(damage->definition_index, "vehicles\\scorpion\\") ||
+			(owner && tag_in_folder(owner->definition_index, "vehicles\\scorpion\\")) ||
+			(owner && object_in_folder(owner->object.parent_object_index, "vehicles\\scorpion\\"))))
+	{
+		credited[credited_count++] = owner_player_index;
+	}
+	for (index = 0; index < MAXIMUM_ATTACKERS_PER_UNIT; index++)
+	{
+		long attacker = wraith->unit.attackers[index].player_index;
+		short seen;
+		boolean again = FALSE;
+
+		if (attacker == NONE || wraith->unit.attackers[index].game_time_stamp == (unsigned long)NONE ||
+			!achievements_player_in_scorpion(attacker))
+		{
+			continue;
+		}
+		for (seen = 0; seen < credited_count; seen++)
+			again = again || credited[seen] == attacker;
+		if (!again)
+			credited[credited_count++] = attacker;
+	}
+	error(_error_silent, "achievements: a Wraith (%ld) destroyed by %s (player %08lx, %s), %d credited",
+		object_index, damage ? tag_get_name(damage->definition_index) : "nothing", owner_player_index,
+		owner ? tag_get_name(owner->definition_index) : "no object", (int)credited_count);
+	for (index = 0; index < credited_count; index++)
+	{
+		struct achievement_player *record = achievements_player(credited[index]);
+
+		if (!record)
+			continue;
+		record->wraiths_destroyed++;
+		error(_error_silent, "achievements: player %08lx has destroyed %d Wraiths with the Scorpion",
+			credited[index], (int)record->wraiths_destroyed);
+		if (record->wraiths_destroyed >= WRAITHS_DESTROYED && !TEST_FLAG(record->flags, _achievement_wraith_hunter_bit))
+		{
+			SET_FLAG(record->flags, _achievement_wraith_hunter_bit, TRUE);
+			achievement_earned(credited[index], ACHIEVEMENT_WRAITH_HUNTER);
+		}
+	}
+}
+
 void achievements_object_killed(
 	long object_index,
 	struct damage_data const *damage)
@@ -1099,6 +1317,11 @@ void achievements_object_killed(
 	struct object_datum *owner = owner_object_index != NONE ? object_try_and_get(owner_object_index) : NULL;
 	boolean heroic;
 
+	if (level && level->level == _level_assault_on_the_control_room && object_in_folder(object_index, "vehicles\\wraith\\"))
+	{
+		achievements_wraith_destroyed(object_index, damage);
+		return;
+	}
 	if (!level || !(record = achievements_player(owner_player_index)))
 		return;
 	heroic = level->difficulty >= _game_difficulty_level_hard;
@@ -1112,20 +1335,6 @@ void achievements_object_killed(
 		{
 			SET_FLAG(record->flags, _achievement_no_fly_zone_bit, TRUE);
 			achievement_earned(owner_player_index, ACHIEVEMENT_NO_FLY_ZONE);
-		}
-		break;
-	case _level_assault_on_the_control_room:
-		/* Wraith Hunter: with the Scorpion's guns (its shell's or bullet's
-		damage, or fired by it or from its seat) */
-		if (object_in_folder(object_index, "vehicles\\wraith\\") &&
-			(tag_in_folder(damage->definition_index, "vehicles\\scorpion\\") ||
-				(owner && tag_in_folder(owner->definition_index, "vehicles\\scorpion\\")) ||
-				(owner && object_in_folder(owner->object.parent_object_index, "vehicles\\scorpion\\"))) &&
-			++record->wraiths_destroyed >= WRAITHS_DESTROYED &&
-			!TEST_FLAG(record->flags, _achievement_wraith_hunter_bit))
-		{
-			SET_FLAG(record->flags, _achievement_wraith_hunter_bit, TRUE);
-			achievement_earned(owner_player_index, ACHIEVEMENT_WRAITH_HUNTER);
 		}
 		break;
 	case _level_guilty_spark:
@@ -1332,5 +1541,5 @@ void achievements_network_earned(
 		return;
 	player = player_try_and_get(player_index);
 	if (player && player->local_player_index != NONE)
-		achievements_record(achievement);
+		achievements_record(player->local_player_index, achievement);
 }

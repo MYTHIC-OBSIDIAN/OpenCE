@@ -407,7 +407,7 @@ the setting for one start of the game. It has priority over the file.
 | `paths.logs` | `""` | `HALO_LOG_ROOT` | The folder of `debug.txt`, `bans.txt` and `cheaters.txt`. Empty: the data root. With it, the data root can be read-only (a dedicated server's maps mounted so). |
 | `paths.custom_maps` | `""` | `HALO_CUSTOM_MAPS_ROOT` | The `custom_maps` folder (Custom Edition maps, with their `bitmaps.map`, `sounds.map` and `loc.map`). Empty: the one in the data root. |
 | `game.mcc_campaigns` | `true` | `HALO_MCC_CAMPAIGNS` | Use explicit MCC campaign metadata for discovery, mission titles, authored ordering and progression. In co-op only the host chooses the next mission. Reopen the map list after changing this. |
-| `game.achievements` | `true` | `HALO_ACHIEVEMENTS` | Earn the campaign's Xbox-style achievements (Refer to "Achievements"): each is written once to `achievements.log` in the save root's `u` folder, which the companion program `Achievements.exe` shows as it is earned. `false`: none are written. |
+| `game.achievements` | `true` | `HALO_ACHIEVEMENTS` | Earn the campaign's Xbox-style achievements (Refer to "Achievements"): each is written once to the `achievements.log` of the profile that earned it (in the profile's folder), which the companion program `Achievements.exe` shows as it is earned. `false`: none are written. |
 | `game.achievements_app` | `true` | `HALO_ACHIEVEMENTS_APP` | Windows: start `Achievements.exe` in the background with the game when it is next to `halo.exe` and `game.achievements` is on. It closes itself after the game. Settings' ACHIEVEMENTS button (Edit Profile Settings, on the left of OK) opens its list whatever this says. |
 | `game.mcc_collections` | `true` | `HALO_MCC_COLLECTIONS` | **Not read:** the map lists have no folders (the MCC maps are listed in CUSTOM CAMPAIGNS and CUSTOM EDITION). Before: group MCC packages into folders by the bundled Workshop collection list. |
 | `game.workshop_maps` | `true` | `HALO_WORKSHOP_MAPS` | Use MCC's shared `bitmaps.map` and `sounds.map` from its Steam installation when the `mods` folder has none. No Workshop maps are looked for: MCC maps are those of `custom_maps` and `digsite_maps`. |
@@ -555,11 +555,16 @@ Mesa. To stop this, set the environment variable `mesa_glthread=false`.
 
 The campaign has the 37 Xbox-style achievements of Halo: Combat Evolved
 (780 points). The game decides them (`port/linux/game/achievements.c`) and
-writes each one once, when it is earned, to `achievements.log` in the save
-root's `u` folder: 16 bytes a record, the achievement's number (1 to 37, in
-the list's order), 0, and a Windows FILETIME. Next to it, `achievements_profile.txt`
-holds the name of player 1's profile (UTF-8, as it changes), the companion
-program's header. Numbers from 100 record a
+writes each one once, when it is earned, to the log of the profile that
+earned it: `achievements.log` in the profile's folder (under the save root's
+`u` folder), or `u\achievements_default_0.log` and `_1.log` for the built-in
+Default and Inverted profiles. Each local player earns them for the profile
+they play on. A record is 16 bytes: the achievement's number (1 to 37, in
+the list's order), 0, and a Windows FILETIME. `u\achievements_profile.txt`
+holds the name of player 1's profile, then each local player's log (UTF-8,
+as they change), for the companion program. The one `u\achievements.log` of
+builds before goes to the first profile player 1 plays on, and is emptied.
+Deleting a profile deletes its achievements. Numbers from 100 record a
 level finished on a difficulty (100 + level × 4 + difficulty), from which
 Birth of a Spartan, Believe in a Hero and Living Legend are decided; a
 harder difficulty counts for the easier ones. `tools/achievements` is the
@@ -585,8 +590,11 @@ its players' achievements; split screen and co-op count as cooperative.
 - **How Pedestrian**: Halo without getting into a vehicle.
 - **Close Quarters Combat**: Truth and Reconciliation finished carrying a
   Sniper Rifle with four rounds or more, loaded and spare.
-- **Wraith Hunter**: four Wraiths destroyed with the Scorpion's guns in
-  Assault on the Control Room. **I'll Be Taking That!**: a Banshee piloted
+- **Wraith Hunter**: four Wraiths destroyed with the Scorpion in Assault on
+  the Control Room: the Scorpion's guns dealt the blow that destroyed it, or
+  the player hurt it and is in the Scorpion when it is destroyed (a marine
+  riding on the tank, or its burning, may finish it). debug.txt logs each
+  Wraith destroyed and the count. **I'll Be Taking That!**: a Banshee piloted
   there.
 - **This One's for Jenkins**: 50 Flood combat forms killed in 343 Guilty
   Spark on Heroic or harder.

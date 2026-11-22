@@ -181,28 +181,55 @@ namespace OpenCEAchievements
             return AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
         }
 
-        // The title of the list's header: the name of the profile player 1 is playing on, which the game
-        // writes to achievements_profile.txt in its save root's u folder (the newest, of the save roots),
-        // else "Achievements".
-        public static string Gamertag()
+        // achievements_profile.txt in a save root's u folder (the newest of them), which the game writes as
+        // its players' profiles change: player 1's profile's name, then each local player's log (from the u
+        // folder; player 1's first). Null until the game has written one.
+        static string[] ProfileLines(out string uFolder)
         {
-            string name = null;
+            string[] lines = null;
+            uFolder = null;
             DateTime newest = DateTime.MinValue;
             foreach (var root in SaveRoots)
             {
                 try
                 {
-                    string p = Path.Combine(Path.Combine(root, "u"), "achievements_profile.txt");
+                    string u = Path.Combine(root, "u");
+                    string p = Path.Combine(u, "achievements_profile.txt");
                     if (!File.Exists(p)) continue;
                     DateTime when = File.GetLastWriteTimeUtc(p);
                     if (when <= newest) continue;
-                    string text = File.ReadAllText(p, System.Text.Encoding.UTF8).Trim();
-                    if (text.Length == 0) continue;
-                    name = text; newest = when;
+                    var read = File.ReadAllText(p, System.Text.Encoding.UTF8).Replace("\r", "").Split('\n');
+                    if (read.Length == 0 || read[0].Trim().Length == 0) continue;
+                    lines = read; uFolder = u; newest = when;
                 }
                 catch { }
             }
-            return name ?? "Achievements";
+            return lines;
+        }
+
+        // The title of the list's header: the name of the profile player 1 plays on, else "Achievements".
+        public static string Gamertag()
+        {
+            string u;
+            var lines = ProfileLines(out u);
+            return lines != null ? lines[0].Trim() : "Achievements";
+        }
+
+        // The local players' logs, player 1's first (the list's; anyone's earns a pop-up). Null before the game
+        // has named them: then the one log of every profile, achievements.log in the u folders.
+        public static string[] ProfileLogs()
+        {
+            string u;
+            var lines = ProfileLines(out u);
+            if (lines == null) return null;
+            var logs = new List<string>();
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string rel = lines[i].Trim();
+                if (rel.Length == 0) continue;
+                logs.Add(Path.Combine(u, rel.Replace('/', '\\')));
+            }
+            return logs.Count > 0 ? logs.ToArray() : null;
         }
 
         // Gamerpic.png (or .jpg, .bmp) next to this program, if you put one there.
@@ -391,6 +418,9 @@ namespace OpenCEAchievements
         public readonly Achievement[] All = Data.All;
         readonly Dictionary<int, long> deUnlocked = new Dictionary<int, long>();   // DE achievement number -> FILETIME
         readonly Dictionary<string, long> logRead = new Dictionary<string, long>();   // per log file: bytes already processed
+        string profileLog = "";                                                           // player 1's profile's log (the list's)
+        readonly Dictionary<string, long> otherRead = new Dictionary<string, long>();     // the other local players' logs: bytes read
+        public bool Switched;                                                             // the last Poll found another profile
 
         public Store()
         {
@@ -400,6 +430,38 @@ namespace OpenCEAchievements
         public int Count { get { int n = 0; foreach (var a in All) if (a.Unlocked) n++; return n; } }
         public int Score { get { int n = 0; foreach (var a in All) if (a.Unlocked) n += a.Score; return n; } }
         public int MaxScore { get { int n = 0; foreach (var a in All) n += a.Score; return n; } }
+
+        // The other local players' logs: their new achievements (pop-ups only; the list is player 1's).
+        void ReadOther(string path, bool fresh, List<Achievement> got)
+        {
+            long done;
+            bool known = otherRead.TryGetValue(path, out done);
+            try
+            {
+                var fi = new FileInfo(path);
+                if (!fi.Exists) { otherRead[path] = 0; return; }
+                if (fi.Length < done) done = 0;
+                if (fi.Length - done < 16) { otherRead[path] = done; return; }
+                using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                {
+                    fs.Seek(done, SeekOrigin.Begin);
+                    var data = new byte[(fs.Length - done) / 16 * 16];
+                    int off = 0;
+                    while (off < data.Length) { int r = fs.Read(data, off, data.Length - off); if (r <= 0) break; off += r; }
+                    off = off / 16 * 16;
+                    otherRead[path] = done + off;
+                    if (!known || !fresh) return;      // a log first seen: what it has is old news
+                    for (int i = 0; i + 16 <= off; i += 16)
+                    {
+                        int id = BitConverter.ToInt32(data, i);
+                        var a = Array.Find(All, delegate(Achievement x) { return Array.IndexOf(x.DeIds, id) >= 0; });
+                        if (a != null && !got.Contains(a)) got.Add(a);
+                    }
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
 
         // Reads new records from the log. Returns the achievements that are newly unlocked.
         void ReadLog(string path)
@@ -440,7 +502,24 @@ namespace OpenCEAchievements
         public List<Achievement> Poll(bool fresh)
         {
             var got = new List<Achievement>();
-            foreach (var path in Game.LogPaths) ReadLog(path);
+            var logs = Game.ProfileLogs();
+            string first = logs != null ? logs[0] : "";
+            Switched = false;
+            if (first != profileLog)
+            {
+                // another profile for player 1: its own achievements, and nothing to pop up for them
+                Switched = profileLog.Length > 0 || logRead.Count > 0;
+                profileLog = first;
+                deUnlocked.Clear(); logRead.Clear();
+                foreach (var a in All) a.UnlockedAt = a.Unlocked360;
+                fresh = false;
+            }
+            if (logs != null)
+            {
+                ReadLog(logs[0]);
+                for (int i = 1; i < logs.Length; i++) if (logs[i] != logs[0]) ReadOther(logs[i], fresh, got);
+            }
+            else foreach (var path in Game.LogPaths) ReadLog(path);
 
             // An achievement unlocks once all of its Definitive Edition achievements have (time = the last of them).
             foreach (var a in All)
@@ -756,6 +835,8 @@ namespace OpenCEAchievements
                 if (list != null && !list.IsDisposed) list.RefreshHeader(store);
             }
             foreach (var a in store.Poll(true)) pending.Enqueue(a);
+            // player 1 on another profile: the list is that profile's
+            if (store.Switched && list != null && !list.IsDisposed) list.Refresh(store);
             if (pending.Count > 0 && (toast == null || toast.IsDisposed))
             {
                 toast = new Toast(pending.Dequeue());

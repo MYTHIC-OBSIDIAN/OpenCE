@@ -5,14 +5,18 @@ The companion program of the campaign's achievements
 "Achievement unlocked" pop-up, with a sound, as the game earns each one, and
 the list of all 37 (780 points) when it is opened.
 
-The game writes each achievement once to `achievements.log` in its save
-root's `u` folder (`savegame\u\` next to `halo.exe`, `paths.saves`, or
-`%APPDATA%\halo\u\`), 16 bytes a record: the achievement's number (`Data.cs`),
-0, and a Windows FILETIME. The program reads every one of those places. The
-list's header is titled with the name of the profile player 1 plays on, which
-the game writes to `achievements_profile.txt` (UTF-8) in the same `u` folder
-as it changes ("Achievements" until then). A `Gamerpic.png` next to the
-program is the picture in the list's header.
+The game keeps achievements per profile: each is written once to the
+`achievements.log` of the profile that earned it, in the profile's folder
+under its save root's `u` folder (`savegame\u\` next to `halo.exe`,
+`paths.saves`, or `%APPDATA%\halo\u\`), 16 bytes a record: the achievement's
+number (`Data.cs`), 0, and a Windows FILETIME. `achievements_profile.txt` in
+the `u` folder names player 1's profile (UTF-8), then each local player's log
+from the `u` folder, player 1's first, as they change. The list is player 1's
+profile's, titled with its name, and follows player 1 to another profile;
+pop-ups come for any local player's. Before the game has written that file
+(an older build) the list is the one `u\achievements.log`, titled
+"Achievements". A `Gamerpic.png` next to the program is the picture in the
+list's header.
 
 The list works with the mouse, the keyboard and an Xbox controller: up and
 down (arrow keys, D-pad, left stick) move the selection, Page Up / Page Down
