@@ -166,8 +166,8 @@ static const struct config_setting config_settings[] =
 		"Show binding-aware gameplay keycaps after keyboard/mouse activity.\n"
 		"Off preserves existing prompts. Menu legends require menu_button_glyphs." },
 	{ "display.hud_bumper_style", _config_string, "\"original\"", "HALO_HUD_BUMPER_STYLE", _environment_value, _platform_all,
-		"Xbox Classic, Gems and Dark Gems bumpers: original (black/white) or modern\n"
-		"(LB/RB). Shared by local players.\n"
+		"Xbox Classic, Gems and Dark Gems bumpers: original (Xbox: black/white) or\n"
+		"modern (Xbox 360: LB/RB). Shared by local players.\n"
 		"Requires high_res_hud; other button styles keep their own artwork." },
 	{ "input.controller_p1", _config_string, "\"\"", "HALO_CONTROLLER_P1", _environment_value, _platform_all,
 		"P1 custom controller layout; empty uses the profile. Edit in Gamepads >\n"

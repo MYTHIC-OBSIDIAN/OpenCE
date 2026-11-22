@@ -347,8 +347,8 @@ SCREENS["customisation"] = {
         ("BUTTON STYLE:", "display.hud_button_style", XBOX_BUTTON_STYLES,
          "The gameplay button pictures.", None),
         ("BUMPER STYLE:", "display.hud_bumper_style",
-         [("ORIGINAL XBOX", "original"), ("MODERN XBOX", "modern")],
-         "Original: black/white buttons. Modern: LB/RB.", None),
+         [("XBOX", "original"), ("XBOX 360", "modern")],
+         "Xbox: black/white buttons. Xbox 360: LB/RB.", None),
     ],
 }
 # the profile menu's item that opens it (PREFERENCES, the profile_edit_options

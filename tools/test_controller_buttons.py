@@ -149,7 +149,7 @@ def test_menu_generated_and_default_on():
     rows = port_settings.SCREENS['customisation']['rows']
     assert next(r[2] for r in rows if r[1] == 'display.hud_button_style') == port_settings.XBOX_BUTTON_STYLES
     assert len(port_settings.XBOX_BUTTON_STYLES) == 4
-    assert next(r[2] for r in rows if r[1] == 'display.hud_bumper_style') == [('ORIGINAL XBOX', 'original'), ('MODERN XBOX', 'modern')]
+    assert next(r[2] for r in rows if r[1] == 'display.hud_bumper_style') == [('XBOX', 'original'), ('XBOX 360', 'modern')]
     # (Settings > Customisation's, its rows last: the profile menu opens it)
     assert any('customisation_settings_screen' in e.get('open', '') for e in menu.iter('on'))
     assert rows[-1][1] == 'display.hud_bumper_style'
