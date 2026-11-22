@@ -981,6 +981,11 @@ Each new game starts as PUBLIC (`network.host_public = false` makes new
 games start as PRIVATE). An online co-op game starts as PRIVATE, and keeps
 the last choice of its LISTING (`network.coop_public`). A LAN game is never listed. `network.public_lobby = false` turns the server browser off.
 
+This LAN build's Server Setup has no INVITE LINK, LISTING or PASSWORD rows:
+GAME NAME, MAXIMUM PLAYERS, MAP SHARING and the gametype's options (or, in
+co-op, VOICE AND CHAT) follow one another, as far apart as the settings
+screens' rows.
+
 A PUBLIC game can also have a PASSWORD (a row of Server Setup, below
 LISTING). The Server Browser shows a lock at the left of a game with a
 password. A player who selects that game must type the password, and JOIN

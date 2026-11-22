@@ -1575,13 +1575,14 @@ def _password_screen() -> list:
 
 def _server_settings() -> list:
     """Create Game's server settings (in the PC version's place): the game's
-    name, the most players (up to the port's 128), its invite link, and
-    whether the server browser lists it (PUBLIC or PRIVATE: an internet
-    game's)"""
+    name, the most players (up to the port's 128), map sharing and the
+    gametype's options (co-op's in their place). This LAN build has no
+    invite link, LISTING or PASSWORD (an internet game's), so the rows
+    follow one another with no gap"""
     base = f"{MT}/server_settings"
-    # (thirteen places: the main rows 22 high and as far apart, as their
-    # spinners and values already are, the help lower and smaller)
-    spec = {"screen": "server_settings_screen", "spacing": 22, "help_top": 366,
+    # (nine places at most, as far apart as the settings screens' rows; the
+    # help lower and smaller)
+    spec = {"screen": "server_settings_screen", "spacing": 30, "help_top": 366,
             "help_height": 48, "help_font": "ui\\small_ui",
             "header": ("header_server_settings", f"{base}/header_server_settings")}
     rows, extra = [], []
@@ -1604,31 +1605,6 @@ def _server_settings() -> list:
                       ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
                       ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")], [])
     rows.append((f"{base}/op_max_players", None))
-    extra += _value_row(base, "invite", 2, "ss copy invite")
-    rows.append((f"{base}/op_invite", None))
-    # (PUBLIC or PRIVATE: menu_functions.c's server_settings_update)
-    extra += _widget(f"{base}/op_listing", [("width", 512), ("height", 28),
-                                            ("flags", "pass_unhandled_to_focused_child"),
-                                            ("bitmap", "bitmaps/option_bkds"), ("color", "#FF2896FF")],
-                     [f'<child widget="{base}/listing_label"/>',
-                      f'<child widget="{base}/listing_spinner" x="320" y="1"/>'])
-    extra += _widget(f"{base}/listing_label", [("type", "text"), ("controller", 1), ("width", 300),
-                                               ("height", 22), ("string_list", f"{base}/labels"),
-                                               ("string_index", 9), ("font", "ui\\large_ui"),
-                                               ("color", "#FF2896FF"), ("text_x", 13), ("text_y", 4)], [])
-    extra += _widget(f"{base}/listing_spinner",
-                     [("type", "spinner"), ("left", 3), ("top", 2), ("width", 147), ("height", 20),
-                      ("flags", "pass_unhandled_to_focused_child left_right_tabs_items"),
-                      ("strings", "PUBLIC|PRIVATE"), ("font", "ui\\large_ui"),
-                      ("color", "#FF2896FF"), ("align", "center"), ("text_y", 1),
-                      ("header_bitmap", "bitmaps/arrow_sm_left"), ("footer_bitmap", "bitmaps/arrow_sm_right"),
-                      ("header_bounds", "7 -6 19 0"), ("footer_bounds", "7 150 19 156")],
-                     ['<on event="left_mouse" run="mouse spinner 1wide click"/>'])
-    rows.append((f"{base}/op_listing", None))
-    # PASSWORD (a public internet game's: menu_functions.c's server_settings_update),
-    # which players from the server browser must type
-    extra += _value_row(base, "password", 10 + len(COOP_SETUP_SCREENS), "ss edit server password")
-    rows.append((f"{base}/op_password", None))
     # MAP SHARING (map_share.c), a screen of its own as co-op's options are,
     # for any game: SETUP_OPTIONS_PLACE below it
     key, _, _, _ = MAP_SHARE_SETUP
@@ -1649,6 +1625,7 @@ def _server_settings() -> list:
     # as multiplayer hides co-op's (menu_functions.c's server_settings_update):
     # rows opening their screens, as the gametype's options' do
     # (_setup_option_screen; COOP_SETUP_SCREENS)
+    place = SETUP_OPTIONS_PLACE
     for index, (key, title, _, _) in enumerate(COOP_SETUP_SCREENS):
         target = f"{base}/{key}/{key}_screen"
         extra += _widget(f"{base}/op_{key}", [("width", 512), ("height", 28),
@@ -1661,7 +1638,11 @@ def _server_settings() -> list:
                                                  ("string_list", f"{base}/labels"), ("string_index", 10 + index),
                                                  ("font", "ui\\large_ui"), ("color", "#FF2896FF"), ("text_x", 13),
                                                  ("text_y", 4)], [])
-        rows.append((f"{base}/op_{key}", None, SETUP_OPTIONS_PLACE + index))
+        # (not CO-OP OPTIONS, never shown: co-op's settings are the
+        # campaign's, menu_functions.c's server_settings_update)
+        if key != "coop_options":
+            rows.append((f"{base}/op_{key}", None, place))
+            place += 1
     # the gametype's options for this game (the gametype editor's screens,
     # editing a copy of the gametype chosen: "port setup edit")
     for index, (key, screen) in enumerate(SETUP_OPTION_SCREENS):
@@ -1718,12 +1699,6 @@ def _server_settings() -> list:
         # server_settings_update)
         "Listed for everyone through the brokers, and on\\nthe master servers with your publisher key.",
     ])
-    # (the main rows 22 high, their containers only: their spinners and
-    # values are 22 or less already, and the other screens' rows stay 28)
-    main_rows = {row for row, *_ in rows}
-    extra = [line.replace('height="28"', 'height="22"', 1)
-             if any(line.startswith(f'\t<widget name="{row}" ') for row in main_rows) else line
-             for line in extra]
     lines = _screen(base, spec, rows, ["server settings update"],
                     ['<on event="created" run="server settings init"/>'], extra)
     # (co-op's options' screens, and map sharing's)
@@ -1811,7 +1786,7 @@ MAP_SHARE_SETUP = ("map_share_options", "MAP SHARING",
 ])
 # (Server Setup's place of its options' rows, co-op's or the gametype's: after
 # MAP SHARING's)
-SETUP_OPTIONS_PLACE = 6
+SETUP_OPTIONS_PLACE = 3
 # (their screens' titles)
 TITLES.update({f"{MT}/server_settings/{key}/header_{key}": title
                for key, title, _, _ in [*COOP_SETUP_SCREENS, MAP_SHARE_SETUP]})

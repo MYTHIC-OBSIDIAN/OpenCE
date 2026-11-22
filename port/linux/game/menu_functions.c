@@ -4557,6 +4557,8 @@ static void server_settings_update(struct widget_instance *list)
 	}
 	wide_to_text(multiplayer.game_name, text, sizeof(text));
 	text_field_show(named(list, "server_name_value", 0), text, text_field_editing(row));
+	/* (INVITE LINK, LISTING and PASSWORD: an internet game's, rows this LAN
+	build's screen does not have) */
 	if (multiplayer.mode != _multiplayer_mode_host_internet)
 		snprintf(text, sizeof(text), "NONE: A LAN GAME");
 	else if (!config_boolean("network.online"))
@@ -4581,11 +4583,13 @@ static void server_settings_update(struct widget_instance *list)
 		(tools/port_settings.py's COOP_SETUP_SCREENS), each its help */
 		{
 			struct widget_instance *help = list->parameters.list.extended_description;
+			struct widget_instance *coop_options = named(list, "op_coop_options", 0);
 
-			/* (not CO-OP OPTIONS: co-op's settings are the campaign's) */
-			visible_set(named(list, "op_coop_options", 0), FALSE);
+			/* (not CO-OP OPTIONS: co-op's settings are the campaign's; this
+			LAN build's screen has no such row) */
+			visible_set(coop_options, FALSE);
 			visible_set(named(list, "op_voice_options", 0), cooperative);
-			if (help && list->focused_child == named(list, "op_coop_options", 0))
+			if (help && coop_options && list->focused_child == coop_options)
 				help->parameters.text_box.string_list_index = COOPERATIVE_OPTIONS_HELP;
 			else if (help && list->focused_child == named(list, "op_voice_options", 0))
 				help->parameters.text_box.string_list_index = COOPERATIVE_VOICE_OPTIONS_HELP;
