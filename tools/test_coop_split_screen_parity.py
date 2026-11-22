@@ -623,7 +623,14 @@ def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
     won = function(module, "achievements_won_map")
     assert "if (legendary && left >= NEVER_TELL_ME_THE_ODDS_TICKS)" in won
     lift = function(module, "achievements_update_guilty_spark")
-    assert "if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)" in lift
+    # (Breaking Quarantine: from "The Flood" title card, in game time, which a
+    # pause stops)
+    assert "if (game_time_get() - level->quarantine_start_time <= BREAKING_QUARANTINE_TICKS)" in lift
+    shown = function(module, "achievements_title_shown")
+    assert 'strcmp(name, "chapter_flood")' in shown
+    assert "level->quarantine_start_time = game_time_get();" in shown
+    cinematics = source("source/cutscene/cinematics.c")
+    assert "achievements_title_shown(" in function(cinematics, "cinematic_set_title_delayed")
 
 
 def test_the_levels_moments_come_from_their_scripts():
