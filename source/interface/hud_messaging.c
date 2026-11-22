@@ -1029,7 +1029,11 @@ void hud_render_timer(
 		}
 	}
 
-	if (time_code_time != NONE)
+	/* port: not the time code: the Xbox's retail build drew no debug
+	strings, and the levels' own scripts start it (The Library's and The
+	Maw's cinematics, time_code_show and time_code_start), where it showed
+	as a number at the top left, a negative one once started twice */
+	if (FALSE && time_code_time != NONE)
 	{
 		long stop_time = time_code_stop_time;
 

@@ -1333,20 +1333,6 @@ void weapon_build_weapon_interface_state(
 	csmemset(state, 0, sizeof(*state));
 	state->heat = weapon->weapon.heat;
 	state->age = weapon->weapon.age;
-	/* port: an age out of its range (0 to 1) logged, once a session, for
-	whatever set it: the HUD's battery drew it as a negative number */
-	if (!(weapon->weapon.age >= 0.0f && weapon->weapon.age <= 1.0f))
-	{
-		static boolean logged = FALSE;
-
-		if (!logged)
-		{
-			logged = TRUE;
-			error(_error_silent, "weapon %s (%08lx) has the age %f, out of 0 to 1 (flags %08lx, heat %f)",
-				tag_get_name(weapon->definition_index), weapon_index, (double)weapon->weapon.age,
-				(unsigned long)weapon->weapon.flags, (double)weapon->weapon.heat);
-		}
-	}
 	state->overheated = TEST_FLAG(weapon->weapon.flags, 0);
 	/* port: the state's magazines are the two the hud keeps on its stack,
 	so no more than two are filled in or counted */
