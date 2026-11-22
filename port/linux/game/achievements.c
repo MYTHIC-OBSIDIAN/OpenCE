@@ -230,9 +230,10 @@ struct achievement_level
 	boolean beach_marine_lost;
 	boolean beach_stormed;
 	boolean map_activated;
-	/* 343 Guilty Spark: the final lift seen still, and started */
-	boolean final_lift_seen;
-	boolean final_lift_started;
+	/* 343 Guilty Spark: the facility escaped (the swamp at the top of the
+	final lift reached), and a pad */
+	boolean quarantine_escaped;
+	boolean pad3;
 	/* (room for more, so that adding them leaves the game state's size, and
 	the saved games, as they are) */
 	/* (the arrival wave's Covenant placed, and killed: the survivors the
@@ -262,8 +263,6 @@ static struct
 	that brings the Warthog once the beach is taken */
 	long beach_marine_encounter;
 	short warthog_pelican_name;
-	/* 343 Guilty Spark: the final lift */
-	short final_lift_name;
 	/* Keyes: the Elites its ending cinematic places (not the level's) */
 	long keyes_outro_encounter;
 } achievement_names;
@@ -812,7 +811,6 @@ static void achievements_find_names(
 		achievement_names.arrival_squads[index] = NONE;
 	achievement_names.beach_marine_encounter = NONE;
 	achievement_names.warthog_pelican_name = NONE;
-	achievement_names.final_lift_name = NONE;
 	achievement_names.keyes_outro_encounter = NONE;
 	if (!scenario)
 		return;
@@ -842,10 +840,6 @@ static void achievements_find_names(
 		the beach's last, is dead) */
 		achievement_names.beach_marine_encounter = achievements_encounter_named("beach_lz_marine");
 		achievement_names.warthog_pelican_name = scenario_object_name_index_from_string(scenario, "hog_pelican");
-		break;
-	case _level_guilty_spark:
-		/* (c10's mission_int_b waits for lift_d to leave position 1) */
-		achievement_names.final_lift_name = scenario_object_name_index_from_string(scenario, "lift_d");
 		break;
 	case _level_keyes:
 		/* (d20's cinematic_outro places outro_cov's Elites just before the
@@ -995,37 +989,28 @@ static void achievements_update_cartographer(
 	}
 }
 
-/* 343 Guilty Spark: Breaking Quarantine when the final lift out of the
-facility starts (its switch), within 21 minutes of "The Flood" title card
-(achievements_title_shown): game time, which pausing stops */
+/* 343 Guilty Spark: Breaking Quarantine when the swamp at the top of the
+final lift out of the facility is reached (its loading zone: structure BSP
+5, which c10's mission_c10 waits for before mission_swamp_b), within 21
+minutes of "The Flood" title card (achievements_title_shown): game time,
+which pausing stops */
+#define GUILTY_SPARK_FINAL_SWAMP_BSP 5
+
 static void achievements_update_guilty_spark(
 	struct achievement_level *level)
 {
-	long lift_index;
-	real position;
+	long elapsed;
 
-	if (level->level != _level_guilty_spark || level->final_lift_started || achievement_names.final_lift_name == NONE)
-		return;
-	lift_index = object_index_from_name_index(achievement_names.final_lift_name);
-	if (lift_index == NONE)
-		return;
-	position = device_get_position(lift_index);
-	if (position == 1.f)
+	if (level->level != _level_guilty_spark || level->quarantine_escaped || level->quarantine_start_time == NONE ||
+		global_structure_bsp_index_get() != GUILTY_SPARK_FINAL_SWAMP_BSP)
 	{
-		level->final_lift_seen = TRUE;
 		return;
 	}
-	if (!level->final_lift_seen)
-		return;
-	level->final_lift_started = TRUE;
-	if (level->quarantine_start_time == NONE)
-	{
-		error(_error_silent, "achievements: 343 Guilty Spark's final lift started, the Flood's title card never shown");
-		return;
-	}
-	error(_error_silent, "achievements: 343 Guilty Spark's final lift started %ld ticks after the Flood's title card (%ld allowed)",
-		game_time_get() - level->quarantine_start_time, (long)BREAKING_QUARANTINE_TICKS);
-	if (game_time_get() - level->quarantine_start_time <= BREAKING_QUARANTINE_TICKS)
+	level->quarantine_escaped = TRUE;
+	elapsed = game_time_get() - level->quarantine_start_time;
+	error(_error_silent, "achievements: 343 Guilty Spark's facility escaped %ld ticks after the Flood's title card (%ld allowed)",
+		elapsed, (long)BREAKING_QUARANTINE_TICKS);
+	if (elapsed <= BREAKING_QUARANTINE_TICKS)
 		achievement_earned_by_all(ACHIEVEMENT_BREAKING_QUARANTINE);
 }
 

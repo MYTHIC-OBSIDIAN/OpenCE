@@ -625,7 +625,8 @@ def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
     lift = function(module, "achievements_update_guilty_spark")
     # (Breaking Quarantine: from "The Flood" title card, in game time, which a
     # pause stops)
-    assert "if (game_time_get() - level->quarantine_start_time <= BREAKING_QUARANTINE_TICKS)" in lift
+    assert "elapsed = game_time_get() - level->quarantine_start_time;" in lift
+    assert "if (elapsed <= BREAKING_QUARANTINE_TICKS)" in lift
     shown = function(module, "achievements_title_shown")
     assert 'strcmp(name, "chapter_flood")' in shown
     assert "level->quarantine_start_time = game_time_get();" in shown
@@ -639,7 +640,7 @@ def test_the_levels_moments_come_from_their_scripts():
     assert 'achievements_encounter_named("covenant_area2")' in names
     assert 'achievements_encounter_named("beach_lz_marine")' in names
     assert 'scenario_object_name_index_from_string(scenario, "hog_pelican")' in names
-    assert 'scenario_object_name_index_from_string(scenario, "lift_d")' in names
+    assert "global_structure_bsp_index_get() != GUILTY_SPARK_FINAL_SWAMP_BSP" in function(module, "achievements_update_guilty_spark")
     assert 'hs_runtime_port_scenario_boolean("global_shafta_switched") == TRUE' in function(module, "achievements_update_cartographer")
     assert "prop->enemy && prop->state == _prop_state_acknowledged" in function(module, "achievements_actor_detected_player")
     assert "achievements_weapon_fired(owner_object_index);" in function(source("source/items/weapons.c"), "weapon_trigger_fire")

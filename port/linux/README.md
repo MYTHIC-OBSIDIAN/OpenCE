@@ -622,9 +622,9 @@ its players' achievements; split screen and co-op count as cooperative.
   may die before. From the map's activation (`global_shafta_switched`) to
   the level's end, the player may fire no shot, from a weapon or a vehicle
   seat it controls (grenades and melee are not shots).
-- **Breaking Quarantine**: 343 Guilty Spark's final lift out of the
-  facility (`lift_d`) started from its switch within 21 minutes of "The
-  Flood" title card (`chapter_flood`, after the Jenkins cinematic). The
+- **Breaking Quarantine**: 343 Guilty Spark's facility escaped (the swamp's
+  loading zone at the top of the final lift: structure BSP 5, which
+  `mission_c10` waits for) within 21 minutes of "The Flood" title card (`chapter_flood`, after the Jenkins cinematic). The
   clock is game time, so pausing stops it; any difficulty, alone or in
   co-op.
 - **This Side Up, Never Tell Me the Odds**: The Maw's escape ride is the
