@@ -1722,7 +1722,10 @@ static void render_weapon_hud(
 		number_values[0] = weapon_state->magazines[0].rounds_remaining;
 		number_values[1] = weapon_state->magazines[0].rounds_loaded;
 		number_values[2] = (short)(weapon_state->heat * 255.0f);
-		number_values[3] = (short)((1.0f - weapon_state->age) * 100.0f);
+		/* port: the battery's percentage, of 0 to 100: an age past the
+		battery's (a weapon state out of its range) drew a negative number
+		with digits its bitmap has none of (weapons.c logs the age) */
+		number_values[3] = (short)PIN(fast_ftol_C((1.0f - weapon_state->age) * 100.0f), 0, 100);
 		number_values[4] = weapon_state->magazines[1].rounds_remaining;
 		number_values[5] = weapon_state->magazines[1].rounds_loaded;
 
