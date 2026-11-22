@@ -600,10 +600,12 @@ its players' achievements; split screen and co-op count as cooperative.
   nor do the Elites the ending cinematic places (`outro_cov`).
 - **Popcorn.gif**: 100 Flood infection forms killed in Keyes on Heroic or
   harder.
-- **All According to Plan**: Truth and Reconciliation's first encounter
-  (`covenant_area2`: its first placement, its second wave and its last)
-  all dead without one of it having acknowledged a player (a body found, a
-  shot heard or a friend killed are not that).
+- **All According to Plan**: Truth and Reconciliation's first encounter,
+  the Covenant there on arrival (`covenant_area2`'s squads that
+  `enc_area2_ini` places; not its second wave or the last), all killed, by
+  anyone, without one of them having acknowledged a player (a body found, a
+  shot heard or a friend killed are not that). Survivors the scripts move on
+  to the next area (`mission_area3`) are not killed.
 - **Beachhead, Grenadier**: The Silent Cartographer on Heroic or harder.
   The beach is stormed when its last Covenant (`beach_lz/arch_toon`) are
   dead and the Warthog's Pelican comes; no marine of `beach_lz_marine`

@@ -205,9 +205,9 @@ struct achievement_level
 	byte pad;
 	short ride_ticks_left;
 	short pad2;
-	/* Truth and Reconciliation's first encounter (covenant_area2): its last
-	wave placed, a player detected by one of it, and its end */
-	boolean first_encounter_last_wave;
+	/* Truth and Reconciliation's first encounter (covenant_area2's arrival
+	wave): placed, a player detected by one of it, and its end */
+	boolean first_encounter_placed;
 	boolean first_encounter_detected;
 	boolean first_encounter_over;
 	/* The Silent Cartographer: a beach marine lost, the beach stormed (the
@@ -220,7 +220,11 @@ struct achievement_level
 	boolean final_lift_started;
 	/* (room for more, so that adding them leaves the game state's size, and
 	the saved games, as they are) */
-	long reserved[30];
+	/* (the arrival wave's Covenant placed, and killed: the survivors the
+	scripts move on to the next area, mission_area3, are not killed) */
+	short first_encounter_arrivals;
+	short first_encounter_arrivals_killed;
+	long reserved[29];
 	struct achievement_player players[ACHIEVEMENT_PLAYERS];
 };
 
@@ -232,9 +236,10 @@ static struct achievement_level *achievement_level;
 same after a revert) */
 static struct
 {
-	/* Truth and Reconciliation: the first encounter and its last wave's squads */
+	/* Truth and Reconciliation: the first encounter and its arrival wave's
+	squads */
 	long first_encounter;
-	short last_wave_squads[3];
+	short arrival_squads[9];
 	/* The Silent Cartographer: the beach marines' encounter, and the Pelican
 	that brings the Warthog once the beach is taken */
 	long beach_marine_encounter;
@@ -590,8 +595,8 @@ static void achievements_find_names(
 	short index;
 
 	achievement_names.first_encounter = NONE;
-	for (index = 0; index < NUMBEROF(achievement_names.last_wave_squads); index++)
-		achievement_names.last_wave_squads[index] = NONE;
+	for (index = 0; index < NUMBEROF(achievement_names.arrival_squads); index++)
+		achievement_names.arrival_squads[index] = NONE;
 	achievement_names.beach_marine_encounter = NONE;
 	achievement_names.warthog_pelican_name = NONE;
 	achievement_names.final_lift_name = NONE;
@@ -601,12 +606,23 @@ static void achievements_find_names(
 	switch (level)
 	{
 	case _level_truth_and_reconciliation:
-		/* (a50's mission_area2: enc_area2_ini, enc_area2_wave_2 and
-		enc_back_area2 place it; it is over when none of it lives) */
-		achievement_names.first_encounter = achievements_encounter_named("covenant_area2");
-		achievement_names.last_wave_squads[0] = achievements_squad_named(achievement_names.first_encounter, "grunts_back_left");
-		achievement_names.last_wave_squads[1] = achievements_squad_named(achievement_names.first_encounter, "grunts_back_right");
-		achievement_names.last_wave_squads[2] = achievements_squad_named(achievement_names.first_encounter, "jackals_back");
+		/* (a50's mission_area2: enc_area2_ini places the arrival wave,
+		these squads, all at once; enc_area2_wave_2 and enc_back_area2's
+		waves after it are not the first encounter) */
+		{
+			static char const *const arrival_squad_names[] =
+			{
+				"turret_gunner_a", "turret_gunner_b", "grunts_left", "grunts_middle", "grunts_right",
+				"elites_right", "elites_left", "jackals_left", "jackals_right",
+			};
+
+			achievement_names.first_encounter = achievements_encounter_named("covenant_area2");
+			for (index = 0; index < NUMBEROF(achievement_names.arrival_squads); index++)
+			{
+				achievement_names.arrival_squads[index] =
+					achievements_squad_named(achievement_names.first_encounter, arrival_squad_names[index]);
+			}
+		}
 		break;
 	case _level_silent_cartographer:
 		/* (b30's mission_beach_lz makes hog_pelican once beach_lz/arch_toon,
@@ -643,6 +659,29 @@ static boolean achievements_unit_in_encounter(
 	return actor && DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index) == encounter_index;
 }
 
+/* whether the actor is of Truth and Reconciliation's first encounter, its
+arrival wave */
+static boolean achievements_actor_arrival(
+	struct actor_datum *actor)
+{
+	short index;
+
+	if (!actor || achievement_names.first_encounter == NONE || actor->meta.encounter_index == NONE ||
+		DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index) != achievement_names.first_encounter)
+	{
+		return FALSE;
+	}
+	for (index = 0; index < NUMBEROF(achievement_names.arrival_squads); index++)
+	{
+		if (achievement_names.arrival_squads[index] != NONE &&
+			actor->meta.squad_index == achievement_names.arrival_squads[index])
+		{
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 /* whether the actor knows a player is there: it has acknowledged an enemy
 prop of a player's unit (a body it found, a sound it heard, a friend's
 death, are not one) */
@@ -670,8 +709,9 @@ static boolean achievements_actor_detected_player(
 	return FALSE;
 }
 
-/* Truth and Reconciliation's first encounter: All According to Plan when
-the last of it dies, no player having been detected by it */
+/* Truth and Reconciliation's first encounter, the Covenant there on arrival
+(enc_area2_ini's): All According to Plan when every one of them has been
+killed, by anyone, none of them having detected a player */
 static void achievements_update_first_encounter(
 	struct achievement_level *level)
 {
@@ -688,36 +728,32 @@ static void achievements_update_first_encounter(
 	while ((actor = (struct actor_datum *)data_iterator_next(&iterator)) != NULL)
 	{
 		struct object_datum *unit;
-		short index;
 
-		if (actor->meta.encounter_index == NONE ||
-			DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index) != achievement_names.first_encounter)
-		{
+		if (!achievements_actor_arrival(actor))
 			continue;
-		}
 		unit = actor->meta.unit_index != NONE ? object_try_and_get(actor->meta.unit_index) : NULL;
 		if (!unit || TEST_FLAG(unit->object.damage_flags, _object_dead_bit))
 			continue;
 		living++;
-		for (index = 0; index < NUMBEROF(achievement_names.last_wave_squads); index++)
-		{
-			if (achievement_names.last_wave_squads[index] != NONE &&
-				actor->meta.squad_index == achievement_names.last_wave_squads[index])
-			{
-				level->first_encounter_last_wave = TRUE;
-			}
-		}
 		if (!level->first_encounter_detected && achievements_actor_detected_player(actor))
 		{
 			level->first_encounter_detected = TRUE;
 			error(_error_silent, "achievements: Truth and Reconciliation's first encounter detected a player");
 		}
 	}
-	if (level->first_encounter_last_wave && living == 0)
+	/* (placed all at once: the most seen living at once is how many) */
+	if (living > 0 && !level->first_encounter_placed)
+	{
+		level->first_encounter_placed = TRUE;
+		error(_error_silent, "achievements: Truth and Reconciliation's first encounter placed, %d", (int)living);
+	}
+	if (living + level->first_encounter_arrivals_killed > level->first_encounter_arrivals)
+		level->first_encounter_arrivals = (short)(living + level->first_encounter_arrivals_killed);
+	if (level->first_encounter_placed && level->first_encounter_arrivals_killed >= level->first_encounter_arrivals)
 	{
 		level->first_encounter_over = TRUE;
-		error(_error_silent, "achievements: Truth and Reconciliation's first encounter over, %s",
-			level->first_encounter_detected ? "detected" : "undetected");
+		error(_error_silent, "achievements: Truth and Reconciliation's first encounter over (%d killed), %s",
+			(int)level->first_encounter_arrivals_killed, level->first_encounter_detected ? "detected" : "undetected");
 		if (!level->first_encounter_detected)
 			achievement_earned_by_all(ACHIEVEMENT_ALL_ACCORDING_TO_PLAN);
 	}
@@ -1148,7 +1184,21 @@ void achievements_unit_died(
 	long unit_index)
 {
 	struct achievement_level *level = achievements_deciding();
+	struct unit_datum *unit;
 
+	/* All According to Plan: one of the first encounter's arrival wave
+	killed, by anyone, while still of it (not once moved on to the next
+	area's: mission_area3) */
+	if (level && level->level == _level_truth_and_reconciliation && level->first_encounter_placed &&
+		!level->first_encounter_over)
+	{
+		unit = (struct unit_datum *)object_try_and_get(unit_index);
+		if (unit && TEST_FLAG(_object_mask_unit, unit->object.type) && unit->unit.actor_index != NONE &&
+			achievements_actor_arrival(actor_try_and_get(unit->unit.actor_index)))
+		{
+			level->first_encounter_arrivals_killed++;
+		}
+	}
 	/* Beachhead: a beach marine lost before the beach was stormed */
 	if (level && level->level == _level_silent_cartographer && !level->beach_stormed && !level->beach_marine_lost &&
 		achievements_unit_in_encounter(unit_index, achievement_names.beach_marine_encounter))
