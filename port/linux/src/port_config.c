@@ -2789,6 +2789,9 @@ static const char *const lan_only_off_booleans[] =
 	/* (no longer in the menus: as the stock game, which has no votes to
 	kick; a vote to end the game is network.vote_end_game's) */
 	"network.votekick",
+	/* (no longer in the menus: the shield drawn on the body only, and the
+	overshield, as the stock game draws them) */
+	"display.viewmodel_shield", "display.overshield_effect",
 };
 
 /* the string settings held to a value: name, value */

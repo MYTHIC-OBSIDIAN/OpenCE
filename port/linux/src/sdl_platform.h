@@ -91,6 +91,7 @@ BOOL platform_video_hdr(float *sdr_white, float *headroom);
 /* the window's mode and size and V-Sync, from config.toml as Settings has
 just written it (the main thread's) */
 void platform_display_apply(void);
+int platform_achievements_show(void);
 void platform_video_swap(void);
 /* frames between the 30 Hz ticks at the display's refresh rate, unless
 display.interpolation is false (port/linux/game/render_interpolation.c) */

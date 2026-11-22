@@ -313,9 +313,8 @@ SCREENS["video_settings/fov_viewmodels"] = {
 # Preferences (the profile menu's PREFERENCES, last, in About's place: the
 # profile_edit_select_list's patch below; named customisation inside): the
 # player's legs, the shield
-# glow, the mods (HIGH RES ASSETS), the intro, the main menu's credits, the
-# shield's flare on the arms, the overshield, and the controller's button
-# pictures
+# glow, the mods (HIGH RES ASSETS), the intro, the main menu's credits and
+# the controller's button pictures
 SCREENS["customisation"] = {
     "screen": "customisation_settings_screen",
     "header": ("header_customisation", f"{PE}/customisation/header_customisation"),
@@ -329,10 +328,9 @@ SCREENS["customisation"] = {
          "Your legs in first person, seen looking down,\nmoving as you run. Your body as others see it.", None),
         ("SHIELD GLOW:", "display.shield_glow", ON_OFF,
          "Shields light their surroundings as they flare.\nOnline: the host's choice.", None),
-        ("ARM SHIELDS:", "display.viewmodel_shield", ON_OFF,
-         "The energy shield's flare on your first-person\narms too, as on your body.", None),
-        ("OVERSHIELD:", "display.overshield_effect", ON_OFF,
-         "The overshield rises up the body and stays lit,\nin its own color. Online: the host's choice.", None),
+        # (no ARM SHIELDS or OVERSHIELD: display.viewmodel_shield and
+        # display.overshield_effect are held off, the stock game's,
+        # port_config.c's lan_only_off_booleans)
         # (attract_mode.c's attract_mode_get_localized_movie_path; and the
         # OK pictures: menu_functions.c's ok_picture_xbox)
         ("PLATFORM:", "display.intro", [("XBOX", "xbox"), ("PC", "pc")],
@@ -354,6 +352,11 @@ SCREENS["customisation"] = {
 # the profile menu's item that opens it (PREFERENCES, the profile_edit_options
 # string STRING_INSERTS adds), in About's place (About is left out)
 CUSTOMISATION_ITEM = f"{PE}/customisation_item"
+# the profile menu's ACHIEVEMENTS, on its button bar's left (where the
+# settings screens have DEFAULTS): the achievements' companion program's
+# list, Achievements.exe next to halo.exe (menu_functions.c's "port
+# achievements", port/windows/src/win32_achievements.c)
+ACHIEVEMENTS_BUTTON = f"{PE}/profile_edit_button_achievements"
 
 
 def _customisation_item() -> list:
@@ -893,6 +896,8 @@ def settings_files() -> dict:
     files[f"{PE}/network_setup/mcc_download".replace("/", ".") + ".xml"] = _mcc_download()
     # (and the profile menu's item that opens Customisation)
     files[f"{PE}/customisation".replace("/", ".") + ".xml"] += _customisation_item()
+    files[f"{PE}/customisation".replace("/", ".") + ".xml"] += _text_button(
+        ACHIEVEMENTS_BUTTON, "ACHIEVEMENTS", ['<on event="a start" run="port achievements"/>'])
     files[f"{PE}/controls_setup".replace("/", ".") + ".xml"] = _controls_screen()
     return {name: ['<?xml version="1.0" encoding="UTF-8"?>',
                    "<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->",
@@ -1093,6 +1098,9 @@ WIDGET_PATCHES = {
     # button settings, BITMAP_FRAMES; menu_functions.c's
     # profile_gamepad_layout)
     f"{PE}/profile_edit_extended_desc_pic": {"inputs": ["port gamepad layout preview"]},
+    # (ACHIEVEMENTS on the left: ACHIEVEMENTS_BUTTON)
+    f"{PE}/profile_edit_button_bar": {"insert_before": {f"{PE}/profile_edit_button_ok": [
+        f'<child widget="{ACHIEVEMENTS_BUTTON}" y="1"/>']}},
     # (PREFERENCES in ABOUT's place, which is left out)
     f"{PE}/profile_edit_select_list": {
         "swap": {f"{PE}/about_item": CUSTOMISATION_ITEM},

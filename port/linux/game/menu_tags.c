@@ -404,6 +404,8 @@ static char const *const port_function_names[] =
 	/* (the main menu's Credits, in this LAN build in Mods' place:
 	menu_functions.c) */
 	"port credits", "port credits begin",
+	/* (Edit Profile Settings' ACHIEVEMENTS: menu_functions.c) */
+	"port achievements",
 	/* (the main menu's Mods: menu_functions.c) */
 	"port mods init", "port mods close", "port mods toggle", "port mods move up", "port mods move down",
 	"port mods save",

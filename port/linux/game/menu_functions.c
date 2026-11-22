@@ -122,6 +122,8 @@ int config_boolean(char const *name);
 int config_default(char const *name, char *text, unsigned int size);
 char const *config_string(char const *name);
 void platform_display_apply(void);
+/* (sdl_platform.c's: Edit Profile Settings' ACHIEVEMENTS) */
+int platform_achievements_show(void);
 int halo_hdr_calibration_available(void);
 void halo_hdr_calibration_show(int pattern, int paper_white, int peak_brightness);
 void platform_binding_capture_begin(void);
@@ -8797,6 +8799,15 @@ boolean pc_menu_event_function_invoke(
 		else if (!strcmp(name, "port settings defaults"))
 		{
 			settings_each(screen_of(widget), setting_default_show);
+		}
+		/* (Edit Profile Settings' ACHIEVEMENTS: the companion program's
+		list, Achievements.exe next to halo.exe) */
+		else if (!strcmp(name, "port achievements"))
+		{
+			if (!platform_achievements_show())
+			{
+				display_error_text_deferred(L"Achievements.exe is not\r\nbeside halo.exe.", NONE);
+			}
 		}
 		else if (!strcmp(name, "port credits"))
 		{

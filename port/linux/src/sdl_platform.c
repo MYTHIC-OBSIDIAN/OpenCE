@@ -108,6 +108,7 @@ void updater_start(void);
 #ifdef HALO_WINDOWS
 /* port/windows/src/win32_achievements.c's */
 void achievements_app_start(void);
+int achievements_app_show(void);
 #endif
 void updater_poll(SDL_Window *window);
 /* the windows' icon, a PNG (tools/embed_assets.py, port/assets/icon) */
@@ -1313,6 +1314,19 @@ display.window_size (when it changes: the window can be resized) and
 display.vsync, as Settings has written them; display.resolution_scaling
 and borderless's resolution are taken up between frames
 (halo_screen_commit) */
+/* Edit Profile Settings' ACHIEVEMENTS (menu_functions.c's "port
+achievements"): the achievements' companion program's list, Achievements.exe
+next to halo.exe (port/windows/src/win32_achievements.c). FALSE when it is
+not there, and always on Linux, which has no such program. */
+int platform_achievements_show(void)
+{
+#ifdef HALO_WINDOWS
+	return achievements_app_show();
+#else
+	return 0;
+#endif
+}
+
 void platform_display_apply(void)
 {
 	int mode = platform_display_mode();
