@@ -741,6 +741,44 @@ static short achievement_sniper_rounds(
 
 static boolean achievements_unit_in_encounter(long unit_index, long encounter_index);
 
+/* for debug.txt: a unit's encounter and squad (as the scenario names them),
+its character and where it is */
+static void achievements_unit_describe(
+	long unit_index,
+	char *text,
+	size_t size)
+{
+	struct scenario *scenario = global_scenario_get();
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get(unit_index);
+	struct actor_datum *actor = NULL;
+	char const *encounter_name = "no encounter";
+	char const *squad_name = "no squad";
+
+	if (!unit)
+	{
+		snprintf(text, size, "%ld, gone", unit_index);
+		return;
+	}
+	if (TEST_FLAG(_object_mask_unit, unit->object.type) && unit->unit.actor_index != NONE)
+		actor = actor_try_and_get(unit->unit.actor_index);
+	if (actor && scenario && actor->meta.encounter_index != NONE)
+	{
+		long encounter_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index);
+
+		if (encounter_index >= 0 && encounter_index < scenario->ai_encounters.count)
+		{
+			struct encounter_definition *encounter = TAG_BLOCK_GET_ELEMENT(&scenario->ai_encounters, encounter_index,
+				struct encounter_definition);
+
+			encounter_name = encounter->name;
+			if (actor->meta.squad_index >= 0 && actor->meta.squad_index < encounter->squads.count)
+				squad_name = TAG_BLOCK_GET_ELEMENT(&encounter->squads, actor->meta.squad_index, struct squad_definition)->name;
+		}
+	}
+	snprintf(text, size, "%ld, %s, %s/%s, at %.1f %.1f %.1f", unit_index, tag_get_name(unit->definition_index),
+		encounter_name, squad_name, unit->object.position.x, unit->object.position.y, unit->object.position.z);
+}
+
 /* Tying Up Loose Ends: no Elite left alive in the level (the ending
 cinematic's are not the level's) */
 static boolean achievements_elites_all_dead(
@@ -756,7 +794,10 @@ static boolean achievements_elites_all_dead(
 			!TEST_FLAG(object->object.damage_flags, _object_dead_bit) &&
 			!achievements_unit_in_encounter(iterator.index, achievement_names.keyes_outro_encounter))
 		{
-			error(_error_silent, "achievements: an Elite (%ld) alive as Keyes ends", iterator.index);
+			char text[256];
+
+			achievements_unit_describe(iterator.index, text, sizeof(text));
+			error(_error_silent, "achievements: an Elite alive as Keyes ends (%s)", text);
 			return FALSE;
 		}
 	}
@@ -1537,8 +1578,11 @@ void achievements_object_deleted(
 	object = object_get(object_index);
 	if (!TEST_FLAG(object->object.damage_flags, _object_dead_bit))
 	{
+		char text[256];
+
 		level->elite_left_alive = TRUE;
-		error(_error_silent, "achievements: an Elite (%ld) left Keyes alive", object_index);
+		achievements_unit_describe(object_index, text, sizeof(text));
+		error(_error_silent, "achievements: an Elite left Keyes alive (%s): Tying Up Loose Ends lost", text);
 	}
 }
 
