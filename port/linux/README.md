@@ -623,8 +623,10 @@ its players' achievements; split screen and co-op count as cooperative.
   the level's end, the player may fire no shot, from a weapon or a vehicle
   seat it controls (grenades and melee are not shots).
 - **Breaking Quarantine**: 343 Guilty Spark's final lift out of the
-  facility (`lift_d`) started from its switch within 21 minutes of the
-  level's start.
+  facility (`lift_d`) started from its switch within 21 minutes of "The
+  Flood" title card (`chapter_flood`, after the Jenkins cinematic). The
+  clock is game time, so pausing stops it; any difficulty, alone or in
+  co-op.
 - **This Side Up, Never Tell Me the Odds**: The Maw's escape ride is the
   countdown, from when its timer starts running (`timer_begin`) to the
   level's end (`endgame_cinematics` pauses it; the trench scene's pause

@@ -72,6 +72,7 @@ symbols in this file:
 #include "saved games/game_state.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 #include "text/draw_string.h"
 #include "text/text_group.h"
 #include "mcc_hud_draw.h" /* port: port/linux/game/mcc_hud_draw.c */
@@ -268,6 +269,15 @@ void cinematic_set_title_delayed(
 	short title_slot_index;
 
 	network_coop_note_title(title_index, delay);
+	/* port: a title card (port/linux/game/achievements.c: 343 Guilty Spark's
+	"The Flood" starts Breaking Quarantine's clock) */
+	if (title_index >= 0 && title_index < global_scenario_get()->cutscene_chapter_titles.count)
+	{
+		achievements_title_shown(TAG_BLOCK_GET_ELEMENT(
+			&global_scenario_get()->cutscene_chapter_titles,
+			title_index,
+			struct scenario_cutscene_title)->name);
+	}
 	for (title_slot_index = 0;
 		title_slot_index < MAXIMUM_QUEUED_CINEMATIC_TITLES &&
 		cinematic_globals->queued_titles[title_slot_index].title_index != NONE;

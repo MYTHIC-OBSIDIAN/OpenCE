@@ -239,7 +239,10 @@ struct achievement_level
 	scripts move on to the next area, mission_area3, are not killed) */
 	short first_encounter_arrivals;
 	short first_encounter_arrivals_killed;
-	long reserved[29];
+	/* 343 Guilty Spark: when "The Flood" title card came (Breaking
+	Quarantine's clock: game time, which a pause stops), NONE before */
+	long quarantine_start_time;
+	long reserved[28];
 	struct achievement_player players[ACHIEVEMENT_PLAYERS];
 };
 
@@ -993,7 +996,8 @@ static void achievements_update_cartographer(
 }
 
 /* 343 Guilty Spark: Breaking Quarantine when the final lift out of the
-facility starts (its switch), within 21 minutes of the level's start */
+facility starts (its switch), within 21 minutes of "The Flood" title card
+(achievements_title_shown): game time, which pausing stops */
 static void achievements_update_guilty_spark(
 	struct achievement_level *level)
 {
@@ -1014,10 +1018,31 @@ static void achievements_update_guilty_spark(
 	if (!level->final_lift_seen)
 		return;
 	level->final_lift_started = TRUE;
-	error(_error_silent, "achievements: 343 Guilty Spark's final lift started at tick %ld of the level",
-		game_time_get() - level->start_time);
-	if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)
+	if (level->quarantine_start_time == NONE)
+	{
+		error(_error_silent, "achievements: 343 Guilty Spark's final lift started, the Flood's title card never shown");
+		return;
+	}
+	error(_error_silent, "achievements: 343 Guilty Spark's final lift started %ld ticks after the Flood's title card (%ld allowed)",
+		game_time_get() - level->quarantine_start_time, (long)BREAKING_QUARANTINE_TICKS);
+	if (game_time_get() - level->quarantine_start_time <= BREAKING_QUARANTINE_TICKS)
 		achievement_earned_by_all(ACHIEVEMENT_BREAKING_QUARANTINE);
+}
+
+/* a chapter title card shown (cinematics.c): 343 Guilty Spark's "The Flood"
+(chapter_flood, after the x50 cinematic) starts Breaking Quarantine's clock */
+void achievements_title_shown(
+	char const *name)
+{
+	struct achievement_level *level = achievements_deciding();
+
+	if (!level || level->level != _level_guilty_spark || level->quarantine_start_time != NONE || !name ||
+		strcmp(name, "chapter_flood"))
+	{
+		return;
+	}
+	level->quarantine_start_time = game_time_get();
+	error(_error_silent, "achievements: 343 Guilty Spark's Flood title card, Breaking Quarantine's clock started");
 }
 
 /* The Maw: the countdown's start (achievements_update, each tick) */
@@ -1083,6 +1108,7 @@ void achievements_initialize_for_new_map(
 	achievement_level->level = achievements_current_level();
 	achievement_level->difficulty = game_difficulty_level_get();
 	achievement_level->start_time = game_time_get();
+	achievement_level->quarantine_start_time = NONE;
 	achievements_find_names(achievement_level->level);
 }
 

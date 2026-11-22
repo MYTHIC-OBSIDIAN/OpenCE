@@ -53,5 +53,7 @@ void achievements_network_earned(long player_index, short achievement);
 /* a local player's profile changed (player_ui.c's active profile): the
 companion program's file of player 1's name and the local players' logs */
 void achievements_profiles_changed(void);
+/* a chapter title card shown (cinematics.c) */
+void achievements_title_shown(char const *name);
 
 #endif // __ACHIEVEMENTS_H
