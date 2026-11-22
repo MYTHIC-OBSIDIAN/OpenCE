@@ -570,6 +570,9 @@ namespace OpenCEAchievements
         public static readonly Color BgTop = Color.FromArgb(14, 28, 46);
         public static readonly Color BgBottom = Color.FromArgb(5, 10, 18);
         public static readonly Color Frame = Color.FromArgb(44, 92, 134);
+        // the window's border, as the Halo PC installer's: 3 pixels of periwinkle
+        public static readonly Color WindowBorder = Color.FromArgb(78, 119, 252);
+        public static int WindowBorderWidth { get { return Math.Max(2, S(3)); } }
         public static readonly Color Accent = Color.FromArgb(92, 196, 255);
         public static readonly Color RowTop = Color.FromArgb(22, 46, 72);
         public static readonly Color RowBottom = Color.FromArgb(10, 24, 40);
@@ -1157,10 +1160,10 @@ namespace OpenCEAchievements
             Text = "Halo: Combat Evolved - Achievements";
             Icon = Res.AppIcon();
             Cursor = GameCursor.Arrow;                   // assets\cursor.cur if built in, else the arrow
-            FormBorderStyle = FormBorderStyle.None;      // own minimise / close buttons (Games for Windows - LIVE style)
+            FormBorderStyle = FormBorderStyle.None;      // own minimise / close buttons (the Halo PC installer's)
             MaximizeBox = false;                         // no maximise (no button, no snap-to-maximise, no double-click)
-            Padding = new Padding(1);                    // 1px frame, painted in OnPaint
-            BackColor = Theme.Frame;
+            Padding = new Padding(Theme.WindowBorderWidth);  // the installer's border: the form's colour around its children
+            BackColor = Theme.WindowBorder;
             ForeColor = Theme.Text;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(Theme.S(820), Theme.S(720));
@@ -1317,44 +1320,80 @@ namespace OpenCEAchievements
             Invalidate();
         }
 
-        // Minimise / close: the Games for Windows - LIVE HUD close button (btn_hud_close_*.png from xlive.dll),
-        // and the same button turned blue with a bar for minimise.
-        static readonly string[] BtnState = { "normal", "focus", "press" };
-        static Image[] minImg, closeImg;
+        // Minimise / close: the Halo PC installer's caption buttons, 24x24 slanted tiles. Each is a strip of six
+        // states, one under another (assets\win_minimize.png and win_close.png, 24x144): normal, hover, pressed
+        // are the first three. Without them the same tiles are drawn.
+        static Image minStrip, closeStrip;
+        static bool stripsLoaded;
         int btnHot = -1, btnDown = -1;      // 0 = minimise, 1 = close
+        const int BtnSize = 24, BtnGap = 3, BtnMargin = 6;
 
         Rectangle BtnRect(int i)
         {
-            // images are 67x29 with the button body 48 wide, 10px of glow either side, hanging from the top edge
-            int w = Theme.S(67), h = Theme.S(29), x = Width - Theme.S(4) - w;
-            if (i == 0) x -= Theme.S(50);
-            return new Rectangle(x, 0, w, h);
+            int s = Theme.S(BtnSize), x = Width - Theme.S(BtnMargin) - s, y = Theme.S(BtnMargin);
+            if (i == 0) x -= s + Theme.S(BtnGap);
+            return new Rectangle(x, y, s, s);
         }
 
         int BtnAt(Point p)
         {
-            for (int i = 1; i >= 0; i--)
-            {
-                var r = BtnRect(i);
-                var body = new Rectangle(r.X + Theme.S(10), r.Y, Theme.S(48), Theme.S(20));
-                if (body.Contains(p)) return i;
-            }
+            for (int i = 1; i >= 0; i--) if (BtnRect(i).Contains(p)) return i;
             return -1;
+        }
+
+        // the installer's tile drawn, for want of its picture: a slanted box outlined in its blue, the
+        // minimise bar or the close cross in it
+        static void DrawTile(Graphics g, Rectangle r, int which, int state)
+        {
+            float k = r.Width / 24f;
+            Func<float, float, PointF> P = delegate(float x, float y) { return new PointF(r.X + x * k, r.Y + y * k); };
+            var outline = new[] { P(5, 2.5f), P(22, 2.5f), P(19, 21.5f), P(2, 21.5f) };
+            Color fill = state == 2 ? Color.FromArgb(4, 14, 24) : state == 1 ? Color.FromArgb(21, 75, 128) : Color.FromArgb(8, 30, 51);
+            Color edge = Color.FromArgb(41, 150, 255);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var b = new SolidBrush(fill)) g.FillPolygon(b, outline);
+            if (state == 2)
+                using (var path = new GraphicsPath())
+                {
+                    path.AddPolygon(outline);
+                    using (var glow = new PathGradientBrush(path))
+                    {
+                        glow.CenterColor = Color.FromArgb(150, 41, 150, 255);
+                        glow.SurroundColors = new[] { Color.FromArgb(0, 41, 150, 255) };
+                        g.FillPath(glow, path);
+                    }
+                }
+            using (var pen = new Pen(edge, Math.Max(1.5f, 2f * k))) g.DrawPolygon(pen, outline);
+            using (var pen = new Pen(edge, Math.Max(1.5f, 2f * k)))
+            {
+                if (which == 0) g.DrawLine(pen, P(8, 17), P(14, 17));
+                else { g.DrawLine(pen, P(6.5f, 5.5f), P(17.5f, 18.5f)); g.DrawLine(pen, P(19.5f, 5.5f), P(4.5f, 18.5f)); }
+            }
         }
 
         void DrawButtons(Graphics g)
         {
-            if (minImg == null)
+            if (!stripsLoaded)
             {
-                minImg = new Image[3]; closeImg = new Image[3];
-                for (int i = 0; i < 3; i++) { minImg[i] = Res.Image("min_" + BtnState[i] + ".png"); closeImg[i] = Res.Image("close_" + BtnState[i] + ".png"); }
+                stripsLoaded = true;
+                minStrip = Res.Image("win_minimize.png");
+                closeStrip = Res.Image("win_close.png");
             }
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            foreach (int i in btnHot == 0 ? new[] { 1, 0 } : new[] { 0, 1 })     // hovered one last, so its glow is on top
+            for (int i = 0; i < 2; i++)
             {
                 int st = btnHot == i ? (btnDown == i ? 2 : 1) : 0;
-                var img = (i == 0 ? minImg : closeImg)[st];
-                if (img != null) g.DrawImage(img, BtnRect(i));
+                var r = BtnRect(i);
+                var strip = i == 0 ? minStrip : closeStrip;
+                if (strip != null && strip.Width > 0 && strip.Height >= strip.Width * 3)
+                {
+                    int cell = strip.Width;
+                    // (whole multiples kept sharp, as the installer's pixels are)
+                    g.InterpolationMode = r.Width % cell == 0 ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.Half;
+                    g.DrawImage(strip, r, new Rectangle(0, st * cell, cell, cell), GraphicsUnit.Pixel);
+                    g.PixelOffsetMode = PixelOffsetMode.Default;
+                }
+                else DrawTile(g, r, i, st);
             }
         }
 

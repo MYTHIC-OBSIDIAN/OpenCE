@@ -45,7 +45,7 @@ one is drawn plainly:
 | `assets\icons\<number>.png` | Each achievement's picture, by its number in `Data.cs` (1 to 37), with a transparent background (`tools\achievements\clear_icons.py` takes the 360 icons' black off) |
 | `assets\toast.png`, `assets\toast_globe.png` | The pop-up's bar |
 | `assets\gscore.png` | The points symbol |
-| `assets\min_*.png`, `assets\close_*.png` | The list window's buttons (`normal`, `focus`, `press`) |
+| `assets\win_minimize.png`, `assets\win_close.png` | The list window's minimise and close buttons, the Halo PC installer's: 24x24 tiles, six states one under another (24x144; normal, hover and pressed are the first three). Without them the same slanted tiles are drawn |
 | `assets\achievement.mp3` | The pop-up's sound |
 | `assets\header.png` | The header's background: as wide as the header, a band near its foot shown |
 | `assets\tile.png` | The square picture in the header, when there is no `Gamerpic.png` |
