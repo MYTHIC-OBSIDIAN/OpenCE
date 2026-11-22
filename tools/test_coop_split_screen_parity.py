@@ -611,8 +611,10 @@ def test_keyes_elites_and_two_betrayals_weapons_follow_the_rules():
 def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
     module = source("port/linux/game/achievements.c")
     ride = function(module, "achievements_update_ride")
-    assert "running = timer.enabled && !timer.paused && ticks > 0;" in ride
-    assert "if (!running || cinematic_in_progress())" in ride
+    assert "if (timer.enabled && !timer.paused && ticks > 0 && !cinematic_in_progress())" in ride
+    # (the trench scene's pause is not the ride's end: the level's is, with
+    # the countdown paused by endgame_cinematics)
+    assert "return timer.paused ? timer.ticks : timer.ticks + timer.reference_time - game_time_get();" in function(module, "achievements_countdown_left")
     ejected = function(module, "achievements_player_ejected")
     assert "!level->ride_started || level->ride_ended" in ejected
     bipeds = source("source/units/bipeds.c")
@@ -620,4 +622,25 @@ def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
     assert update.index("achievements_player_ejected(biped_index);") < update.index("unit_exit_seat_end(biped_index);")
     won = function(module, "achievements_won_map")
     assert "if (legendary && left >= NEVER_TELL_ME_THE_ODDS_TICKS)" in won
-    assert "if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)" in won
+    lift = function(module, "achievements_update_guilty_spark")
+    assert "if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)" in lift
+
+
+def test_the_levels_moments_come_from_their_scripts():
+    module = source("port/linux/game/achievements.c")
+    names = function(module, "achievements_find_names")
+    assert 'achievements_encounter_named("covenant_area2")' in names
+    assert 'achievements_encounter_named("beach_lz_marine")' in names
+    assert 'scenario_object_name_index_from_string(scenario, "hog_pelican")' in names
+    assert 'scenario_object_name_index_from_string(scenario, "lift_d")' in names
+    assert 'hs_runtime_port_scenario_boolean("global_shafta_switched") == TRUE' in function(module, "achievements_update_cartographer")
+    assert "prop->enemy && prop->state == _prop_state_acknowledged" in function(module, "achievements_actor_detected_player")
+    assert "achievements_weapon_fired(owner_object_index);" in function(source("source/items/weapons.c"), "weapon_trigger_fire")
+    assert "achievements_unit_died(unit_index);" in function(source("source/units/units.c"), "unit_died")
+
+
+def test_keyes_ending_cinematics_elites_are_not_the_levels():
+    module = source("port/linux/game/achievements.c")
+    assert 'achievements_encounter_named("outro_cov")' in function(module, "achievements_find_names")
+    assert "!achievements_unit_in_encounter(iterator.index, achievement_names.keyes_outro_encounter)" in function(module, "achievements_elites_all_dead")
+    assert "achievements_unit_in_encounter(object_index, achievement_names.keyes_outro_encounter)" in function(module, "achievements_object_deleted")

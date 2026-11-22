@@ -39,6 +39,11 @@ void achievements_player_picked_up_powerup(long player_index, long definition_in
 void achievements_player_entered_seat(long player_index, long vehicle_index);
 /* biped_update: a unit thrown from its flipped vehicle */
 void achievements_player_ejected(long unit_index);
+/* unit_died: any unit died */
+void achievements_unit_died(long unit_index);
+/* weapon_trigger_fire: a weapon fired a shot (its owner: a unit, or the
+vehicle whose weapon it is) */
+void achievements_weapon_fired(long owner_object_index);
 /* object_deleted_procs_call: an object about to be deleted */
 void achievements_object_deleted(long object_index);
 

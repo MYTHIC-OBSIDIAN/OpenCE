@@ -2815,6 +2815,8 @@ void unit_died(
 
 	if (!feigned)
 	{
+		/* port: (port/linux/game/achievements.c) */
+		achievements_unit_died(unit_index);
 		object_set_garbage(unit_index, TRUE);
 		if (unit->unit.player_index != NONE)
 		{

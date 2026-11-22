@@ -27,6 +27,13 @@ whose clients' players' achievements it sends them (network_coop.c).
 #include "game/game_engine.h"
 #include "game/players.h"
 #include "cutscene/cinematics.h"
+#include "ai/actors.h"
+#include "ai/ai_scenario_definitions.h"
+#include "ai/props.h"
+#include "devices/devices.h"
+#include "hs/hs.h"
+#include "scenario/scenario.h"
+#include "scenario/scenario_definitions.h"
 #include "interface/hud_messaging.h"
 #include "items/equipment.h"
 #include "items/equipment_definitions.h"
@@ -138,6 +145,8 @@ enum
 	_achievement_popcorn_bit,
 	/* The Maw: thrown from a flipped vehicle during the ride */
 	_achievement_ejected_bit,
+	/* The Silent Cartographer: fired a shot after the map was activated */
+	_achievement_fired_after_map_bit,
 };
 
 /* No-Fly Zone, Wraith Hunter, This One's for Jenkins, Popcorn.gif */
@@ -149,7 +158,8 @@ enum
 #define SNIPER_ROUNDS_LEFT 4
 /* Speed Reader: the Library within 30 minutes */
 #define SPEED_READER_TICKS (30 * 60 * TICKS_PER_SECOND)
-/* Breaking Quarantine: 343 Guilty Spark within 21 minutes */
+/* Breaking Quarantine: 343 Guilty Spark's final lift out of the facility
+started within 21 minutes of the level's start */
 #define BREAKING_QUARANTINE_TICKS (21 * 60 * TICKS_PER_SECOND)
 /* Never Tell Me the Odds: a minute left on the countdown */
 #define NEVER_TELL_ME_THE_ODDS_TICKS (60 * TICKS_PER_SECOND)
@@ -187,23 +197,53 @@ struct achievement_level
 	long start_time;
 	/* Keyes: an Elite left the level alive (Tying Up Loose Ends) */
 	boolean elite_left_alive;
-	/* The Maw's escape: the countdown began (the ride), and ended (its
-	timer stopped or hidden, or a cinematic began: the Longsword reached),
-	with the ticks it had left then */
+	/* The Maw's escape: the countdown began (the ride, d40's timer_begin;
+	it ends with the level, whose endgame_cinematics pause it: the trench
+	scene's pause along the way is not its end) */
 	boolean ride_started;
 	boolean ride_ended;
 	byte pad;
 	short ride_ticks_left;
 	short pad2;
-	/* room for the levels' moments still to come, so that adding them
-	leaves the game state's size, and the saved games, as they are */
-	long reserved[32];
+	/* Truth and Reconciliation's first encounter (covenant_area2): its last
+	wave placed, a player detected by one of it, and its end */
+	boolean first_encounter_last_wave;
+	boolean first_encounter_detected;
+	boolean first_encounter_over;
+	/* The Silent Cartographer: a beach marine lost, the beach stormed (the
+	Warthog's Pelican made), and the map activated */
+	boolean beach_marine_lost;
+	boolean beach_stormed;
+	boolean map_activated;
+	/* 343 Guilty Spark: the final lift seen still, and started */
+	boolean final_lift_seen;
+	boolean final_lift_started;
+	/* (room for more, so that adding them leaves the game state's size, and
+	the saved games, as they are) */
+	long reserved[30];
 	struct achievement_player players[ACHIEVEMENT_PLAYERS];
 };
 
 /* ---------- globals */
 
 static struct achievement_level *achievement_level;
+
+/* what a level's moments are found by, from its scenario (not saved: the
+same after a revert) */
+static struct
+{
+	/* Truth and Reconciliation: the first encounter and its last wave's squads */
+	long first_encounter;
+	short last_wave_squads[3];
+	/* The Silent Cartographer: the beach marines' encounter, and the Pelican
+	that brings the Warthog once the beach is taken */
+	long beach_marine_encounter;
+	short warthog_pelican_name;
+	/* 343 Guilty Spark: the final lift */
+	short final_lift_name;
+	/* Keyes: the Elites its ending cinematic places (not the level's) */
+	long keyes_outro_encounter;
+} achievement_names;
 
 /* which numbers the log has (read once, then kept up to date) */
 static byte achievements_logged[(ACHIEVEMENT_NUMBERS + 7) / 8];
@@ -482,7 +522,10 @@ static short achievement_sniper_rounds(
 	return best;
 }
 
-/* Tying Up Loose Ends: no Elite left alive in the level */
+static boolean achievements_unit_in_encounter(long unit_index, long encounter_index);
+
+/* Tying Up Loose Ends: no Elite left alive in the level (the ending
+cinematic's are not the level's) */
 static boolean achievements_elites_all_dead(
 	void)
 {
@@ -493,42 +536,272 @@ static boolean achievements_elites_all_dead(
 	while ((object = object_iterator_next(&iterator)) != NULL)
 	{
 		if (tag_in_folder(object->definition_index, "characters\\elite\\") &&
-			!TEST_FLAG(object->object.damage_flags, _object_dead_bit))
+			!TEST_FLAG(object->object.damage_flags, _object_dead_bit) &&
+			!achievements_unit_in_encounter(iterator.index, achievement_names.keyes_outro_encounter))
 		{
+			error(_error_silent, "achievements: an Elite (%ld) alive as Keyes ends", iterator.index);
 			return FALSE;
 		}
 	}
 	return TRUE;
 }
 
-/* The Maw: the countdown's start and end (achievements_update, each tick) */
+/* the scenario's encounter of the name, NONE without one */
+static long achievements_encounter_named(
+	char const *name)
+{
+	struct scenario *scenario = global_scenario_get();
+	short index;
+
+	for (index = 0; scenario && index < scenario->ai_encounters.count; index++)
+	{
+		struct encounter_definition *encounter = TAG_BLOCK_GET_ELEMENT(&scenario->ai_encounters, index,
+			struct encounter_definition);
+
+		if (!_stricmp(encounter->name, name))
+			return index;
+	}
+	return NONE;
+}
+
+static short achievements_squad_named(
+	long encounter_index,
+	char const *name)
+{
+	struct scenario *scenario = global_scenario_get();
+	struct encounter_definition *encounter;
+	short index;
+
+	if (!scenario || encounter_index == NONE)
+		return NONE;
+	encounter = TAG_BLOCK_GET_ELEMENT(&scenario->ai_encounters, encounter_index, struct encounter_definition);
+	for (index = 0; index < encounter->squads.count; index++)
+	{
+		if (!_stricmp(TAG_BLOCK_GET_ELEMENT(&encounter->squads, index, struct squad_definition)->name, name))
+			return index;
+	}
+	return NONE;
+}
+
+static void achievements_find_names(
+	short level)
+{
+	struct scenario *scenario = global_scenario_get();
+	short index;
+
+	achievement_names.first_encounter = NONE;
+	for (index = 0; index < NUMBEROF(achievement_names.last_wave_squads); index++)
+		achievement_names.last_wave_squads[index] = NONE;
+	achievement_names.beach_marine_encounter = NONE;
+	achievement_names.warthog_pelican_name = NONE;
+	achievement_names.final_lift_name = NONE;
+	achievement_names.keyes_outro_encounter = NONE;
+	if (!scenario)
+		return;
+	switch (level)
+	{
+	case _level_truth_and_reconciliation:
+		/* (a50's mission_area2: enc_area2_ini, enc_area2_wave_2 and
+		enc_back_area2 place it; it is over when none of it lives) */
+		achievement_names.first_encounter = achievements_encounter_named("covenant_area2");
+		achievement_names.last_wave_squads[0] = achievements_squad_named(achievement_names.first_encounter, "grunts_back_left");
+		achievement_names.last_wave_squads[1] = achievements_squad_named(achievement_names.first_encounter, "grunts_back_right");
+		achievement_names.last_wave_squads[2] = achievements_squad_named(achievement_names.first_encounter, "jackals_back");
+		break;
+	case _level_silent_cartographer:
+		/* (b30's mission_beach_lz makes hog_pelican once beach_lz/arch_toon,
+		the beach's last, is dead) */
+		achievement_names.beach_marine_encounter = achievements_encounter_named("beach_lz_marine");
+		achievement_names.warthog_pelican_name = scenario_object_name_index_from_string(scenario, "hog_pelican");
+		break;
+	case _level_guilty_spark:
+		/* (c10's mission_int_b waits for lift_d to leave position 1) */
+		achievement_names.final_lift_name = scenario_object_name_index_from_string(scenario, "lift_d");
+		break;
+	case _level_keyes:
+		/* (d20's cinematic_outro places outro_cov's Elites just before the
+		level is won) */
+		achievement_names.keyes_outro_encounter = achievements_encounter_named("outro_cov");
+		break;
+	}
+}
+
+/* a unit's actor, in its encounter and squad */
+static boolean achievements_unit_in_encounter(
+	long unit_index,
+	long encounter_index)
+{
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get(unit_index);
+	struct actor_datum *actor;
+
+	if (!unit || encounter_index == NONE || !TEST_FLAG(_object_mask_unit, unit->object.type) ||
+		unit->unit.actor_index == NONE)
+	{
+		return FALSE;
+	}
+	actor = actor_try_and_get(unit->unit.actor_index);
+	return actor && DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index) == encounter_index;
+}
+
+/* whether the actor knows a player is there: it has acknowledged an enemy
+prop of a player's unit (a body it found, a sound it heard, a friend's
+death, are not one) */
+static boolean achievements_actor_detected_player(
+	struct actor_datum *actor)
+{
+	long prop_index = actor->meta.first_prop_index;
+	short guard = 0;
+
+	while (prop_index != NONE && guard++ < 256)
+	{
+		struct prop_datum *prop = prop_try_and_get(prop_index);
+		struct unit_datum *unit;
+
+		if (!prop)
+			break;
+		unit = prop->unit_index != NONE ? (struct unit_datum *)object_try_and_get(prop->unit_index) : NULL;
+		if (prop->enemy && prop->state == _prop_state_acknowledged && unit &&
+			TEST_FLAG(_object_mask_unit, unit->object.type) && unit->unit.player_index != NONE)
+		{
+			return TRUE;
+		}
+		prop_index = prop->next_prop_index;
+	}
+	return FALSE;
+}
+
+/* Truth and Reconciliation's first encounter: All According to Plan when
+the last of it dies, no player having been detected by it */
+static void achievements_update_first_encounter(
+	struct achievement_level *level)
+{
+	struct data_iterator iterator;
+	struct actor_datum *actor;
+	short living = 0;
+
+	if (level->level != _level_truth_and_reconciliation || level->first_encounter_over ||
+		achievement_names.first_encounter == NONE)
+	{
+		return;
+	}
+	data_iterator_new(&iterator, actor_data);
+	while ((actor = (struct actor_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		struct object_datum *unit;
+		short index;
+
+		if (actor->meta.encounter_index == NONE ||
+			DATUM_INDEX_TO_ABSOLUTE_INDEX(actor->meta.encounter_index) != achievement_names.first_encounter)
+		{
+			continue;
+		}
+		unit = actor->meta.unit_index != NONE ? object_try_and_get(actor->meta.unit_index) : NULL;
+		if (!unit || TEST_FLAG(unit->object.damage_flags, _object_dead_bit))
+			continue;
+		living++;
+		for (index = 0; index < NUMBEROF(achievement_names.last_wave_squads); index++)
+		{
+			if (achievement_names.last_wave_squads[index] != NONE &&
+				actor->meta.squad_index == achievement_names.last_wave_squads[index])
+			{
+				level->first_encounter_last_wave = TRUE;
+			}
+		}
+		if (!level->first_encounter_detected && achievements_actor_detected_player(actor))
+		{
+			level->first_encounter_detected = TRUE;
+			error(_error_silent, "achievements: Truth and Reconciliation's first encounter detected a player");
+		}
+	}
+	if (level->first_encounter_last_wave && living == 0)
+	{
+		level->first_encounter_over = TRUE;
+		error(_error_silent, "achievements: Truth and Reconciliation's first encounter over, %s",
+			level->first_encounter_detected ? "detected" : "undetected");
+		if (!level->first_encounter_detected)
+			achievement_earned_by_all(ACHIEVEMENT_ALL_ACCORDING_TO_PLAN);
+	}
+}
+
+/* The Silent Cartographer: the beach stormed (Beachhead: no marine lost
+before, on Heroic or harder) and the map activated (Grenadier's start) */
+static void achievements_update_cartographer(
+	struct achievement_level *level)
+{
+	if (level->level != _level_silent_cartographer)
+		return;
+	if (!level->beach_stormed && achievement_names.warthog_pelican_name != NONE &&
+		object_index_from_name_index(achievement_names.warthog_pelican_name) != NONE)
+	{
+		level->beach_stormed = TRUE;
+		error(_error_silent, "achievements: the Silent Cartographer's beach stormed, %s",
+			level->beach_marine_lost ? "a marine lost" : "no marine lost");
+		if (!level->beach_marine_lost && level->difficulty >= _game_difficulty_level_hard)
+			achievement_earned_by_all(ACHIEVEMENT_BEACHHEAD);
+	}
+	if (!level->map_activated && hs_runtime_port_scenario_boolean("global_shafta_switched") == TRUE)
+	{
+		level->map_activated = TRUE;
+		error(_error_silent, "achievements: the Silent Cartographer's map activated");
+	}
+}
+
+/* 343 Guilty Spark: Breaking Quarantine when the final lift out of the
+facility starts (its switch), within 21 minutes of the level's start */
+static void achievements_update_guilty_spark(
+	struct achievement_level *level)
+{
+	long lift_index;
+	real position;
+
+	if (level->level != _level_guilty_spark || level->final_lift_started || achievement_names.final_lift_name == NONE)
+		return;
+	lift_index = object_index_from_name_index(achievement_names.final_lift_name);
+	if (lift_index == NONE)
+		return;
+	position = device_get_position(lift_index);
+	if (position == 1.f)
+	{
+		level->final_lift_seen = TRUE;
+		return;
+	}
+	if (!level->final_lift_seen)
+		return;
+	level->final_lift_started = TRUE;
+	error(_error_silent, "achievements: 343 Guilty Spark's final lift started at tick %ld of the level",
+		game_time_get() - level->start_time);
+	if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)
+		achievement_earned_by_all(ACHIEVEMENT_BREAKING_QUARANTINE);
+}
+
+/* The Maw: the countdown's start (achievements_update, each tick) */
 static void achievements_update_ride(
 	struct achievement_level *level)
 {
 	struct hud_timer_state timer;
 	short ticks;
-	boolean running;
 
-	if (level->level != _level_maw || level->ride_ended)
+	if (level->level != _level_maw || level->ride_started)
 		return;
 	hud_messaging_port_timer_get(&timer);
 	ticks = scripted_hud_get_timer_ticks();
-	running = timer.enabled && !timer.paused && ticks > 0;
-	if (!level->ride_started)
+	if (timer.enabled && !timer.paused && ticks > 0 && !cinematic_in_progress())
 	{
-		if (running && !cinematic_in_progress())
-		{
-			level->ride_started = TRUE;
-			error(_error_silent, "achievements: the Maw's ride begins, %d ticks on the countdown", ticks);
-		}
-		return;
+		level->ride_started = TRUE;
+		error(_error_silent, "achievements: the Maw's ride begins, %d ticks on the countdown", ticks);
 	}
-	if (!running || cinematic_in_progress())
-	{
-		level->ride_ended = TRUE;
-		level->ride_ticks_left = (short)MAX(ticks, 0);
-		error(_error_silent, "achievements: the Maw's ride ends, %d ticks left", level->ride_ticks_left);
-	}
+}
+
+/* the ticks left on the countdown, hidden or not (paused at the end) */
+static long achievements_countdown_left(
+	void)
+{
+	struct hud_timer_state timer;
+
+	hud_messaging_port_timer_get(&timer);
+	if (timer.ticks == NONE)
+		return 0;
+	return timer.paused ? timer.ticks : timer.ticks + timer.reference_time - game_time_get();
 }
 
 /* ---------- public code */
@@ -564,6 +837,7 @@ void achievements_initialize_for_new_map(
 	achievement_level->level = achievements_current_level();
 	achievement_level->difficulty = game_difficulty_level_get();
 	achievement_level->start_time = game_time_get();
+	achievements_find_names(achievement_level->level);
 }
 
 void achievements_update(
@@ -576,6 +850,9 @@ void achievements_update(
 	if (!level)
 		return;
 	achievements_update_ride(level);
+	achievements_update_first_encounter(level);
+	achievements_update_cartographer(level);
+	achievements_update_guilty_spark(level);
 	data_iterator_new(&iterator, player_data);
 	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
 	{
@@ -652,16 +929,23 @@ void achievements_won_map(
 			if (achievement_sniper_rounds(player->unit_index) >= SNIPER_ROUNDS_LEFT)
 				achievement_earned(player_index, ACHIEVEMENT_CLOSE_QUARTERS_COMBAT);
 			break;
-		case _level_guilty_spark:
-			if (game_time_get() - level->start_time <= BREAKING_QUARANTINE_TICKS)
-				achievement_earned(player_index, ACHIEVEMENT_BREAKING_QUARANTINE);
+		case _level_silent_cartographer:
+			if (heroic && level->map_activated && !TEST_FLAG(record->flags, _achievement_fired_after_map_bit))
+				achievement_earned(player_index, ACHIEVEMENT_GRENADIER);
 			break;
 		case _level_maw:
-			/* (the ride finished: begun, and ended before the level was won) */
+			/* (the ride finished: begun, and the level won, the countdown
+			paused at its end) */
 			if (level->ride_started)
 			{
-				short left = level->ride_ended ? level->ride_ticks_left : (short)MAX(scripted_hud_get_timer_ticks(), 0);
+				long left = achievements_countdown_left();
 
+				if (!level->ride_ended)
+				{
+					level->ride_ended = TRUE;
+					level->ride_ticks_left = (short)PIN(left, 0, SHORT_MAX);
+					error(_error_silent, "achievements: the Maw's ride ends, %ld ticks left", left);
+				}
 				if (!TEST_FLAG(record->flags, _achievement_ejected_bit))
 					achievement_earned(player_index, ACHIEVEMENT_THIS_SIDE_UP);
 				if (legendary && left >= NEVER_TELL_ME_THE_ODDS_TICKS)
@@ -846,7 +1130,7 @@ void achievements_player_ejected(
 	struct unit_datum *unit;
 	struct achievement_player *record;
 
-	/* (the Maw's ride only: begun and not ended) */
+	/* (the Maw's ride only: begun, to the level's end) */
 	if (!level || level->level != _level_maw || !level->ride_started || level->ride_ended)
 		return;
 	unit = (struct unit_datum *)object_try_and_get(unit_index);
@@ -860,6 +1144,50 @@ void achievements_player_ejected(
 	}
 }
 
+void achievements_unit_died(
+	long unit_index)
+{
+	struct achievement_level *level = achievements_deciding();
+
+	/* Beachhead: a beach marine lost before the beach was stormed */
+	if (level && level->level == _level_silent_cartographer && !level->beach_stormed && !level->beach_marine_lost &&
+		achievements_unit_in_encounter(unit_index, achievement_names.beach_marine_encounter))
+	{
+		level->beach_marine_lost = TRUE;
+		error(_error_silent, "achievements: a beach marine (%ld) died before the beach was stormed", unit_index);
+	}
+}
+
+void achievements_weapon_fired(
+	long owner_object_index)
+{
+	struct achievement_level *level = achievements_deciding();
+	struct unit_datum *unit;
+	struct achievement_player *record;
+
+	/* Grenadier: a shot after the map was activated, by a player's hand or
+	from the seat whose weapon it is (grenades and melee are not shots) */
+	if (!level || level->level != _level_silent_cartographer || !level->map_activated)
+		return;
+	unit = owner_object_index != NONE ? (struct unit_datum *)object_try_and_get(owner_object_index) : NULL;
+	if (!unit || !TEST_FLAG(_object_mask_unit, unit->object.type))
+		return;
+	if (unit->unit.player_index == NONE)
+	{
+		long controller = unit->unit.gunner_object_index != NONE ? unit->unit.gunner_object_index : unit->unit.driver_object_index;
+
+		unit = controller != NONE ? (struct unit_datum *)object_try_and_get(controller) : NULL;
+		if (!unit || !TEST_FLAG(_object_mask_unit, unit->object.type))
+			return;
+	}
+	record = achievements_player(unit->unit.player_index);
+	if (record && !TEST_FLAG(record->flags, _achievement_fired_after_map_bit))
+	{
+		SET_FLAG(record->flags, _achievement_fired_after_map_bit, TRUE);
+		error(_error_silent, "achievements: player %08lx fired after the map was activated", unit->unit.player_index);
+	}
+}
+
 void achievements_object_deleted(
 	long object_index)
 {
@@ -867,8 +1195,11 @@ void achievements_object_deleted(
 	struct object_datum *object;
 
 	/* Keyes: an Elite taken out of the level alive voids Tying Up Loose Ends */
-	if (!level || level->level != _level_keyes || level->elite_left_alive || !object_is_elite(object_index))
+	if (!level || level->level != _level_keyes || level->elite_left_alive || !object_is_elite(object_index) ||
+		achievements_unit_in_encounter(object_index, achievement_names.keyes_outro_encounter))
+	{
 		return;
+	}
 	object = object_get(object_index);
 	if (!TEST_FLAG(object->object.damage_flags, _object_dead_bit))
 	{

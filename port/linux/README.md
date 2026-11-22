@@ -594,18 +594,29 @@ its players' achievements; split screen and co-op count as cooperative.
   may be picked up).
 - **Tying Up Loose Ends**: Keyes on Heroic or harder with every Elite dead
   when it ends, whoever killed them; an Elite taken out of the level alive
-  (deleted, unloaded) loses it. The Flood's Elite combat forms do not count.
+  (deleted, unloaded) loses it. The Flood's Elite combat forms do not count,
+  nor do the Elites the ending cinematic places (`outro_cov`).
 - **Popcorn.gif**: 100 Flood infection forms killed in Keyes on Heroic or
   harder.
-- **Breaking Quarantine**: 343 Guilty Spark finished within 21 minutes of
-  its start.
+- **All According to Plan**: Truth and Reconciliation's first encounter
+  (`covenant_area2`: its first placement, its second wave and its last)
+  all dead without one of it having acknowledged a player (a body found, a
+  shot heard or a friend killed are not that).
+- **Beachhead, Grenadier**: The Silent Cartographer on Heroic or harder.
+  The beach is stormed when its last Covenant (`beach_lz/arch_toon`) are
+  dead and the Warthog's Pelican comes; no marine of `beach_lz_marine`
+  may die before. From the map's activation (`global_shafta_switched`) to
+  the level's end, the player may fire no shot, from a weapon or a vehicle
+  seat it controls (grenades and melee are not shots).
+- **Breaking Quarantine**: 343 Guilty Spark's final lift out of the
+  facility (`lift_d`) started from its switch within 21 minutes of the
+  level's start.
 - **This Side Up, Never Tell Me the Odds**: The Maw's escape ride is the
-  countdown, from when its timer starts running to when it stops, is hidden
-  or a cinematic begins (the Longsword reached). The level finished without
-  the player being thrown from a flipped vehicle during it; on Legendary,
-  with a minute or more left on the countdown when it ended.
-- Not yet decided by the game: All According to Plan, Beachhead and
-  Grenadier, which need their levels' scripts' moments.
+  countdown, from when its timer starts running (`timer_begin`) to the
+  level's end (`endgame_cinematics` pauses it; the trench scene's pause
+  along the way is not its end). The level finished without the player
+  being thrown from a flipped vehicle during it; on Legendary, with a minute
+  or more left on the countdown.
 
 ## MCC maps
 
