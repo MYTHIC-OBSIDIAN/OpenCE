@@ -459,7 +459,7 @@ static boolean achievements_logged_has(
 		(logged[number / 8] & (1 << (number % 8))) != 0;
 }
 
-static void achievements_record(short local_player_index, long number);
+static void achievements_record_slot(short slot, long number);
 
 /* the campaign's three: every level finished on the difficulty or a harder
 one (Legendary earns Heroic's and Normal's) */
@@ -491,7 +491,7 @@ static void achievements_check_campaign(
 			all = finished;
 		}
 		if (all)
-			achievements_record(local_player_index, earned[index]);
+			achievements_record_slot(local_player_index, earned[index]);
 	}
 }
 
@@ -593,8 +593,45 @@ void achievements_profiles_changed(
 	written[sizeof(written) - 1] = 0;
 }
 
-/* the local player's profile's log gets the number, once */
+/* the profile slot (player_ui's local player, whose profile it is) of a
+game's local player: in a game on this machine alone, the game's local
+player is the controller it plays with (main.c's create_local_players), so
+a campaign played alone with the second controller is local player 1 of
+profile slot 0, as the game saves its levels (player_profile_save_level_completed
+by slot); a network game's are the slots */
+static short achievements_profile_slot(
+	short local_player_index)
+{
+	short slot;
+
+	if (game_connection() != _game_connection_local || local_player_index < 0 ||
+		local_player_index >= MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+	{
+		return local_player_index;
+	}
+	for (slot = 0; slot < player_spawn_count && slot < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; slot++)
+	{
+		short controller = player_ui_get_single_player_local_player_controller(slot);
+
+		if ((controller == NONE ? slot : controller) == local_player_index)
+			return slot;
+	}
+	/* (alone: whichever controller, the first slot's) */
+	return player_spawn_count <= 1 ? 0 : local_player_index;
+}
+
+static void achievements_record_slot(short slot, long number);
+
+/* a game's local player earned it: its profile slot's log */
 static void achievements_record(
+	short local_player_index,
+	long number)
+{
+	achievements_record_slot(achievements_profile_slot(local_player_index), number);
+}
+
+/* the profile slot's log gets the number, once */
+static void achievements_record_slot(
 	short local_player_index,
 	long number)
 {
@@ -1091,6 +1128,33 @@ static void achievements_update_guilty_spark(
 		elapsed, (long)BREAKING_QUARANTINE_TICKS);
 	if (elapsed <= BREAKING_QUARANTINE_TICKS)
 		achievement_earned_by_all(ACHIEVEMENT_BREAKING_QUARANTINE);
+}
+
+/* Keyes: an Elite erased alive by the level's scripts (ai_erase: its
+actor goes first, its unit after, achievements_object_deleted, which loses
+Tying Up Loose Ends): named for debug.txt while its encounter and squad are
+still its own */
+void achievements_actor_erased(
+	long actor_index)
+{
+	struct achievement_level *level = achievements_deciding();
+	struct actor_datum *actor = actor_try_and_get(actor_index);
+	struct object_datum *unit;
+	char text[256];
+
+	if (!level || level->level != _level_keyes || level->difficulty < _game_difficulty_level_hard || !actor ||
+		actor->meta.unit_index == NONE)
+	{
+		return;
+	}
+	unit = object_try_and_get(actor->meta.unit_index);
+	if (!unit || !tag_in_folder(unit->definition_index, "characters\\elite\\") ||
+		TEST_FLAG(unit->object.damage_flags, _object_dead_bit) || achievements_keyes_cinematic_elite(actor->meta.unit_index))
+	{
+		return;
+	}
+	achievements_unit_describe(actor->meta.unit_index, text, sizeof(text));
+	error(_error_silent, "achievements: Keyes's scripts erase an Elite alive (%s)", text);
 }
 
 /* a chapter title card shown (cinematics.c): 343 Guilty Spark's "The Flood"

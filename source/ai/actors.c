@@ -288,6 +288,7 @@ symbols in this file:
 #include "actor_types.h"
 #include "encounters.h"
 #include "props.h"
+#include "achievements.h" /* port: port/linux/game/achievements.c */
 
 #include "ai.h"
 #include "ai/ai_globals.h"
@@ -3886,6 +3887,9 @@ void actor_erase(
 	{
 		long unit_index = actor->meta.unit_index;
 
+		/* port: (Tying Up Loose Ends, port/linux/game/achievements.c: the
+		Elite named while its encounter is still its own) */
+		achievements_actor_erased(actor_index);
 		actor_died(actor_index);
 		if (immediate)
 		{

@@ -630,6 +630,12 @@ def test_the_maws_ride_is_the_countdown_and_a_flip_throws_the_player():
     shown = function(module, "achievements_title_shown")
     assert 'strcmp(name, "chapter_flood")' in shown
     assert "level->quarantine_start_time = game_time_get();" in shown
+    # (a game's local player is its controller: the profile is its slot's,
+    # as player_profile_save_level_completed's)
+    slot = function(module, "achievements_profile_slot")
+    assert "player_ui_get_single_player_local_player_controller(slot)" in slot
+    assert "game_connection() != _game_connection_local" in slot
+    assert "achievements_record_slot(achievements_profile_slot(local_player_index), number);" in function(module, "achievements_record")
     cinematics = source("source/cutscene/cinematics.c")
     assert "achievements_title_shown(" in function(cinematics, "cinematic_set_title_delayed")
 

@@ -55,5 +55,7 @@ companion program's file of player 1's name and the local players' logs */
 void achievements_profiles_changed(void);
 /* a chapter title card shown (cinematics.c) */
 void achievements_title_shown(char const *name);
+/* an actor erased by the scripts (actors.c's actor_erase), before its unit */
+void achievements_actor_erased(long actor_index);
 
 #endif // __ACHIEVEMENTS_H

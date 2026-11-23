@@ -559,7 +559,8 @@ writes each one once, when it is earned, to the log of the profile that
 earned it: `achievements.log` in the profile's folder (under the save root's
 `u` folder), or `u\achievements_default_0.log` and `_1.log` for the built-in
 Default and Inverted profiles. Each local player earns them for the profile
-they play on. A record is 16 bytes: the achievement's number (1 to 37, in
+they play on (the profile slot, as the game saves its levels: a campaign
+played alone with the second controller is the first profile's). A record is 16 bytes: the achievement's number (1 to 37, in
 the list's order), 0, and a Windows FILETIME. `u\achievements_profile.txt`
 holds the name of player 1's profile, then each local player's log (UTF-8,
 as they change), for the companion program. The one `u\achievements.log` of
