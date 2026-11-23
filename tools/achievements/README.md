@@ -23,8 +23,9 @@ down (arrow keys, D-pad, left stick) move the selection, Page Up / Page Down
 and the triggers a page, left and right (arrow keys, D-pad) or Y the order
 (ALL, BY DATE, BY GAMERSCORE), Tab and the bumpers the filter (SHOW ALL, UNLOCKED, LOCKED),
 X (or the small arrows on the header's picture) the picture, and Escape, B
-or Back close it. `scroll.wav` plays as the selection moves and `filter.wav`
-as the order, the filter or the picture changes.
+or Back close it. `scroll.wav` plays as the list scrolls or the selection moves,
+`filter.wav` as the order, the filter or the picture changes, and
+`window.wav` once as the window opens or closes.
 
 With `game.achievements_app` on (the default), the game starts
 `Achievements.exe --background` when it is next to `halo.exe`; it closes
@@ -51,7 +52,7 @@ one is drawn plainly:
 | `assets\header.png` | The header's background: as wide as the header, a band near its foot shown |
 | `assets\gamerpic_0.png`, `gamerpic_1.png`, ... | The square pictures in the header to choose from (the first, the Halo logo, is the default), in order, up to the first number missing. The small arrows on the picture's sides, or X on the controller, cycle them; the choice is each profile's, kept in `achievements_gamerpic.txt` beside its `achievements.log` |
 | `assets\tile.png` | The square picture in the header, when there are no `gamerpic_N.png` and no `Gamerpic.png` |
-| `assets\scroll.wav`, `assets\filter.wav` | The list's sounds (WAV); files of those names next to the program win |
+| `assets\scroll.wav`, `assets\filter.wav`, `assets\window.wav` | The list's sounds (WAV), Games for Windows - LIVE's `btn_Focus`, `btn_Select` and `tab_Switch`; files of those names next to the program win |
 | `assets\cursor.cur` | The list window's cursor (else `cursor.cur` here: the game's menu cursor) |
 | `assets\app.ico` | The program's icon (else `port\windows\opence-icon.ico`) |
 

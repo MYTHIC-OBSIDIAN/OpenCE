@@ -10,7 +10,8 @@
 //  * The list: up and down (keys, D-pad, left stick) move the selection, Page Up / Page Down and the
 //    triggers a page, left and right (D-pad) or Y the order, Tab and the bumpers the filter, Escape / B /
 //    Back closes it.
-//    scroll.wav plays as the selection moves, filter.wav as the order or filter changes.
+//    scroll.wav plays as the list scrolls or the selection moves, filter.wav as the order, filter or picture
+//    changes, window.wav once as the window opens or closes.
 //  * Pictures: any picture named after the achievement in an "Achievement Icons" folder next to this
 //    program or the game is used, else the one built in from assets\icons\<number>.png (Build.bat).
 //
@@ -314,8 +315,9 @@ namespace OpenCEAchievements
         }
     }
 
-    // The list's sounds: scroll.wav when the selection moves, filter.wav when the order or the filter
-    // changes. Each is a file of that name next to this program, else the one built in (assets\, Build.bat).
+    // The list's sounds (Games for Windows - LIVE's): scroll.wav (btn_Focus) when the list scrolls or the
+    // selection moves, filter.wav (btn_Select) when the order, the filter or the picture changes, window.wav
+    // (tab_Switch) once as the window opens or closes. Each is a file of that name next to this program, else the one built in (assets\, Build.bat).
     static class Sfx
     {
         static readonly Dictionary<string, System.Media.SoundPlayer> players = new Dictionary<string, System.Media.SoundPlayer>();
@@ -349,8 +351,15 @@ namespace OpenCEAchievements
             try { player.Stop(); player.Play(); } catch { }
         }
 
-        public static void Scroll() { Play("scroll.wav"); }
+        static DateTime lastScroll;
+        public static void Scroll()
+        {
+            if ((DateTime.Now - lastScroll).TotalMilliseconds < 60) return;   // no buzzing on fast drags
+            lastScroll = DateTime.Now;
+            Play("scroll.wav");
+        }
         public static void Filter() { Play("filter.wav"); }
+        public static void Window() { Play("window.wav"); }
     }
 
     // Xbox controllers through XInput (xinput1_4.dll, else xinput9_1_0.dll): every connected one's buttons
@@ -1247,7 +1256,7 @@ namespace OpenCEAchievements
             else if ((pressed & Repeating) != 0) padRepeat = DateTime.Now.AddMilliseconds(380);
             padHeld = held;
             if (pressed == 0) return;
-            if ((pressed & (Pad.B | Pad.Back)) != 0) { Hide(); return; }
+            if ((pressed & (Pad.B | Pad.Back)) != 0) { Hide(); return; }   // (Hide plays the close sound)
             if ((pressed & Pad.Up) != 0) listView.MoveSelection(-1, false);
             if ((pressed & Pad.Down) != 0) listView.MoveSelection(1, false);
             if ((pressed & Pad.LT) != 0) listView.MoveSelection(-1, true);
@@ -1301,6 +1310,17 @@ namespace OpenCEAchievements
             // Closing the window only hides it while the pop-up watcher is running.
             if (!Quitting && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); }
             base.OnFormClosing(e);
+        }
+
+        // The open / close sound, once each time the window appears or goes away (tray, Escape, B / Back,
+        // the close button, Alt+F4) - not when it is only brought to the front, and not as the program quits.
+        bool soundShown;
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (Visible == soundShown) return;
+            soundShown = Visible;
+            if (!Quitting) Sfx.Window();
         }
     }
 
@@ -1687,6 +1707,7 @@ namespace OpenCEAchievements
         List<Achievement> rows = new List<Achievement>();
         SortBy sort = SortBy.Game;
         int scroll, hot = -1, sel = -1;
+        int tickRow;   // top row at the last scroll sound
         bool dragging; int dragStart, dragScroll;
         readonly Font nameFont = Theme.UiFont(17f, FontStyle.Bold), descFont = Theme.UiFont(14f, FontStyle.Regular), smallFont = Theme.UiFont(13f, FontStyle.Regular), scoreFont = Theme.UiFont(18f, FontStyle.Bold);
         int RowH { get { return Theme.S(88); } }
@@ -1705,10 +1726,10 @@ namespace OpenCEAchievements
             TabStop = true;
         }
 
-        public SortBy SortMode { set { sort = value; Build(); scroll = 0; Invalidate(); } }
+        public SortBy SortMode { set { sort = value; Build(); scroll = 0; tickRow = 0; Invalidate(); } }
 
         ShowFilter filter = ShowFilter.All;
-        public ShowFilter Filter { set { filter = value; sel = -1; hot = -1; Build(); scroll = 0; Invalidate(); } }
+        public ShowFilter Filter { set { filter = value; sel = -1; hot = -1; Build(); scroll = 0; tickRow = 0; Invalidate(); } }
 
         public void Set(Achievement[] a) { all = a; Build(); Invalidate(); }
 
@@ -1743,6 +1764,13 @@ namespace OpenCEAchievements
         int MaxScroll { get { return Math.Max(0, ContentH - Height); } }
         void Clamp() { scroll = Math.Max(0, Math.Min(scroll, MaxScroll)); }
 
+        // Scroll sound each time the list moves past a row (wheel, scrollbar, page click).
+        void ScrollTick()
+        {
+            int r = scroll / (RowH + Gap);
+            if (r != tickRow) { tickRow = r; Sfx.Scroll(); }
+        }
+
         Rectangle Thumb()
         {
             if (MaxScroll <= 0) return Rectangle.Empty;
@@ -1756,7 +1784,7 @@ namespace OpenCEAchievements
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            scroll -= e.Delta * (RowH + Gap) / 120; Clamp(); Invalidate();
+            scroll -= e.Delta * (RowH + Gap) / 120; Clamp(); ScrollTick(); Invalidate();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -1766,12 +1794,10 @@ namespace OpenCEAchievements
             if (!t.IsEmpty && e.X >= Width - Theme.S(18))
             {
                 if (t.Contains(new Point(t.X, e.Y))) { dragging = true; dragStart = e.Y; dragScroll = scroll; Capture = true; }
-                else { scroll += (e.Y < t.Y ? -1 : 1) * Height; Clamp(); Invalidate(); }
+                else { scroll += (e.Y < t.Y ? -1 : 1) * Height; Clamp(); ScrollTick(); Invalidate(); }
                 return;
             }
-            int row = RowAt(e.Y);
-            if (row >= 0 && row != sel) Sfx.Scroll();
-            sel = row; Invalidate();
+            sel = RowAt(e.Y); Invalidate();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -1780,7 +1806,7 @@ namespace OpenCEAchievements
             {
                 var t = Thumb();
                 int track = Height - Theme.S(16) - t.Height;
-                if (track > 0) { scroll = dragScroll + (e.Y - dragStart) * MaxScroll / track; Clamp(); Invalidate(); }
+                if (track > 0) { scroll = dragScroll + (e.Y - dragStart) * MaxScroll / track; Clamp(); ScrollTick(); Invalidate(); }
                 return;
             }
             int h = RowAt(e.Y);
@@ -1827,7 +1853,9 @@ namespace OpenCEAchievements
             int top = Edge + sel * (RowH + Gap);
             if (top < scroll) scroll = top - Edge;
             if (top + RowH > scroll + Height) scroll = top + RowH - Height + Edge;
-            Clamp(); Invalidate();
+            Clamp();
+            tickRow = scroll / (RowH + Gap);
+            Invalidate();
         }
 
         int RowAt(int y)
