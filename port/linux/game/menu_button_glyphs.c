@@ -17,11 +17,17 @@ int config_boolean(char const *name);
 char const *config_string(char const *name);
 struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
 
+/* The menus' A, B, X and Y (their legends and the buttons in their text, the
+ * pause menus' included) follow BUTTON STYLE, as the HUD's do, in either
+ * menus: XBOX GEMS, XBOX DARK GEMS and XBOX 360 draw theirs; XBOX CLASSIC
+ * keeps the menus' own, which are its buttons. Key names for a keyboard stay
+ * the PC menus' opt-in (display.menu_button_glyphs). */
 static boolean menu_button_glyph_enabled(short button, short port)
 {
-    return button >= 0 && button < 4 && port >= 0 && port < 4 &&
-        config_boolean("display.menu_button_glyphs") &&
-        !strcmp(config_string("display.menus"), "pc");
+    if (!(button >= 0 && button < 4 && port >= 0 && port < 4)) return FALSE;
+    if (keyboard_prompt_enabled(port))
+        return config_boolean("display.menu_button_glyphs") && !strcmp(config_string("display.menus"), "pc");
+    return controller_button_style() != 0;
 }
 
 /* These are fixed keyboard_gamepad menu controls, independent of gameplay binds.

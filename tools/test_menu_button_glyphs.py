@@ -116,7 +116,10 @@ int main(void){
  cursor=box;assert(menu_button_glyph_inline(0,1,&cursor));assert(cursor.x0==146&&bx==104&&bw==42);restored();
  assert(!menu_button_glyph_inline(18,1,&cursor));assert(cursor.x0==146);
  keyboard=0;assert(!wcscmp(menu_button_glyph_join_hint(1,0),L"SPACE: join    ENTER: select    ESC: back"));
- for(s=0;s<4;s++)for(b=0;b<4;b++){
+ /* (XBOX CLASSIC: the menus' own buttons, in either menus) */
+ style_choice=0;assert(!menu_button_glyph_draw(0,3,&box,&clip,0x80ffffff));
+ menus="xbox";style_choice=3;assert(menu_button_glyph_draw(0,3,&box,&clip,0x80ffffff));menus="pc";
+ for(s=1;s<4;s++)for(b=0;b<4;b++){
   style_choice=s;assert(menu_button_glyph_draw(b,3,&box,&clip,0x80ffffff));assert(observed_port==3);
   assert(drawn[0].position.x>=100&&drawn[2].position.x<=120&&drawn[0].position.y>=80&&drawn[2].position.y<=106);
   assert(drawn[0].color==0x80ffffff&&drawn[2].texture_coordinates.x<=1&&drawn[2].texture_coordinates.y<=1);
