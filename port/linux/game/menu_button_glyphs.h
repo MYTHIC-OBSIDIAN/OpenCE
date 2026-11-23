@@ -14,6 +14,10 @@ boolean menu_button_glyph_join_draw(wchar_t const *text, short port, rectangle2d
 
 boolean menu_button_glyph_keyboard_active(short port);
 
+/* the post-game screen's widgets being drawn (ui_widget.c's
+ * render_ui_widgets_postgame): XBOX 360's round buttons a little smaller there */
+void menu_button_glyph_set_postgame(boolean postgame);
+
 short menu_button_glyph_key_width(short button);
 short menu_button_glyph_compact_key_width(short button);
 
