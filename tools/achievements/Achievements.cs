@@ -232,6 +232,42 @@ namespace OpenCEAchievements
             return logs.Count > 0 ? logs.ToArray() : null;
         }
 
+        // The header's picture chosen, per profile: achievements_gamerpic.txt beside the profile's log (in its
+        // folder; achievements_default_0_gamerpic.txt beside a built-in profile's), so it goes where the
+        // profile's achievements go (deleting the profile deletes it). Before the game names a profile, beside
+        // this program.
+        static string GamerpicChoicePath()
+        {
+            var logs = ProfileLogs();
+            if (logs == null || logs.Length == 0)
+                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "achievements_gamerpic.txt");
+            string log = logs[0];
+            return Path.Combine(Path.GetDirectoryName(log), Path.GetFileNameWithoutExtension(log) + "_gamerpic.txt");
+        }
+
+        public static int GamerpicChoice()
+        {
+            try
+            {
+                string p = GamerpicChoicePath();
+                int n;
+                if (File.Exists(p) && int.TryParse(File.ReadAllText(p).Trim(), out n) && n >= 0) return n;
+            }
+            catch { }
+            return 0;
+        }
+
+        public static void SaveGamerpicChoice(int n)
+        {
+            try
+            {
+                string p = GamerpicChoicePath();
+                Directory.CreateDirectory(Path.GetDirectoryName(p));
+                File.WriteAllText(p, n.ToString());
+            }
+            catch { }
+        }
+
         // Gamerpic.png (or .jpg, .bmp) next to this program, if you put one there.
         public static Image Gamerpic()
         {
@@ -1192,7 +1228,8 @@ namespace OpenCEAchievements
         }
 
         // ---- the controller: up and down (D-pad or left stick) move the selection, the triggers a page,
-        // left and right (D-pad) or Y the order, the bumpers the filter, B or Back closes the list
+        // left and right (D-pad) or Y the order, the bumpers the filter, X the header's picture, B or Back
+        // closes the list
         readonly System.Windows.Forms.Timer pad = new System.Windows.Forms.Timer();
         int padHeld;
         DateTime padRepeat;
@@ -1219,6 +1256,7 @@ namespace OpenCEAchievements
             if ((pressed & (Pad.Right | Pad.Y)) != 0) header.CycleSort(1);
             if ((pressed & Pad.LB) != 0) header.CycleShow(-1);
             if ((pressed & Pad.RB) != 0) header.CycleShow(1);
+            if ((pressed & Pad.X) != 0) header.CyclePic(1);
         }
 
         public void Refresh(Store store)
@@ -1279,6 +1317,11 @@ namespace OpenCEAchievements
         string tag = "Achievements";
         Image pic;
         static Image tile;
+        // the pictures to choose from: assets\gamerpic_0.png on (built in; the first the Halo logo), the arrows on
+        // the picture's sides, or X on the controller, cycle them; the choice is the profile's
+        static List<Image> pics;
+        int picIndex;
+        int arrowHot = -1;                  // 0 = left, 1 = right
         int count, total, score, max;
         readonly Font tagFont = Theme.LightFont(30f), infoFont = Theme.UiFont(15f, FontStyle.Regular), tabFont = Theme.UiFont(13.5f, FontStyle.Bold);
         // 0-2: order (left), 3-5: which achievements to show (right)
@@ -1311,11 +1354,78 @@ namespace OpenCEAchievements
             if (FilterChanged != null) FilterChanged(this, EventArgs.Empty);
         }
 
+        static List<Image> Pics()
+        {
+            if (pics == null)
+            {
+                pics = new List<Image>();
+                for (int i = 0; i < 64; i++)
+                {
+                    var im = Res.Image("gamerpic_" + i + ".png");
+                    if (im == null) break;
+                    pics.Add(im);
+                }
+            }
+            return pics;
+        }
+
+        // the next or previous picture (the arrows, X), kept for the profile
+        public void CyclePic(int step)
+        {
+            int n = Pics().Count;
+            if (n < 2) return;
+            picIndex = ((picIndex + step) % n + n) % n;
+            Game.SaveGamerpicChoice(picIndex);
+            Sfx.Filter();
+            Invalidate();
+        }
+
+        Rectangle PicRect() { int m = Theme.S(22), ps = Theme.S(96); return new Rectangle(m, m, ps, ps); }
+
+        // the arrows, small, on the picture's left and right sides
+        Rectangle ArrowRect(int i)
+        {
+            var pr = PicRect();
+            int w = Theme.S(20), h = Theme.S(30);
+            return new Rectangle(i == 0 ? pr.X + Theme.S(3) : pr.Right - Theme.S(3) - w, pr.Y + (pr.Height - h) / 2, w, h);
+        }
+
+        int ArrowAt(Point p)
+        {
+            if (Pics().Count < 2) return -1;
+            for (int i = 0; i < 2; i++) if (ArrowRect(i).Contains(p)) return i;
+            return -1;
+        }
+
+        void DrawArrows(Graphics g)
+        {
+            if (Pics().Count < 2) return;
+            for (int i = 0; i < 2; i++)
+            {
+                var r = ArrowRect(i);
+                bool hotArrow = arrowHot == i;
+                using (var path = Theme.Round(r, Theme.S(5)))
+                using (var b = new SolidBrush(Color.FromArgb(hotArrow ? 200 : 120, 6, 14, 26)))
+                    g.FillPath(b, path);
+                float cx = r.X + r.Width / 2f, cy = r.Y + r.Height / 2f, aw = Theme.S(5), ah = Theme.S(8);
+                var pts = i == 0
+                    ? new[] { new PointF(cx + aw / 2, cy - ah), new PointF(cx - aw / 2, cy), new PointF(cx + aw / 2, cy + ah) }
+                    : new[] { new PointF(cx - aw / 2, cy - ah), new PointF(cx + aw / 2, cy), new PointF(cx - aw / 2, cy + ah) };
+                using (var pen = new Pen(hotArrow ? Color.White : Color.FromArgb(210, 225, 240), Math.Max(2f, Theme.S(2))))
+                {
+                    pen.StartCap = pen.EndCap = LineCap.Round; pen.LineJoin = LineJoin.Round;
+                    g.DrawLines(pen, pts);
+                }
+            }
+        }
+
         public void Set(Store s)
         {
             tag = Game.Gamertag();
             if (pic != null) pic.Dispose();
             pic = Game.Gamerpic();
+            // (the profile's picture, of the built-in ones)
+            picIndex = Pics().Count > 0 ? Math.Min(Game.GamerpicChoice(), Pics().Count - 1) : 0;
             count = s.Count; total = s.All.Length; score = s.Score; max = s.MaxScore;
             Invalidate();
         }
@@ -1405,16 +1515,20 @@ namespace OpenCEAchievements
             int h = -1;
             if (b < 0) for (int i = 0; i < tabs.Length; i++) if (tabs[i].Contains(e.Location)) h = i;
             if (h != hot) { hot = h; Invalidate(); }
+            int a = b < 0 ? ArrowAt(e.Location) : -1;
+            if (a != arrowHot) { arrowHot = a; Invalidate(); }
             Cursor = GameCursor.Arrow;
         }
 
-        protected override void OnMouseLeave(EventArgs e) { hot = -1; if (btnDown < 0) btnHot = -1; Invalidate(); }
+        protected override void OnMouseLeave(EventArgs e) { hot = -1; arrowHot = -1; if (btnDown < 0) btnHot = -1; Invalidate(); }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
             int b = BtnAt(e.Location);
             if (b >= 0) { btnDown = b; btnHot = b; Capture = true; Invalidate(); return; }
+            int arrow = ArrowAt(e.Location);
+            if (arrow >= 0) { CyclePic(arrow == 0 ? -1 : 1); return; }
             for (int i = 0; i < tabs.Length; i++)
             {
                 if (!tabs[i].Contains(e.Location)) continue;
@@ -1454,11 +1568,21 @@ namespace OpenCEAchievements
                 g.FillRectangle(b, ClientRectangle);
             DrawBackground(g);
 
-            int m = Theme.S(22), ps = Theme.S(96);
-            var pr = new Rectangle(m, m, ps, ps);
+            int m = Theme.S(22);
+            var pr = PicRect();
             using (var path = Theme.Round(pr, Theme.S(8)))
             {
-                if (pic != null)
+                if (Pics().Count > 0)
+                {
+                    var clip = g.Clip; g.SetClip(path, CombineMode.Intersect);
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.Half;
+                    g.DrawImage(Pics()[picIndex], pr);
+                    g.PixelOffsetMode = PixelOffsetMode.Default;
+                    DrawArrows(g);
+                    g.Clip = clip;
+                }
+                else if (pic != null)
                 {
                     var clip = g.Clip; g.SetClip(path, CombineMode.Intersect);
                     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
