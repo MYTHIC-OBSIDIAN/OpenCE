@@ -1382,12 +1382,13 @@ namespace OpenCEAchievements
 
         Rectangle PicRect() { int m = Theme.S(22), ps = Theme.S(96); return new Rectangle(m, m, ps, ps); }
 
-        // the arrows, small, on the picture's left and right sides
+        // the arrows, small, beside the picture's left and right sides (in the gaps before the window's edge
+        // and the name, clear of the window's resizing edge)
         Rectangle ArrowRect(int i)
         {
             var pr = PicRect();
-            int w = Theme.S(20), h = Theme.S(30);
-            return new Rectangle(i == 0 ? pr.X + Theme.S(3) : pr.Right - Theme.S(3) - w, pr.Y + (pr.Height - h) / 2, w, h);
+            int w = Theme.S(14), h = Theme.S(30);
+            return new Rectangle(i == 0 ? pr.X - Theme.S(2) - w : pr.Right + Theme.S(3), pr.Y + (pr.Height - h) / 2, w, h);
         }
 
         int ArrowAt(Point p)
@@ -1404,14 +1405,15 @@ namespace OpenCEAchievements
             {
                 var r = ArrowRect(i);
                 bool hotArrow = arrowHot == i;
-                using (var path = Theme.Round(r, Theme.S(5)))
-                using (var b = new SolidBrush(Color.FromArgb(hotArrow ? 200 : 120, 6, 14, 26)))
-                    g.FillPath(b, path);
+                if (hotArrow)
+                    using (var path = Theme.Round(r, Theme.S(4)))
+                    using (var b = new SolidBrush(Color.FromArgb(150, 6, 14, 26)))
+                        g.FillPath(b, path);
                 float cx = r.X + r.Width / 2f, cy = r.Y + r.Height / 2f, aw = Theme.S(5), ah = Theme.S(8);
                 var pts = i == 0
                     ? new[] { new PointF(cx + aw / 2, cy - ah), new PointF(cx - aw / 2, cy), new PointF(cx + aw / 2, cy + ah) }
                     : new[] { new PointF(cx - aw / 2, cy - ah), new PointF(cx + aw / 2, cy), new PointF(cx - aw / 2, cy + ah) };
-                using (var pen = new Pen(hotArrow ? Color.White : Color.FromArgb(210, 225, 240), Math.Max(2f, Theme.S(2))))
+                using (var pen = new Pen(hotArrow ? Color.White : Color.FromArgb(150, 175, 210), Math.Max(2f, Theme.S(2))))
                 {
                     pen.StartCap = pen.EndCap = LineCap.Round; pen.LineJoin = LineJoin.Round;
                     g.DrawLines(pen, pts);
@@ -1579,8 +1581,8 @@ namespace OpenCEAchievements
                     g.PixelOffsetMode = PixelOffsetMode.Half;
                     g.DrawImage(Pics()[picIndex], pr);
                     g.PixelOffsetMode = PixelOffsetMode.Default;
-                    DrawArrows(g);
                     g.Clip = clip;
+                    DrawArrows(g);
                 }
                 else if (pic != null)
                 {
