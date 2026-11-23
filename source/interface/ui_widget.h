@@ -112,6 +112,13 @@ void draw_bitmap_in_rect(
 	pixel32 argb,
 	struct rasterizer_dynamic_screen_geometry_parameters *multitexture_params,
 	boolean no_plasma);
+/* port: a part of a bitmap, its texels from where they start */
+void draw_bitmap_in_rect_from(
+	struct bitmap_data *bitmap,
+	rectangle2d *rect,
+	rectangle2d *bitmap_rect,
+	pixel32 argb,
+	boolean no_plasma);
 struct widget_instance *widget_instance_get_topmost_parent(
 	struct widget_instance *widget);
 int widget_instance_get_child_index_from_parent(

@@ -88,6 +88,7 @@ symbols in this file:
 #include "interface/event_manager.h"
 #include "interface/ui_widget.h"
 #include "interface/virtual_keyboard.h"
+#include "menu_button_glyphs.h" /* port: port/linux/game/menu_button_glyphs.c */
 #include "input/input.h"
 #include "rasterizer/rasterizer.h"
 #include "saved games/saved_game_files.h"
@@ -667,6 +668,81 @@ static wchar_t virtual_keyboard_get_current_character(
 		virtual_keyboard_globals.row][virtual_keyboard_globals.column]);
 }
 
+/* port: the background's button key, "B=BACK A=ENTER", is in its picture,
+at the Xbox's size (blocky on a large screen, and the classic buttons
+whatever BUTTON STYLE): covered with the bar it lies on, and drawn again as
+the menus' keys are (ui\shell\main_menu\b_butn and =back: a button
+picture 21x26, then its text in large_ui, in their blue), the buttons the
+high-res ones, in BUTTON STYLE (menu_button_glyphs.c) */
+static void virtual_keyboard_draw_button_key(
+	struct bitmap_data *background)
+{
+	static struct
+	{
+		short button;
+		char const *bitmap_name;
+		wchar_t const *text;
+		short x;
+		short text_x;
+	} const keys[] =
+	{
+		{ 1, "ui\\shell\\bitmaps\\b_butn", L"=BACK", 371, 393 },
+		{ 0, "ui\\shell\\bitmaps\\a_butn", L"=ENTER", 472, 494 },
+	};
+	real_argb_color color = { 1.0f, 0.156863f, 0.588235f, 1.0f };
+	long font_index = tag_loaded(FONT_GROUP_TAG, "ui\\large_ui");
+	rectangle2d cover;
+	rectangle2d bar;
+	short key_index;
+
+	if (font_index == NONE)
+		return;
+	/* (the bar is even from side to side: its left end where the key was) */
+	cover.x0 = 366;
+	cover.y0 = 412;
+	cover.x1 = 574;
+	cover.y1 = 443;
+	bar.x0 = 20;
+	bar.y0 = cover.y0;
+	bar.x1 = (short)(bar.x0 + cover.x1 - cover.x0);
+	bar.y1 = cover.y1;
+	draw_bitmap_in_rect_from(background, &cover, &bar, 0xffffffff, FALSE);
+
+	draw_string_set_draw_mode(font_index, NONE, 0, 0, &color);
+	for (key_index = 0; key_index < NUMBEROF(keys); key_index++)
+	{
+		rectangle2d icon;
+		rectangle2d text;
+
+		icon.x0 = keys[key_index].x;
+		icon.y0 = 414;
+		icon.x1 = (short)(icon.x0 + 21);
+		icon.y1 = (short)(icon.y0 + 26);
+		if (!menu_button_glyph_draw(keys[key_index].button, 0, &icon, NULL, 0xffffffff))
+		{
+			long bitmap_index = tag_loaded(BITMAP_GROUP_TAG, keys[key_index].bitmap_name);
+			struct bitmap_data *bitmap = bitmap_index != NONE ?
+				bitmap_group_get_bitmap_from_sequence(bitmap_index, 0, 0) : NULL;
+
+			/* (its top left 21x26 of 32x32, as the menus' widgets take it;
+			the high-res picture stands for the same texels) */
+			rectangle2d texels;
+
+			texels.x0 = 0;
+			texels.y0 = 0;
+			texels.x1 = 21;
+			texels.y1 = 26;
+			if (bitmap)
+				draw_bitmap_in_rect(bitmap, &icon, &texels, NULL, 0xffffffff, NULL, FALSE);
+		}
+		text.x0 = keys[key_index].text_x;
+		text.y0 = 416;
+		text.x1 = 640;
+		text.y1 = 440;
+		rasterizer_draw_unicode_string(&text, &text, NULL, 0, keys[key_index].text);
+	}
+}
+
 static void virtual_keyboard_render_internal(
 	void)
 {
@@ -704,7 +780,27 @@ static void virtual_keyboard_render_internal(
 			"c:\\halo\\SOURCE\\interface\\virtual_keyboard.c",
 			1046,
 			bitmap);
-		draw_bitmap_in_rect(bitmap, &bounds, &bounds, NULL, 0xffffffff, NULL, FALSE);
+		/* port: around its button key, which is drawn again, sharp and in
+		BUTTON STYLE (virtual_keyboard_draw_button_key) */
+		{
+			static rectangle2d const parts[] =
+			{
+				/* x0, y0 ... as rectangle2d's order: y0, x0, y1, x1 */
+				{ 0, 0, 412, 640 },
+				{ 443, 0, 480, 640 },
+				{ 412, 0, 443, 366 },
+				{ 412, 574, 443, 640 },
+			};
+			short part;
+
+			for (part = 0; part < NUMBEROF(parts); part++)
+			{
+				rectangle2d piece = parts[part];
+
+				draw_bitmap_in_rect_from(bitmap, &piece, &piece, 0xffffffff, FALSE);
+			}
+		}
+		virtual_keyboard_draw_button_key(bitmap);
 	}
 
 	draw_string_set_draw_mode(virtual_keyboard_globals.keyboard->font_tag.index, NONE, 0, 0, &caption_color);

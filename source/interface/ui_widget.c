@@ -1693,6 +1693,11 @@ static __inline real compute_offset_coordinate(
 		1.0);
 }
 
+/* port: where draw_bitmap_in_rect_from's texels start (draw_bitmap_in_rect
+reads only the size of its texels, from the bitmap's corner) */
+static short draw_bitmap_texel_origin_x = 0;
+static short draw_bitmap_texel_origin_y = 0;
+
 void draw_bitmap_in_rect(
 	struct bitmap_data *bitmap,
 	rectangle2d *rect,
@@ -1787,6 +1792,9 @@ void draw_bitmap_in_rect(
 				(vertex_index % 3) ? texture_width : 0.0f;
 			vertices[vertex_index].texture_coordinates.y =
 				(vertex_index > 1) ? texture_height : 0.0f;
+			/* port: (draw_bitmap_in_rect_from's) */
+			vertices[vertex_index].texture_coordinates.x += draw_bitmap_texel_origin_x / bitmap_width;
+			vertices[vertex_index].texture_coordinates.y += draw_bitmap_texel_origin_y / bitmap_height;
 			vertices[vertex_index].position = points[vertex_index];
 		}
 
@@ -1860,6 +1868,22 @@ void draw_bitmap_in_rect(
 	}
 
 	return;
+}
+
+/* port: a part of a bitmap, the texels from where they start (the virtual
+keyboard's background, around its button key) */
+void draw_bitmap_in_rect_from(
+	struct bitmap_data *bitmap,
+	rectangle2d *rect,
+	rectangle2d *bitmap_rect,
+	pixel32 argb,
+	boolean no_plasma)
+{
+	draw_bitmap_texel_origin_x = bitmap_rect->x0;
+	draw_bitmap_texel_origin_y = bitmap_rect->y0;
+	draw_bitmap_in_rect(bitmap, rect, bitmap_rect, NULL, argb, NULL, no_plasma);
+	draw_bitmap_texel_origin_x = 0;
+	draw_bitmap_texel_origin_y = 0;
 }
 
 void ui_widgets_set_fade_value(
