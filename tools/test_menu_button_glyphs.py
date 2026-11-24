@@ -142,6 +142,10 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
  cursor.x0=200;assert(menu_button_glyph_inline(0,0,&cursor));assert(cursor.x0==200+4+14+menu_button_glyph_key_width(0)+4);
  menu_button_glyph_set_postgame(FALSE);restored();
  keyboard=0;assert(menu_button_glyph_postgame_extra(L"%b-button=quit",0)==0);keyboard=2;
+ {wchar_t buffer[64];wchar_t const *t=L"\tESCAPE = Quit    ENTER = Continue";
+  assert(!wcscmp(menu_button_glyph_postgame_prompt(t,buffer,64),L"\t%b-button = Quit    %a-button = Continue"));
+  assert(menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64)[0]==L'%'&&buffer!=menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64));
+  assert(menu_button_glyph_postgame_prompt(t,buffer,10)==t);}
  /* (key names in the Xbox menus too: the input used last decides) */
  menus="xbox";assert(menu_button_glyph_join_draw(L"Press %a-button to Join",0,&box));restored();
  return 0;

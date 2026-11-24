@@ -205,6 +205,43 @@ boolean menu_button_glyph_inline(short icon, short port, rectangle2d *cursor)
     return TRUE;
 }
 
+/* the PC version's carnage report prompt ("ESCAPE = Quit    ENTER =
+ * Continue", strings.xml's) names its keys in text, whatever was used last:
+ * its ESCAPE and ENTER become the B and A buttons' tokens, which show the
+ * keys (Esc, Enter) after the keyboard or mouse and the controller's buttons
+ * after a controller, as the Xbox's prompt does. The text itself when it
+ * names neither or will not fit. */
+wchar_t const *menu_button_glyph_postgame_prompt(wchar_t const *text, wchar_t *buffer, long capacity)
+{
+    static struct { wchar_t const *name, *token; } const names[] =
+        { { L"ESCAPE", L"%b-button" }, { L"ENTER", L"%a-button" } };
+    long length = 0, add;
+    short i;
+    boolean replaced = FALSE;
+    wchar_t const *at;
+    if (!text || !buffer || capacity <= 0) return text;
+    for (at = text; *at; )
+    {
+        wchar_t const *piece = NULL;
+        for (i = 0; i < (short)NUMBEROF(names) && !piece; i++)
+        {
+            if (!wcsncmp(at, names[i].name, wcslen(names[i].name)))
+            {
+                piece = names[i].token;
+                at += wcslen(names[i].name);
+                replaced = TRUE;
+            }
+        }
+        add = piece ? (long)wcslen(piece) : 1;
+        if (length + add >= capacity) return text;
+        if (piece) memcpy(buffer + length, piece, add * sizeof(wchar_t));
+        else buffer[length] = *at++;
+        length += add;
+    }
+    buffer[length] = 0;
+    return replaced ? buffer : text;
+}
+
 /* the carnage report's prompt with keys: how much wider than with buttons
  * (each key's width over a button's 26, and the gaps), so that it may be
  * moved left by as much and end where the buttons' does */

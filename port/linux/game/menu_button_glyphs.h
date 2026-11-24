@@ -21,6 +21,10 @@ void menu_button_glyph_set_postgame(boolean postgame);
 /* that prompt with keys (the keyboard used last): how much wider it is than
  * with the controller's buttons, its keys being wider and set further apart */
 short menu_button_glyph_postgame_extra(wchar_t const *text, short port);
+/* the PC version's prompt, its ESCAPE and ENTER as the B and A buttons'
+ * tokens (in buffer), so that it shows the keys or the buttons, whichever
+ * was used last */
+wchar_t const *menu_button_glyph_postgame_prompt(wchar_t const *text, wchar_t *buffer, long capacity);
 
 short menu_button_glyph_key_width(short button);
 short menu_button_glyph_compact_key_width(short button);

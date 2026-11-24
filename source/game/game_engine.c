@@ -2972,6 +2972,8 @@ void game_engine_post_rasterize_post_game(
 		wchar_t const *prompt;
 		struct network_game_server *server;
 		rectangle2d bounds;
+		/* port: the PC prompt with its keys as buttons' tokens */
+		wchar_t prompt_buffer[128];
 
 		bounds = render.camera.window_bounds;
 		prompt_color = winner_color;
@@ -2999,6 +3001,7 @@ void game_engine_post_rasterize_post_game(
 			/* port: (XBOX 360's buttons smaller here, below the panel's
 			line, and keys further apart, the line moved left by as much as
 			they are wider: menu_button_glyphs.c) */
+			prompt = menu_button_glyph_postgame_prompt(prompt, prompt_buffer, NUMBEROF(prompt_buffer));
 			bounds.x0 -= menu_button_glyph_postgame_extra(prompt, 0);
 			menu_button_glyph_set_postgame(TRUE);
 			draw_string_and_hack_in_icons(
@@ -3019,6 +3022,7 @@ void game_engine_post_rasterize_post_game(
 		else
 			prompt = L"";
 		/* port: as above */
+		prompt = menu_button_glyph_postgame_prompt(prompt, prompt_buffer, NUMBEROF(prompt_buffer));
 		bounds.x0 -= menu_button_glyph_postgame_extra(prompt, 0);
 		menu_button_glyph_set_postgame(TRUE);
 		draw_string_and_hack_in_icons(
