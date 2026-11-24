@@ -27,6 +27,7 @@ and the debug keyboard that the game's console reads.
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #ifdef HALO_WINDOWS
 /* port/windows/src/win32_window.c, compiled with the Windows SDK */
 void win32_window_borderless_apply(SDL_Window *window);
@@ -1204,12 +1205,21 @@ int halo_mouse_clicked(void)
 	return clicked;
 }
 
+/* whether a motion ends at the window's middle, where the mouse is warped
+(a menu opening, the mouse captured) */
+static BOOL mouse_motion_at_middle(float x, float y)
+{
+	int width, height;
+
+	if (!platform_window)
+		return FALSE;
+	SDL_GetWindowSize(platform_window, &width, &height);
+	return fabsf(x - width * 0.5f) < 1.0f && fabsf(y - height * 0.5f) < 1.0f;
+}
+
 static void menu_cursor_mouse_used(BOOL in_menus)
 {
 	menu_cursor_controller = FALSE;
-	/* (the prompts too, in the menus as in the game, where the mouse
-	drives the pointer and the game sees no motion of it) */
-	keyboard_prompt_keyboard_used();
 	if (in_menus && !SDL_CursorVisible())
 		SDL_ShowCursor();
 }
@@ -2178,7 +2188,16 @@ void platform_pump_events(void)
 			if (event.motion.which != SDL_TOUCH_MOUSEID &&
 				(input_state.ui_pointer ? event.motion.x != ui_pointer.x || event.motion.y != ui_pointer.y :
 				!mouse_warp_capture || (int)event.motion.x != mouse_warp_x || (int)event.motion.y != mouse_warp_y))
+			{
 				menu_cursor_mouse_used(input_state.ui_pointer);
+				/* (the prompts too, in the menus as in the game, where the
+				mouse drives the pointer and the game sees no motion of it;
+				not the motion of a warp to the window's middle, as a menu
+				opens or the mouse is captured, nor a pixel's jitter) */
+				if (fabsf(event.motion.xrel) + fabsf(event.motion.yrel) >= 3.0f &&
+					!mouse_motion_at_middle(event.motion.x, event.motion.y))
+					keyboard_prompt_keyboard_used();
+			}
 			if (scoreboard_pointer_active)
 			{
 				scoreboard_pointer.x = event.motion.x;
@@ -2208,6 +2227,7 @@ void platform_pump_events(void)
 			if (event.button.down && event.button.which != SDL_TOUCH_MOUSEID)
 			{
 				menu_cursor_mouse_used(input_state.ui_pointer);
+				keyboard_prompt_keyboard_used();
 				mouse_presses++;
 			}
 			if (event.button.button < 32)

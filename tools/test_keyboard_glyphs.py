@@ -31,7 +31,9 @@ int main(void){
  assert(keyboard_prompt_enabled(0)&&!keyboard_prompt_enabled(1));
  keyboard_prompt_pad(0,0,0,1);assert(!keyboard_prompt_enabled(0));
  keys[4]=1;keyboard_prompt_keys(keys,512,0);assert(keyboard_prompt_enabled(0));
- keyboard_prompt_pad(1,1,1,1);assert(keyboard_prompt_enabled(0));
+ /* (another port's controller: the input used last, back to the buttons) */
+ keyboard_prompt_pad(1,1,1,1);assert(!keyboard_prompt_enabled(0));
+ keys[4]=0;keyboard_prompt_keys(keys,512,0);keys[4]=1;keyboard_prompt_keys(keys,512,0);assert(keyboard_prompt_enabled(0));
  keyboard_prompt_pad(0,1,0,1);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_keys(keys,512,0);assert(!keyboard_prompt_enabled(0)); /* held key is not fresh input */
  keyboard_prompt_keys(keys,512,2);assert(keyboard_prompt_enabled(0));
@@ -48,6 +50,11 @@ int main(void){
  /* (the menus' pointer and keys, which the game's keys and motion miss) */
  keyboard_prompt_pad(0,1,0,1);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_keyboard_used();assert(keyboard_prompt_enabled(0)&&!keyboard_prompt_enabled(1));
+ /* (no controller on port 0, the keyboard alone: a poll of it does not take
+ the prompts back from port 1's controller) */
+ keyboard_prompt_pad(0,0,0,0);keyboard_prompt_pad(1,2,0,1);assert(!keyboard_prompt_enabled(0));
+ keyboard_prompt_pad(0,0,0,0);keyboard_prompt_pad(0,0,0,0);assert(!keyboard_prompt_enabled(0));
+ keyboard_prompt_keyboard_used();assert(keyboard_prompt_enabled(0));
  assert(!keyboard_prompt_enabled(-1)&&!keyboard_prompt_enabled(4)&&!keyboard_prompt_enabled(3));
  return 0;
 }

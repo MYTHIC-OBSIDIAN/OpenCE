@@ -1,5 +1,7 @@
-/* Keyboard ownership follows XInput's port assignment, independently of ui.map.
- * Only port zero receives keyboard input; another player's pad cannot steal it. */
+/* The prompts follow the input used last on this computer: the keyboard and
+ * mouse (port zero's, the only port the keyboard drives) or any controller.
+ * Only port zero's prompts become keys; another port's controller switches
+ * them back, as its own buttons are what it shows. */
 #include "keyboard_prompts.h"
 
 static unsigned char previous_keys[512];
@@ -15,12 +17,16 @@ static int previous_mouse;
 void keyboard_prompt_pad(short port, unsigned long buttons, int analog, int connected)
 {
     if (port < 0 || port >= 4) return;
-    if (port == 0)
+    /* (port zero's controller unplugged: the keyboard's, if it was used; only
+     * as it goes, not each poll while none is there, which would hold the
+     * keys while another port's controller is used: the keyboard alone, its
+     * controller moved to port one) */
+    if (!connected)
     {
-        if (!connected) keyboard_active = nonpad_keyboard;
-        else if (!connected_ports[port] || (buttons & ~previous_buttons[port]) ||
-            (analog && !previous_analog[port])) keyboard_active = 0;
+        if (port == 0 && connected_ports[port]) keyboard_active = nonpad_keyboard;
     }
+    else if ((port == 0 && !connected_ports[port]) || (buttons & ~previous_buttons[port]) ||
+        (analog && !previous_analog[port])) keyboard_active = 0;
     connected_ports[port] = connected;
     previous_buttons[port] = connected ? buttons : 0;
     previous_analog[port] = connected ? analog : 0;

@@ -8,8 +8,11 @@ bound to their actions, and the menus' face-button legends and tokens (PC or
 Xbox menus) show their keys (the PC post-game prompt's ESCAPE and ENTER
 too); ADD PLAYER's other quarters, which only a controller joins, say "Press
 A on a controller to Join" in words; after a controller's button or stick (or a controller plugged in), the
-controller's buttons in BUTTON STYLE again. Only port zero has the keyboard, so
-another player's controller cannot take its prompts. Neither keyboard mode
+controller's buttons in BUTTON STYLE again: any controller's, the last input
+being the computer's (only port zero, which has the keyboard, shows keys).
+Mouse motion counts from a few pixels, and not a warp to the window's middle.
+Port zero with no controller (the keyboard alone) holds the keys only as its
+controller goes, not each poll. Neither keyboard mode
 requires High-Res HUD; High-Res Text controls font rendering.
 
 For example, rebinding Action from E to F in Controls Setup makes a supported
@@ -22,8 +25,8 @@ Mouse buttons and wheel directions have symbols; longer labels widen the keycap.
 1. [keyboard_prompts.c](../../port/linux/src/keyboard_prompts.c),
    `keyboard_prompt_pad`, `keyboard_prompt_keys`, `keyboard_prompt_touch` and
    `keyboard_prompt_enabled`: physical activity, the input used last. Keyboard
-   ownership follows XInput port zero, independent of viewport order. Another
-   player's controller cannot take its keyboard prompts. Android starts with
+   ownership follows XInput port zero, independent of viewport order; any
+   controller's press takes the prompts back to buttons. Android starts with
    touch presentation; touch returns to native icons.
 2. [xinput_sdl.c](../../port/linux/src/xinput_sdl.c), `XInputGetState` and
    `halo_keyboard_binding_label`: observe physical input before remapping/merging,
