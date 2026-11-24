@@ -146,6 +146,10 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
   assert(!wcscmp(menu_button_glyph_postgame_prompt(t,buffer,64),L"\t%b-button = Quit    %a-button = Continue"));
   assert(menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64)[0]==L'%'&&buffer!=menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64));
   assert(menu_button_glyph_postgame_prompt(t,buffer,10)==t);}
+ /* (another player's quarter after the keyboard: its A in words, no picture) */
+ keyboard=1;before=quads+backgrounds;text_runs=0;
+ assert(menu_button_glyph_join_draw(L"Press %a-button to Join",1,&box));restored();
+ assert(text_runs==1&&quads+backgrounds==before);
  /* (key names in the Xbox menus too: the input used last decides) */
  menus="xbox";assert(menu_button_glyph_join_draw(L"Press %a-button to Join",0,&box));restored();
  return 0;

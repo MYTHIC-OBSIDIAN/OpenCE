@@ -288,7 +288,15 @@ boolean menu_button_glyph_join_draw(wchar_t const *text, short port, rectangle2d
     short style, justification, initial, paragraph, middle;
     unsigned long flags;
     boolean drawn = FALSE;
-    if (!menu_button_glyph_enabled(0, port)) return FALSE;
+    /* (another player's quarter after the keyboard: only a controller joins
+     * there, the keyboard being player 1's, so its A in words, no picture
+     * beside the keys the rest of the screen shows; the longest that fits) */
+    static wchar_t const *const words[] = { L"A on a controller", L"A on a pad", L"A" };
+    wchar_t line[192];
+    real_rectangle2d ink;
+    short word;
+    boolean in_words = port > 0 && port < 4 && keyboard_prompt_enabled(0);
+    if (!in_words && !menu_button_glyph_enabled(0, port)) return FALSE;
     token = wcsstr(text, L"%a-button");
     if (!token || wcschr(token + 9, L'%')) return FALSE;
     length = token - text;
@@ -300,6 +308,25 @@ boolean menu_button_glyph_join_draw(wchar_t const *text, short port, rectangle2d
     draw_string_set_format(NONE, 0, 0);
     draw_string_set_indents(0, 0);
     measure.x0 = 0; measure.x1 = 2048;
+    if (in_words)
+    {
+        for (word = 0; word < (short)NUMBEROF(words) && !drawn; word++)
+        {
+            if (wcslen(prefix) + wcslen(words[word]) + wcslen(suffix) >= NUMBEROF(line)) continue;
+            wcscpy(line, prefix); wcscat(line, words[word]); wcscat(line, suffix);
+            rasterizer_unicode_string_ink_bounds(&measure, line, &ink);
+            width = ink.x1 - ink.x0;
+            if (width <= bounds->x1 - bounds->x0 || word == (short)NUMBEROF(words) - 1)
+            {
+                x = (bounds->x0 + bounds->x1 - width) * .5f;
+                rasterizer_draw_unicode_string_offset(&measure, line, x - ink.x0, 0.0f);
+                drawn = TRUE;
+            }
+        }
+        draw_string_set_format(style, justification, flags);
+        draw_string_set_indents(initial, paragraph);
+        return drawn;
+    }
     rasterizer_unicode_string_ink_bounds(&measure, prefix, &before);
     rasterizer_unicode_string_ink_bounds(&measure, suffix, &after);
     icon_width = keyboard_prompt_enabled(port) ? (real)menu_button_glyph_key_width(0) : 26.0f;

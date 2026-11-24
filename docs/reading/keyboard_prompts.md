@@ -5,7 +5,9 @@ button or the mouse's motion of the first player's (in the menus too, where the
 mouse drives the pointer: `keyboard_prompt_keyboard_used`, from
 `src/sdl_platform.c`'s events), the HUD's prompts show keycaps of the keys
 bound to their actions, and the menus' face-button legends and tokens (PC or
-Xbox menus) show their keys; after a controller's button or stick (or a controller plugged in), the
+Xbox menus) show their keys (the PC post-game prompt's ESCAPE and ENTER
+too); ADD PLAYER's other quarters, which only a controller joins, say "Press
+A on a controller to Join" in words; after a controller's button or stick (or a controller plugged in), the
 controller's buttons in BUTTON STYLE again. Only port zero has the keyboard, so
 another player's controller cannot take its prompts. Neither keyboard mode
 requires High-Res HUD; High-Res Text controls font rendering.
