@@ -18,6 +18,9 @@ boolean menu_button_glyph_keyboard_active(short port);
  * (game_engine.c): XBOX 360's round buttons smaller there, below the
  * panel's line */
 void menu_button_glyph_set_postgame(boolean postgame);
+/* that prompt with keys (the keyboard used last): how much wider it is than
+ * with the controller's buttons, its keys being wider and set further apart */
+short menu_button_glyph_postgame_extra(wchar_t const *text, short port);
 
 short menu_button_glyph_key_width(short button);
 short menu_button_glyph_compact_key_width(short button);

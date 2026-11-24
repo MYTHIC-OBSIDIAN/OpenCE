@@ -23,10 +23,16 @@ struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
 /* the carnage report's prompt being drawn (menu_button_glyph_set_postgame) */
 #define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.7f
 static boolean menu_button_glyph_postgame = FALSE;
+/* (its keys, wider than the buttons: a gap before each prompt after the
+ * first and after each key, the prompts drawn so far counted) */
+#define MENU_BUTTON_GLYPH_POSTGAME_KEY_GAP 14
+#define MENU_BUTTON_GLYPH_POSTGAME_KEY_TRAIL 4
+static short menu_button_glyph_postgame_keys = 0;
 
 void menu_button_glyph_set_postgame(boolean postgame)
 {
     menu_button_glyph_postgame = postgame;
+    menu_button_glyph_postgame_keys = 0;
 }
 
 static boolean menu_button_glyph_enabled(short button, short port)
@@ -174,17 +180,49 @@ boolean menu_button_glyph_inline(short icon, short port, rectangle2d *cursor)
     rectangle2d box = *cursor;
     real_argb_color color;
     short middle;
+    boolean keys;
     /* Literal face-button tokens already have an unambiguous menu meaning. */
     if (!menu_button_glyph_enabled(icon, port)) return FALSE;
     middle = draw_unicode_string_capital_middle(cursor, L"");
     box.x0 += 4;
+    keys = menu_button_glyph_postgame && keyboard_prompt_enabled(port);
+    if (keys && menu_button_glyph_postgame_keys > 0) box.x0 += MENU_BUTTON_GLYPH_POSTGAME_KEY_GAP;
     box.x1 = box.x0 + (keyboard_prompt_enabled(port) ? menu_button_glyph_key_width(icon) : 26);
     box.y0 = middle - 13; box.y1 = middle + 13;
     draw_string_get_color(&color);
     if (!menu_button_glyph_draw(icon, port, &box, NULL,
         ((pixel32)(color.alpha * 255.0f) << 24) | 0xffffffUL)) return FALSE;
     cursor->x0 = box.x1;
+    if (keys)
+    {
+        cursor->x0 += MENU_BUTTON_GLYPH_POSTGAME_KEY_TRAIL;
+        menu_button_glyph_postgame_keys++;
+    }
     return TRUE;
+}
+
+/* the carnage report's prompt with keys: how much wider than with buttons
+ * (each key's width over a button's 26, and the gaps), so that it may be
+ * moved left by as much and end where the buttons' does */
+short menu_button_glyph_postgame_extra(wchar_t const *text, short port)
+{
+    static wchar_t const *const tokens[4] = {L"%a-button", L"%b-button", L"%x-button", L"%y-button"};
+    short extra = 0, count = 0, button;
+    wchar_t const *at;
+    if (!text || !keyboard_prompt_enabled(port)) return 0;
+    for (at = wcschr(text, L'%'); at; at = wcschr(at + 1, L'%'))
+    {
+        for (button = 0; button < 4; button++)
+        {
+            if (!wcsncmp(at, tokens[button], wcslen(tokens[button])) && menu_button_glyph_enabled(button, port))
+            {
+                extra += menu_button_glyph_key_width(button) - 26 + MENU_BUTTON_GLYPH_POSTGAME_KEY_TRAIL;
+                if (count++ > 0) extra += MENU_BUTTON_GLYPH_POSTGAME_KEY_GAP;
+                break;
+            }
+        }
+    }
+    return extra;
 }
 
 wchar_t const *menu_button_glyph_join_hint(boolean can_join, short port)

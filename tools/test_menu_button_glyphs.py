@@ -131,6 +131,15 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
  }
  assert(!menu_button_glyph_join_draw(L"No icon",0,&box));
  assert(!menu_button_glyph_join_draw(L"Press %a-button %b-button",0,&box));
+ /* (the carnage report's prompt: keys further apart, and the extra room) */
+ keyboard=1;style_choice=7;
+ assert(menu_button_glyph_postgame_extra(L"%b-button=quit   %a-button=pick game",0)==
+  menu_button_glyph_key_width(1)-26+4+menu_button_glyph_key_width(0)-26+4+14);
+ menu_button_glyph_set_postgame(TRUE);
+ cursor=box;assert(menu_button_glyph_inline(1,0,&cursor));assert(cursor.x0==box.x0+4+menu_button_glyph_key_width(1)+4);
+ cursor.x0=200;assert(menu_button_glyph_inline(0,0,&cursor));assert(cursor.x0==200+4+14+menu_button_glyph_key_width(0)+4);
+ menu_button_glyph_set_postgame(FALSE);restored();
+ keyboard=0;assert(menu_button_glyph_postgame_extra(L"%b-button=quit",0)==0);keyboard=2;
  /* (key names in the Xbox menus too: the input used last decides) */
  menus="xbox";assert(menu_button_glyph_join_draw(L"Press %a-button to Join",0,&box));restored();
  return 0;
