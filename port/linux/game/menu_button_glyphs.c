@@ -22,6 +22,11 @@ struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
  * the keyboard or mouse was used last (keyboard_prompts.c). */
 /* the carnage report's prompt being drawn (menu_button_glyph_set_postgame) */
 #define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.7f
+/* a button in a line of text (inline tokens, "Press A to Join"): XBOX 360's
+ * round faces fill the text's 26-pixel box, larger than the other styles'
+ * ovals and twice the text's capitals; smaller, about the box's middle */
+#define MENU_BUTTON_GLYPH_IN_TEXT_SCALE 0.75f
+static boolean menu_button_glyph_in_text = FALSE;
 static boolean menu_button_glyph_postgame = FALSE;
 /* (its keys, wider than the buttons: a gap before each prompt after the
  * first and after each key, the prompts drawn so far counted) */
@@ -158,6 +163,7 @@ boolean menu_button_glyph_draw(short button, short port, rectangle2d const *boun
      * panel's blue line above them; smaller, about the box's middle, so they
      * sit below it at about the height of the "=quit" beside them) */
     if (menu_button_glyph_postgame) fit *= MENU_BUTTON_GLYPH_POSTGAME_SCALE;
+    else if (menu_button_glyph_in_text && style == 3) fit *= MENU_BUTTON_GLYPH_IN_TEXT_SCALE;
     x = bounds->x0 + (width - art_width * fit) * .5f;
     y = bounds->y0 + (height - art_height * fit) * .5f;
     memset(&parameters, 0, sizeof(parameters));
@@ -182,7 +188,7 @@ boolean menu_button_glyph_inline(short icon, short port, rectangle2d *cursor)
     rectangle2d box = *cursor;
     real_argb_color color;
     short middle;
-    boolean keys;
+    boolean keys, drawn;
     /* (the carnage report's prompt is the whole screen's, not a player's:
      * the first port's, which has the keyboard, whichever player the text
      * was last drawn for) */
@@ -196,8 +202,11 @@ boolean menu_button_glyph_inline(short icon, short port, rectangle2d *cursor)
     box.x1 = box.x0 + (keyboard_prompt_enabled(port) ? menu_button_glyph_key_width(icon) : 26);
     box.y0 = middle - 13; box.y1 = middle + 13;
     draw_string_get_color(&color);
-    if (!menu_button_glyph_draw(icon, port, &box, NULL,
-        ((pixel32)(color.alpha * 255.0f) << 24) | 0xffffffUL)) return FALSE;
+    menu_button_glyph_in_text = TRUE;
+    drawn = menu_button_glyph_draw(icon, port, &box, NULL,
+        ((pixel32)(color.alpha * 255.0f) << 24) | 0xffffffUL);
+    menu_button_glyph_in_text = FALSE;
+    if (!drawn) return FALSE;
     cursor->x0 = box.x1;
     if (keys)
     {
@@ -343,8 +352,10 @@ boolean menu_button_glyph_join_draw(wchar_t const *text, short port, rectangle2d
         middle = draw_unicode_string_capital_middle(&measure, L"");
         box.y0 = middle - 13; box.y1 = middle + 13;
         draw_string_get_color(&color);
+        menu_button_glyph_in_text = TRUE;
         drawn = menu_button_glyph_draw(0, port, &box, NULL,
             ((pixel32)(color.alpha * 255.0f) << 24) | 0xffffffUL);
+        menu_button_glyph_in_text = FALSE;
         if (drawn)
         {
             after_x = x + before.x1 - before.x0 + icon_width + 12.0f;

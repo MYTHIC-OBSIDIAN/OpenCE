@@ -147,6 +147,11 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
   assert(!wcscmp(menu_button_glyph_postgame_prompt(t,buffer,64),L"\t%b-button = Quit    %a-button = Continue"));
   assert(menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64)[0]==L'%'&&buffer!=menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64));
   assert(menu_button_glyph_postgame_prompt(t,buffer,10)==t);}
+ /* (XBOX 360's in a line of text: smaller than the box, about its middle) */
+ keyboard=0;style_choice=3;cursor=box;assert(menu_button_glyph_inline(0,0,&cursor));
+ assert(drawn[2].position.y-drawn[0].position.y<=26*.75f+.01f);
+ assert(menu_button_glyph_draw(0,0,&box,0,0x80ffffff));assert(drawn[2].position.y-drawn[0].position.y>25.9f);
+ style_choice=7;keyboard=2;
  /* (the carnage report's prompt draws XBOX CLASSIC's buttons too, smaller) */
  keyboard=0;style_choice=0;menu_button_glyph_set_postgame(TRUE);before=quads;
  cursor=box;assert(menu_button_glyph_inline(0,0,&cursor));assert(quads==before+1);
