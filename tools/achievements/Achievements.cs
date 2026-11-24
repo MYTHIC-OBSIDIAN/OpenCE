@@ -96,7 +96,7 @@ namespace OpenCEAchievements
 
         static void Fatal(Exception e)
         {
-            MessageBox.Show("OpenCE Achievements hit an unexpected error:\n\n" + e.Message, "OpenCE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show("Halo Achievements hit an unexpected error:\n\n" + e.Message, "Halo Achievements", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -844,7 +844,7 @@ namespace OpenCEAchievements
             using (var g = ui.CreateGraphics()) Theme.Scale = Math.Max(1f, g.DpiX / 96f);
 
             tray.Icon = Res.AppIcon();
-            tray.Text = "OpenCE Achievements";
+            tray.Text = "Halo Achievements";
             var menu = new ContextMenuStrip();
             menu.Items.Add("Achievements", null, delegate { ShowList(); });
             menu.Items.Add("Exit", null, delegate { ExitThread(); });
@@ -1202,7 +1202,7 @@ namespace OpenCEAchievements
 
         public ListForm(Store store)
         {
-            Text = "Halo: Combat Evolved - Achievements";
+            Text = "Halo Achievements";
             Icon = Res.AppIcon();
             Cursor = GameCursor.Arrow;                   // assets\cursor.cur if built in, else the arrow
             FormBorderStyle = FormBorderStyle.None;      // own minimise / close buttons (the Halo PC installer's)
