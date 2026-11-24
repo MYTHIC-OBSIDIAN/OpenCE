@@ -7574,10 +7574,13 @@ static boolean join4_set(short controller, unsigned char state)
 }
 
 /* "port join4 back" (player 1's B): back to the lobby, nobody added
-(FALSE for another player's) */
+(FALSE for another player's); a controller that plays nobody and is not
+joining has nothing of its own to leave, so its B goes back too (player
+1 on the keyboard, the controller on port 1) */
 static boolean join4_back(short controller)
 {
-	if (controller > 0)
+	if (controller > 0 && (controller >= MAXIMUM_LOCAL_PLAYERS || join4.state[controller] != _join4_away ||
+		lobby_controller_playing(controller)))
 		return FALSE;
 	lobby_join_reset();
 	return TRUE;
