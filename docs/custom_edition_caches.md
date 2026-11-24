@@ -282,7 +282,10 @@ changed:
   `Hold "%s" for score`, which Halo PC fills in with its score key; this
   build copies it as it is (`game_engine.c`, the press-back-for-score
   message), so `"%s"` becomes `BACK`, the button this build reads for the
-  score, in the same four characters.
+  score, in the same four characters. The PC menus' own copy of the string
+  (strings.xml) keeps `"%s"`, which the message fills the same way as it is
+  shown (`keyboard_glyphs.c`'s `keyboard_score_hint`): `BACK` after a
+  controller, the score key's keycap, quotes and all, after the keyboard.
 
 ### In the game (`custom_edition_cache.c`, `custom_edition_geometry.c`, `custom_edition_bitmaps.c`)
 

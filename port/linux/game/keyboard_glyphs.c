@@ -151,18 +151,37 @@ int keyboard_hud_inline(short icon, rectangle2d *cursor)
 /* The score hint is authored as plain BACK text (PC maps may use %s).
  * Only its identified game-engine message is offered here. Preserve the
  * surrounding localized text; unknown wording stays native. */
-void keyboard_score_hint(long player, wchar_t *text, long capacity)
+/* replaces the first of the names in text with with (FALSE: none, or no room) */
+static int keyboard_score_hint_replace(wchar_t *text, long capacity, wchar_t const *const *names, wchar_t const *with)
 {
-    wchar_t *at;
-    wchar_t const *token = L"%back-button";
-    size_t old_length, tail, replacement = wcslen(token), length;
-    if (player == NONE || !keyboard_prompt_enabled(player_get(player)->local_player_index)) return;
-    at = wcsstr(text, L"BACK"); old_length = 4;
-    if (!at) { at = wcsstr(text, L"%s"); old_length = 2; }
-    if (!at) return;
+    wchar_t *at = NULL;
+    size_t old_length = 0, replacement = wcslen(with), length, tail;
+    for (; *names && !at; names++)
+    {
+        at = wcsstr(text, *names);
+        old_length = wcslen(*names);
+    }
+    if (!at) return 0;
     length = wcslen(text);
-    if (capacity <= 0 || length + replacement - old_length >= (size_t)capacity) return;
+    if (capacity <= 0 || length + replacement - old_length >= (size_t)capacity) return 0;
     tail = wcslen(at + old_length) + 1;
     memmove(at + replacement, at + old_length, tail * sizeof(wchar_t));
-    memcpy(at, token, replacement * sizeof(wchar_t));
+    memcpy(at, with, replacement * sizeof(wchar_t));
+    return 1;
+}
+
+/* The hint that BACK shows the score: the Xbox's reads BACK, the PC
+ * version's 'Hold "%s" for score' names its key in quotes. After the keyboard
+ * its score key's keycap (the %back-button token) takes the place of either,
+ * quotes and all; after a controller, BACK (the Xbox's word) that of the PC
+ * version's "%s", which would otherwise be read as it is. */
+void keyboard_score_hint(long player, wchar_t *text, long capacity)
+{
+    static wchar_t const *const keyed[] = { L"\"%s\"", L"%s", L"BACK", NULL };
+    static wchar_t const *const placeholder[] = { L"\"%s\"", L"%s", NULL };
+    if (player == NONE) return;
+    if (keyboard_prompt_enabled(player_get(player)->local_player_index))
+        keyboard_score_hint_replace(text, capacity, keyed, L"%back-button");
+    else
+        keyboard_score_hint_replace(text, capacity, placeholder, L"BACK");
 }

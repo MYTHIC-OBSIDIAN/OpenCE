@@ -205,14 +205,18 @@ static int enabled=1;
 static struct {short local_player_index;} test_player={0};
 #define player_get(p) (&test_player)
 static int keyboard_prompt_enabled(short p){return enabled&&p==0;}
-''' + function(source,'keyboard_score_hint') + r'''
+''' + function(source,'keyboard_score_hint_replace') + function(source,'keyboard_score_hint') + r'''
 int main(void){
  wchar_t text[80]=L"Hold BACK for score";
  keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold %back-button for score"));
  wcscpy(text,L"Hold BACK for score");keyboard_score_hint(0,text,20);assert(!wcscmp(text,L"Hold BACK for score"));
  wcscpy(text,L"Hold %s for score");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold %back-button for score"));
  wcscpy(text,L"Unrecognized authored wording");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Unrecognized authored wording"));
+ wcscpy(text,L"Hold \"%s\" for score");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold %back-button for score"));
  enabled=0;wcscpy(text,L"Hold BACK for score");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold BACK for score"));
+ /* (a controller: the PC version's "%s", quotes and all, reads BACK) */
+ wcscpy(text,L"Hold \"%s\" for score");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold BACK for score"));
+ wcscpy(text,L"Hold %s for score");keyboard_score_hint(0,text,80);assert(!wcscmp(text,L"Hold BACK for score"));
  return 0;
 }
 ''')

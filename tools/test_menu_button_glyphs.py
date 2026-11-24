@@ -86,7 +86,8 @@ int main(void){
  assert(!wcscmp(menu_button_glyph_join_hint(0,0),L""));
  assert(!wcscmp(menu_button_glyph_join_hint(1,0),L"SPACE: join"));
  keyboard=0;style_choice=0;assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
- assert(!wcscmp(menu_button_glyph_join_hint(0,0),L"ENTER: select    ESC: back"));
+ assert(!wcscmp(menu_button_glyph_join_hint(0,0),L""));
+ assert(!wcscmp(menu_button_glyph_join_hint(1,0),L""));
  keyboard=1;style_choice=7;
 assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,0,&box,0,0));
  assert(!menu_button_glyph_draw(0,-1,&box,0,0));assert(!menu_button_glyph_draw(0,4,&box,0,0));
@@ -114,7 +115,7 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
  fail=2;assert(menu_button_glyph_draw(1,0,&box,&clip,0x80ffffff));restored();fail=0;
  cursor=box;assert(menu_button_glyph_inline(0,1,&cursor));assert(cursor.x0==146&&bx==104&&bw==42);restored();
  assert(!menu_button_glyph_inline(18,1,&cursor));assert(cursor.x0==146);
- keyboard=0;assert(!wcscmp(menu_button_glyph_join_hint(1,0),L"SPACE: join    ENTER: select    ESC: back"));
+ keyboard=0;assert(!wcscmp(menu_button_glyph_join_hint(1,0),L""));
  /* (XBOX CLASSIC: the menus' own buttons, in either menus) */
  style_choice=0;assert(!menu_button_glyph_draw(0,3,&box,&clip,0x80ffffff));
  menus="xbox";style_choice=3;assert(menu_button_glyph_draw(0,3,&box,&clip,0x80ffffff));menus="pc";

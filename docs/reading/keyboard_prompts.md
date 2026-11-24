@@ -7,7 +7,11 @@ mouse drives the pointer: `keyboard_prompt_keyboard_used`, from
 bound to their actions, and the menus' face-button legends and tokens (PC or
 Xbox menus) show their keys (the PC post-game prompt's ESCAPE and ENTER
 too); ADD PLAYER's other quarters, which only a controller joins, say "Press
-A on a controller to Join" in words; after a controller's button or stick (or a controller plugged in), the
+A on a controller to Join" in words; ADD PLAYER's hint reads "SPACE: join" only after the
+keyboard (nothing after a controller, the legends showing the buttons); the
+score hint reads BACK after a controller (the PC strings' `"%s"` filled), the
+score key after the keyboard; the scoreboard's "Right-click to pick a player"
+shows only after the keyboard or mouse; after a controller's button or stick (or a controller plugged in), the
 controller's buttons in BUTTON STYLE again: any controller's, the last input
 being the computer's (only port zero, which has the keyboard, shows keys).
 Mouse motion counts from a few pixels, and not a warp to the window's middle.

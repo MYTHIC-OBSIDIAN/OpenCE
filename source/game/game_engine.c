@@ -602,6 +602,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "mcc_ui_teams.h" /* port: port/linux/game/mcc_ui_teams.c */
 #include "latency_meter.h" /* port: port/linux/game/latency_meter.c */
 #include "menu_button_glyphs.h" /* port: port/linux/game/menu_button_glyphs.c */
+#include "keyboard_prompts.h" /* port: port/linux/src/keyboard_prompts.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -2520,7 +2521,10 @@ static void game_engine_rasterize_scoreboard(
 		}
 		scoreboard_draw_row(row_string, FALSE, &color, next_row++, top, left, FALSE);
 	}
-	if (network && pointer_state >= 0)
+	/* port: the hint that the mouse picks a player, after the keyboard or
+	mouse (keyboard_prompts.c); after a controller, which cannot, nothing
+	until the pointer is out */
+	if (network && pointer_state >= 0 && (pointer_state != 0 || keyboard_prompt_enabled(0)))
 	{
 		color.alpha = alpha;
 		color.red = color.green = color.blue = 0.6f;

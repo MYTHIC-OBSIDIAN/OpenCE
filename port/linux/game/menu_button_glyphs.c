@@ -268,12 +268,14 @@ short menu_button_glyph_postgame_extra(wchar_t const *text, short port)
     return extra;
 }
 
+/* ADD PLAYER's hint of the keyboard's keys: SPACE (the keyboard alone, its
+ * controller free to join) after the keyboard or mouse, when it can; nothing
+ * after a controller, whose buttons the legends show (the keyboard's ENTER
+ * and ESC the legends show after the keyboard) */
 wchar_t const *menu_button_glyph_join_hint(boolean can_join, short port)
 {
-    if (menu_button_glyph_enabled(0, port) && keyboard_prompt_enabled(port))
-        return can_join ? L"SPACE: join" : L"";
-    return can_join ? L"SPACE: join    ENTER: select    ESC: back" :
-        L"ENTER: select    ESC: back";
+    (void)port;
+    return can_join && keyboard_prompt_enabled(0) ? L"SPACE: join" : L"";
 }
 
 /* The stock mixed text/icon routine measures each run separately. For this
