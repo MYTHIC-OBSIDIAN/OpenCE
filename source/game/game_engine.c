@@ -601,6 +601,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "mcc_player.h" /* port: port/linux/game/mcc_player.h */
 #include "mcc_ui_teams.h" /* port: port/linux/game/mcc_ui_teams.c */
 #include "latency_meter.h" /* port: port/linux/game/latency_meter.c */
+#include "menu_button_glyphs.h" /* port: port/linux/game/menu_button_glyphs.c */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -2995,6 +2996,9 @@ void game_engine_post_rasterize_post_game(
 					unicode_string_list_get_string(string_list_index, 0x48);
 			else
 				prompt = L"";
+			/* port: (XBOX 360's buttons smaller here, below the panel's
+			line: menu_button_glyphs.c) */
+			menu_button_glyph_set_postgame(TRUE);
 			draw_string_and_hack_in_icons(
 				&bounds,
 				NULL,
@@ -3002,6 +3006,7 @@ void game_engine_post_rasterize_post_game(
 				0,
 				prompt,
 				FALSE);
+			menu_button_glyph_set_postgame(FALSE);
 			return;
 		}
 
@@ -3011,6 +3016,7 @@ void game_engine_post_rasterize_post_game(
 			prompt = unicode_string_list_get_string(string_list_index, 0x49);
 		else
 			prompt = L"";
+		menu_button_glyph_set_postgame(TRUE); /* port: as above */
 		draw_string_and_hack_in_icons(
 			&bounds,
 			NULL,
@@ -3018,6 +3024,7 @@ void game_engine_post_rasterize_post_game(
 			0,
 			prompt,
 			FALSE);
+		menu_button_glyph_set_postgame(FALSE);
 	}
 
 	return;

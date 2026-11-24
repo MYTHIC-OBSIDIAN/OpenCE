@@ -23,7 +23,7 @@ struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
  * keeps the menus' own, which are its buttons. Key names for a keyboard stay
  * the PC menus' opt-in (display.menu_button_glyphs). */
 /* the post-game screen's widgets being drawn (menu_button_glyph_set_postgame) */
-#define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.6f
+#define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.7f
 static boolean menu_button_glyph_postgame = FALSE;
 
 void menu_button_glyph_set_postgame(boolean postgame)
