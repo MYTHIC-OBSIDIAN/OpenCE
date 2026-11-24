@@ -7556,16 +7556,12 @@ void render_ui_widgets_postgame(
 			bounds.y0 = 0;
 			bounds.x1 = window_bounds->x1 - window_bounds->x0;
 			bounds.y1 = window_bounds->y1 - window_bounds->y0;
-			/* port: (XBOX 360's buttons a little smaller on the post-game
-			screen: menu_button_glyphs.c) */
-			menu_button_glyph_set_postgame(TRUE);
 			widget_instance_render_recursive(
 				widget_globals.active_widgets[widget_index],
 				&bounds,
 				offsets[local_player_count() - 1][local_player_index],
 				TRUE,
 				FALSE);
-			menu_button_glyph_set_postgame(FALSE);
 		}
 	}
 

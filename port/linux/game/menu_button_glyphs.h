@@ -14,9 +14,9 @@ boolean menu_button_glyph_join_draw(wchar_t const *text, short port, rectangle2d
 
 boolean menu_button_glyph_keyboard_active(short port);
 
-/* the post-game screen being drawn (game_engine.c's carnage report prompt
- * "B =quit  A =pick game", ui_widget.c's render_ui_widgets_postgame): XBOX
- * 360's round buttons smaller there, below the panel's line */
+/* the carnage report's prompt "B =quit  A =pick game" being drawn
+ * (game_engine.c): XBOX 360's round buttons smaller there, below the
+ * panel's line */
 void menu_button_glyph_set_postgame(boolean postgame);
 
 short menu_button_glyph_key_width(short button);

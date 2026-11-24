@@ -22,7 +22,7 @@ struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
  * menus: XBOX GEMS, XBOX DARK GEMS and XBOX 360 draw theirs; XBOX CLASSIC
  * keeps the menus' own, which are its buttons. Key names for a keyboard stay
  * the PC menus' opt-in (display.menu_button_glyphs). */
-/* the post-game screen's widgets being drawn (menu_button_glyph_set_postgame) */
+/* the carnage report's prompt being drawn (menu_button_glyph_set_postgame) */
 #define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.7f
 static boolean menu_button_glyph_postgame = FALSE;
 
@@ -146,10 +146,10 @@ boolean menu_button_glyph_draw(short button, short port, rectangle2d const *boun
     if (!bitmap) return FALSE;
     art_width = uv.x1 - uv.x0; art_height = uv.y1 - uv.y0;
     fit = MIN(width / art_width, height / art_height);
-    /* (the post-game screen: XBOX 360's round faces fill the legends' width,
-     * larger there than the other styles' ovals and over the panel's blue
-     * line above them; smaller, about the box's middle, so they sit below it
-     * at about the height of the "=quit" beside them) */
+    /* (the carnage report's prompt: XBOX 360's round faces fill the box,
+     * over the panel's blue line above them; smaller, about the box's
+     * middle, so they sit below it at about the height of the "=quit"
+     * beside them) */
     if (style == 3 && menu_button_glyph_postgame) fit *= MENU_BUTTON_GLYPH_POSTGAME_SCALE;
     x = bounds->x0 + (width - art_width * fit) * .5f;
     y = bounds->y0 + (height - art_height * fit) * .5f;
