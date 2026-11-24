@@ -45,6 +45,9 @@ int main(void){
  keyboard_prompt_pad(0,0,0,0);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_pad(0,1,0,1);keyboard_prompt_pad(0,0,0,0);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_keys(keys,512,0x100);assert(keyboard_prompt_enabled(0));
+ /* (the menus' pointer and keys, which the game's keys and motion miss) */
+ keyboard_prompt_pad(0,1,0,1);assert(!keyboard_prompt_enabled(0));
+ keyboard_prompt_keyboard_used();assert(keyboard_prompt_enabled(0)&&!keyboard_prompt_enabled(1));
  assert(!keyboard_prompt_enabled(-1)&&!keyboard_prompt_enabled(4)&&!keyboard_prompt_enabled(3));
  return 0;
 }

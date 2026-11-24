@@ -133,6 +133,7 @@ symbols in this file:
 #include "text/draw_string.h"
 #include "text/text_group.h"
 #include <xtl.h>
+#include "halo_ui_pointer.h" /* port: halo_mouse_clicked (sdl_platform.c) */
 
 /* ---------- constants */
 
@@ -979,6 +980,10 @@ static void bink_decompress_video_frame(
 static void bink_playback_update__internal(
 	void)
 {
+	/* port: a mouse click since the last frame (read each frame, so a click
+	before the half second below does not count later) */
+	boolean mouse_clicked = halo_mouse_clicked() != 0;
+
 	if (bink_globals.initialized && bink_globals.bink)
 	{
 		if (global_frame_rate_throttle)
@@ -1002,7 +1007,8 @@ static void bink_playback_update__internal(
 			boolean allow_skipping= TEST_FLAG(bink_globals.flags, _bink_playback_dont_allow_skipping_if_filesystem_check_thread_is_active_bit) ?
 				!filesystem_check_thread_is_active() : TRUE;
 
-			if (allow_skipping && bink_query_analog_controller_buttons())
+			/* port: or a mouse click, as the PC version skips its movies */
+			if (allow_skipping && (bink_query_analog_controller_buttons() || mouse_clicked))
 			{
 				bink_playback_stop();
 				return;

@@ -87,8 +87,8 @@ int main(void){
  assert(!wcscmp(menu_button_glyph_join_hint(1,0),L"SPACE: join"));
  keyboard=0;style_choice=0;assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
  assert(!wcscmp(menu_button_glyph_join_hint(0,0),L"ENTER: select    ESC: back"));
- keyboard=1;style_choice=7;menus="xbox";assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
- menus="pc";assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,0,&box,0,0));
+ keyboard=1;style_choice=7;
+assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,0,&box,0,0));
  assert(!menu_button_glyph_draw(0,-1,&box,0,0));assert(!menu_button_glyph_draw(0,4,&box,0,0));
  assert(!backgrounds&&!quads&&!labels);
  for(b=0;b<4;b++){
@@ -131,7 +131,8 @@ int main(void){
  }
  assert(!menu_button_glyph_join_draw(L"No icon",0,&box));
  assert(!menu_button_glyph_join_draw(L"Press %a-button %b-button",0,&box));
- menus="xbox";assert(!menu_button_glyph_join_draw(L"Press %a-button to Join",0,&box));restored();
+ /* (key names in the Xbox menus too: the input used last decides) */
+ menus="xbox";assert(menu_button_glyph_join_draw(L"Press %a-button to Join",0,&box));restored();
  return 0;
 }
 """)

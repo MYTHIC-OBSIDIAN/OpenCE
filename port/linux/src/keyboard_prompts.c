@@ -39,6 +39,11 @@ void keyboard_prompt_keys(unsigned char const *keys, unsigned int count, int mou
     }
 }
 
+void keyboard_prompt_keyboard_used(void)
+{
+    keyboard_active = nonpad_keyboard = 1;
+}
+
 void keyboard_prompt_touch(void)
 {
     keyboard_active = nonpad_keyboard = 0;

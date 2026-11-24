@@ -4,6 +4,9 @@
 /* Physical activity only; these observers never consume or alter input. */
 void keyboard_prompt_pad(short port, unsigned long buttons, int analog, int connected);
 void keyboard_prompt_keys(unsigned char const *keys, unsigned int count, int mouse);
+/* a key or mouse button pressed, or the mouse moved, wherever it went (the
+ * menus' pointer included): keyboard prompts */
+void keyboard_prompt_keyboard_used(void);
 void keyboard_prompt_touch(void);
 /* Physical selection, also used while a menu's automatic choice is pending. */
 int keyboard_prompt_active(short port);

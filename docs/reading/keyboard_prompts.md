@@ -1,9 +1,11 @@
 # Keyboard and mouse prompts
 
-The prompts follow the input used last, with no setting: after a key or mouse
-button of the first player's, the HUD's prompts show keycaps of the keys bound
-to their actions, and the PC menus' face-button legends and tokens show their
-keys; after a controller's button or stick (or a controller plugged in), the
+The prompts follow the input used last, with no setting: after a key, a mouse
+button or the mouse's motion of the first player's (in the menus too, where the
+mouse drives the pointer: `keyboard_prompt_keyboard_used`, from
+`src/sdl_platform.c`'s events), the HUD's prompts show keycaps of the keys
+bound to their actions, and the menus' face-button legends and tokens (PC or
+Xbox menus) show their keys; after a controller's button or stick (or a controller plugged in), the
 controller's buttons in BUTTON STYLE again. Only port zero has the keyboard, so
 another player's controller cannot take its prompts. Neither keyboard mode
 requires High-Res HUD; High-Res Text controls font rendering.
@@ -44,7 +46,7 @@ The [HUD message hook](../../source/interface/hud_messaging.c) must precede
 controller translation, where the original semantic action would otherwise be
 lost. The [inline hook](../../source/interface/ui_widget.c) runs only for HUD and
 scoreboard callers. A separate menu hook replaces recognized face-button
-legends and inline tokens when PC menus are selected. The
+legends and inline tokens in either menus. The
 [score hint hook](../../source/game/game_engine.c) preserves the hint's identity
 before it becomes ordinary text. [Text rendering](../../source/rasterizer/rasterizer_text.c)
 adds visible-ink measurement and scoped fractional positioning: existing logical

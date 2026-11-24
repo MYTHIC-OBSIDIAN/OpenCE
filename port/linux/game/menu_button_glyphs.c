@@ -13,15 +13,13 @@
 #include <string.h>
 #include <wchar.h>
 
-char const *config_string(char const *name);
 struct bitmap_data *hud_hires_button_bitmap(short style, short slot);
 
 /* The menus' A, B, X and Y (their legends and the buttons in their text, the
  * pause menus' included) follow BUTTON STYLE, as the HUD's do, in either
  * menus: XBOX GEMS, XBOX DARK GEMS and XBOX 360 draw theirs; XBOX CLASSIC
- * keeps the menus' own, which are its buttons. In the PC menus, key names
- * for a keyboard when the keyboard or mouse was used last
- * (keyboard_prompts.c). */
+ * keeps the menus' own, which are its buttons. Key names for a keyboard when
+ * the keyboard or mouse was used last (keyboard_prompts.c). */
 /* the carnage report's prompt being drawn (menu_button_glyph_set_postgame) */
 #define MENU_BUTTON_GLYPH_POSTGAME_SCALE 0.7f
 static boolean menu_button_glyph_postgame = FALSE;
@@ -34,8 +32,9 @@ void menu_button_glyph_set_postgame(boolean postgame)
 static boolean menu_button_glyph_enabled(short button, short port)
 {
     if (!(button >= 0 && button < 4 && port >= 0 && port < 4)) return FALSE;
-    if (keyboard_prompt_enabled(port))
-        return !strcmp(config_string("display.menus"), "pc");
+    /* (key names whichever menus, PC or Xbox, when the keyboard or mouse
+     * was used last) */
+    if (keyboard_prompt_enabled(port)) return TRUE;
     return controller_button_style() != 0;
 }
 

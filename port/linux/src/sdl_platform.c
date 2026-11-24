@@ -19,6 +19,8 @@ and the debug keyboard that the game's console reads.
 #include "server_master.h"
 #include "player_link.h"
 #include "xiso.h"
+#include "keyboard_prompts.h"
+#include "halo_ui_pointer.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -1189,9 +1191,25 @@ static void menu_cursor_controller_used(BOOL in_menus)
 		SDL_HideCursor();
 }
 
+/* the mouse buttons pressed (not a touch's), counted for halo_mouse_clicked */
+static unsigned long mouse_presses = 0;
+static unsigned long mouse_presses_read = 0;
+
+int halo_mouse_clicked(void)
+{
+	unsigned long presses = mouse_presses;
+	int clicked = presses != mouse_presses_read;
+
+	mouse_presses_read = presses;
+	return clicked;
+}
+
 static void menu_cursor_mouse_used(BOOL in_menus)
 {
 	menu_cursor_controller = FALSE;
+	/* (the prompts too, in the menus as in the game, where the mouse
+	drives the pointer and the game sees no motion of it) */
+	keyboard_prompt_keyboard_used();
 	if (in_menus && !SDL_CursorVisible())
 		SDL_ShowCursor();
 }
@@ -2115,6 +2133,9 @@ void platform_pump_events(void)
 			exit(EXIT_SUCCESS);
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
+			/* (the prompts: keys pressed, in the menus as in the game) */
+			if (event.key.down && !event.key.repeat)
+				keyboard_prompt_keyboard_used();
 			if (event.key.scancode < SDL_SCANCODE_COUNT)
 			{
 				input_state.keys[event.key.scancode] = event.key.down;
@@ -2154,8 +2175,9 @@ void platform_pump_events(void)
 		case SDL_EVENT_MOUSE_MOTION:
 			/* (not the warps: to the middle as a menu opens, and back to
 			where the mouse is held without relative mode) */
-			if (input_state.ui_pointer ? event.motion.x != ui_pointer.x || event.motion.y != ui_pointer.y :
-				!mouse_warp_capture || (int)event.motion.x != mouse_warp_x || (int)event.motion.y != mouse_warp_y)
+			if (event.motion.which != SDL_TOUCH_MOUSEID &&
+				(input_state.ui_pointer ? event.motion.x != ui_pointer.x || event.motion.y != ui_pointer.y :
+				!mouse_warp_capture || (int)event.motion.x != mouse_warp_x || (int)event.motion.y != mouse_warp_y))
 				menu_cursor_mouse_used(input_state.ui_pointer);
 			if (scoreboard_pointer_active)
 			{
@@ -2183,8 +2205,11 @@ void platform_pump_events(void)
 			break;
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP:
-			if (event.button.down)
+			if (event.button.down && event.button.which != SDL_TOUCH_MOUSEID)
+			{
 				menu_cursor_mouse_used(input_state.ui_pointer);
+				mouse_presses++;
+			}
 			if (event.button.button < 32)
 			{
 				if (event.button.down)

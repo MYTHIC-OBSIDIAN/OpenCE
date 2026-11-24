@@ -7049,7 +7049,9 @@ static void ui_widgets_process_mouse(
 		if (ui_debug_targets_enabled())
 			ui_debug_log_keyboard_tap(pointer.click_x, pointer.click_y, hit);
 	}
-	if (!pointer_active || keyboard_active)
+	/* port: nor while a movie plays (the attract movie's click skips it,
+	bink_playback.c, and is not also a click on the menu behind) */
+	if (!pointer_active || keyboard_active || bink_playback_in_progress())
 	{
 		ui_mouse_press_count = 0;
 		ui_mouse_hover_pending = FALSE;

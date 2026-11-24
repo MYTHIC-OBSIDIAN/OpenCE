@@ -42,4 +42,8 @@ did since the last call, in the screen's coordinates (the game's drawing,
 not the menus' centered 640); 0 while it is not; -1 where there is none */
 int halo_scoreboard_pointer_update(int offered, struct halo_ui_pointer *pointer);
 
+/* nonzero when a mouse button (not a touch) went down since the last call
+(bink_playback.c: a click skips a movie that a button press does) */
+int halo_mouse_clicked(void);
+
 #endif
