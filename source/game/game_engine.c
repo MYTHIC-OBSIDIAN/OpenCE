@@ -602,8 +602,6 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "mcc_ui_teams.h" /* port: port/linux/game/mcc_ui_teams.c */
 #include "latency_meter.h" /* port: port/linux/game/latency_meter.c */
 #include "menu_button_glyphs.h" /* port: port/linux/game/menu_button_glyphs.c */
-/* port: the player the menus' buttons in text are for (ui_widget.c) */
-extern short local_player_index_for_draw_string_and_hack_in_icons;
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -3001,8 +2999,7 @@ void game_engine_post_rasterize_post_game(
 			/* port: (XBOX 360's buttons smaller here, below the panel's
 			line, and keys further apart, the line moved left by as much as
 			they are wider: menu_button_glyphs.c) */
-			bounds.x0 -= menu_button_glyph_postgame_extra(prompt,
-				local_player_index_for_draw_string_and_hack_in_icons);
+			bounds.x0 -= menu_button_glyph_postgame_extra(prompt, 0);
 			menu_button_glyph_set_postgame(TRUE);
 			draw_string_and_hack_in_icons(
 				&bounds,
@@ -3022,8 +3019,7 @@ void game_engine_post_rasterize_post_game(
 		else
 			prompt = L"";
 		/* port: as above */
-		bounds.x0 -= menu_button_glyph_postgame_extra(prompt,
-			local_player_index_for_draw_string_and_hack_in_icons);
+		bounds.x0 -= menu_button_glyph_postgame_extra(prompt, 0);
 		menu_button_glyph_set_postgame(TRUE);
 		draw_string_and_hack_in_icons(
 			&bounds,

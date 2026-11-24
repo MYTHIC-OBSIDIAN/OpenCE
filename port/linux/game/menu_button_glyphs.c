@@ -181,6 +181,10 @@ boolean menu_button_glyph_inline(short icon, short port, rectangle2d *cursor)
     real_argb_color color;
     short middle;
     boolean keys;
+    /* (the carnage report's prompt is the whole screen's, not a player's:
+     * the first port's, which has the keyboard, whichever player the text
+     * was last drawn for) */
+    if (menu_button_glyph_postgame) port = 0;
     /* Literal face-button tokens already have an unambiguous menu meaning. */
     if (!menu_button_glyph_enabled(icon, port)) return FALSE;
     middle = draw_unicode_string_capital_middle(cursor, L"");
