@@ -146,6 +146,12 @@ assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,
   assert(!wcscmp(menu_button_glyph_postgame_prompt(t,buffer,64),L"\t%b-button = Quit    %a-button = Continue"));
   assert(menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64)[0]==L'%'&&buffer!=menu_button_glyph_postgame_prompt(L"%b-button=quit",buffer,64));
   assert(menu_button_glyph_postgame_prompt(t,buffer,10)==t);}
+ /* (the carnage report's prompt draws XBOX CLASSIC's buttons too, smaller) */
+ keyboard=0;style_choice=0;menu_button_glyph_set_postgame(TRUE);before=quads;
+ cursor=box;assert(menu_button_glyph_inline(0,0,&cursor));assert(quads==before+1);
+ assert(drawn[2].position.y-drawn[0].position.y<20);
+ menu_button_glyph_set_postgame(FALSE);cursor=box;assert(!menu_button_glyph_inline(0,0,&cursor));
+ style_choice=7;
  /* (another player's quarter after the keyboard: its A in words, no picture) */
  keyboard=1;before=quads+backgrounds;text_runs=0;
  assert(menu_button_glyph_join_draw(L"Press %a-button to Join",1,&box));restored();

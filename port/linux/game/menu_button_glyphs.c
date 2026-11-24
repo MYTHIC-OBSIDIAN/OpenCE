@@ -41,7 +41,10 @@ static boolean menu_button_glyph_enabled(short button, short port)
     /* (key names whichever menus, PC or Xbox, when the keyboard or mouse
      * was used last) */
     if (keyboard_prompt_enabled(port)) return TRUE;
-    return controller_button_style() != 0;
+    /* (the carnage report's prompt draws XBOX CLASSIC's too: the game's own
+     * there are the HUD's message icons, drawn at the HUD's scale, far too
+     * large on the full screen, and some maps' sheets lack them) */
+    return controller_button_style() != 0 || menu_button_glyph_postgame;
 }
 
 /* These are fixed keyboard_gamepad menu controls, independent of gameplay binds.
@@ -151,11 +154,10 @@ boolean menu_button_glyph_draw(short button, short port, rectangle2d const *boun
     if (!bitmap) return FALSE;
     art_width = uv.x1 - uv.x0; art_height = uv.y1 - uv.y0;
     fit = MIN(width / art_width, height / art_height);
-    /* (the carnage report's prompt: XBOX 360's round faces fill the box,
-     * over the panel's blue line above them; smaller, about the box's
-     * middle, so they sit below it at about the height of the "=quit"
-     * beside them) */
-    if (style == 3 && menu_button_glyph_postgame) fit *= MENU_BUTTON_GLYPH_POSTGAME_SCALE;
+    /* (the carnage report's prompt: the buttons fill the box, over the
+     * panel's blue line above them; smaller, about the box's middle, so they
+     * sit below it at about the height of the "=quit" beside them) */
+    if (menu_button_glyph_postgame) fit *= MENU_BUTTON_GLYPH_POSTGAME_SCALE;
     x = bounds->x0 + (width - art_width * fit) * .5f;
     y = bounds->y0 + (height - art_height * fit) * .5f;
     memset(&parameters, 0, sizeof(parameters));
