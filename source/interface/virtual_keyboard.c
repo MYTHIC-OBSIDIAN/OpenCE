@@ -674,6 +674,17 @@ whatever BUTTON STYLE): covered with the bar it lies on, and drawn again as
 the menus' keys are (ui\shell\main_menu\b_butn and =back: a button
 picture 21x26, then its text in large_ui, in their blue), the buttons the
 high-res ones, in BUTTON STYLE (menu_button_glyphs.c) */
+/* The "B =BACK" and "A =ENTER" legends are part of the keyboard's background
+bitmap, not widgets, so nothing else can hit-test them; measured on the
+rendered screen (icon and label, with a few pixels of margin). port: where
+virtual_keyboard_draw_button_key last drew them (keys, wider than the
+buttons, move the BACK legend left) */
+static rectangle2d keyboard_back_legend_rect= {412, 368, 438, 462};
+static rectangle2d keyboard_enter_legend_rect= {412, 468, 438, 572};
+
+/* port: the gap between the BACK legend and the ENTER key, keys shown */
+#define VIRTUAL_KEYBOARD_LEGEND_GAP 12
+
 static void virtual_keyboard_draw_button_key(
 	struct bitmap_data *background)
 {
@@ -694,6 +705,8 @@ static void virtual_keyboard_draw_button_key(
 	rectangle2d cover;
 	rectangle2d bar;
 	short key_index;
+	short icon_x[2];
+	short text_x[2];
 
 	if (font_index == NONE)
 		return;
@@ -709,14 +722,49 @@ static void virtual_keyboard_draw_button_key(
 	draw_bitmap_in_rect_from(background, &cover, &bar, 0xffffffff, FALSE);
 
 	draw_string_set_draw_mode(font_index, NONE, 0, 0, &color);
+	/* port: with the keyboard used last the buttons are keys (Esc, Enter),
+	wider: each key ends where its button did, just before its text, and the
+	BACK legend moves left to leave a gap before the ENTER key */
+	icon_x[0] = keys[0].x;
+	icon_x[1] = keys[1].x;
+	text_x[0] = keys[0].text_x;
+	text_x[1] = keys[1].text_x;
+	keyboard_back_legend_rect.x0 = 368;
+	keyboard_back_legend_rect.x1 = 462;
+	keyboard_enter_legend_rect.x0 = 468;
+	keyboard_enter_legend_rect.x1 = 572;
+	if (menu_button_glyph_keyboard_active(0))
+	{
+		rectangle2d measure;
+		real_rectangle2d ink;
+		short back_width, enter_width;
+
+		measure.x0 = 0;
+		measure.y0 = 0;
+		measure.x1 = 640;
+		measure.y1 = 40;
+		rasterizer_unicode_string_ink_bounds(&measure, keys[0].text, &ink);
+		back_width = (short)(ink.x1 + .999f);
+		rasterizer_unicode_string_ink_bounds(&measure, keys[1].text, &ink);
+		enter_width = (short)(ink.x1 + .999f);
+		icon_x[1] = (short)(keys[1].x + 21 - menu_button_glyph_key_width(keys[1].button));
+		text_x[0] = (short)(icon_x[1] - VIRTUAL_KEYBOARD_LEGEND_GAP - back_width);
+		icon_x[0] = (short)(text_x[0] - (keys[0].text_x - keys[0].x - 21) - menu_button_glyph_key_width(keys[0].button));
+		keyboard_back_legend_rect.x0 = (short)(icon_x[0] - 3);
+		keyboard_back_legend_rect.x1 = (short)(text_x[0] + back_width + 3);
+		keyboard_enter_legend_rect.x0 = (short)(icon_x[1] - 3);
+		keyboard_enter_legend_rect.x1 = (short)(text_x[1] + enter_width + 3);
+	}
 	for (key_index = 0; key_index < NUMBEROF(keys); key_index++)
 	{
 		rectangle2d icon;
 		rectangle2d text;
 
-		icon.x0 = keys[key_index].x;
+		/* (a key keeps the right end of the box: menu_button_glyphs.c) */
+		icon.x1 = (short)(icon_x[key_index] +
+			(menu_button_glyph_keyboard_active(0) ? menu_button_glyph_key_width(keys[key_index].button) : 21));
+		icon.x0 = (short)(icon.x1 - 21);
 		icon.y0 = 414;
-		icon.x1 = (short)(icon.x0 + 21);
 		icon.y1 = (short)(icon.y0 + 26);
 		if (!menu_button_glyph_draw(keys[key_index].button, 0, &icon, NULL, 0xffffffff))
 		{
@@ -735,7 +783,7 @@ static void virtual_keyboard_draw_button_key(
 			if (bitmap)
 				draw_bitmap_in_rect(bitmap, &icon, &texels, NULL, 0xffffffff, NULL, FALSE);
 		}
-		text.x0 = keys[key_index].text_x;
+		text.x0 = text_x[key_index];
 		text.y0 = 416;
 		text.x1 = 640;
 		text.y1 = 440;
@@ -1489,11 +1537,6 @@ static void virtual_keyboard_process_internal(
 	return;
 }
 
-/* The "B =BACK" and "A =ENTER" legends are part of the keyboard's background
-bitmap, not widgets, so nothing else can hit-test them; measured on the
-rendered screen (icon and label, with a few pixels of margin). */
-static rectangle2d const keyboard_back_legend_rect= {412, 368, 438, 462};
-static rectangle2d const keyboard_enter_legend_rect= {412, 468, 438, 572};
 
 /* (virtual_keyboard.h) */
 long virtual_keyboard_target_rectangles(
