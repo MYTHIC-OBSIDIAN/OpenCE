@@ -43,7 +43,6 @@ static real_argb_color current_color={.5f,.2f,.3f,.4f};
 static real bx,by,bw,bh,tx,ty,ts;
 static wchar_t last_text[32];
 static struct dynamic_screen_vertex drawn[4];
-int config_boolean(char const *n){assert(!strcmp(n,"display.menu_button_glyphs"));return enabled;}
 char const *config_string(char const *n){assert(!strcmp(n,"display.menus"));return menus;}
 static int keyboard_prompt_enabled(short p){observed_port=p;return keyboard;}
 /* (this build's one style for the computer: controller_buttons.c) */
@@ -86,9 +85,9 @@ int main(void){
  short b,s;int before;
  assert(!wcscmp(menu_button_glyph_join_hint(0,0),L""));
  assert(!wcscmp(menu_button_glyph_join_hint(1,0),L"SPACE: join"));
- enabled=0;assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
+ keyboard=0;style_choice=0;assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
  assert(!wcscmp(menu_button_glyph_join_hint(0,0),L"ENTER: select    ESC: back"));
- enabled=1;menus="xbox";assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
+ keyboard=1;style_choice=7;menus="xbox";assert(!menu_button_glyph_draw(0,0,&box,0,0x80ffffff));
  menus="pc";assert(!menu_button_glyph_draw(-1,0,&box,0,0));assert(!menu_button_glyph_draw(4,0,&box,0,0));
  assert(!menu_button_glyph_draw(0,-1,&box,0,0));assert(!menu_button_glyph_draw(0,4,&box,0,0));
  assert(!backgrounds&&!quads&&!labels);
@@ -138,14 +137,12 @@ int main(void){
 """)
 
 
-def test_menu_toggle_defaults_off_and_generator_owns_screens():
+def test_menu_key_names_follow_the_input_used_last():
+    # (no setting: key names whenever the keyboard or mouse was used last)
     config=(ROOT/'port/linux/src/port_config.c').read_text()
-    assert '"display.menu_button_glyphs", _config_boolean, "false"' in config
-    from port_settings import settings_files
-    for name,lines in settings_files().items():
-        if 'controller_appearance' in name:
-            assert (ROOT/'port/assets/menus/ce'/name).read_text()=='\n'.join(lines)
-            assert 'MENU GLYPHS:' in '\n'.join(lines)
+    assert 'display.menu_button_glyphs' not in config
+    source=(ROOT/'port/linux/game/menu_button_glyphs.c').read_text()
+    assert 'config_boolean' not in source
 
 
 def test_legend_expansion_moves_text_and_hit_target_together(tmp_path):

@@ -1,12 +1,12 @@
 # Keyboard and mouse prompts
 
-Gamepads > Button Appearance offers KEYBOARD GLYPHS, off by default. Turn it on
-with AUTO BUTTON DETECTION to show keycaps after keyboard/mouse activity and
-controller artwork after controller activity. With detection off, BUTTON STYLE:
-KEYBOARD forces keycaps independently of the opt-in. Existing controller-family
-and manual preferences are retained. MENU GLYPHS is a separate opt-in for existing
-PC-menu face-button legends, using the same keyboard/controller style selection.
-Neither keyboard mode requires High-Res HUD; High-Res Text controls font rendering.
+The prompts follow the input used last, with no setting: after a key or mouse
+button of the first player's, the HUD's prompts show keycaps of the keys bound
+to their actions, and the PC menus' face-button legends and tokens show their
+keys; after a controller's button or stick (or a controller plugged in), the
+controller's buttons in BUTTON STYLE again. Only port zero has the keyboard, so
+another player's controller cannot take its prompts. Neither keyboard mode
+requires High-Res HUD; High-Res Text controls font rendering.
 
 For example, rebinding Action from E to F in Controls Setup makes a supported
 pickup/tutorial prompt show F on its next lookup. The primary valid binding wins;
@@ -17,10 +17,10 @@ Mouse buttons and wheel directions have symbols; longer labels widen the keycap.
 
 1. [keyboard_prompts.c](../../port/linux/src/keyboard_prompts.c),
    `keyboard_prompt_pad`, `keyboard_prompt_keys`, `keyboard_prompt_touch` and
-   `keyboard_prompt_enabled`: physical activity and setting policy. Keyboard
+   `keyboard_prompt_enabled`: physical activity, the input used last. Keyboard
    ownership follows XInput port zero, independent of viewport order. Another
    player's controller cannot take its keyboard prompts. Android starts with
-   touch presentation; touch returns to native icons. A manual choice is global.
+   touch presentation; touch returns to native icons.
 2. [xinput_sdl.c](../../port/linux/src/xinput_sdl.c), `XInputGetState` and
    `halo_keyboard_binding_label`: observe physical input before remapping/merging,
    then read the existing binding cache without consuming input or changing it.
@@ -39,15 +39,11 @@ Mouse buttons and wheel directions have symbols; longer labels widen the keycap.
    falls back to text. `keyboard_glyphs_dispose` releases it through the existing
    [HUD teardown](../../port/linux/game/hud_hires_tags.c), including when High-Res
    HUD is off. Activity state owns no map pointers and can persist between maps.
-5. [controller_button_menu.inl](../../port/linux/game/controller_button_menu.inl)
-   uses pending opt-in and detection values for its read-only Keyboard row. Save,
-   Cancel and Defaults use the existing settings flow. [port_settings.py](../../tools/port_settings.py)
-   generates the stock screens; no frontend module is required.
 
 The [HUD message hook](../../source/interface/hud_messaging.c) must precede
 controller translation, where the original semantic action would otherwise be
 lost. The [inline hook](../../source/interface/ui_widget.c) runs only for HUD and
-scoreboard callers. A separate opt-in menu hook replaces recognized face-button
+scoreboard callers. A separate menu hook replaces recognized face-button
 legends and inline tokens when PC menus are selected. The
 [score hint hook](../../source/game/game_engine.c) preserves the hint's identity
 before it becomes ordinary text. [Text rendering](../../source/rasterizer/rasterizer_text.c)
@@ -138,9 +134,8 @@ legacy/controller families, formatting restoration and failure fallbacks.
 [test_mcc_keyboard_glyphs.py](../../tools/test_mcc_keyboard_glyphs.py) runs the
 complete MCC pause builder and checks footer identities, group spacing and stale
 handles across disposal/rebuild.
-[test_controller_buttons.py](../../tools/test_controller_buttons.py) covers pending
-opt-in/detection settings, family transitions, manual Keyboard, focus recovery,
-and generated screens. A mocked layout lookup verifies binding-reader delegation;
+[test_controller_buttons.py](../../tools/test_controller_buttons.py) covers family
+transitions, focus recovery and generated screens. A mocked layout lookup verifies binding-reader delegation;
 it is not physical international-keyboard validation. Runtime visual checks and
 platform results are recorded in the contribution commit; automated tests alone
 do not establish hardware or complete gameplay compatibility.

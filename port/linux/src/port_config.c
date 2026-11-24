@@ -160,11 +160,6 @@ static const struct config_setting config_settings[] =
 	{ "display.hud_button_style", _config_string, "\"classic\"", "HALO_HUD_BUTTON_STYLE", _environment_value, _platform_all,
 		"High-res gameplay button pictures, the same for every player and controller:\n"
 		"classic, gems, menu_gems (dark gems) or xbox_modern. Requires high_res_hud." },
-	{ "display.menu_button_glyphs", _config_boolean, "false", "HALO_MENU_BUTTON_GLYPHS", _environment_value, _platform_all,
-		"Use the selected keyboard/controller style in PC-menu face-button legends." },
-	{ "display.keyboard_glyphs", _config_boolean, "false", "HALO_KEYBOARD_GLYPHS", _environment_value, _platform_all,
-		"Show binding-aware gameplay keycaps after keyboard/mouse activity.\n"
-		"Off preserves existing prompts. Menu legends require menu_button_glyphs." },
 	{ "display.hud_bumper_style", _config_string, "\"original\"", "HALO_HUD_BUMPER_STYLE", _environment_value, _platform_all,
 		"Xbox Classic, Gems and Dark Gems bumpers: original (Xbox: black/white) or\n"
 		"modern (Xbox 360: LB/RB). Shared by local players.\n"

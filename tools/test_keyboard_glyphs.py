@@ -14,18 +14,13 @@ def code(path):
 
 
 @pytest.mark.parametrize("android", [False, True])
-def test_manual_auto_activity_disconnect_and_split_screen(tmp_path, android):
+def test_last_used_activity_disconnect_and_split_screen(tmp_path, android):
     run_c(tmp_path, ("#define HALO_ANDROID 1\n" if android else "") + r'''
 #include <assert.h>
 #include <string.h>
-static int automatic=1, enabled;
-static char const *manual="classic";
-int config_boolean(char const *n){if(!strcmp(n,"display.keyboard_glyphs"))return enabled;assert(!strcmp(n,"input.auto_button_detection"));return automatic;}
-char const *config_string(char const *n){(void)n;return manual;}
 ''' + code('port/linux/src/keyboard_prompts.c') + r'''
 int main(void){
  unsigned char keys[512]={0};
- assert(!keyboard_prompt_enabled(0));enabled=1;
 #ifdef HALO_ANDROID
  assert(!keyboard_prompt_enabled(0));
 #else
@@ -50,14 +45,8 @@ int main(void){
  keyboard_prompt_pad(0,0,0,0);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_pad(0,1,0,1);keyboard_prompt_pad(0,0,0,0);assert(!keyboard_prompt_enabled(0));
  keyboard_prompt_keys(keys,512,0x100);assert(keyboard_prompt_enabled(0));
- enabled=0;assert(!keyboard_prompt_enabled(0));
- automatic=0;assert(!keyboard_prompt_enabled(0));manual="keyboard";
- assert(keyboard_prompt_enabled(0)&&keyboard_prompt_enabled(3));
- keyboard_prompt_pad(0,1,1,1);assert(keyboard_prompt_enabled(0));
- automatic=1;assert(!keyboard_prompt_enabled(0));enabled=1;assert(!keyboard_prompt_enabled(0));
- keys[5]=1;keyboard_prompt_keys(keys,512,0);assert(keyboard_prompt_enabled(0));automatic=0;
- assert(!keyboard_prompt_enabled(-1)&&!keyboard_prompt_enabled(4));
- manual="ps_modern";assert(!keyboard_prompt_enabled(0));return 0;
+ assert(!keyboard_prompt_enabled(-1)&&!keyboard_prompt_enabled(4)&&!keyboard_prompt_enabled(3));
+ return 0;
 }
 ''')
 
@@ -191,7 +180,8 @@ def test_optional_hook_precedes_controller_translation_and_preserves_custom_path
     hook = text.index('keyboard_hud_prompt(', start)
     assert hook < text.index('icon_index = preferences.game_control_to_xbox_buttons', start)
     config = (ROOT/'port/linux/src/port_config.c').read_text(encoding='utf-8')
-    assert '"display.keyboard_glyphs", _config_boolean, "false"' in config
+    # (no setting: the prompts follow the input used last)
+    assert 'display.keyboard_glyphs' not in config
 
 
 def test_score_hint_only_rewrites_known_token_with_room(tmp_path):

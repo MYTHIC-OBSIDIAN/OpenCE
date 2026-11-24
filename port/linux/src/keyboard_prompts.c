@@ -1,8 +1,6 @@
 /* Keyboard ownership follows XInput's port assignment, independently of ui.map.
  * Only port zero receives keyboard input; another player's pad cannot steal it. */
 #include "keyboard_prompts.h"
-#include "port_config.h"
-#include <string.h>
 
 static unsigned char previous_keys[512];
 static unsigned long previous_buttons[4];
@@ -51,10 +49,10 @@ int keyboard_prompt_active(short port)
     return port == 0 && keyboard_active;
 }
 
+/* The prompts follow the input last used: keycaps for the keyboard and mouse
+ * (port zero's), the controller's buttons (BUTTON STYLE) for a controller. */
 int keyboard_prompt_enabled(short port)
 {
     if (port < 0 || port >= 4) return 0;
-    if (!config_boolean("input.auto_button_detection"))
-        return !strcmp(config_string("display.hud_button_style"), "keyboard");
-    return config_boolean("display.keyboard_glyphs") && keyboard_prompt_active(port);
+    return keyboard_prompt_active(port);
 }
