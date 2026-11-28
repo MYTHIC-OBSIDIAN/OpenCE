@@ -81,7 +81,7 @@ These files are in the data root:
 | --- | --- |
 | `debug.txt` | The log of the game. A crash writes its report (the faulting address and the calls that led to it) here as well; the `reference address` line at the top of each session places those addresses in the build. |
 | `init.txt` | Console commands that the game does at start-up. For example, `map_name levels\a10\a10` starts the first campaign level. |
-| `bink/xbox_startup.bik` | Optional: the Xbox's startup movie (the green orb and the X), played before the intro when PLATFORM is XBOX (`display.intro`); a button or a click skips it to the intro. Not part of this repository. |
+| `bink/xbox_startup.bik` | Optional: the Xbox's startup movie (the green orb and the X), played before the intro when PLATFORM is XBOX (`display.intro`); a button or a click skips it to the intro. Not part of this repository: `tools/bink_encode.py` makes a `.bik` of any video. |
 | `mods/` | Mods: folders of Halo PC tag files whose sounds, bitmaps, text and models play over the maps' on this machine, in the order of the main menu's Mods (`load_order.toml`). Refer to [docs/mods.md](../../docs/mods.md). |
 
 The settings are in `config.toml` next to the executable. Refer to
