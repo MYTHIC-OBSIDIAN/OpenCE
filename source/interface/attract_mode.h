@@ -31,6 +31,8 @@ enum
 boolean attract_mode_should_start(void);
 void attract_mode_reset_timer(void);
 const char *attract_mode_get_localized_movie_path(short movie);
+/* port: the Xbox's startup movie, before the intro (NULL: none) */
+const char *attract_mode_get_startup_movie_path(void);
 void attract_mode_start(void);
 void game_end_credits_start(void);
 

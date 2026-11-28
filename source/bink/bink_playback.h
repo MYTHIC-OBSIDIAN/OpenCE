@@ -38,6 +38,9 @@ void bink_playback_dispose(void);
 void bink_playback_render(void);
 void bink_playback_start(const char *full_pathname, unsigned long flags);
 void bink_playback_update(void);
+/* port: a movie to play next, when this one ends or is skipped, in place of
+its end's own (its return to the main menu): the startup movie's intro */
+void bink_playback_queue(const char *full_pathname, unsigned long flags);
 
 /* ---------- globals */
 

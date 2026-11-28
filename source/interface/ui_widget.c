@@ -5132,13 +5132,28 @@ void main_screen_shell_load(
 		}
 		else
 		{
-			bink_playback_start(
-				attract_mode_get_localized_movie_path(_bink_intro_movie),
+			unsigned long intro_flags =
 				FLAG(_bink_playback_button_click_stops_movie_bit) |
 					FLAG(_bink_playback_prevent_events_to_ui_bit) |
 					FLAG(_bink_playback_return_to_main_menu_when_finished_bit) |
 					FLAG(_bink_playback_dont_allow_skipping_if_filesystem_check_thread_is_active_bit) |
-					FLAG(_bink_playback_eat_up_memory_like_a_goddamn_beaver_bit));
+					FLAG(_bink_playback_eat_up_memory_like_a_goddamn_beaver_bit);
+			/* port: the Xbox's startup movie first, when it is there, the
+			intro queued after it (attract_mode.c, bink_playback.c) */
+			char const *startup = attract_mode_get_startup_movie_path();
+
+			if (startup)
+			{
+				bink_playback_queue(attract_mode_get_localized_movie_path(_bink_intro_movie), intro_flags);
+				bink_playback_start(startup, intro_flags);
+				if (!bink_playback_active())
+				{
+					bink_playback_queue(NULL, 0);
+					startup = NULL;
+				}
+			}
+			if (!startup)
+				bink_playback_start(attract_mode_get_localized_movie_path(_bink_intro_movie), intro_flags);
 			load_main_menu = FALSE;
 			if (!bink_playback_active())
 				load_main_menu = TRUE;

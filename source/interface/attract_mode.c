@@ -96,6 +96,23 @@ void attract_mode_reset_timer(
 /* port: port/linux/src/port_config.c's */
 const char *config_string(const char *name);
 
+/* port: the Xbox's own startup movie (its dashboard's boot animation, the
+green orb and the X) before the intro: bink\xbox_startup.bik in the data
+root, when PLATFORM is XBOX (display.intro) and it is there; NULL else */
+const char *attract_mode_get_startup_movie_path(
+	void)
+{
+	static char path[64];
+	struct file_reference startup_file;
+
+	if (strcmp(config_string("display.intro"), "pc") == 0)
+		return NULL;
+	_snprintf(path, NUMBEROF(path), "%s", "d:\\bink\\xbox_startup.bik");
+	if (!file_exists(file_reference_create_from_path(&startup_file, path, FALSE)))
+		return NULL;
+	return path;
+}
+
 const char *attract_mode_get_localized_movie_path(
 	short movie)
 {

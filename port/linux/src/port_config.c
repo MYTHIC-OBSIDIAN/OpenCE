@@ -529,7 +529,8 @@ static const struct config_setting config_settings[] =
 		"loads with the last menu on the screen." },
 	{ "display.intro", _config_string, "\"xbox\"", "HALO_INTRO", _environment_value, _platform_all,
 		"The intro before the main menu: \"xbox\", bink\\intro_xbox.bik in the\n"
-		"data root (else the Xbox's own, bink\\intro.bik), or \"pc\",\n"
+		"data root (else the Xbox's own, bink\\intro.bik), after the Xbox's\n"
+		"startup movie bink\\xbox_startup.bik when it is there, or \"pc\",\n"
 		"bink\\intro_pc.bik (none without it). INTRO in Settings >\n"
 		"Preferences (XBOX or PC) writes its choice here; it plays from the next\n"
 		"start." },

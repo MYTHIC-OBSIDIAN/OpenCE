@@ -412,6 +412,9 @@ struct bink_playback_globals bink_globals = { 0 };
 static long bink_pointer_block_count = 0;
 /* port: when the movie started (bink_playback_update__internal) */
 static unsigned long bink_start_milliseconds = 0;
+/* port: the movie to play next (bink_playback_queue) */
+static char bink_queued_pathname[256] = "";
+static unsigned long bink_queued_flags = 0;
 
 /* ---------- public code */
 
@@ -463,6 +466,27 @@ void bink_playback_stop(
 
 	bink_free_texture_cache();
 
+	/* port: a movie queued to play next plays instead of the end's own
+	(the startup movie, then the intro: bink_playback_queue) */
+	if (bink_queued_pathname[0])
+	{
+		char pathname[NUMBEROF(bink_queued_pathname)];
+		unsigned long flags = bink_queued_flags;
+
+		strncpy(pathname, bink_queued_pathname, NUMBEROF(pathname));
+		pathname[NUMBEROF(pathname) - 1] = '\0';
+		bink_queued_pathname[0] = '\0';
+		global_frame_rate_throttle = bink_saved_frame_rate_throttle;
+		bink_globals.flags = 0;
+		bink_playback_start(pathname, flags);
+		if (bink_globals.bink)
+			return;
+		if (TEST_FLAG(flags, _bink_playback_return_to_main_menu_when_finished_bit))
+			main_menu_load();
+		attract_mode_reset_timer();
+		return;
+	}
+
 	if (TEST_FLAG(bink_globals.flags, _bink_playback_return_to_main_menu_when_finished_bit))
 		main_menu_load();
 
@@ -470,6 +494,23 @@ void bink_playback_stop(
 	bink_globals.flags = 0;
 	global_frame_rate_throttle = saved_frame_rate_throttle;
 	attract_mode_reset_timer();
+
+	return;
+}
+
+/* port: the movie to play when this one ends or is skipped (bink_playback_stop) */
+void bink_playback_queue(
+	const char *full_pathname,
+	unsigned long flags)
+{
+	if (!full_pathname || !full_pathname[0])
+	{
+		bink_queued_pathname[0] = '\0';
+		return;
+	}
+	strncpy(bink_queued_pathname, full_pathname, NUMBEROF(bink_queued_pathname));
+	bink_queued_pathname[NUMBEROF(bink_queued_pathname) - 1] = '\0';
+	bink_queued_flags = flags;
 
 	return;
 }
