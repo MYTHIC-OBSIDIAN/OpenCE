@@ -733,11 +733,25 @@ static void bink_draw_frame(
 			rasterizer_globals.reserved04.screen_bounds.x0;
 		short screen_height= rasterizer_globals.reserved04.screen_bounds.y1-
 			rasterizer_globals.reserved04.screen_bounds.y0;
+		/* port: a movie larger than the screen (whose height is 480,
+		whatever the window's) fits it, its shape kept, not drawn at its
+		own size and cropped: a high-definition one, the startup movie's */
+		real scale= 1.0f;
+		short width, height;
 
-		screen_bounds.x0= (short)((screen_width-bink_globals.width)/2);
-		screen_bounds.x1= (short)((screen_width+bink_globals.width)/2);
-		screen_bounds.y0= (short)((screen_height-bink_globals.height)/2);
-		screen_bounds.y1= (short)((screen_height+bink_globals.height)/2);
+		if (bink_globals.width>screen_width || bink_globals.height>screen_height)
+		{
+			real scale_x= (real)screen_width/bink_globals.width;
+			real scale_y= (real)screen_height/bink_globals.height;
+
+			scale= scale_x<scale_y ? scale_x : scale_y;
+		}
+		width= (short)(bink_globals.width*scale+0.5f);
+		height= (short)(bink_globals.height*scale+0.5f);
+		screen_bounds.x0= (short)((screen_width-width)/2);
+		screen_bounds.x1= (short)((screen_width+width)/2);
+		screen_bounds.y0= (short)((screen_height-height)/2);
+		screen_bounds.y1= (short)((screen_height+height)/2);
 	}
 
 	for (vertex_index= 0; vertex_index<4; vertex_index++)
